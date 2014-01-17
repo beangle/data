@@ -24,11 +24,12 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.SynchronizedBuffer
 
 import org.beangle.commons.collection.page.PageLimit
-import org.beangle.data.jdbc.meta.Table
+import org.beangle.commons.lang.ThreadTasks
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.conversion.Converter
 import org.beangle.data.conversion.wrapper.DatabaseWrapper
+import org.beangle.data.jdbc.meta.Table
 
 class DataConverter(val source: DatabaseWrapper, val target: DatabaseWrapper, val threads: Int = 5) extends Converter with Logging {
 
@@ -51,19 +52,7 @@ class DataConverter(val source: DatabaseWrapper, val target: DatabaseWrapper, va
     val buffer = new ArrayBuffer[Pair[Table, Table]] with SynchronizedBuffer[Pair[Table, Table]]
     buffer ++= tables.sortWith(_._1.name > _._1.name)
     logger.info("Start {} tables data replication in {} threads...", tableCount, threads)
-    val tasks = new collection.mutable.ListBuffer[Thread]
-    for (i <- 0 until threads) {
-      val thread = new Thread(new ConvertTask(source, target, buffer))
-      tasks += thread
-      thread.start()
-    }
-    for (task <- tasks) {
-      try {
-        task.join()
-      } catch {
-        case e: InterruptedException => e.printStackTrace()
-      }
-    }
+    ThreadTasks.start(new ConvertTask(source, target, buffer), threads)
     logger.info("End {} tables data replication,using {}", tableCount, watch)
   }
 

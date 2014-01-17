@@ -32,7 +32,7 @@ import org.beangle.commons.lang.Strings.substringBeforeLast
 import org.beangle.commons.logging.Logging
 import org.beangle.data.report.model.Module
 import org.beangle.data.report.model.Report
-import org.beangle.template.freemarker.ScalaObjectWrapper
+import org.beangle.data.report.internal.ScalaObjectWrapper
 import org.umlgraph.doclet.UmlGraph
 
 import freemarker.cache.ClassTemplateLoader

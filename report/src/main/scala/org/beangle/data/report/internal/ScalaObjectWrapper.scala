@@ -16,16 +16,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.template.freemarker
+package org.beangle.data.report.internal
 
 import java.lang.reflect.Method
 import freemarker.ext.beans.BeansWrapper.MethodAppearanceDecision
 import freemarker.template.DefaultObjectWrapper
 import freemarker.template.TemplateModel
-import freemarker.template.TemplateModelException
 import scala.collection.JavaConversions
 import java.lang.reflect.Modifier
-import java.beans.PropertyEditor
 import java.beans.PropertyDescriptor
 
 class ScalaObjectWrapper extends DefaultObjectWrapper {

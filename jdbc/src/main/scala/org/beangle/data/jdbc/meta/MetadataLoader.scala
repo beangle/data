@@ -24,16 +24,18 @@ import java.sql.ResultSet
 import java.sql.SQLException
 import java.sql.Statement
 import java.sql.Types
-import scala.collection.JavaConversions.asScalaSet
-import scala.collection.JavaConversions.collectionAsScalaIterable
-import scala.collection.mutable.ListBuffer
-import org.beangle.data.jdbc.dialect.Dialect
-import org.beangle.data.jdbc.dialect.SequenceGrammar
+import java.util.StringTokenizer
+
+import scala.collection.mutable
+
 import org.beangle.commons.lang.Strings.lowerCase
 import org.beangle.commons.lang.Strings.replace
 import org.beangle.commons.lang.Strings.upperCase
+import org.beangle.commons.lang.ThreadTasks
+import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
-import scala.collection.mutable
+import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.data.jdbc.dialect.SequenceGrammar
 
 class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends Logging {
   val dialect: Dialect = initDialect
@@ -54,7 +56,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           newCatalog = upperCase(catalog)
           newSchema = upperCase(schema)
         }
-
+        val sw = new Stopwatch(true)
         rs = meta.getTables(newCatalog, newSchema, null, TYPES)
         while (rs.next()) {
           val tableName = rs.getString("TABLE_NAME")
@@ -65,9 +67,10 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           }
         }
         rs.close()
-        logger.info("Load {} tables ", tables.size)
+        logger.info("Load {} tables in {}", tables.size, sw)
 
         // Loading columns
+        sw.reset().start();
         rs = meta.getColumns(newCatalog, newSchema, "%", "%")
         var cols = 0
         import java.util.StringTokenizer
@@ -95,19 +98,16 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         //evict empty column tables
         val origTabCount = tables.size
         tables.retain((name, table) => !table.columns.isEmpty)
-        if (tables.size == origTabCount) logger.info("Load {} columns", cols)
-        else logger.info("Load {} columns and evict empty {} tables.", cols, origTabCount - tables.size)
+        if (tables.size == origTabCount) logger.info("Load {} columns in {},", cols, sw)
+        else logger.info("Load {} columns and evict empty {} tables in {}.", Array(cols, (origTabCount - tables.size), sw))
 
         if (extras) {
           logger.info("Loading primary key,foreign key and index.")
-          for (tableName <- tables.keySet.toList.sortWith(_ < _)) {
-            logger.info("Loading {}.", tableName)
-            tables.get(tableName).foreach(table => {
-              loadPrimaryKeys(table)
-              loadTableForeignKeys(table)
-              loadTableIndexes(table)
-            })
-          }
+          sw.reset().start()
+          val tableNames = new mutable.ArrayBuffer[String] with mutable.SynchronizedBuffer[String]
+          tableNames ++= tables.keySet.toList.sortWith(_ < _)
+          ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
+          logger.info("Load contraint and index in {}.", sw)
         }
       } finally {
         if (rs != null) rs.close()
@@ -116,6 +116,26 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       case e: SQLException => throw new RuntimeException(e)
     }
     tables.values.toSet
+  }
+
+  class MetaLoadTask(val buffer: mutable.Buffer[String], val tables: mutable.HashMap[String, Table]) extends Runnable {
+    def run() {
+      var completed = 0;
+      while (!buffer.isEmpty) {
+        try {
+          val table = tables(buffer.remove(0))
+          logger.info("Loading {}.", table)
+          loadPrimaryKeys(table)
+          loadTableForeignKeys(table)
+          loadTableIndexes(table)
+          completed += 1
+        } catch {
+          case e: IndexOutOfBoundsException =>
+          case e: Exception => logger.error("Error in convertion ", e)
+        }
+      }
+      logger.debug("{} load table {}", Thread.currentThread().getName(), completed)
+    }
   }
 
   private def loadPrimaryKeys(table: Table) = {
