@@ -16,19 +16,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.conversion.wrapper
-
-import java.sql.SQLException
+package org.beangle.data.conversion.db
 
 import org.beangle.commons.collection.page.PageLimit
+import org.beangle.commons.logging.Logging
+import org.beangle.data.conversion.DataWrapper
 import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.data.jdbc.meta.Database
 import org.beangle.data.jdbc.meta.Sequence
 import org.beangle.data.jdbc.meta.Table
 import org.beangle.data.jdbc.query.JdbcExecutor
-import org.beangle.commons.lang.Throwables
-import org.beangle.commons.logging.Logging
-import org.beangle.data.conversion.DataWrapper
 
 import javax.sql.DataSource
 
@@ -38,13 +35,6 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
   val database = new Database(dataSource.getConnection().getMetaData(), dialect, catalog, schema)
   val executor = new JdbcExecutor(dataSource)
   protected var productName: String = _
-
-  def get(tableName: String): Seq[Seq[_]] = {
-    database.tables.get(tableName) match {
-      case Some(table) => get(table)
-      case _ => List.empty
-    }
-  }
 
   def drop(table: Table): Boolean = {
     try {
@@ -135,6 +125,8 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
     val insertSql = table.insertSql
     executor.batch(insertSql, datas, types).length
   }
+
+  def supportLimit = (null != dialect.limitGrammar)
 
   def close() {}
 }

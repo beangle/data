@@ -20,14 +20,14 @@ package org.beangle.data.conversion
 
 import java.io.FileInputStream
 
+import org.beangle.commons.logging.Logging
+import org.beangle.data.conversion.db.ConstraintConverter
+import org.beangle.data.conversion.db.DatabaseWrapper
+import org.beangle.data.conversion.db.IndexConverter
+import org.beangle.data.conversion.db.SequenceConverter
+import org.beangle.data.conversion.impl.DataConverter
 import org.beangle.data.jdbc.meta.Constraint
 import org.beangle.data.jdbc.meta.Table
-import org.beangle.commons.logging.Logging
-import org.beangle.data.conversion.impl.ConstraintConverter
-import org.beangle.data.conversion.impl.DataConverter
-import org.beangle.data.conversion.impl.IndexConverter
-import org.beangle.data.conversion.impl.SequenceConverter
-import org.beangle.data.conversion.wrapper.DatabaseWrapper
 
 import Config.Source
 

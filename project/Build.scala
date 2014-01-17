@@ -77,26 +77,26 @@ object BeangleBuild extends Build {
 
   val commonDeps = Seq(slf4j, logbackClassic, logbackCore, scalatest, commons_jdbc, h2, sqlserver, dbcp)
 
-  lazy val data = Project("beangle-data", file("."), settings = buildSettings) aggregate (data_model,data_jpa,data_jdbc,data_report, data_conversion, data_lint)
+  lazy val data = Project("beangle-data", file("."), settings = buildSettings) aggregate (data_model, data_jpa, data_jdbc, data_report, data_conversion, data_lint)
 
-  lazy val data_model = Project("beangle-data-model",file("model"),
+  lazy val data_model = Project("beangle-data-model", file("model"),
     settings = buildSettings ++ Seq(libraryDependencies ++= commonDeps ++ Seq(commons_core))
       ++ Seq(resolvers += m2repo))
 
-  lazy val data_jpa = Project("beangle-data-jpa",file("jpa"),
+  lazy val data_jpa = Project("beangle-data-jpa", file("jpa"),
     settings = buildSettings ++ Seq(libraryDependencies ++= commonDeps ++ Seq(validation, jpa))
       ++ Seq(resolvers += m2repo)) dependsOn (data_model)
 
-  lazy val data_jdbc = Project("beangle-data-jdbc",file("jdbc"),
-    settings = buildSettings ++ Seq(libraryDependencies ++= commonDeps ++ Seq(h2, dbcp,commons_core))
-      ++ Seq(resolvers += m2repo)) 
+  lazy val data_jdbc = Project("beangle-data-jdbc", file("jdbc"),
+    settings = buildSettings ++ Seq(libraryDependencies ++= commonDeps ++ Seq(h2, dbcp, commons_core))
+      ++ Seq(resolvers += m2repo))
 
-  lazy val data_conversion = Project("beangle-data-conversion",file("conversion"),
+  lazy val data_conversion = Project("beangle-data-conversion", file("conversion"),
     settings = buildSettings ++ Seq(libraryDependencies ++= commonDeps) ++ Seq(resolvers += m2repo))
 
-  lazy val data_report = Project("beangle-data-report",file("report"),
+  lazy val data_report = Project("beangle-data-report", file("report"),
     settings = buildSettings ++ Seq(libraryDependencies ++= commonDeps ++ Seq(freemarker, umlgraph)) ++ Seq(resolvers += m2repo))
 
-  lazy val data_lint = Project("beangle-data-lint",file("lint"),
+  lazy val data_lint = Project("beangle-data-lint", file("lint"),
     settings = buildSettings ++ Seq(libraryDependencies ++= commonDeps) ++ Seq(resolvers += m2repo))
 }

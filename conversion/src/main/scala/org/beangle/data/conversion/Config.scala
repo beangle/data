@@ -1,15 +1,15 @@
 package org.beangle.data.conversion
 
-import java.io.InputStream
+import org.beangle.commons.lang.Numbers
+import org.beangle.commons.lang.Strings
+import org.beangle.data.conversion.impl.DefaultTableFilter
 import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.data.jdbc.util.DbConfig
 import org.beangle.data.jdbc.util.PoolingDataSourceFactory
-import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.Strings
-import org.beangle.data.conversion.impl.DefaultTableFilter
-import org.beangle.data.conversion.wrapper.DatabaseWrapper
 import javax.sql.DataSource
-import org.beangle.commons.lang.Numbers
+
+import Config._
+import org.beangle.data.conversion.db.DatabaseWrapper
 
 object Config {
 

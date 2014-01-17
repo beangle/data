@@ -16,14 +16,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.conversion.impl
+package org.beangle.data.conversion.db
 
-import org.beangle.data.conversion.Converter
+import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
-import org.beangle.data.conversion.wrapper.DatabaseWrapper
+import org.beangle.data.conversion.Converter
 import org.beangle.data.jdbc.meta.Constraint
 import org.beangle.data.jdbc.meta.ForeignKey
-import org.beangle.commons.lang.time.Stopwatch
 
 class ConstraintConverter(val source: DatabaseWrapper, val target: DatabaseWrapper) extends Converter with Logging {
 

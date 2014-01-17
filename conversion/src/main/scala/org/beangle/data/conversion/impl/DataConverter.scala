@@ -28,10 +28,10 @@ import org.beangle.commons.lang.ThreadTasks
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.conversion.Converter
-import org.beangle.data.conversion.wrapper.DatabaseWrapper
+import org.beangle.data.conversion.DataWrapper
 import org.beangle.data.jdbc.meta.Table
 
-class DataConverter(val source: DatabaseWrapper, val target: DatabaseWrapper, val threads: Int = 5) extends Converter with Logging {
+class DataConverter(val source: DataWrapper, val target: DataWrapper, val threads: Int = 5) extends Converter with Logging {
 
   val tables = new ListBuffer[Pair[Table, Table]]
 
@@ -56,7 +56,7 @@ class DataConverter(val source: DatabaseWrapper, val target: DatabaseWrapper, va
     logger.info("End {} tables data replication,using {}", tableCount, watch)
   }
 
-  class ConvertTask(val source: DatabaseWrapper, val target: DatabaseWrapper, val buffer: Buffer[Pair[Table, Table]]) extends Runnable {
+  class ConvertTask(val source: DataWrapper, val target: DataWrapper, val buffer: Buffer[Pair[Table, Table]]) extends Runnable {
 
     def run() {
       while (!buffer.isEmpty) {
@@ -95,7 +95,7 @@ class DataConverter(val source: DatabaseWrapper, val target: DatabaseWrapper, va
           var pageNo = 0
           while (curr < count) {
             val limit = new PageLimit(pageNo + 1, 1000)
-            val data = if (null == source.dialect.limitGrammar) source.get(srcTable) else source.get(srcTable, limit)
+            val data = if (source.supportLimit) source.get(srcTable, limit) else source.get(srcTable)
             if (data.isEmpty) {
               logger.error("Failure in fetching {} data {}({})", Array(srcTable.name, limit.pageNo, limit.pageSize).asInstanceOf[Array[Object]])
             }
