@@ -39,7 +39,7 @@ abstract class AbstractType extends Type {
    */
   override def isEntityType = false
 
-  override def getPropertyType(property: String): Type = null
+  override def getPropertyType(property: String): Option[Type] = None
 
   override def equals(obj: Any) = obj match {
     case other: Type => name.equals(other.name)

@@ -36,7 +36,8 @@ object Report {
         new Page((ele \ "@name").text, (ele \ "@iterator").text))
     }
     report.template = (xml \ "pages" \ "@template").text
-    report.imageurl = (xml \ "images" \ "@url").text
+    report.extension = (xml \ "pages" \ "@extension").text
+    report.imageurl = (xml \ "pages" \ "@imageurl").text
     report.init()
     report
   }
@@ -68,6 +69,8 @@ class Report(val dbconf: DbConfig) extends Initializing {
 
   var imageurl: String = _
 
+  var extension: String = _
+
   def images: List[Image] = {
     val buf = new collection.mutable.ListBuffer[Image]
     for (module <- modules)
@@ -84,10 +87,11 @@ class Report(val dbconf: DbConfig) extends Initializing {
   }
 
   def init() {
-    if (Strings.isEmpty(template)) template = "jekyll"
-    if (Strings.isEmpty(imageurl)) imageurl = "/images/"
+    if (Strings.isEmpty(template)) template = "html"
+    if (Strings.isEmpty(imageurl)) imageurl = "images/"
     else {
       if (!imageurl.endsWith("/")) imageurl += "/"
     }
+    if (Strings.isEmpty(extension)) extension = ".html"
   }
 }

@@ -107,3 +107,7 @@ class SequenceGrammar {
   var querySequenceSql: String = null
 
 }
+
+class MetadataGrammar (val primaryKeysql:String,val importedKeySql:String,val indexInfoSql:String){
+  
+}

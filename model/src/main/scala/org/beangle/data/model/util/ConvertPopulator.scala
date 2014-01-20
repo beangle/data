@@ -58,21 +58,23 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
     while (index < attrs.length) {
       val nested = attrs(index)
       try {
-        property = getProperty(propObj, nested);
-        val propertyType = objtype.getPropertyType(nested);
-        // 初始化
-        if (null == propertyType) {
-          logger.error("Cannot find property type [{}] of {}", nested, propObj.getClass());
-          throw new RuntimeException("Cannot find property type " + nested + " of "
-            + propObj.getClass().getName());
-        }
-        if (null == property) {
-          property = propertyType.newInstance();
-          setProperty(propObj.asInstanceOf[AnyRef], nested, property);
+        property = getProperty(propObj, nested)
+        objtype.getPropertyType(nested) match {
+          case Some(t) => {
+            if (null == property) {
+              property = t.newInstance();
+              setProperty(propObj.asInstanceOf[AnyRef], nested, property);
+            }
+            objtype = t
+          }
+          case None => {
+            logger.error("Cannot find property type [{}] of {}", nested, propObj.getClass());
+            throw new RuntimeException("Cannot find property type " + nested + " of "
+              + propObj.getClass().getName());
+          }
         }
         index += 1
         propObj = property
-        objtype = propertyType
       } catch {
         case e: Exception => throw new RuntimeException(e);
       }
@@ -163,7 +165,13 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
   }
 
   private def convert(t: Type, attr: String, value: Any): Any = {
-    if (value.isInstanceOf[AnyRef] && null == value) null else conversion.convert(value, t.getPropertyType(attr).returnedClass)
+    if (value.isInstanceOf[AnyRef] && null == value) null
+    else {
+      t.getPropertyType(attr) match {
+        case Some(ty) => conversion.convert(value, ty.returnedClass)
+        case None => throw new RuntimeException("cannot find attribuate type of " + attr + " in " + t.name)
+      }
+    }
   }
 
   private def copyValue(target: AnyRef, attr: String, value: Any): Any = {

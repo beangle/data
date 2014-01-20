@@ -1,7 +1,8 @@
 [#ftl]
 [#macro drawtable table]
-
-  * 表格说明
+<ul>
+  <li>表格说明</li>
+</ul>
 
 <table class="table table-bordered table-striped table-condensed">
   <tr>[#t/]
@@ -15,9 +16,9 @@
     <td>${table.comment!}</td>[#t/]
   </tr>
 </table>
-
-  * 表格中的列
-
+<ul>
+  <li>表格中的列</li>
+</ul>
 <table class="table table-bordered table-striped table-condensed">
   <tr>[#t/]
     <th style="background-color:#D0D3FF">序号</th>[#t/]
@@ -46,8 +47,9 @@
 </table>
 
 [#if table.uniqueKeys?size>0]
-  * 表格中唯一约束
-
+<ul>
+  <li>表格中唯一约束</li>
+</ul>
 <table class="table table-bordered table-striped table-condensed">
   <tr>
     <th style="background-color:#D0D3FF">序号</th>[#t/]
@@ -65,8 +67,9 @@
 [/#if]
  
 [#if table.indexes?size>0]
-  * 表格的索引
-
+<ul>
+  <li>表格的索引</li>
+</ul>
 <table class="table table-bordered table-striped table-condensed">
   <tr>
     <th style="background-color:#D0D3FF">索引名</th>[#t/]

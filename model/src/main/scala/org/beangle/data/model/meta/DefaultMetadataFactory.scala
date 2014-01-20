@@ -19,39 +19,27 @@
 package org.beangle.data.model.meta
 
 import org.beangle.data.model.Entity
-import org.beangle.commons.bean.PropertyUtils
+
+object DefaultMetadataFactory {
+
+  def buildClassEntities(entityTypes: Iterable[EntityType]): Map[String, EntityType] = {
+    val builder = new collection.mutable.HashMap[String, EntityType]
+    for (entityType <- entityTypes) {
+      builder.put(entityType.name, entityType)
+      builder.put(entityType.entityClass.getName, entityType)
+    }
+    builder.toMap
+  }
+}
+
 /**
- * <p>
- * EntityContext interface.
- * </p>
+ * DefaultMetadataFactory
  *
  * @author chaostone
  */
-trait EntityContext {
-  /**
-   * 根据实体名查找实体类型
-   *
-   * @param name a {@link java.lang.String} object.
-   * @return a {@link org.beangle.data.model.metadata.Type} object.
-   */
-  def getType(clazz: Class[_]): Option[EntityType]
+class DefaultMetadataFactory(entityTypes: Iterable[EntityType]) extends MetadataFactory {
 
-  def newInstance[T <: Entity[_]](entityClass: Class[T]): Option[T] = {
-    getType(entityClass) match {
-      case Some(t) => Some(t.newInstance().asInstanceOf[T])
-      case _ => None
-    }
-  }
+  val entities: Map[String, EntityType] = DefaultMetadataFactory.buildClassEntities(entityTypes)
 
-  def newInstance[T <: Entity[ID], ID](entityClass: Class[T], id: ID): Option[T] = {
-    getType(entityClass) match {
-      case Some(t) => {
-        val obj = t.newInstance()
-        PropertyUtils.setProperty(obj, t.idName, id)
-        Some(obj.asInstanceOf[T])
-      }
-      case _ => None
-    }
-  }
-
+  override def getType(clazz: Class[_]): Option[EntityType] = entities.get(clazz.getName)
 }

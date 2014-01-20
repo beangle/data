@@ -18,12 +18,18 @@
  */
 package org.beangle.data.jpa.mapping
 
+object NamingPolicy {
+  /**
+   * 表名最大长度
+   */
+  val defaultMaxLength = 30;
+}
 /**
  * Entity table and Collection Table Naming Strategy.
  *
  * @author chaostone
  */
-trait TableNamingPolicy {
+trait NamingPolicy {
 
   /**
    * Convert class to table name
@@ -46,7 +52,7 @@ trait TableNamingPolicy {
    *
    * @param packageName
    */
-  def getSchema(packageName: String): String
+  def getSchema(packageName: String): Option[String]
 
   /**
    * Mapped in multischema?

@@ -43,7 +43,7 @@ class Database(meta: DatabaseMetaData, val dialect: Dialect, val catalog: String
   }
 
   def loadSequences(): mutable.HashSet[Sequence] = {
-    sequences ++= new MetadataLoader(dialect, meta).loadSequences(meta.getConnection(), schema)
+    sequences ++= new MetadataLoader(dialect, meta).loadSequences(schema)
     sequences
   }
 

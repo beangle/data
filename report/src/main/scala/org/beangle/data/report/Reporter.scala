@@ -22,17 +22,18 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileWriter
 
-import org.beangle.data.jdbc.meta.Database
-import org.beangle.data.jdbc.meta.Table
-import org.beangle.data.jdbc.util.PoolingDataSourceFactory
+import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings.isEmpty
 import org.beangle.commons.lang.Strings.substringAfterLast
 import org.beangle.commons.lang.Strings.substringBefore
 import org.beangle.commons.lang.Strings.substringBeforeLast
 import org.beangle.commons.logging.Logging
+import org.beangle.data.jdbc.meta.Database
+import org.beangle.data.jdbc.meta.Table
+import org.beangle.data.jdbc.util.PoolingDataSourceFactory
+import org.beangle.data.report.internal.ScalaObjectWrapper
 import org.beangle.data.report.model.Module
 import org.beangle.data.report.model.Report
-import org.beangle.data.report.internal.ScalaObjectWrapper
 import org.umlgraph.doclet.UmlGraph
 
 import freemarker.cache.ClassTemplateLoader
@@ -41,7 +42,19 @@ import javax.sql.DataSource
 
 object Reporter extends Logging {
 
+  private def checkJdkTools(): Boolean = {
+    try {
+      ClassLoaders.loadClass("com.sun.tools.javadoc.Main")
+    } catch {
+      case e: Exception => false
+    }
+    true
+  }
   def main(args: Array[String]) {
+    if (!checkJdkTools()) {
+      println("Report need tools.jar which contains com.sun.tools.javadoc utility.")
+      return ;
+    }
     if (args.length < 1) {
       println("Usage: Reporter /path/to/your/report.xml -debug");
       return
@@ -137,7 +150,7 @@ class Reporter(val report: Report, val dir: String) {
 
   private def render(data: Any, template: String, result: String = "") {
     val wikiResult = if (isEmpty(result)) template else result;
-    val file = new File(dir + wikiResult + ".md")
+    val file = new File(dir + wikiResult + report.extension)
     file.getParentFile().mkdirs()
     val fw = new FileWriter(file)
     val freemarkerTemplate = cfg.getTemplate(report.template + "/" + template + ".ftl")
@@ -147,7 +160,7 @@ class Reporter(val report: Report, val dir: String) {
 
   private def genImage(data: Any, template: String, result: String = "") {
     val javaResult = if (isEmpty(result)) template else result;
-    val javafile = new File(dir + "_images/" + javaResult + ".java")
+    val javafile = new File(dir + "images/" + javaResult + ".java")
     javafile.getParentFile().mkdirs()
     val fw = new FileWriter(javafile)
     val freemarkerTemplate = cfg.getTemplate("template/" + template + ".ftl")

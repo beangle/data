@@ -121,7 +121,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
   def get(table: Table): Seq[Seq[_]] = executor.query(table.querySql)
 
   def save(table: Table, datas: Seq[Seq[_]]): Int = {
-    val types = for (name <- table.columnNames) yield table.getColumn(name).typeCode
+    val types = for (name <- table.columnNames) yield table.column(name).typeCode
     val insertSql = table.insertSql
     executor.batch(insertSql, datas, types).length
   }

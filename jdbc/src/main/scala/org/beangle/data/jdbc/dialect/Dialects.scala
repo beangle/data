@@ -126,4 +126,5 @@ abstract class Dialect {
   def getAddForeignKeyConstraintString(constraintName: String, foreignKey: Array[String],
     referencedTable: String, primaryKey: Array[String], referencesPrimaryKey: Boolean): String
 
+  def metadataGrammar: MetadataGrammar
 }

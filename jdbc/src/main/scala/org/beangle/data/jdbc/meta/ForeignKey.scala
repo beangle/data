@@ -37,12 +37,10 @@ class ForeignKey(name: String, column: Column) extends Constraint(name) {
   def this(name: String) = this(name, null)
 
   def getAlterSql(dialect: Dialect): String = {
-    assert(null != name)
-    assert(null != table)
-    assert(null != referencedTable, "referencedTable must be set")
-    assert(!isReferenceToPrimaryKey || null != referencedTable.primaryKey,
+    require(null != name && null != table && null != referencedTable)
+    require(!isReferenceToPrimaryKey || null != referencedTable.primaryKey,
       " reference columns is empty  so the table must has a primary key.")
-    assert(!columns.isEmpty, "column's size should greate than 0")
+    require(!columns.isEmpty, "column's size should greate than 0")
 
     val cols: Array[String] = new Array[String](columns.size)
     val refcols: Array[String] = new Array[String](columns.size)

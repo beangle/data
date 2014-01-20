@@ -18,6 +18,7 @@
     <module>report</module>
     <module>conversion</module>
     <module>lint</module>
+    <module>hibernate</module>
   </modules>
 
   <description>
@@ -50,6 +51,11 @@
       <dependency>
         <groupId>org.beangle.commons</groupId>
         <artifactId>beangle-commons-core</artifactId>
+        <version>${commons.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-web</artifactId>
         <version>${commons.version}</version>
       </dependency>
       <dependency>
