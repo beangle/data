@@ -21,7 +21,6 @@ package org.beangle.data.report
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileWriter
-
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings.isEmpty
 import org.beangle.commons.lang.Strings.substringAfterLast
@@ -35,10 +34,10 @@ import org.beangle.data.report.internal.ScalaObjectWrapper
 import org.beangle.data.report.model.Module
 import org.beangle.data.report.model.Report
 import org.umlgraph.doclet.UmlGraph
-
 import freemarker.cache.ClassTemplateLoader
 import freemarker.template.Configuration
 import javax.sql.DataSource
+import scala.compat.Platform
 
 object Reporter extends Logging {
 
@@ -59,8 +58,8 @@ object Reporter extends Logging {
       println("Usage: Reporter /path/to/your/report.xml -debug");
       return
     }
-    val reportxml = args(0);
-    val dir = substringBeforeLast(reportxml, "/") + "/" + substringBefore(substringAfterLast(reportxml, "/"), ".xml") + "/";
+    val reportxml = new File(args(0))
+    val dir = reportxml.getParent().toString() + File.pathSeparator
     logger.info("All wiki and images will be generated in {}", dir)
     val xml = scala.xml.XML.load(new FileInputStream(reportxml))
     val report = Report(xml)

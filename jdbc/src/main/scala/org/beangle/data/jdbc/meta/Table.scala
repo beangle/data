@@ -224,5 +224,5 @@ object Table {
       qualifiedName.append(schema).append('.')
     qualifiedName.append(name).toString()
   }
-  def apply(schema: String, name: String): String = qualify(schema,name)
+  def apply(schema: String, name: String): String = qualify(schema, name)
 }

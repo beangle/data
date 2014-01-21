@@ -68,5 +68,5 @@ abstract class AbstractDialect(versions: String) extends Dialect {
 
   protected def registerType(code: Int, name: String) = typeNames.put(code, name)
 
-  def metadataGrammar: MetadataGrammar=null
+  def metadataGrammar: MetadataGrammar = null
 }

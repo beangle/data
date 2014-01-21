@@ -108,6 +108,6 @@ class SequenceGrammar {
 
 }
 
-class MetadataGrammar (val primaryKeysql:String,val importedKeySql:String,val indexInfoSql:String){
-  
+class MetadataGrammar(val primaryKeysql: String, val importedKeySql: String, val indexInfoSql: String) {
+
 }
