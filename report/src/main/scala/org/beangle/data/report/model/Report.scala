@@ -26,6 +26,7 @@ object Report {
 
   def apply(xml: scala.xml.Elem): Report = {
     val report = new Report(DbConfig.build(xml))
+    report.title = (xml \ "@title").text
     report.system.name = (xml \ "system" \ "@name").text
     report.system.version = (xml \ "system" \ "@version").text
     (xml \ "system" \ "props" \ "prop").foreach { ele => report.system.properties.put((ele \ "@name").text, (ele \ "@value").text) }
@@ -59,6 +60,8 @@ object Report {
 
 class Report(val dbconf: DbConfig) extends Initializing {
 
+  var title: String = _
+
   var system: System = new System
 
   var modules: List[Module] = List()
@@ -88,6 +91,7 @@ class Report(val dbconf: DbConfig) extends Initializing {
 
   def init() {
     if (Strings.isEmpty(template)) template = "html"
+    if (Strings.isEmpty(title)) title = "数据库结构说明"
     if (Strings.isEmpty(imageurl)) imageurl = "images/"
     else {
       if (!imageurl.endsWith("/")) imageurl += "/"

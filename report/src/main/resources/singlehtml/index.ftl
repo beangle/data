@@ -6,7 +6,7 @@
 <div class="container-narrow">
  <div class="content">
   <div class="page-header">
-   <h1>${report.system.name} ${report.system.version!} 数据库设计 </h1>
+   <h1>${report.system.name} ${report.system.version!} ${report.title} </h1>
   </div>
 
   <div class="row-fluid">
@@ -47,9 +47,7 @@
 
 <ol>
   <li>数据库采用了oracle10g以上的版本。</li>
-  <li>对于维护三年以上的教务数据，默认表空间最少要800M</li>
-  <li>数据库编程客户端，可以采用PL/SQL或者Toad</li>
-  <li>数据库逻辑设计和物理设计工具可以采用PowerDesign</li>
+  <li>额外你需要补充的说明...</li>
 </ol>
 
 <h4>1.2 数据库对象命名规则</h4>
@@ -58,11 +56,7 @@
 
 <ol>
   <li>数据库中表、视图、索引采用英文及其缩写，尽量避免使用汉语拼音首字母缩写</li>
-  <li>按照模块的前缀组织表和视图的命名</li>
-  <li>使用复数命名表明和视图名，例如Students表示student，People表示person</li>
-  <li>数据库列命名上,采用xxx_at表示时间和日期,xx_on表示日期，例如start_on表示开始日期</li>
-  <li>数据库序列采用seq_作为前缀，默认后续为表名，表示对应的表使用的序列</li>
-  <li>索引采用idx_作为前缀<br />
+  <li>其他您的规则</li>
 </ol>
   
 <h3>2. 数据库对象列表</h3>

@@ -1,9 +1,9 @@
 [#ftl]
-[#macro head title toc=false]
+[#macro head toc=false]
 ---
 layout: page
-title: ${report.system.name} ${title!}
-description: "${report.system.name}${title!}"
+title: ${report.system.name} ${report.title}
+description: "${report.system.name}${report.title}"
 categories: [model-${report.system.version}]
 version: ["${report.system.version}"]
 ---

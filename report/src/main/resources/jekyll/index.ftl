@@ -1,6 +1,6 @@
 [#ftl]
 [#include "template/head.ftl"/]
-[@head "数据库设计" /]
+[@head/]
 [#include "template/module.ftl"/]
 
 #### 目 录
