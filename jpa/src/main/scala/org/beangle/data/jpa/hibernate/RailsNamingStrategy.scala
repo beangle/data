@@ -28,17 +28,8 @@ import org.hibernate.cfg.NamingStrategy
 
 object RailsNamingStrategy {
 
-  def addUnderscores(name: String): String = Strings.unCamel(name.replace('.', '_'), '_')
-
-  def unqualify(qualifiedName: String): String = {
-    val loc = qualifiedName.lastIndexOf('.')
-    if (loc < 0) qualifiedName else qualifiedName.substring(loc + 1)
-  }
-
   var namingPolicy: NamingPolicy = _
 }
-
-import RailsNamingStrategy._
 
 /**
  * 类似Rails的数据库表名、列名命名策略
@@ -153,6 +144,12 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
     if (Strings.isNotEmpty(columnName)) columnName else (unqualify(propertyName) + "_" + referencedColumn)
   }
 
+  final def addUnderscores(name: String): String = Strings.unCamel(name.replace('.', '_'), '_')
+
+  final def unqualify(qualifiedName: String): String = {
+    val loc = qualifiedName.lastIndexOf('.')
+    if (loc < 0) qualifiedName else qualifiedName.substring(loc + 1)
+  }
   /**
    * 检查是否为ManyToOne调用
    */

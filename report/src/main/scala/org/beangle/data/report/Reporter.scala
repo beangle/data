@@ -59,7 +59,8 @@ object Reporter extends Logging {
       return
     }
     val reportxml = new File(args(0))
-    val dir = reportxml.getParent().toString() + File.pathSeparator
+    var dir = reportxml.getAbsolutePath()
+    dir = substringBeforeLast(dir, "/") + "/" + substringBefore(substringAfterLast(dir, "/"), ".xml") + "/";
     logger.info("All wiki and images will be generated in {}", dir)
     val xml = scala.xml.XML.load(new FileInputStream(reportxml))
     val report = Report(xml)

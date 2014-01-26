@@ -41,14 +41,14 @@ class DbversionTest extends FlatSpec with Matchers {
   }
 
   "open range without end" should "contains version greate than start" in {
-    val version = new Dbversion("(2.3.5,)");
+    val version = new Dbversion("(2.3.5,)")
     version.contains("2.3") should be(false)
     version.contains("2.4") should be(true)
     version.contains("2.5") should be(true)
   }
 
   "open range without start " should "contains version less than end" in {
-    val version = new Dbversion("(,2.3.5]");
+    val version = new Dbversion("(,2.3.5]")
     version.contains("2.3.5") should be(true)
     version.contains("2.3") should be(true)
     version.contains("2.5") should be(false)

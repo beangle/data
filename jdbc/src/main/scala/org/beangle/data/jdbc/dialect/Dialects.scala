@@ -18,55 +18,34 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import java.lang.reflect.Constructor
+import scala.collection.mutable
+
 import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.vendor.VendorInfo
+import org.beangle.data.jdbc.vendor.Vendors
 
 object Dialects {
 
-  def HSQL2: String = "HSQL2"
+  val registeredDialects = new mutable.HashMap[VendorInfo, List[Dialect]]
 
-  def H2: String = "H2"
-
-  def MySQL: String = "MySQL"
-
-  def Oracle: String = "Oracle"
-
-  def DB2: String = "DB2"
-
-  def PostgreSQL: String = "PostgreSQL"
-
-  def SQLServer2005: String = "SQLServer2005"
-
-  var constructors: Map[String, Constructor[_ <: Dialect]] = Map.empty
-
-  def getDialect(dialectName: String): Dialect = {
-    val con: Constructor[_ <: Dialect] = constructors.get(dialectName).orNull
-    if (null == con) {
-      throw new RuntimeException(dialectName + " not supported")
-    } else {
-      return con.newInstance()
-    }
+  def getDialect(vendor: VendorInfo, version: String): Option[Dialect] = {
+    for (dialects <- registeredDialects.get(vendor))
+      return dialects.find(d => d.support(version))
+    None
   }
 
-  def register(clazz: Class[_ <: Dialect]) {
-    val name: String = Strings.substringBefore(clazz.getSimpleName(), "Dialect")
-    constructors += (name -> clazz.getConstructor())
+  def register(product: VendorInfo, dialects: Dialect*) {
+    registeredDialects.put(product, dialects.toList)
   }
 
-  def register(shortname: String, clazz: Class[_ <: Dialect]) {
-    constructors += (shortname -> clazz.getConstructor())
-  }
-
-  register(classOf[DB2Dialect])
-  register(classOf[DerbyDialect])
-  register(classOf[H2Dialect])
-  register(classOf[HSQL2Dialect])
-  register(classOf[MySQLDialect])
-  register(classOf[OracleDialect])
-  register(classOf[PostgreSQLDialect])
-  register(classOf[SQLServerDialect])
-  register(classOf[SQLServer2005Dialect])
-  register(classOf[SQLServer2008Dialect])
+  register(Vendors.oracle, new OracleDialect)
+  register(Vendors.db2, new DB2Dialect)
+  register(Vendors.derby, new DerbyDialect)
+  register(Vendors.h2, new H2Dialect)
+  register(Vendors.hsql, new HSQL2Dialect)
+  register(Vendors.mysql, new MySQLDialect)
+  register(Vendors.postgresql, new PostgreSQLDialect)
+  register(Vendors.sqlserver, new SQLServer2008Dialect, new SQLServer2005Dialect, new SQLServerDialect)
 
   private def printPad(name: String) { print(Strings.rightPad(name, 17, ' ')) }
 
@@ -92,12 +71,12 @@ object Dialects {
     for (i <- 0 until types.length) {
       printPad(typeNames(i))
       for (dialect <- dialects) {
-        var typeName = "error"
-        try {
-          typeName = dialect.typeNames.get(types(i))
-        } catch {
-          case e: Exception =>
-        }
+        val typeName =
+          try {
+            dialect.typeNames.get(types(i))
+          } catch {
+            case e: Exception => "error"
+          }
         printPad(typeName)
       }
       println("")
@@ -127,4 +106,6 @@ abstract class Dialect {
     referencedTable: String, primaryKey: Array[String], referencesPrimaryKey: Boolean): String
 
   def metadataGrammar: MetadataGrammar
+
+  def support(version: String): Boolean
 }
