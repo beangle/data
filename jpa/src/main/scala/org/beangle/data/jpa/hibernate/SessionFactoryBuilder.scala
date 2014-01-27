@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.hibernate
+package org.beangle.data.jpa.hibernate
 
 import java.io.IOException
 import java.net.URL
@@ -39,18 +39,42 @@ import org.hibernate.service.ServiceRegistryBuilder
 
 import javax.sql.DataSource
 
+abstract class SessionFactoryBuilder extends Logging {
+  def build(): SessionFactory;
+}
+
+class HbmSessionFactoryBuilder(val dataSource: DataSource, val properties: ju.Properties = new ju.Properties) extends SessionFactoryBuilder {
+  /** static and global hbm mapping without namingstrategy */
+  var staticHbm: URL = _
+
+  def build(): SessionFactory = {
+    val configuration = new Configuration
+    configuration.addCacheableFile(staticHbm.getFile)
+    import org.hibernate.cfg.AvailableSettings._
+    if (dataSource != null) configuration.getProperties.put(DATASOURCE, dataSource)
+    configuration.addProperties(this.properties)
+    // do session factory build.
+    val watch = new Stopwatch(true)
+    val serviceRegistry = new ServiceRegistryBuilder().applySettings(configuration.getProperties).buildServiceRegistry
+
+    configuration.setSessionFactoryObserver(new SessionFactoryObserver {
+      override def sessionFactoryCreated(factory: SessionFactory) {}
+      override def sessionFactoryClosed(factory: SessionFactory) {
+        ServiceRegistryBuilder.destroy(serviceRegistry)
+      }
+    })
+    val sessionFactory = configuration.buildSessionFactory(serviceRegistry)
+    logger.info("Building Hibernate SessionFactory in {}", watch)
+    sessionFactory
+  }
+
+}
+
 /**
  * @author chaostone
  * @version $Id: SessionFactoryBean.java Feb 27, 2012 10:52:27 PM chaostone $
  */
-class SessionFactoryBuilder extends Logging {
-
-  private var configurationClass: Class[_ <: Configuration] = classOf[Configuration]
-
-  var dataSource: DataSource = _
-
-  /** static and global hbm mapping without namingstrategy */
-  var staticHbm: URL = _
+class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration: Configuration, val properties: ju.Properties = new ju.Properties) extends SessionFactoryBuilder {
 
   /**
    * Set the locations of multiple Hibernate XML config files, for example as
@@ -61,12 +85,12 @@ class SessionFactoryBuilder extends Logging {
    *
    * @see org.hibernate.cfg.Configuration#configure(java.net.URL)
    */
-  var configLocations: List[URL] = List.empty
+  var configLocations: Seq[URL] = List.empty
 
   /**
    * Set the locations of multiple persister.properties
    */
-  var persistLocations: List[URL] = List.empty
+  var persistLocations: Seq[URL] = List.empty
 
   /**
    * Set a Hibernate NamingStrategy for the SessionFactory, determining the
@@ -77,22 +101,39 @@ class SessionFactoryBuilder extends Logging {
   var namingStrategy: NamingStrategy = _
 
   /**
-   * Set Hibernate properties, such as "hibernate.dialect".
-   * <p>
-   * Can be used to override values in a Hibernate XML config file, or to specify all necessary
-   * properties locally.
-   * <p>
+   * Import System properties and disable jdbc metadata lookup
    */
-  var properties: ju.Properties = new ju.Properties
+  private def processProperties() {
+    // 1. import system properties
+    val sysProps = System.getProperties
+    val keys = sysProps.propertyNames
+    while (keys.hasMoreElements) {
+      val key = keys.nextElement.asInstanceOf[String]
+      if (key.startsWith("hibernate.")) {
+        val value = sysProps.getProperty(key)
+        val overrided = properties.containsKey(key)
+        properties.put(key, value)
+        if (overrided) logger.info("Override hibernate property {}={}", key, value)
+      }
+    }
+    // 2. set datasource and disable metadata lookup
+    // configuration.getProperties.put("hibernate.classLoader.application", beanClassLoader)
+    import org.hibernate.cfg.AvailableSettings._
+    if (dataSource != null) configuration.getProperties.put(DATASOURCE, dataSource)
+    // Disable JdbcServicesImpl magic behaviour except declare explicitly,
+    // for it will slow startup performance. And it just consult medata's ddl semantic, which is
+    // seldom used.
+    val useJdbcMetaName = "hibernate.temp.use_jdbc_metadata_defaults"
+    if (properties.containsKey(DIALECT) && !properties.containsKey(useJdbcMetaName))
+      properties.put(useJdbcMetaName, "false")
 
-  private var configuration: Configuration = _
-
-  private def staticInit() {
-    configuration.addCacheableFile(staticHbm.getFile)
+    configuration.addProperties(this.properties)
   }
 
-  private def dynamicInit() {
-    if (this.namingStrategy != null) configuration.setNamingStrategy(this.namingStrategy)
+  def build(): SessionFactory = {
+    processProperties()
+
+    if (null != this.namingStrategy) configuration.setNamingStrategy(this.namingStrategy)
     try {
       if (null != configLocations) {
         for (resource <- configLocations)
@@ -121,55 +162,7 @@ class SessionFactoryBuilder extends Logging {
       }
     } finally {
     }
-  }
 
-  /**
-   * Import System properties and disable jdbc metadata lookup
-   */
-  protected def processProperties() {
-    // 1. import system properties
-    val sysProps = System.getProperties
-    val keys = sysProps.propertyNames
-    while (keys.hasMoreElements) {
-      val key = keys.nextElement.asInstanceOf[String]
-      if (key.startsWith("hibernate.")) {
-        val value = sysProps.getProperty(key)
-        val overrided = properties.containsKey(key)
-        properties.put(key, value)
-        if (overrided) logger.info("Override hibernate property {}={}", key, value)
-      }
-    }
-    // 2. set datasource and disable metadata lookup
-    // configuration.getProperties.put("hibernate.classLoader.application", beanClassLoader)
-    import org.hibernate.cfg.AvailableSettings._
-    if (dataSource != null) configuration.getProperties.put(DATASOURCE, dataSource)
-    // Disable JdbcServicesImpl magic behaviour except declare explicitly,
-    // for it will slow startup performance. And it just consult medata's ddl semantic, which is
-    // seldom used.
-    val useJdbcMetaName = "hibernate.temp.use_jdbc_metadata_defaults"
-    if (properties.containsKey(DIALECT) && !properties.containsKey(useJdbcMetaName))
-      properties.put(useJdbcMetaName, "false")
-
-    configuration.addProperties(this.properties)
-  }
-
-  def build(): SessionFactory = {
-    var initStaticly = (null != staticHbm)
-    try {
-      staticHbm.getFile
-    } catch {
-      case e: IOException => initStaticly = false
-    }
-
-    if (initStaticly) {
-      configuration = new Configuration
-      processProperties()
-      staticInit()
-    } else {
-      configuration = newConfiguration()
-      processProperties()
-      dynamicInit()
-    }
     // do session factory build.
     val watch = new Stopwatch(true)
     val serviceRegistry = new ServiceRegistryBuilder().applySettings(configuration.getProperties).buildServiceRegistry
@@ -205,19 +198,4 @@ class SessionFactoryBuilder extends Logging {
       configuration.setCollectionCacheConcurrencyStrategy(role, definition.cacheUsage, region)
     }
   }
-
-  /**
-   * Subclasses can override this method to perform custom initialization
-   * of the Configuration instance used for SessionFactory creation.
-   * The properties of this LocalSessionFactoryBean will be applied to
-   * the Configuration object that gets returned here.
-   * <p>
-   * The default implementation creates a new Configuration instance. A custom implementation could
-   * prepare the instance in a specific way, or use a custom Configuration subclass.
-   *
-   * @return the Configuration instance
-   * @throws HibernateException in case of Hibernate initialization errors
-   * @see org.hibernate.cfg.Configuration#Configuration
-   */
-  protected def newConfiguration(): Configuration = Reflections.newInstance(this.configurationClass)
 }

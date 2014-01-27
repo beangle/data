@@ -20,7 +20,7 @@ package org.beangle.data.jpa.dao
 
 import org.beangle.commons.collection.Order
 import org.beangle.commons.collection.page.PageLimit
-import org.beangle.data.dao._
+import org.beangle.data.model.dao._
 import org.beangle.commons.lang.Assert
 import org.beangle.commons.lang.Strings._
 

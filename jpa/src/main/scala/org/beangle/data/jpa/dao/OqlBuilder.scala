@@ -22,7 +22,7 @@ import org.beangle.data.model.meta.EntityType
 import org.beangle.commons.lang.Assert
 import org.beangle.commons.lang.Strings._
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.dao.Query
+import org.beangle.data.model.dao.Query
 import org.beangle.data.jpa.util.Jpas
 object OqlBuilder {
   val Lang = Query.Lang("Oql")

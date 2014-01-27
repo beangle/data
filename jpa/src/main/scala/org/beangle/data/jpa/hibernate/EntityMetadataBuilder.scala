@@ -16,30 +16,32 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.hibernate.support
-
-import java.{ util => ju }
-import scala.collection.JavaConversions.asScalaSet
+package org.beangle.data.jpa.hibernate
 import scala.collection.mutable
-
+import scala.collection.JavaConversions._
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.meta.CollectionType
 import org.beangle.data.model.meta.ComponentType
-import org.beangle.data.model.meta.DefaultMetadataFactory
+import org.beangle.data.model.meta.DefaultEntityMetadata
 import org.beangle.data.model.meta.EntityType
 import org.beangle.data.model.meta.IdentifierType
-import org.beangle.data.model.meta.MetadataFactory
+import org.beangle.data.model.meta.EntityMetadata
 import org.beangle.data.model.meta.Type
 import org.hibernate.SessionFactory
 import org.hibernate.{ `type` => htype }
+import java.{ util => ju }
 
-class MetadataFactoryBuilder extends Logging {
+object EntityMetadataBuilder{
+  def apply(factories: Iterable[SessionFactory]):EntityMetadata  =  new EntityMetadataBuilder().build(factories)
+}
+
+private[hibernate] class EntityMetadataBuilder extends Logging {
   /** entity-name->entity-type */
   val entityTypes = new mutable.HashMap[String, EntityType]
   val collectionTypes = new mutable.HashMap[String, CollectionType]
 
-  def build(factories: Iterable[SessionFactory]): MetadataFactory = {
+  def build(factories: Iterable[SessionFactory]): EntityMetadata = {
     require(null != factories)
     for (factory <- factories) {
       val watch = new Stopwatch(true)
@@ -53,7 +55,7 @@ class MetadataFactoryBuilder extends Logging {
         entityTypes.size - entityCount, collectionTypes.size - collectionCount, watch))
       collectionTypes.clear()
     }
-    new DefaultMetadataFactory(entityTypes.values)
+    new DefaultEntityMetadata(entityTypes.values)
   }
   /**
    * 按照实体名，构建或者查找实体类型信息.<br>
