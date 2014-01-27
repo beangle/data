@@ -12,12 +12,10 @@
   <properties>
     <bundle.symbolicName>org.beangle.data.jpa</bundle.symbolicName>
     <bundle.namespace>org.beangle.data</bundle.namespace>
-    <jpa.version>1.0.1.Final</jpa.version>
+    <jpa.version>1.0.0.Final</jpa.version>
     <jta.version>1.1</jta.version>
-    <javax.validation.version>1.0.0.GA</javax.validation.version>
-    <hibernate.version>4.2.4.Final</hibernate.version>
-    <hibernate.validator.version>4.3.1.Final</hibernate.validator.version>
-    <ehcache.version>2.5.2</ehcache.version>
+    <hibernate.version>4.3.1.Final</hibernate.version>
+    <hibernate.validator.version>5.0.2.Final</hibernate.validator.version>
   </properties>
 
   <dependencies>
@@ -40,7 +38,7 @@
     </dependency>
     <dependency>
       <groupId>org.hibernate.javax.persistence</groupId>
-      <artifactId>hibernate-jpa-2.0-api</artifactId>
+      <artifactId>hibernate-jpa-2.1-api</artifactId>
       <version>${jpa.version}</version>
     </dependency>
     <dependency>
@@ -65,12 +63,6 @@
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-ehcache</artifactId>
       <version>${hibernate.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>net.sf.ehcache</groupId>
-      <artifactId>ehcache-core</artifactId>
-      <version>${ehcache.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>

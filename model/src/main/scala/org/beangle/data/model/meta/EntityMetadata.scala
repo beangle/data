@@ -56,8 +56,7 @@ trait EntityMetadata {
 
 }
 
-
-object DefaultEntityMetadata{
+object DefaultEntityMetadata {
 
   def buildClassEntities(entityTypes: Iterable[EntityType]): Map[String, EntityType] = {
     val builder = new collection.mutable.HashMap[String, EntityType]

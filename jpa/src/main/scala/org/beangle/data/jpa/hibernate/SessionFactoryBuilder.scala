@@ -21,7 +21,6 @@ package org.beangle.data.jpa.hibernate
 import java.io.IOException
 import java.net.URL
 import java.{ util => ju }
-
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.Reflections
@@ -36,8 +35,8 @@ import org.hibernate.cfg.AvailableSettings.DIALECT
 import org.hibernate.cfg.Configuration
 import org.hibernate.cfg.NamingStrategy
 import org.hibernate.service.ServiceRegistryBuilder
-
 import javax.sql.DataSource
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 
 abstract class SessionFactoryBuilder extends Logging {
   def build(): SessionFactory;
@@ -55,12 +54,12 @@ class HbmSessionFactoryBuilder(val dataSource: DataSource, val properties: ju.Pr
     configuration.addProperties(this.properties)
     // do session factory build.
     val watch = new Stopwatch(true)
-    val serviceRegistry = new ServiceRegistryBuilder().applySettings(configuration.getProperties).buildServiceRegistry
+    val serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties).build()
 
     configuration.setSessionFactoryObserver(new SessionFactoryObserver {
       override def sessionFactoryCreated(factory: SessionFactory) {}
       override def sessionFactoryClosed(factory: SessionFactory) {
-        ServiceRegistryBuilder.destroy(serviceRegistry)
+        StandardServiceRegistryBuilder.destroy(serviceRegistry)
       }
     })
     val sessionFactory = configuration.buildSessionFactory(serviceRegistry)
@@ -165,12 +164,12 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
 
     // do session factory build.
     val watch = new Stopwatch(true)
-    val serviceRegistry = new ServiceRegistryBuilder().applySettings(configuration.getProperties).buildServiceRegistry
+    val serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties).build()
 
     configuration.setSessionFactoryObserver(new SessionFactoryObserver {
       override def sessionFactoryCreated(factory: SessionFactory) {}
       override def sessionFactoryClosed(factory: SessionFactory) {
-        ServiceRegistryBuilder.destroy(serviceRegistry)
+        StandardServiceRegistryBuilder.destroy(serviceRegistry)
       }
     })
     val sessionFactory = configuration.buildSessionFactory(serviceRegistry)

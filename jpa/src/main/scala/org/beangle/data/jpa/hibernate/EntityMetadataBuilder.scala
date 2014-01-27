@@ -32,8 +32,8 @@ import org.hibernate.SessionFactory
 import org.hibernate.{ `type` => htype }
 import java.{ util => ju }
 
-object EntityMetadataBuilder{
-  def apply(factories: Iterable[SessionFactory]):EntityMetadata  =  new EntityMetadataBuilder().build(factories)
+object EntityMetadataBuilder {
+  def apply(factories: Iterable[SessionFactory]): EntityMetadata = new EntityMetadataBuilder().build(factories)
 }
 
 private[hibernate] class EntityMetadataBuilder extends Logging {
