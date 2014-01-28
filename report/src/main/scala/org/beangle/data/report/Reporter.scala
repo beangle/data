@@ -144,7 +144,7 @@ class Reporter(val report: Report, val dir: String) {
     data += ("report" -> report)
     for (image <- report.images) {
       data.put("image", image)
-      genImage(data, "class", image.name)
+      genImage(data, image.name)
     }
   }
 
@@ -153,17 +153,16 @@ class Reporter(val report: Report, val dir: String) {
     val file = new File(dir + wikiResult + report.extension)
     file.getParentFile().mkdirs()
     val fw = new FileWriter(file)
-    val freemarkerTemplate = cfg.getTemplate(report.template + "/" + template + ".ftl")
+    val freemarkerTemplate = cfg.getTemplate("template/" + report.template + "/" + template + ".ftl")
     freemarkerTemplate.process(data, fw)
     fw.close()
   }
 
-  private def genImage(data: Any, template: String, result: String = "") {
-    val javaResult = if (isEmpty(result)) template else result;
-    val javafile = new File(dir + "images/" + javaResult + ".java")
+  private def genImage(data: Any, result: String) {
+    val javafile = new File(dir + "images/" + result + ".java")
     javafile.getParentFile().mkdirs()
     val fw = new FileWriter(javafile)
-    val freemarkerTemplate = cfg.getTemplate("template/" + template + ".ftl")
+    val freemarkerTemplate = cfg.getTemplate("template/class.ftl")
     freemarkerTemplate.process(data, fw)
     fw.close()
     java2png(javafile)
