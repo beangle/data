@@ -18,13 +18,13 @@
  */
 package org.beangle.data.report.internal
 
-import java.lang.reflect.Method
-import freemarker.ext.beans.BeansWrapper.MethodAppearanceDecision
-import freemarker.template.DefaultObjectWrapper
-import freemarker.template.TemplateModel
-import scala.collection.JavaConversions
-import java.lang.reflect.Modifier
 import java.beans.PropertyDescriptor
+import java.lang.reflect.{Method, Modifier}
+
+import scala.collection.JavaConversions
+
+import freemarker.ext.beans.BeansWrapper.MethodAppearanceDecision
+import freemarker.template.{DefaultObjectWrapper, TemplateModel}
 
 class ScalaObjectWrapper extends DefaultObjectWrapper {
 

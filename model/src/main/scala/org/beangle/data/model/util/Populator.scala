@@ -31,7 +31,7 @@ trait Populator {
   /**
    * populate.
    */
-  def populate(target: Entity[_], entityType: EntityType, params: Map[String, Any])
+  def populate(target: Entity[_], entityType: EntityType, params: collection.Map[String, Any])
 
   /**
    * @return true when success populate.

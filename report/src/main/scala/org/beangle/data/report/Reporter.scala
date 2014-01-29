@@ -18,26 +18,20 @@
  */
 package org.beangle.data.report
 
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileWriter
+import java.io.{File, FileInputStream, FileWriter}
+
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.Strings.isEmpty
-import org.beangle.commons.lang.Strings.substringAfterLast
-import org.beangle.commons.lang.Strings.substringBefore
-import org.beangle.commons.lang.Strings.substringBeforeLast
+import org.beangle.commons.lang.Strings.{isEmpty, substringAfterLast, substringBefore, substringBeforeLast}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.meta.Database
-import org.beangle.data.jdbc.meta.Table
+import org.beangle.data.jdbc.meta.{Database, Table}
 import org.beangle.data.jdbc.util.PoolingDataSourceFactory
 import org.beangle.data.report.internal.ScalaObjectWrapper
-import org.beangle.data.report.model.Module
-import org.beangle.data.report.model.Report
+import org.beangle.data.report.model.{Module, Report}
 import org.umlgraph.doclet.UmlGraph
+
 import freemarker.cache.ClassTemplateLoader
 import freemarker.template.Configuration
 import javax.sql.DataSource
-import scala.compat.Platform
 
 object Reporter extends Logging {
 

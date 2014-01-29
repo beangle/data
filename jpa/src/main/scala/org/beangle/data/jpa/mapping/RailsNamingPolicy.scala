@@ -44,7 +44,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
 
   private var pluralizer: Pluralizer = new EnNounPluralizer()
 
-  private var patterns: List[TableNamePattern] = _
+  private var patterns: List[TableNamePattern] = List.empty
 
   private val packagePatterns = new collection.mutable.HashMap[String, TableNamePattern]
 

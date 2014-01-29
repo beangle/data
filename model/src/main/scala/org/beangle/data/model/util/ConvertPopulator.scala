@@ -110,7 +110,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
    * 如果params中的id为null，则将该实体的置为null.<br>
    * 否则新生成一个实体，将其id设为params中指定的值。 空字符串按照null处理
    */
-  def populate(entity: Entity[_], entityType: EntityType, params: Map[String, Any]) {
+  def populate(entity: Entity[_], entityType: EntityType, params: collection.Map[String, Any]) {
     for ((attr, v) <- params) {
       var value = v
       if (value.isInstanceOf[String]) {

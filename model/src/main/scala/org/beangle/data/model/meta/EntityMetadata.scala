@@ -34,7 +34,9 @@ trait EntityMetadata {
    * @param name a {@link java.lang.String} object.
    * @return a {@link org.beangle.data.model.metadata.Type} object.
    */
-  def getType(clazz: Class[_]): Option[EntityType]
+  def getType(clazz: Class[_]): Option[EntityType] = getType(clazz.getName)
+
+  def getType(name: String): Option[EntityType]
 
   def newInstance[T <: Entity[_]](entityClass: Class[T]): Option[T] = {
     getType(entityClass) match {
@@ -77,5 +79,5 @@ class DefaultEntityMetadata(entityTypes: Iterable[EntityType]) extends EntityMet
 
   val entities: Map[String, EntityType] = DefaultEntityMetadata.buildClassEntities(entityTypes)
 
-  override def getType(clazz: Class[_]): Option[EntityType] = entities.get(clazz.getName)
+  override def getType(name: String): Option[EntityType] = entities.get(name)
 }

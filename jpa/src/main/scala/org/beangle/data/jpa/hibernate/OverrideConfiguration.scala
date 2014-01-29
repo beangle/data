@@ -33,7 +33,13 @@ import org.hibernate.mapping.Collection
 import org.hibernate.mapping.IdGenerator
 import org.hibernate.mapping.PersistentClass
 
-class OverrideConfiguration(settings: SettingsFactory = new SettingsFactory()) extends Configuration(settings) with Logging {
+class OverrideConfiguration(settings: SettingsFactory) extends Configuration(settings) with Logging {
+
+  // settings=new SettingsFactory() format will not generate default constructor 
+  // cannot dependency injection success.
+  def this() {
+    this(new SettingsFactory())
+  }
 
   var dynaupdateMinColumn = 7;
 
