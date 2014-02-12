@@ -4,7 +4,10 @@ object Vendors {
 
   val oracle = Vendor("Oracle",
     Driver("oracle.jdbc.driver.OracleDriver", "oracle", "thin:@//<host>:<port>/<service_name>",
-      "thin:@<host>:<port>:<SID>"))
+      "thin:@<host>:<port>:<SID>", "thin:@(DESCRIPTION=(ADDRESS_LIST=(LOAD_BALANCE=OFF)(FAILOVER=ON)"
+        + "(ADDRESS=(PROTOCOL=TCP)(HOST=<host1>)(PORT=<port1>))"
+        + "(ADDRESS=(PROTOCOL=TCP)(HOST=<host2>)(PORT=<port2>)))"
+        + "(CONNECT_DATA=SERVICE_NAME=<service_name>)(SERVER=DEDICATED)))"))
 
   val mysql = Vendor("MySQL", Driver("com.mysql.jdbc.Driver", "mysql", "//<host>:<port>/<database_name>"))
 
@@ -24,4 +27,24 @@ object Vendors {
     Driver("net.sourceforge.jtds.jdbc.Driver", "jtds", "sqlserver://<server_name>:<port>/<database_name>"))
 
   val list = List(oracle, mysql, postgresql, h2, db2, derby, hsql, sqlserver)
+
+  def drivers: Map[String, DriverInfo] = {
+    val drivers = new collection.mutable.HashMap[String, DriverInfo]
+    for (v <- Vendors.list; d <- v.drivers)
+      drivers += (d.prefix -> d)
+    drivers.toMap
+  }
+
+  def driverPrefixes: List[String] = for (v <- Vendors.list; d <- v.drivers) yield d.prefix
+}
+
+
+object Vendor {
+  def apply(name: String, drivers: DriverInfo*): VendorInfo = {
+    new VendorInfo(name, drivers)
+  }
+}
+
+class VendorInfo(val name: String, val drivers: Seq[DriverInfo]) {
+
 }
