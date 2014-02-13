@@ -1,7 +1,7 @@
 package org.beangle.data.jdbc.vendor
 
 import java.util.regex.Pattern
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.Strings.replace
 
 object Driver {
   def apply(className: String, prefix: String, formats: String*): DriverInfo = {
@@ -27,7 +27,9 @@ class UrlFormat(val format: String) {
 
   def fill(values: Map[String, String]): String = {
     var result = format
-    for ((k, v) <- values) result = Strings.replace(result, "<" + k + ">", v)
+    for ((k, v) <- values) result = replace(result, "<" + k + ">", v)
+    result = replace(result, "[", "")
+    result = replace(result, "]", "")
     result
   }
 }
