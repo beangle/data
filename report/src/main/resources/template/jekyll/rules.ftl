@@ -1,4 +1,4 @@
 [#ftl]
-[#include "template/head.ftl"/]
+[#include "include/head.ftl"/]
 [@head "数据库对象命名规则"/]
-[#include "template/rules.ftl"/]
+[#include "include/rules.ftl"/]

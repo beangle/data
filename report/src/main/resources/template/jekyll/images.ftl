@@ -1,5 +1,5 @@
 [#ftl]
-[#include "template/head.ftl"/]
+[#include "include/head.ftl"/]
 [@head title="模块关系图" toc=true/]
 
 [#list report.images as img]

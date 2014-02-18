@@ -1,7 +1,7 @@
 [#ftl]
-[#include "template/head.ftl"/]
+[#include "include/head.ftl"/]
 [@head/]
-[#include "template/module.ftl"/]
+[#include "include/module.ftl"/]
 
 #### 目 录
 

@@ -1,7 +1,7 @@
 [#ftl]
-[#include "template/head.ftl"/]
-[#include "template/table.ftl"/]
-[#include "template/module.ftl"/]
+[#include "include/head.ftl"/]
+[#include "include/table.ftl"/]
+[#include "include/module.ftl"/]
 
 <div class="container-narrow">
  <div class="content">
@@ -45,29 +45,21 @@
 
 <p>数据库环境要求:</p>
 
-<ol>
-  <li>数据库采用了oracle10g以上的版本。</li>
-  <li>额外你需要补充的说明...</li>
-</ol>
+[#include "include/env.ftl"/]
 
 <h4>1.2 数据库对象命名规则</h4>
 
-<p>数据库对象命名规则:</p>
+[#include "include/rules.ftl"/]
 
-<ol>
-  <li>数据库中表、视图、索引采用英文及其缩写，尽量避免使用汉语拼音首字母缩写</li>
-  <li>其他您的规则</li>
-</ol>
-  
 <h3>2. 数据库对象列表</h3>
 
 <h4 id="table_list">2.1 表格列表</h4>
 
-[#include "template/tables.ftl"/]
+[#include "include/tables.ftl"/]
 
 <h4 id="sequence_list">2.2 序列一览</h4>
 
-[#include "template/sequences.ftl"/]
+[#include "include/sequences.ftl"/]
 
 <h4 id="image_list">2.3 模块关系图</h4>
 [#list report.images as img]

@@ -1,4 +1,4 @@
 [#ftl]
-[#include "template/head.ftl"/]
+[#include "include/head.ftl"/]
 [@head "数据库维护说明" /]
-[#include "template/mantain.ftl"/]
+[#include "include/mantain.ftl"/]

@@ -1,8 +1,8 @@
 [#ftl]
-[#include "template/head.ftl"/]
+[#include "include/head.ftl"/]
 [@head title=module.title toc=true/]
 
-[#include "template/table.ftl"/]
+[#include "include/table.ftl"/]
 [#list module.images as img]
 
 ### 关系图 ${img_index+1}. ${img.title}

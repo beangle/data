@@ -1,4 +1,4 @@
 [#ftl]
-[#include "template/head.ftl"/]
+[#include "include/head.ftl"/]
 [@head "数据表格一览"/]
-[#include "template/tables.ftl"/]
+[#include "include/tables.ftl"/]
