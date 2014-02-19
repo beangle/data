@@ -1,5 +1,7 @@
 package org.beangle.data.jdbc.script
 import org.beangle.commons.lang.Strings._
+import org.beangle.commons.io.Files
+import java.io.File
 
 class Parser {
   def parse(content: String): List[String] = {
@@ -29,20 +31,20 @@ class Parser {
 
   def endOf(line: String): Seq[String] = List(";")
 
+  def commands:Set[String]=Set.empty
 }
 
 object OracleParser extends Parser {
-  def main(args: Array[String]) {
-    println("create or replace package advads".matches("create(.*?)package(.*?)"))
-  }
+  override def commands = Set("set", "prompt", "exit")
 
   override def endOf(line: String): Seq[String] = {
     val lower = line.toLowerCase()
-    if (lower.startsWith("prompt") || lower.startsWith("set")) List("", ";")
-    else if (lower.matches("create(.*?)package(.*?)")) List("/")
-    else if (lower.matches("create(.*?)type(.*?)")) List("/")
-    else if (lower.matches("create(.*?)function(.*?)")) List("/")
-    else if (lower.matches("create(.*?)procedure(.*?)")) List("/")
+    val cmd = substringBefore(lower, " ")
+    if (commands.contains(cmd)) List("", ";")
+    else if (lower.matches("create(.*?) package (.*?)")) List("/")
+    else if (lower.matches("create(.*?) type (.*?)")) List("/")
+    else if (lower.matches("create(.*?) function (.*?)")) List("/")
+    else if (lower.matches("create(.*?) procedure (.*?)")) List("/")
     else List(";")
   }
 }
