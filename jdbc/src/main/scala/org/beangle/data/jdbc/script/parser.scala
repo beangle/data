@@ -9,8 +9,8 @@ class Parser {
     val buf = new collection.mutable.ListBuffer[String]
     val stateBuf = new collection.mutable.ListBuffer[String]
     var tails: Seq[String] = List.empty
-    for (l <- lines; line = trim(l); if !isEmpty(l) && !isComment(line)) {
-      if (tails.isEmpty) tails = endOf(l)
+    for (l <- lines; line = trim(l); if isNotBlank(l) && !isComment(line)) {
+      if (tails.isEmpty) tails = endOf(line)
       if (!stateBuf.isEmpty) stateBuf += "\n"
       stateBuf += line
       val iter = tails.iterator
@@ -31,10 +31,11 @@ class Parser {
 
   def endOf(line: String): Seq[String] = List(";")
 
-  def commands:Set[String]=Set.empty
+  def commands: Set[String] = Set.empty
 }
 
 object OracleParser extends Parser {
+
   override def commands = Set("set", "prompt", "exit")
 
   override def endOf(line: String): Seq[String] = {
