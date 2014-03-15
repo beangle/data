@@ -1,5 +1,5 @@
 /*
- * Beangle, Agile Java/Scala Development Scaffold and Toolkit
+ * Beangle, Agile Development Scaffold and Toolkit
  *
  * Copyright (c) 2005-2014, Beangle Software.
  *
