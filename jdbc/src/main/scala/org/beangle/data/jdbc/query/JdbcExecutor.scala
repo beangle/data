@@ -18,14 +18,14 @@
  */
 package org.beangle.data.jdbc.query
 
-import java.io.{InputStream, StringReader, StringWriter}
+import java.io.{ InputStream, StringReader, StringWriter }
 import java.lang.reflect.Method
-import java.math.{BigDecimal, BigInteger}
-import java.sql.{Blob, Clob, Connection, Date, PreparedStatement, ResultSet, SQLException, Time, Timestamp}
-import java.sql.Types.{BIGINT, BINARY, BIT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, LONGVARBINARY, LONGVARCHAR, NULL, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARBINARY, VARCHAR}
-import java.util.Calendar
+import java.math.{ BigDecimal, BigInteger }
+import java.sql.{ Blob, Clob, Connection, Date, PreparedStatement, ResultSet, SQLException, Time, Timestamp }
+import java.sql.Types.{ BIGINT, BINARY, BIT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, LONGVARBINARY, LONGVARCHAR, NULL, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARBINARY, VARCHAR }
+import java.{ util => ju }
 
-import org.beangle.commons.lang.{ClassLoaders, Strings}
+import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.logging.Logging
 
 import javax.sql.DataSource
@@ -51,7 +51,7 @@ object JdbcExecutor {
     (classOf[java.sql.Date], DATE),
     (classOf[java.sql.Time], TIME),
     (classOf[java.sql.Timestamp], TIMESTAMP),
-    (classOf[java.util.Date], TIMESTAMP),
+    (classOf[ju.Date], TIMESTAMP),
     (classOf[java.sql.Clob], CLOB),
     (classOf[java.sql.Blob], BLOB))
 
@@ -59,7 +59,7 @@ object JdbcExecutor {
     classOf[CharSequence].isAssignableFrom(clazz) || classOf[StringWriter].isAssignableFrom(clazz)
   }
   def isDateType(clazz: Class[_]): Boolean = {
-    classOf[java.util.Date].isAssignableFrom(clazz) &&
+    classOf[ju.Date].isAssignableFrom(clazz) &&
       !(classOf[java.sql.Date].isAssignableFrom(clazz) ||
         classOf[java.sql.Time].isAssignableFrom(clazz) ||
         classOf[java.sql.Timestamp].isAssignableFrom(clazz))
@@ -71,7 +71,7 @@ object JdbcExecutor {
         if (classOf[Number].isAssignableFrom(clazz))
           NUMERIC
         else if (isStringType(clazz)) VARCHAR
-        else if (isDateType(clazz) || classOf[Calendar].isAssignableFrom(clazz)) {
+        else if (isDateType(clazz) || classOf[ju.Calendar].isAssignableFrom(clazz)) {
           TIMESTAMP
         } else OTHER
       }
@@ -83,7 +83,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
 
   import JdbcExecutor._
   var pmdKnownBroken: Boolean = false
-
+  var showSql = false
   def queryForInt(sql: String): Int = query(sql).head.head.asInstanceOf[Number].intValue
   def queryForLong(sql: String): Long = query(sql).head.head.asInstanceOf[Number].longValue
 
@@ -106,6 +106,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
   }
 
   def query(sql: String, params: Any*): Seq[Seq[_]] = {
+    if (showSql) println("JdbcExecutor:" + sql)
     val conn = getConnection()
     var stmt: PreparedStatement = null
     var rs: ResultSet = null
@@ -123,6 +124,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
   }
 
   def update(sql: String, params: Any*): Int = {
+    if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
     val conn = getConnection()
     var rows = 0
@@ -142,6 +144,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
   def getConnection(): Connection = dataSource.getConnection()
 
   def batch(sql: String, datas: Seq[Seq[_]], types: Seq[Int]): Seq[Int] = {
+    if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
     val conn = getConnection()
     val rows = new collection.mutable.ListBuffer[Int]
@@ -235,35 +238,35 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
             }
 
             case DATE => {
-              if (value.isInstanceOf[java.util.Date]) {
+              if (value.isInstanceOf[ju.Date]) {
                 if (value.isInstanceOf[Date]) stmt.setDate(index, value.asInstanceOf[Date])
-                else stmt.setDate(index, new java.sql.Date(value.asInstanceOf[java.util.Date].getTime()))
-              } else if (value.isInstanceOf[Calendar]) {
-                val cal = value.asInstanceOf[Calendar]
+                else stmt.setDate(index, new java.sql.Date(value.asInstanceOf[ju.Date].getTime()))
+              } else if (value.isInstanceOf[ju.Calendar]) {
+                val cal = value.asInstanceOf[ju.Calendar]
                 stmt.setDate(index, new java.sql.Date(cal.getTime().getTime()), cal);
               } else {
                 stmt.setObject(index, value, DATE);
               }
             }
             case TIME => {
-              if (value.isInstanceOf[java.util.Date]) {
+              if (value.isInstanceOf[ju.Date]) {
                 if (value.isInstanceOf[Time]) stmt.setTime(index, value.asInstanceOf[Time])
-                else stmt.setTime(index, new java.sql.Time(value.asInstanceOf[java.util.Date].getTime()))
-              } else if (value.isInstanceOf[Calendar]) {
-                val cal = value.asInstanceOf[Calendar]
+                else stmt.setTime(index, new java.sql.Time(value.asInstanceOf[ju.Date].getTime()))
+              } else if (value.isInstanceOf[ju.Calendar]) {
+                val cal = value.asInstanceOf[ju.Calendar]
                 stmt.setTime(index, new Time(cal.getTime().getTime()), cal)
               } else {
                 stmt.setObject(index, value, TIME);
               }
             }
             case TIMESTAMP => {
-              if (value.isInstanceOf[java.util.Date]) {
+              if (value.isInstanceOf[ju.Date]) {
                 if (value.isInstanceOf[Timestamp])
                   stmt.setTimestamp(index, value.asInstanceOf[Timestamp])
                 else
-                  stmt.setTimestamp(index, new Timestamp(value.asInstanceOf[java.util.Date].getTime()))
-              } else if (value.isInstanceOf[Calendar]) {
-                val cal = value.asInstanceOf[Calendar]
+                  stmt.setTimestamp(index, new Timestamp(value.asInstanceOf[ju.Date].getTime()))
+              } else if (value.isInstanceOf[ju.Calendar]) {
+                val cal = value.asInstanceOf[ju.Calendar]
                 stmt.setTimestamp(index, new Timestamp(cal.getTime().getTime()), cal)
               } else {
                 stmt.setObject(index, value, TIMESTAMP);
