@@ -57,7 +57,7 @@ trait Type {
    * @param property a {@link java.lang.String} object.
    * @return a {@link org.beangle.data.model.metadata.Type} object.
    */
-  def getPropertyType(property: String): Type
+  def getPropertyType(property: String): Option[Type]
 
   /**
    * <p>

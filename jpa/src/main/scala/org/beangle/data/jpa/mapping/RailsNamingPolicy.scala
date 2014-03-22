@@ -34,7 +34,7 @@ import org.beangle.commons.text.inflector.en.EnNounPluralizer
  *
  * @author chaostone
  */
-class RailsNamingPolicy extends TableNamingPolicy with Logging {
+class RailsNamingPolicy extends NamingPolicy with Logging {
 
   /** 实体表表名长度限制 */
   var entityTableMaxLength = 25
@@ -44,7 +44,7 @@ class RailsNamingPolicy extends TableNamingPolicy with Logging {
 
   private var pluralizer: Pluralizer = new EnNounPluralizer()
 
-  private var patterns: List[TableNamePattern] = _
+  private var patterns: List[TableNamePattern] = List.empty
 
   private val packagePatterns = new collection.mutable.HashMap[String, TableNamePattern]
 
@@ -110,20 +110,18 @@ class RailsNamingPolicy extends TableNamingPolicy with Logging {
     }
   }
 
-  def getSchema(packageName: String): String = {
-    var schemaName: String = null
-    for (pattern <- patterns) {
-      if (packageName.indexOf(pattern.packageName) == 0) schemaName = pattern.schema
-    }
-    schemaName
+  def getSchema(packageName: String): Option[String] = {
+    val schemas =
+      for (pattern <- patterns if (packageName.indexOf(pattern.packageName) == 0))
+        yield pattern.schema
+    if (schemas.isEmpty) None else Some(schemas.last)
   }
 
-  def getPattern(packageName: String): TableNamePattern = {
-    var last: TableNamePattern = null
-    for (pattern <- patterns) {
-      if (packageName.indexOf(pattern.packageName) == 0) last = pattern
-    }
-    last
+  def getPattern(packageName: String): Option[TableNamePattern] = {
+    val patters =
+      for (pattern <- patterns if (packageName.indexOf(pattern.packageName) == 0))
+        yield pattern
+    if (patters.isEmpty) None else Some(patters.last)
   }
 
   def getPrefix(packageName: String): String = {
@@ -181,23 +179,22 @@ class RailsNamingPolicy extends TableNamingPolicy with Logging {
     var tableName = addUnderscores(unqualify(className))
     if (null != pluralizer) tableName = pluralizer.pluralize(tableName)
 
-    val pattern = getPattern(className)
-    if (null != pattern) tableName = pattern.prefix + tableName
-
-    if (tableName.length() > entityTableMaxLength && null != pattern) {
-      for ((k, v) <- pattern.abbreviations) {
-        tableName = Strings.replace(tableName, k, v)
+    getPattern(className) foreach { p =>
+      tableName = p.prefix + tableName
+      if (tableName.length() > entityTableMaxLength) {
+        for ((k, v) <- p.abbreviations)
+          tableName = Strings.replace(tableName, k, v)
       }
     }
-    return tableName
+    tableName
   }
 
   def collectionToTableName(className: String, tableName: String, collectionName: String): String = {
-    val pattern = getPattern(className)
     var collectionTableName = tableName + "_" + addUnderscores(unqualify(collectionName))
-    if ((collectionTableName.length() > relationTableMaxLength) && null != pattern) {
-      for ((k, v) <- pattern.abbreviations) {
-        collectionTableName = Strings.replace(collectionTableName, k, v)
+    getPattern(className) foreach { p =>
+      if ((collectionTableName.length() > relationTableMaxLength)) {
+        for ((k, v) <- p.abbreviations)
+          collectionTableName = Strings.replace(collectionTableName, k, v)
       }
     }
     collectionTableName
@@ -217,7 +214,7 @@ class RailsNamingPolicy extends TableNamingPolicy with Logging {
  *
  * @author chaostone
  */
-class TableNamePattern(var packageName: String, var schema: String, var prefix: String) extends Ordered[TableNamePattern] {
+class TableNamePattern(val packageName: String, var schema: String, var prefix: String) extends Ordered[TableNamePattern] {
 
   var abbreviations: Map[String, String] = _
 

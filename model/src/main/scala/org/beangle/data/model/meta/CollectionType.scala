@@ -25,23 +25,12 @@ import java.lang.reflect.Array
  *
  * @author chaostone
  */
-class CollectionType(val elementType: Type) extends AbstractType {
-
-  var collectionClass: Class[_] = _
-
-  var indexClass: Class[_] = _
-
-  var array = false
+class CollectionType(val collectionClass: Class[_], val elementType: Type) extends AbstractType {
 
   override def name: String = {
     val buffer = new StringBuilder()
-    if (null != collectionClass) {
+    if (null != collectionClass)
       buffer.append(collectionClass.getName())
-    }
-    buffer.append(':')
-    if (null != indexClass) {
-      buffer.append(indexClass.getName())
-    }
     buffer.append(':')
     buffer.append(elementType.name)
     return buffer.toString()
@@ -49,19 +38,12 @@ class CollectionType(val elementType: Type) extends AbstractType {
 
   override def isCollectionType = true
 
-  override def getPropertyType(property: String): Type = elementType
-
-  /**
-   * Is this collection indexed?
-   *
-   * @return a boolean.
-   */
-  def hasIndex: Boolean = (null != indexClass) && (indexClass.equals(classOf[Int]))
+  override def getPropertyType(property: String): Option[Type] = Some(elementType)
 
   def returnedClass = collectionClass
 
   override def newInstance(): AnyRef = {
-    if (array) {
+    if (collectionClass.isArray()) {
       return Array.newInstance(elementType.returnedClass, 0);
     } else {
       return super.newInstance();

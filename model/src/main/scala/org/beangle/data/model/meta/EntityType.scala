@@ -33,41 +33,17 @@ object EntityType {
  *
  * @author chaostone
  */
-class EntityType(val entityName: String, val entityClass: Class[_], val idName: String, val idType: Type) extends AbstractType {
-
-  Assert.notNull(idName)
-  Assert.notNull(entityName)
-  Assert.notNull(entityClass)
-
-  var propertyTypes: Map[String, Type] = if (null != idType) Map((idName -> idType)) else Map()
-
-  def this(entityName: String, entityClass: Class[_], idName: String) {
-    this(entityName, entityClass, idName, EntityType.extractIdType(entityClass, idName))
-  }
-
-  def this(entityClass: Class[_]) {
-    this(entityClass.getName(), entityClass, "id", EntityType.extractIdType(entityClass, "id"))
-  }
+class EntityType(val entityClass: Class[_], val entityName: String, val idName: String = "id", val propertyTypes: Map[String, Type]) extends AbstractType {
+  assert(null != idName && null != entityName && null != entityClass)
 
   override def isEntityType = true
 
   /**
    * Get the type of a particular (named) property
    */
-  override def getPropertyType(property: String): Type = {
-    val t = propertyTypes.get(property).orNull
-    if (null == t) {
-      val propertyType = PropertyUtils.getPropertyType(entityClass, property)
-      if (null != propertyType) new IdentifierType(propertyType) else null
-    } else t
-  }
+  override def getPropertyType(property: String): Option[Type] = propertyTypes.get(property)
 
   override def name: String = entityName
 
   override def returnedClass = entityClass
-
-  def addProperty(name: String, t: Type): this.type = {
-    propertyTypes += (name -> t)
-    this
-  }
 }

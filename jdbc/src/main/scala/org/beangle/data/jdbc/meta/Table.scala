@@ -177,15 +177,15 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
 
   override def toString = Table.qualify(schema, name)
 
-  def getColumn(columnName: String): Column = {
-    for (col <- columns)
-      if (col.name == columnName) return col;
-    return null;
+  def column(columnName: String): Column = {
+    columns.find(f => f.name.equals(columnName)).get
+  }
+  def getColumn(columnName: String): Option[Column] = {
+    columns.find(f => f.name.equals(columnName))
   }
 
-  def getForeignKey(keyName: String): ForeignKey = {
-    if (null == keyName) null
-    else foreignKeys.find(f => f.name.equals(keyName)).orNull
+  def getForeignKey(keyName: String): Option[ForeignKey] = {
+    foreignKeys.find(f => f.name.equals(keyName))
   }
 
   def addForeignKey(key: ForeignKey) {
@@ -212,9 +212,8 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
 
   def getIndexes = indexes
 
-  def getIndex(indexName: String) = {
-    if (null == indexName) null
-    else indexes.find(f => f.name.equals(indexName)).orNull
+  def getIndex(indexName: String): Option[Index] = {
+    indexes.find(f => f.name.equals(indexName))
   }
 }
 
@@ -223,7 +222,7 @@ object Table {
     val qualifiedName: StringBuilder = new StringBuilder()
     if (null != schema)
       qualifiedName.append(schema).append('.')
-
-    return qualifiedName.append(name).toString()
+    qualifiedName.append(name).toString()
   }
+  def apply(schema: String, name: String): String = qualify(schema, name)
 }

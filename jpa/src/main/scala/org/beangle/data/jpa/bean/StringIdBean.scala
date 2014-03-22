@@ -18,9 +18,10 @@
  */
 package org.beangle.data.jpa.bean
 
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass
 import org.beangle.data.model.Entity
+
+import javax.persistence.Id
+import javax.persistence.MappedSuperclass
 
 @MappedSuperclass
 @SerialVersionUID(-6898498932182877104L)

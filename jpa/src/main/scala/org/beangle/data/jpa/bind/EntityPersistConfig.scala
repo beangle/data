@@ -18,10 +18,8 @@
  */
 package org.beangle.data.jpa.bind
 
-import javax.persistence.Entity
+import scala.collection.mutable
 
-import org.beangle.commons.lang.Assert
-import org.beangle.commons.lang.Strings
 import org.beangle.data.jpa.util.Jpas
 
 object EntityPersistConfig {
@@ -60,14 +58,14 @@ object EntityPersistConfig {
   final class CacheConfig(var region: String = null, var usage: String = null) {
   }
 }
-import EntityPersistConfig._
+
 /**
  * @author chaostone
  * @since 3.1
  */
 final class EntityPersistConfig {
 
-  import scala.collection.mutable
+  import EntityPersistConfig._
   /**
    * Classname -> EntityDefinition
    */

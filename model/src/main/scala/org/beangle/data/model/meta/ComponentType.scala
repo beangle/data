@@ -27,9 +27,7 @@ import org.beangle.commons.bean.PropertyUtils
  *
  * @author chaostone
  */
-class ComponentType(val componentClass: Class[_]) extends AbstractType {
-
-  var propertyTypes: Map[String, Type] = Map()
+class ComponentType(val componentClass: Class[_], val propertyTypes: Map[String, Type]) extends AbstractType {
 
   override def isComponentType = true
 
@@ -40,17 +38,5 @@ class ComponentType(val componentClass: Class[_]) extends AbstractType {
   /**
    * Get the type of a particular (named) property
    */
-  override def getPropertyType(propertyName: String): Type = {
-    val t = propertyTypes.get(propertyName).orNull
-    if (null == t) {
-      val propertyType = PropertyUtils.getPropertyType(componentClass, propertyName)
-      if (null != propertyType) return new IdentifierType(propertyType)
-      else t
-    } else t
-  }
-
-  def addProperty(name: String, t: Type): this.type = {
-    propertyTypes += (name -> t)
-    this
-  }
+  override def getPropertyType(propertyName: String): Option[Type] = propertyTypes.get(propertyName)
 }

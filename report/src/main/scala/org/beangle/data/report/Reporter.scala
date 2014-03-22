@@ -18,36 +18,44 @@
  */
 package org.beangle.data.report
 
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileWriter
-
-import org.beangle.data.jdbc.meta.Database
-import org.beangle.data.jdbc.meta.Table
-import org.beangle.data.jdbc.util.PoolingDataSourceFactory
-import org.beangle.commons.lang.Strings.isEmpty
-import org.beangle.commons.lang.Strings.substringAfterLast
-import org.beangle.commons.lang.Strings.substringBefore
-import org.beangle.commons.lang.Strings.substringBeforeLast
+import java.io.{ File, FileInputStream }
+import java.util.Locale
+import org.beangle.commons.io.Files.{ /, forName, stringWriter }
+import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.Strings.{ isEmpty, substringAfterLast, substringBefore, substringBeforeLast }
 import org.beangle.commons.logging.Logging
-import org.beangle.data.report.model.Module
-import org.beangle.data.report.model.Report
-import org.beangle.template.freemarker.ScalaObjectWrapper
-import org.umlgraph.doclet.UmlGraph
-
-import freemarker.cache.ClassTemplateLoader
+import org.beangle.data.jdbc.meta.{ Database, Table }
+import org.beangle.data.jdbc.util.PoolingDataSourceFactory
+import org.beangle.data.report.internal.ScalaObjectWrapper
+import org.beangle.data.report.model.{ Module, Report }
+import freemarker.cache.{ ClassTemplateLoader, FileTemplateLoader, MultiTemplateLoader }
 import freemarker.template.Configuration
 import javax.sql.DataSource
+import org.umlgraph.doclet.UmlGraph
 
 object Reporter extends Logging {
 
+  private def checkJdkTools(): Boolean = {
+    try {
+      ClassLoaders.loadClass("com.sun.tools.javadoc.Main")
+    } catch {
+      case e: Exception => false
+    }
+    true
+  }
   def main(args: Array[String]) {
+    if (!checkJdkTools()) {
+      logger.info("Report need tools.jar which contains com.sun.tools.javadoc utility.")
+      return ;
+    }
     if (args.length < 1) {
-      println("Usage: Reporter /path/to/your/report.xml -debug");
+      logger.info("Usage: Reporter /path/to/your/report.xml -debug");
       return
     }
-    val reportxml = args(0);
-    val dir = substringBeforeLast(reportxml, "/") + "/" + substringBefore(substringAfterLast(reportxml, "/"), ".xml") + "/";
+
+    val reportxml = new File(args(0))
+    var dir = reportxml.getAbsolutePath()
+    dir = substringBeforeLast(dir, /) + / + substringBefore(substringAfterLast(dir, /), ".xml") + /
     logger.info("All wiki and images will be generated in {}", dir)
     val xml = scala.xml.XML.load(new FileInputStream(reportxml))
     val report = Report(xml)
@@ -64,7 +72,7 @@ object Reporter extends Logging {
 
     val debug = if (args.length > 1) args(1) == "-debug" else false
     if (debug) {
-      println("Debug Mode:Type gen to generate report again,or q or exit to quit!")
+      logger.info("Debug Mode:Type gen to generate report again,or q or exit to quit!")
       var command = "gen"
       do {
         if (command == "gen") gen(reporter)
@@ -80,13 +88,14 @@ object Reporter extends Logging {
     try {
       reporter.genWiki()
       reporter.genImages()
+      logger.info("report generate complete.")
     } catch {
       case e: Exception => e.printStackTrace
     }
   }
 }
 
-class Reporter(val report: Report, val dir: String) {
+class Reporter(val report: Report, val dir: String) extends Logging {
   val dbconf = report.dbconf
   val ds: DataSource = new PoolingDataSourceFactory(dbconf.driver,
     dbconf.url, dbconf.user, dbconf.password, dbconf.props).getObject
@@ -96,7 +105,13 @@ class Reporter(val report: Report, val dir: String) {
   database.loadSequences()
 
   val cfg = new Configuration()
-  cfg.setTemplateLoader(new ClassTemplateLoader(getClass, "/"))
+  cfg.setEncoding(Locale.getDefault, "UTF-8")
+  val overrideDir = new File(dir + ".." + / + "template")
+  if (overrideDir.exists) {
+    logger.info("Load override template from {}", overrideDir.getAbsolutePath())
+    cfg.setTemplateLoader(new MultiTemplateLoader(Array(new FileTemplateLoader(overrideDir), new ClassTemplateLoader(getClass, "/template"))))
+  } else
+    cfg.setTemplateLoader(new ClassTemplateLoader(getClass, "/template"))
   cfg.setObjectWrapper(new ScalaObjectWrapper())
 
   def genWiki() {
@@ -119,7 +134,7 @@ class Reporter(val report: Report, val dir: String) {
 
   def renderModule(module: Module, template: String, data: collection.mutable.HashMap[String, Any]) {
     data.put("module", module)
-    println("rendering module " + module + "...")
+    logger.info("rendering module " + module + "...")
 
     render(data, template, module.path)
     for (module <- module.children) renderModule(module, template, data)
@@ -131,41 +146,41 @@ class Reporter(val report: Report, val dir: String) {
     data += ("report" -> report)
     for (image <- report.images) {
       data.put("image", image)
-      genImage(data, "class", image.name)
+      genImage(data, image.name)
     }
   }
 
   private def render(data: Any, template: String, result: String = "") {
     val wikiResult = if (isEmpty(result)) template else result;
-    val file = new File(dir + wikiResult + ".md")
+    val file = new File(dir + wikiResult + report.extension)
     file.getParentFile().mkdirs()
-    val fw = new FileWriter(file)
+    val fw = stringWriter(file)
     val freemarkerTemplate = cfg.getTemplate(report.template + "/" + template + ".ftl")
     freemarkerTemplate.process(data, fw)
     fw.close()
   }
 
-  private def genImage(data: Any, template: String, result: String = "") {
-    val javaResult = if (isEmpty(result)) template else result;
-    val javafile = new File(dir + "_images/" + javaResult + ".java")
+  private def genImage(data: Any, result: String) {
+    val javafile = new File(dir + "images" + / + result + ".java")
     javafile.getParentFile().mkdirs()
-    val fw = new FileWriter(javafile)
-    val freemarkerTemplate = cfg.getTemplate("template/" + template + ".ftl")
+    val fw = stringWriter(javafile)
+    val freemarkerTemplate = cfg.getTemplate("class.ftl")
     freemarkerTemplate.process(data, fw)
     fw.close()
     java2png(javafile)
     javafile.deleteOnExit()
   }
 
-  private def java2png(file: File) {
-    val javafile = file.getAbsolutePath()
-    val filename = substringBefore(substringAfterLast(javafile, "/"), ".java");
-    val dotfile = substringBeforeLast(javafile, "/") + "/" + filename + ".dot"
-    val pngfile = substringBeforeLast(javafile, "/") + "/" + filename + ".png"
-    UmlGraph.main(Array("-package", "-outputencoding", "utf-8", "-output", dotfile, javafile));
-    if (new File(dotfile).exists()) {
-      Runtime.getRuntime().exec("dot -Tpng -o" + pngfile + " " + dotfile);
-      new File(dotfile).deleteOnExit()
+  private def java2png(javafile: File) {
+    val javaPath = javafile.getAbsolutePath()
+    val filename = substringBefore(substringAfterLast(javaPath, /), ".java")
+    val dotPath = substringBeforeLast(javaPath, /) + / + filename + ".dot"
+    val pngPath = substringBeforeLast(javaPath, /) + / + filename + ".png"
+    val dotfile = forName(dotPath)
+    UmlGraph.main(Array("-package", "-outputencoding", "utf-8", "-output", dotPath, javaPath));
+    if (dotfile.exists) {
+      Runtime.getRuntime().exec("dot -Tpng -o" + pngPath + " " + dotPath);
+      dotfile.deleteOnExit()
     }
   }
 }

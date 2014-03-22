@@ -17,8 +17,12 @@
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.beangle.data.jpa.util
-import org.beangle.commons.lang.Strings
+
 import org.beangle.commons.lang.Assert
+import org.beangle.commons.lang.Strings
+
+import javax.persistence.Entity
+
 object Jpas {
   def findEntityName(clazz: Class[_]): String = {
     val annotation = clazz.getAnnotation(classOf[javax.persistence.Entity])
