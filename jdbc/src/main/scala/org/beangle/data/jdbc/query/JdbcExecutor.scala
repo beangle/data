@@ -24,11 +24,10 @@ import java.math.{ BigDecimal, BigInteger }
 import java.sql.{ Blob, Clob, Connection, Date, PreparedStatement, ResultSet, SQLException, Time, Timestamp }
 import java.sql.Types.{ BIGINT, BINARY, BIT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, LONGVARBINARY, LONGVARCHAR, NULL, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARBINARY, VARCHAR }
 import java.{ util => ju }
-
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.logging.Logging
-
 import javax.sql.DataSource
+import java.io.Closeable
 
 object JdbcExecutor {
   var oracleTimestampMethod: Method = _
@@ -87,23 +86,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
   def queryForInt(sql: String): Int = query(sql).head.head.asInstanceOf[Number].intValue
   def queryForLong(sql: String): Long = query(sql).head.head.asInstanceOf[Number].longValue
 
-  private def convertToSeq(rs: ResultSet): Seq[Seq[_]] = {
-    val rows = new collection.mutable.ListBuffer[Seq[_]]
-    val meta = rs.getMetaData()
-    val cols = meta.getColumnCount()
-    while (rs.next()) {
-      rows += (for (i <- 0 until cols) yield {
-        var v = rs.getObject(i + 1)
-        if (null != v && meta.getColumnType(i + 1) == TIMESTAMP && !v.isInstanceOf[Timestamp]) {
-          if (null != JdbcExecutor.oracleTimestampMethod)
-            v = JdbcExecutor.oracleTimestampMethod.invoke(v)
-          else throw new Exception("Cannot translate " + v.getClass + "timestamp to java.sql.Timestamp")
-        }
-        v
-      })
-    }
-    rows
-  }
+  def getConnection(): Connection = dataSource.getConnection()
 
   def query(sql: String, params: Any*): Seq[Seq[_]] = {
     if (showSql) println("JdbcExecutor:" + sql)
@@ -113,27 +96,35 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
     try {
       stmt = conn.prepareStatement(sql)
       setParams(stmt, params, null)
-      convertToSeq(stmt.executeQuery())
+      rs = stmt.executeQuery()
+      convertToSeq(rs)
     } catch {
       case e: SQLException => rethrow(e, sql, params); List.empty
     } finally {
+      rs.close()
       stmt.close()
       conn.close()
     }
-
   }
 
   def update(sql: String, params: Any*): Int = {
     if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
     val conn = getConnection()
+    if (conn.getAutoCommit()) conn.setAutoCommit(false)
     var rows = 0
     try {
       stmt = conn.prepareStatement(sql)
       setParams(stmt, params, null)
       rows = stmt.executeUpdate()
+      stmt.close()
+      stmt = null
+      conn.commit()
     } catch {
-      case e: SQLException => rethrow(e, sql, params)
+      case e: SQLException => {
+        conn.rollback()
+        rethrow(e, sql, params)
+      }
     } finally {
       if (null != stmt) stmt.close()
       conn.close()
@@ -141,12 +132,11 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
     rows
   }
 
-  def getConnection(): Connection = dataSource.getConnection()
-
   def batch(sql: String, datas: Seq[Seq[_]], types: Seq[Int]): Seq[Int] = {
     if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
     val conn = getConnection()
+    if (conn.getAutoCommit()) conn.setAutoCommit(false)
     val rows = new collection.mutable.ListBuffer[Int]
     var curParam: Seq[_] = null
     try {
@@ -157,8 +147,12 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
         stmt.addBatch()
       }
       rows ++= stmt.executeBatch()
+      conn.commit()
     } catch {
-      case e: SQLException => rethrow(e, sql, curParam)
+      case e: SQLException => {
+        conn.rollback()
+        rethrow(e, sql, curParam)
+      }
     } finally {
       stmt.close()
       conn.close()
@@ -301,5 +295,23 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
     val e = new SQLException(msg.toString(), cause.getSQLState(), cause.getErrorCode())
     e.setNextException(cause)
     throw e
+  }
+  private def convertToSeq(rs: ResultSet): Seq[Seq[_]] = {
+    val rows = new collection.mutable.ListBuffer[Seq[_]]
+    val meta = rs.getMetaData()
+    val cols = meta.getColumnCount()
+    while (rs.next()) {
+      rows += (for (i <- 0 until cols) yield {
+        var v = rs.getObject(i + 1)
+        if (null != v && meta.getColumnType(i + 1) == TIMESTAMP && !v.isInstanceOf[Timestamp]) {
+          if (null != JdbcExecutor.oracleTimestampMethod)
+            v = JdbcExecutor.oracleTimestampMethod.invoke(v)
+          else throw new Exception("Cannot translate " + v.getClass + "timestamp to java.sql.Timestamp")
+        }
+        v
+      })
+    }
+    rs.close()
+    rows
   }
 }
