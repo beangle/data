@@ -48,13 +48,8 @@ import java.util.Date
 trait Updated {
 
   /**
-   * Created at.
-   */
-  def createdAt: Date;
-
-  /**
    * Updated At
    */
-  def updatedAt: Date;
+  def updatedAt: Date
 
 }

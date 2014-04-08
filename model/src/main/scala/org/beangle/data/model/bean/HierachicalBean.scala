@@ -16,16 +16,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.bean
+package org.beangle.data.model.bean
 
-import javax.persistence.CascadeType
-import javax.persistence.FetchType
-import javax.persistence.ManyToOne
-import javax.persistence.MappedSuperclass
-import javax.persistence.OneToMany
-import javax.persistence.OrderBy
-import javax.validation.constraints.NotNull
-import javax.validation.constraints.Size
 import scala.collection.mutable
 import org.beangle.data.model.Hierarchical
 import org.beangle.data.model.Entity
@@ -34,19 +26,13 @@ import org.beangle.data.model.Entity
  *
  * @author chaostone
  */
-@MappedSuperclass
 trait HierarchicalBean[T <: Entity[_]] extends Hierarchical[T] {
 
   /** index no */
-  @Size(max = 30)
-  @NotNull
-  var indexno: String
+  var indexno: String = _ 
 
   /** 父级菜单 */
-  @ManyToOne(fetch = FetchType.LAZY)
-  var parent: Option[T]
+  var parent: T = _ 
 
-  @OneToMany(mappedBy = "parent", cascade = Array(CascadeType.ALL))
-  @OrderBy("indexno")
   var children: mutable.Seq[T] = new mutable.ListBuffer[T]
 }

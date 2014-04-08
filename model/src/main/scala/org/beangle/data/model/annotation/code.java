@@ -18,12 +18,19 @@
  */
 package org.beangle.data.model.annotation;
 
-import scala.annotation.StaticAnnotation
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
- *  TemporalEntity
- *
+ * Code Entity
+ * 
  * @author chaostone
  */
-class TempEntity extends StaticAnnotation {
-
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.TYPE })
+public @interface code {
+	// code category
+	String value();
 }

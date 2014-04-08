@@ -16,19 +16,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.model
+package org.beangle.data.model.annotation;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
- * <p>
- * Hierarchical interface.
- * </p>
- *
+ * Logger Entity
+ * 
  * @author chaostone
  */
-trait Hierarchical[T <: Entity[_]] {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.TYPE })
+public @interface log {
 
-  def indexno: String
-
-  def parent: T
-
-  def children: collection.Seq[T]
 }

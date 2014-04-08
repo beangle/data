@@ -16,14 +16,25 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.model.annotation;
+package org.beangle.data.model.bean
 
-import scala.annotation.StaticAnnotation
+import java.sql.Date
+import org.beangle.data.model.TemporalOn
 /**
- * Logger Entity
+ * Jounal Entity
  *
  * @author chaostone
+ * @since 3.1.0
  */
-class LogEntity extends StaticAnnotation {
+trait TemporalOnBean extends TemporalOn {
+  /**
+   * 起始日期
+   */
+  var beginOn: Date = _
+
+  /**
+   * 结束日期
+   */
+  var endOn: Date = _
 
 }

@@ -16,14 +16,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.model.annotation;
+package org.beangle.data.model.bean
 
-import scala.annotation.StaticAnnotation
+import org.beangle.data.model.Enabled
 /**
- * Configuration Entity
+ * 能够启用和禁用的实体
  *
  * @author chaostone
  */
-class ConfigEntity extends StaticAnnotation {
+trait EnabledBean extends Enabled {
 
+  /**
+   * 查询是否启用
+   *
+   * @return 是否启用
+   */
+  var enabled: Boolean = _ 
 }

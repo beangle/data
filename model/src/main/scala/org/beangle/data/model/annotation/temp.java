@@ -16,17 +16,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.bean
+package org.beangle.data.model.annotation;
 
-import org.beangle.data.model.Entity
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import javax.persistence.Id
-import javax.persistence.MappedSuperclass
+/**
+ *  TemporalEntity
+ *
+ * @author chaostone
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.TYPE })
+public @interface temp {
 
-@MappedSuperclass
-@SerialVersionUID(-6898498932182877104L)
-class StringIdBean extends Entity[String] {
-
-  @Id
-  var id: String = _
 }

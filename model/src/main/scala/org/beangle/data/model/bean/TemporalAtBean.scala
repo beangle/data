@@ -16,10 +16,9 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.bean
+package org.beangle.data.model.bean
 
 import java.util.Date
-import javax.validation.constraints.NotNull
 import org.beangle.data.model.TemporalAt
 /**
  * 有时效性的实体
@@ -34,11 +33,10 @@ trait TemporalAtBean extends TemporalAt {
   /**
    * 获得生效时间
    */
-  @NotNull
-  var effectiveAt: Date
+  var effectiveAt: Date = _ 
 
   /**
    * 获得失效时间
    */
-  var invalidAt: Option[Date]
+  var invalidAt: Date = _ 
 }

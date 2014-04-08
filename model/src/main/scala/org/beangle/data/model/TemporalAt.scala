@@ -38,5 +38,5 @@ trait TemporalAt {
   /**
    * 结束日期
    */
-  def endAt: Option[Date]
+  def endAt: Date
 }

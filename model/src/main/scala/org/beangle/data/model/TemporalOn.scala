@@ -38,5 +38,5 @@ trait TemporalOn {
   /**
    * 结束日期
    */
-  def endOn: Option[Date]
+  def endOn: Date
 }

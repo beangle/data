@@ -16,28 +16,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.bean
+package org.beangle.data.model.bean
 
-import java.util.Date
-import org.beangle.data.model.Updated
-import javax.validation.constraints.NotNull
+import org.beangle.data.model.Entity
 
-/**
- * Contain create and update time interface.
- *
- * @author chaostone
- */
-trait UpdatedBean extends Updated {
+@SerialVersionUID(-6898498932182877104L)
+class StringIdBean extends Entity[String] {
 
-  /**
-   * Created at.
-   */
-  @NotNull
-  var createdAt: Date;
-
-  /**
-   * Updated At
-   */
-  @NotNull
-  var updatedAt: Date;
+  var id: String = _
 }

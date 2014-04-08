@@ -16,31 +16,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.bean
+package org.beangle.data.model.bean
 
-import java.sql.Date
-import javax.validation.constraints.NotNull
-import org.beangle.data.model.TemporalOn
+import java.util.Date
+import org.beangle.data.model.Updated
+
 /**
- * Jounal Entity
+ * Contain create and update time interface.
  *
  * @author chaostone
- * @since 3.1.0
  */
-trait TemporalOnBean extends TemporalOn {
-  /**
-   * 起始日期
-   */
-  @NotNull
-  var beginOn: Date;
+trait UpdatedBean extends Updated {
 
   /**
-   * 结束日期
+   * Updated At
    */
-  var endOn: Option[Date];
-
-  /**
-   * 备注
-   */
-  def remark: Option[String];
+  var updatedAt: Date = _
 }
