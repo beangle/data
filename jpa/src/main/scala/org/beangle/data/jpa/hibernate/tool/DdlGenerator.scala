@@ -32,7 +32,7 @@ import org.beangle.commons.lang.ClassLoaders
 /**
  * @author chaostone
  */
-class DdlGenerator {
+object DdlGenerator {
 
   def gen(dialect: String, fileName: String) {
     val configuration = new OverrideConfiguration()
@@ -49,3 +49,5 @@ class DdlGenerator {
     export.execute(false, false, false, true)
   }
 }
+
+class DdlGenerator

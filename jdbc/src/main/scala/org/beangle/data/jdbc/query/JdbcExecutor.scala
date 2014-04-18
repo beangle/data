@@ -28,6 +28,9 @@ import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.logging.Logging
 import javax.sql.DataSource
 import java.io.Closeable
+import org.beangle.commons.io.IOs
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 
 object JdbcExecutor {
   var oracleTimestampMethod: Method = _
@@ -101,8 +104,8 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
     } catch {
       case e: SQLException => rethrow(e, sql, params); List.empty
     } finally {
-      rs.close()
-      stmt.close()
+      if (null != rs) rs.close()
+      if (null != stmt) stmt.close()
       conn.close()
     }
   }
@@ -266,9 +269,17 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
                 stmt.setObject(index, value, TIMESTAMP);
               }
             }
-            case BINARY | VARBINARY | LONGVARBINARY =>
-              stmt.setBinaryStream(index, value.asInstanceOf[InputStream])
-
+            case BINARY | VARBINARY | LONGVARBINARY => {
+              if (value.isInstanceOf[Array[Byte]]) {
+                val bytes = value.asInstanceOf[Array[Byte]]
+                stmt.setBinaryStream(index, new ByteArrayInputStream(bytes), bytes.length)
+              } else {
+                val in = value.asInstanceOf[InputStream]
+                val out = new ByteArrayOutputStream()
+                IOs.copy(in, out)
+                stmt.setBinaryStream(index, in, out.size)
+              }
+            }
             case CLOB => {
               if (isStringType(value.getClass)) stmt.setString(index, value.toString())
               else stmt.setAsciiStream(index, value.asInstanceOf[Clob].getAsciiStream)

@@ -64,8 +64,9 @@ class TableSeqGenerator extends SequenceStyleGenerator with Logging {
           logger.warn("{}'s length >=30, wouldn't be supported in oracle!", seqName);
         val entityName = params.getProperty(IdentifierGenerator.ENTITY_NAME)
         if (null != entityName && null != namingPolicy) {
-          val schema = namingPolicy.getSchema(entityName)
-          if (null != schema) seqName = schema + "." + seqName
+          namingPolicy.getSchema(entityName) foreach { schema =>
+            seqName = schema + "." + seqName
+          }
         }
         params.setProperty(SEQUENCE_PARAM, seqName)
       }
