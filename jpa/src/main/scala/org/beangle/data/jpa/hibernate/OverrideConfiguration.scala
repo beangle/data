@@ -64,11 +64,9 @@ class OverrideConfiguration(settings: SettingsFactory) extends Configuration(set
     }
 
     for (collection <- collections.values()) {
-      val table = collection.getCollectionTable();
+      val table = collection.getCollectionTable()
       if (null != table) {
-        namingPolicy.getSchema(collection.getRole()) foreach { schema =>
-          table.setSchema(schema)
-        }
+        namingPolicy.getSchema(collection.getRole()) foreach (schema => table.setSchema(schema))
       }
     }
   }

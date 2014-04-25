@@ -88,7 +88,10 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
    *
    * @param propertyName
    */
-  override def propertyToColumnName(propertyName: String): String = addUnderscores(unqualify(propertyName))
+  override def propertyToColumnName(propertyName: String): String = {
+    if (isManyToOne) addUnderscores(unqualify(propertyName)) + "_id"
+    else addUnderscores(unqualify(propertyName))
+  }
 
   /** Return the argument */
   override def joinKeyColumnName(joinedColumn: String, joinedTable: String): String = columnName(joinedColumn)
@@ -155,11 +158,12 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
    */
   private def isManyToOne: Boolean = {
     val trace = Thread.currentThread().getStackTrace()
+    var matched = false
     if (trace.length >= 9) {
-      for (i <- 6 to 8) {
-        if (trace(i).getClassName().equals("org.hibernate.cfg.ToOneFkSecondPass")) return true;
+      matched = (2 to 8) exists { i =>
+        ("bindManyToOne" == trace(i).getMethodName() || trace(i).getClassName().equals("org.hibernate.cfg.ToOneFkSecondPass"))
       }
     }
-    return false;
+    matched
   }
 }

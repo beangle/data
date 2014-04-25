@@ -38,14 +38,15 @@ object DdlGenerator {
     val configuration = new OverrideConfiguration()
     configuration.getProperties().put(AvailableSettings.DIALECT, dialect)
     val tableNamingPolicy = new RailsNamingPolicy
-    for (resource <- ClassLoaders.getResources("META-INF/beangle/table.properties", classOf[DdlGenerator]))
+    for (resource <- ClassLoaders.getResources("META-INF/beangle/table.xml", classOf[DdlGenerator]))
       tableNamingPolicy.addConfig(resource)
-    configuration.setNamingStrategy(new RailsNamingStrategy(new RailsNamingPolicy))
+    configuration.setNamingStrategy(new RailsNamingStrategy(tableNamingPolicy))
 
     for (resource <- ClassLoaders.getResources("META-INF/hibernate.cfg.xml", classOf[DdlGenerator]))
       configuration.configure(resource)
     val export = new SchemaExport(configuration)
     export.setOutputFile(fileName)
+    export.setDelimiter(";")
     export.execute(false, false, false, true)
   }
 }
