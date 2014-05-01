@@ -33,13 +33,13 @@ import org.beangle.data.jdbc.meta.Table
 
 class DataConverter(val source: DataWrapper, val target: DataWrapper, val threads: Int = 5) extends Converter with Logging {
 
-  val tables = new ListBuffer[Pair[Table, Table]]
+  val tables = new ListBuffer[Tuple2[Table, Table]]
 
-  protected def addTable(pair: Pair[Table, Table]) {
+  protected def addTable(pair: Tuple2[Table, Table]) {
     tables += pair
   }
 
-  def addAll(pairs: Seq[Pair[Table, Table]]) {
+  def addAll(pairs: Seq[Tuple2[Table, Table]]) {
     tables ++= pairs
   }
 
@@ -49,14 +49,14 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
   def start() {
     val watch = new Stopwatch(true)
     val tableCount = tables.length
-    val buffer = new ArrayBuffer[Pair[Table, Table]] with SynchronizedBuffer[Pair[Table, Table]]
+    val buffer = new ArrayBuffer[Tuple2[Table, Table]] with SynchronizedBuffer[Tuple2[Table, Table]]
     buffer ++= tables.sortWith(_._1.name > _._1.name)
     info(s"Start $tableCount tables data replication in $threads threads...")
     ThreadTasks.start(new ConvertTask(source, target, buffer), threads)
     info(s"End $tableCount tables data replication,using $watch")
   }
 
-  class ConvertTask(val source: DataWrapper, val target: DataWrapper, val buffer: Buffer[Pair[Table, Table]]) extends Runnable {
+  class ConvertTask(val source: DataWrapper, val target: DataWrapper, val buffer: Buffer[Tuple2[Table, Table]]) extends Runnable {
 
     def run() {
       while (!buffer.isEmpty) {
@@ -81,7 +81,7 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
       false
     }
 
-    def convert(pair: Pair[Table, Table]) {
+    def convert(pair: Tuple2[Table, Table]) {
       val srcTable = pair._1
       val targetTable = pair._2
       try {
