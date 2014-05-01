@@ -59,7 +59,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
           var parentName = Strings.substringBeforeLast(key, ".")
           while (Strings.isNotEmpty(parentName) && null == module.parent) {
             if (modules.contains(parentName) && module.packageName != parentName) {
-              logger.debug("set {}'s parent is {}", module.packageName, parentName)
+              debug(s"set ${module.packageName}'s parent is $parentName")
               module.parent = modules(parentName)
             }
             val len = parentName.length
@@ -71,7 +71,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   }
   def addConfig(url: URL): Unit = {
     try {
-      logger.debug("loading {}", url)
+      debug(s"loading $url")
       val is = url.openStream()
       if (null != is) {
         (scala.xml.XML.load(is) \ "module") foreach { ele =>
@@ -81,7 +81,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       }
       autoWire()
     } catch {
-      case e: IOException => logger.error("property load error", e)
+      case e: IOException => error("property load error", e)
     }
   }
 
@@ -175,7 +175,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     if (null != resources) {
       for (url <- resources.paths)
         addConfig(url)
-      logger.info("Table name pattern: -> \n{}", this)
+      info(s"Table name pattern: -> \n$this")
     }
   }
 

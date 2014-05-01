@@ -45,18 +45,18 @@ object Reporter extends Logging {
   }
   def main(args: Array[String]) {
     if (!checkJdkTools()) {
-      logger.info("Report need tools.jar which contains com.sun.tools.javadoc utility.")
+      info("Report need tools.jar which contains com.sun.tools.javadoc utility.")
       return ;
     }
     if (args.length < 1) {
-      logger.info("Usage: Reporter /path/to/your/report.xml -debug");
+      info("Usage: Reporter /path/to/your/report.xml -debug");
       return
     }
 
     val reportxml = new File(args(0))
     var dir = reportxml.getAbsolutePath()
     dir = substringBeforeLast(dir, /) + / + substringBefore(substringAfterLast(dir, /), ".xml") + /
-    logger.info("All wiki and images will be generated in {}", dir)
+    info(s"All wiki and images will be generated in $dir")
     val xml = scala.xml.XML.load(new FileInputStream(reportxml))
     val report = Report(xml)
     val reporter = new Reporter(report, dir)
@@ -72,7 +72,7 @@ object Reporter extends Logging {
 
     val debug = if (args.length > 1) args(1) == "-debug" else false
     if (debug) {
-      logger.info("Debug Mode:Type gen to generate report again,or q or exit to quit!")
+      info("Debug Mode:Type gen to generate report again,or q or exit to quit!")
       var command = "gen"
       do {
         if (command == "gen") gen(reporter)
@@ -88,7 +88,7 @@ object Reporter extends Logging {
     try {
       reporter.genWiki()
       reporter.genImages()
-      logger.info("report generate complete.")
+      info("report generate complete.")
     } catch {
       case e: Exception => e.printStackTrace
     }
@@ -108,7 +108,7 @@ class Reporter(val report: Report, val dir: String) extends Logging {
   cfg.setEncoding(Locale.getDefault, "UTF-8")
   val overrideDir = new File(dir + ".." + / + "template")
   if (overrideDir.exists) {
-    logger.info("Load override template from {}", overrideDir.getAbsolutePath())
+    info(s"Load override template from ${overrideDir.getAbsolutePath()}")
     cfg.setTemplateLoader(new MultiTemplateLoader(Array(new FileTemplateLoader(overrideDir), new ClassTemplateLoader(getClass, "/template"))))
   } else
     cfg.setTemplateLoader(new ClassTemplateLoader(getClass, "/template"))
@@ -134,7 +134,7 @@ class Reporter(val report: Report, val dir: String) extends Logging {
 
   def renderModule(module: Module, template: String, data: collection.mutable.HashMap[String, Any]) {
     data.put("module", module)
-    logger.info("rendering module " + module + "...")
+    info(s"rendering module $module...")
 
     render(data, template, module.path)
     for (module <- module.children) renderModule(module, template, data)

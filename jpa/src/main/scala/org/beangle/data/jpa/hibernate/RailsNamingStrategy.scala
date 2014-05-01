@@ -49,9 +49,9 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
    */
   override def classToTableName(className: String): String = {
     val tableName = policy.classToTableName(className);
-    if (tableName.length > NamingPolicy.defaultMaxLength) logger.warn("{}'s length greate than 30!", tableName);
-    logger.debug("Mapping entity[{}] to {}", className, tableName);
-    return tableName;
+    if (tableName.length > NamingPolicy.defaultMaxLength) warn(s"$tableName's length greate than 30!")
+    debug(s"Mapping entity[$className] to $tableName")
+    tableName
   }
 
   /**
@@ -118,8 +118,8 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
       ownerTable = tableName(ownerEntityTable);
     }
     val tblName = policy.collectionToTableName(ownerEntity, ownerTable, propertyName);
-    if (tblName.length() > NamingPolicy.defaultMaxLength) logger.warn("{}'s length greate than 30!", tblName);
-    return tblName;
+    if (tblName.length() > NamingPolicy.defaultMaxLength) warn(s"$tblName's length greate than 30!")
+    tblName
   }
 
   /**
@@ -135,7 +135,7 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
       new StringBuilder(ownerEntityTable).append("_")
         .append(if (associatedEntityTable == null) unqualify(propertyName) else associatedEntityTable).toString()
     } else {
-      tableName;
+      tableName
     }
   }
 

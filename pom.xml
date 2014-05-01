@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>13</version>
+    <version>14-SNAPSHOT</version>
   </parent>
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent</artifactId>
@@ -40,7 +40,7 @@
 
   <properties>
     <javax.validation.version>1.1.0.Final</javax.validation.version>
-    <commons.version>4.0.5</commons.version>
+    <commons.version>4.1.0-SNAPSHOT</commons.version>
   </properties>
 
   <dependencyManagement>

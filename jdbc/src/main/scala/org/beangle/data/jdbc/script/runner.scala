@@ -65,14 +65,14 @@ class Runner(parser: Parser, urls: URL*) extends Logging {
         val statement = iter.next()
         val cmd = lowerCase(substringBefore(statement, " "))
         if (commands.contains(cmd)) {
-          if (cmd == "prompt") logger.info(trim(substringAfter(statement, cmd)))
-          else logger.info(statement)
+          if (cmd == "prompt") info(trim(substringAfter(statement, cmd)))
+          else info(statement)
         } else {
           try {
             stm.execute(statement)
           } catch {
             case e: Exception => {
-              logger.error("Failure when exceute sql " + statement, e)
+              error(s"Failure when exceute sql $statement", e)
               if (!ignoreError) terminated = true;
             }
           }
@@ -81,9 +81,9 @@ class Runner(parser: Parser, urls: URL*) extends Logging {
       stm.close()
       conn.commit()
       conn.close()
-      logger.info("exec {} using {}", script.source, sw)
+      info(s"exec ${script.source} using $sw")
     }
-    logger.info("exec sql using {}", watch)
+    info(s"exec sql using $watch")
   }
 }
 

@@ -51,8 +51,7 @@ private[hibernate] class EntityMetadataBuilder extends Logging {
       for (entry <- classMetadatas.entrySet)
         buildEntityType(factory, entry.getValue.getEntityName)
 
-      logger.info("Find {} entities,{} collections from hibernate in {}", Array(
-        entityTypes.size - entityCount, collectionTypes.size - collectionCount, watch))
+      info(s"Find ${entityTypes.size - entityCount} entities,${collectionTypes.size - collectionCount} collections from hibernate in ${watch}")
       collectionTypes.clear()
     }
     new DefaultEntityMetadata(entityTypes.values)
@@ -68,7 +67,7 @@ private[hibernate] class EntityMetadataBuilder extends Logging {
     if (null == entityType) {
       val cm = factory.getClassMetadata(entityName)
       if (null == cm) {
-        logger.error("Cannot find classMetadata for {}", entityName)
+        error(s"Cannot find classMetadata for $entityName")
         return null
       }
       val propertyTypes = new mutable.HashMap[String, Type]

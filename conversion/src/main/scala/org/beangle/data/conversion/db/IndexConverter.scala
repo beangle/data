@@ -42,11 +42,11 @@ class IndexConverter(val source: DatabaseWrapper, val target: DatabaseWrapper) e
           }
         } catch {
           case e: Exception =>
-            logger.error("Cannot create index " + index.name, e)
+            error(s"Cannot create index ${index.name}", e)
         }
       }
     }
-    logger.info("End {} indexes conversion,using {}", indexCount, watch)
+    info(s"End $indexCount indexes conversion,using $watch")
   }
 
 }

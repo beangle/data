@@ -30,7 +30,7 @@ import org.beangle.data.jdbc.query.JdbcExecutor
 import javax.sql.DataSource
 
 class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val catalog: String, val schema: String)
-    extends DataWrapper with Logging {
+  extends DataWrapper with Logging {
 
   val database = new Database(dataSource.getConnection().getMetaData(), dialect, catalog, schema)
   val executor = new JdbcExecutor(dataSource)
@@ -46,7 +46,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
       }
     } catch {
       case e: Exception =>
-        logger.error("Drop table " + table.name + " failed", e)
+        error(s"Drop table ${table.name} failed", e)
         return false
     }
     return true
@@ -58,7 +58,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
         executor.update(table.createSql(database.dialect))
       } catch {
         case e: Exception =>
-          logger.error("Cannot create table " + table.name, e)
+          error(s"Cannot create table ${table.name}", e)
           return false
       }
     }
@@ -74,7 +74,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
         if (null != dropSql) executor.update(dropSql)
       } catch {
         case e: Exception =>
-          logger.error("Drop sequence " + sequence.name + " failed", e)
+          error(s"Drop sequence ${sequence.name} failed", e)
           return false
       }
     }
@@ -87,7 +87,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
       if (null != createSql) executor.update(createSql)
     } catch {
       case e: Exception =>
-        logger.error("cannot create sequence " + sequence.name, e)
+        error(s"cannot create sequence ${sequence.name}", e)
         return false
     }
     return true

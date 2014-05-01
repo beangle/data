@@ -208,7 +208,7 @@ private[hibernate] object PersistentClassMerger extends Logging {
       field.setAccessible(true)
       field
     } catch {
-      case e: Exception => logger.error("Cannot access PersistentClass " + name + " field ,Override Mapping will be disabled", e);
+      case e: Exception => error(s"Cannot access PersistentClass $name field ,Override Mapping will be disabled", e);
     }
     null
   }
@@ -249,6 +249,6 @@ private[hibernate] object PersistentClassMerger extends Logging {
     } catch {
       case e: Exception =>
     }
-    logger.info("{} replace {}.", sub.getClassName(), parent.getClassName());
+    info(s"${sub.getClassName()} replace ${parent.getClassName()}.")
   }
 }

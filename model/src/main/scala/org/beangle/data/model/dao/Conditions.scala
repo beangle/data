@@ -66,7 +66,7 @@ object Conditions extends Logging {
       }
     } catch {
       case e: Exception =>
-        logger.debug("error occur in extractConditions for  bean {} with attr named {}", entity, curr);
+        debug(s"error occur in extractConditions for  bean $entity with attr named $curr")
     }
     conditions.toList
   }
@@ -132,7 +132,7 @@ object Conditions extends Logging {
           conditions += Condition(content.toString(), property)
         }
       } catch {
-        case e: Exception => logger.warn("getProperty " + value + "error", e);
+        case e: Exception => warn(s"getProperty $value error", e);
       }
     } else {
       conditions += Condition(name + " = :" + name.replace('.', '_'), value)
@@ -152,8 +152,7 @@ object Conditions extends Logging {
           addAttrCondition(conditions, prefix + "." + attr, value)
       }
     } catch {
-      case e: Exception =>
-        logger.warn("error occur in extractComponent of component:" + component + "with attr named :" + curr)
+      case e: Exception => warn(s"error occur in extractComponent of component:$component with attr named :$curr")
     }
     conditions.toList
   }

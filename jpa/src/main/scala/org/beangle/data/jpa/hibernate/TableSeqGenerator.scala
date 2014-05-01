@@ -60,8 +60,7 @@ class TableSeqGenerator extends SequenceStyleGenerator with Logging {
       if (null != tableName) {
         var seqName = Strings.replace(sequencePattern, "{table}", tableName)
         seqName = Strings.replace(seqName, "{pk}", pk)
-        if (seqName.length > NamingPolicy.defaultMaxLength)
-          logger.warn("{}'s length >=30, wouldn't be supported in oracle!", seqName);
+        if (seqName.length > NamingPolicy.defaultMaxLength) warn(s"$seqName's length >=30, wouldn't be supported in oracle!")
         val entityName = params.getProperty(IdentifierGenerator.ENTITY_NAME)
         if (null != entityName && null != namingPolicy) {
           namingPolicy.getSchema(entityName) foreach { schema =>
