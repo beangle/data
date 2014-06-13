@@ -35,6 +35,7 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
     registerType(INTEGER, "int4")
 
     registerType(FLOAT, "float4")
+    registerType(REAL, "float4")
     registerType(DOUBLE, "float8")
 
     registerType(DECIMAL, "numeric($p, $s)")

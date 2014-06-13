@@ -21,6 +21,7 @@ package org.beangle.data.report.model
 import org.beangle.data.jdbc.util.DbConfig
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.bean.Initializing
+import org.beangle.data.jdbc.meta.Table
 
 object Report {
 
@@ -74,10 +75,11 @@ class Report(val dbconf: DbConfig) extends Initializing {
 
   var extension: String = _
 
+  var tables: Iterable[Table] = _
+
   def images: List[Image] = {
     val buf = new collection.mutable.ListBuffer[Image]
-    for (module <- modules)
-      buf ++= module.allImages
+    for (module <- modules) buf ++= module.allImages
     buf.toList
   }
 

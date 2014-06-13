@@ -65,7 +65,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       }
     }
     rs.close()
-    info(s"Load ${tables.size} tables in $sw")
+    info(s"Load ${tables.size} tables in ${sw.toString}")
 
     // Loading columns
     sw.reset().start();

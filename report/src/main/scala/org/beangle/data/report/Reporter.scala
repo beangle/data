@@ -60,15 +60,7 @@ object Reporter extends Logging {
     val xml = scala.xml.XML.load(new FileInputStream(reportxml))
     val report = Report(xml)
     val reporter = new Reporter(report, dir)
-
-    val tables = new collection.mutable.HashSet[Table]
-    tables ++= reporter.database.tables.values
-
-    for (module <- report.modules)
-      module.filter(tables)
-
-    for (image <- report.images)
-      image.select(reporter.database.tables.values)
+    reporter.filterTables()
 
     val debug = if (args.length > 1) args(1) == "-debug" else false
     if (debug) {
@@ -114,12 +106,21 @@ class Reporter(val report: Report, val dir: String) extends Logging {
     cfg.setTemplateLoader(new ClassTemplateLoader(getClass, "/template"))
   cfg.setObjectWrapper(new ScalaObjectWrapper())
 
+  def filterTables() {
+    val lastTables = new collection.mutable.HashSet[Table]
+    lastTables ++= database.tables.values
+    for (module <- report.modules) module.filter(lastTables)
+    for (image <- report.images) image.select(database.tables.values)
+    report.tables = database.tables.values.filterNot(lastTables.contains(_))
+  }
+
   def genWiki() {
     val data = new collection.mutable.HashMap[String, Any]()
     data += ("dialect" -> report.dbconf.dialect)
     data += ("tablesMap" -> database.tables)
     data += ("report" -> report)
     data += ("sequences" -> database.sequences)
+    data += ("database" -> database)
 
     for (page <- report.pages) {
       if ("true" == page.iterator) {

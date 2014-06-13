@@ -72,23 +72,24 @@ class Module(val name: String, val title: String, tableseq: String) extends Tabl
     children :+= module
     module.parent = Some(this)
   }
-
+  
+  override def matches(tableName: String): Boolean = {
+    parent match {
+      case Some(pm) => pm.matches(tableName) && super.matches(tableName)
+      case None => super.matches(tableName)
+    }
+  }
+  
   def allImages: List[Image] = {
     val buf = new collection.mutable.ListBuffer[Image]
     buf ++= images
-    for (module <- children)
-      buf ++= module.allImages
+    for (module <- children) buf ++= module.allImages
     buf.toList
   }
 
   def filter(alltables: collection.mutable.Set[Table]) {
-    for (module <- children)
-      module.filter(alltables)
-
-    for (table <- alltables) {
-      if (matches(table.name)) addTable(table)
-    }
-
+    for (module <- children) module.filter(alltables)
+    for (table <- alltables) if (matches(table.name)) addTable(table)
     alltables --= tables
   }
 }

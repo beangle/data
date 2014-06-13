@@ -1,5 +1,5 @@
 [#ftl]
-[#assign tables = tablesMap?values/]
+[#assign tables = report.tables/]
 数据库共计${tables?size}个表，分别如下:
 
 <table class="table table-bordered table-striped table-condensed">
