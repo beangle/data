@@ -17,20 +17,38 @@
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.beangle.data.jpa.hibernate
+
+import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable
-import scala.collection.JavaConversions._
+
+import java.{ util => ju }
+import org.beangle.commons.bean.{ Factory, Initializing }
+import org.beangle.commons.inject.{ Container, ContainerAware }
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
-import org.beangle.data.model.meta.CollectionType
-import org.beangle.data.model.meta.ComponentType
-import org.beangle.data.model.meta.DefaultEntityMetadata
-import org.beangle.data.model.meta.EntityType
-import org.beangle.data.model.meta.IdentifierType
-import org.beangle.data.model.meta.EntityMetadata
-import org.beangle.data.model.meta.Type
+import org.beangle.data.model.meta.{ CollectionType, ComponentType, DefaultEntityMetadata, EntityMetadata, EntityType, IdentifierType, Type }
 import org.hibernate.SessionFactory
+import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
-import java.{ util => ju }
+
+class HibernateMetadataFactory extends Factory[EntityMetadata] with ContainerAware with Initializing {
+
+  var meta: EntityMetadata = _
+
+  var container: Container = _
+
+  def init() {
+    import scala.collection.JavaConversions._
+    meta = EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values)
+  }
+
+  override def getObject: EntityMetadata = meta
+
+  override def getObjectType = classOf[EntityMetadata]
+
+  override def singleton: Boolean = true
+
+}
 
 object EntityMetadataBuilder {
   def apply(factories: Iterable[SessionFactory]): EntityMetadata = new EntityMetadataBuilder().build(factories)
@@ -151,3 +169,4 @@ private[hibernate] class EntityMetadataBuilder extends Logging {
   }
 
 }
+
