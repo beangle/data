@@ -33,7 +33,7 @@ import org.hibernate.{ `type` => htype }
 
 class HibernateMetadataFactory extends Factory[EntityMetadata] with ContainerAware with Initializing {
 
-  var meta: EntityMetadata = _
+  private var meta: EntityMetadata = _
 
   var container: Container = _
 
