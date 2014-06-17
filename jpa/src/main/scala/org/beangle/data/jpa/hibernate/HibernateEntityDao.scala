@@ -166,9 +166,9 @@ protected[hibernate] object QuerySupport {
  */
 class HibernateEntityDao extends GeneralDao with Logging {
 
-  protected var sessionFactory: SessionFactory = _
+  var sessionFactory: SessionFactory = _
 
-  protected var metadata: EntityMetadata = _
+  var metadata: EntityMetadata = _
 
   protected def currentSession: Session = sessionFactory.getCurrentSession()
 

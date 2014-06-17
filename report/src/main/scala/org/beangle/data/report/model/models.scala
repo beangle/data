@@ -24,7 +24,7 @@ import org.beangle.data.jdbc.meta.Table
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.text.regex.AntPathPattern
 
-class Page(val name: String, val iterator: String)
+case class Page(val name: String, val iterator: String)
 
 trait TableContainer {
   val patterns: Array[AntPathPattern]
@@ -32,14 +32,10 @@ trait TableContainer {
 
   def matches(tableName: String): Boolean = {
     val lowertable = tableName.toLowerCase
-    var matched = false
-    for (pattern <- patterns; if !matched) {
-      if (pattern.matches(lowertable)) matched = true
-    }
-    matched
+    patterns.exists(p => p.matches(lowertable))
   }
 
-  def addTable(table: Table) {
+  def addTable(table: Table): Unit = {
     tables += table
   }
 }
@@ -57,29 +53,34 @@ class Image(val name: String, val title: String, tableseq: String, val descripti
 class Module(val name: String, val title: String, tableseq: String) extends TableContainer {
   val content = new StringBuffer();
   override val patterns = Strings.split(tableseq.toLowerCase, ",").map(new AntPathPattern(_))
-  var children: List[Module] = List()
-  var images: List[Image] = List()
+  var children: List[Module] = List.empty
+  var images: List[Image] = List.empty
   var parent: Option[Module] = None
-  def addImage(image: Image) {
+
+  def addImage(image: Image): Unit = {
     images :+= image
   }
 
-  override def toString = path + " tables(" + tables.size + ")"
+  override def toString: String = {
+    path + " tables(" + tables.size + ")"
+  }
 
-  def path: String = if (parent.isEmpty) name else (parent.get.path + "/") + name
+  def path: String = {
+    if (parent.isEmpty) name else (parent.get.path + "/") + name
+  }
 
-  def addModule(module: Module) {
+  def addModule(module: Module): Unit = {
     children :+= module
     module.parent = Some(this)
   }
-  
+
   override def matches(tableName: String): Boolean = {
     parent match {
       case Some(pm) => pm.matches(tableName) && super.matches(tableName)
       case None => super.matches(tableName)
     }
   }
-  
+
   def allImages: List[Image] = {
     val buf = new collection.mutable.ListBuffer[Image]
     buf ++= images
