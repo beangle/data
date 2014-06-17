@@ -115,9 +115,9 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
         if (overrided) info(s"Override hibernate property $key=$value")
       }
     }
+    import org.hibernate.cfg.AvailableSettings._
     // 2. set datasource and disable metadata lookup
     // configuration.getProperties.put("hibernate.classLoader.application", beanClassLoader)
-    import org.hibernate.cfg.AvailableSettings._
     if (dataSource != null) configuration.getProperties.put(DATASOURCE, dataSource)
     // Disable JdbcServicesImpl magic behaviour except declare explicitly,
     // for it will slow startup performance. And it just consult medata's ddl semantic, which is

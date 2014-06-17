@@ -170,8 +170,9 @@ class HibernateEntityDao extends GeneralDao with Logging {
 
   var metadata: EntityMetadata = _
 
-  protected def currentSession: Session = sessionFactory.getCurrentSession()
-
+  protected def currentSession: Session = {
+    sessionFactory.getCurrentSession()
+  }
   def get[T, ID](clazz: Class[T], id: ID): T = {
     (find(metadata.getType(clazz).get.entityName, id).orNull).asInstanceOf[T]
   }

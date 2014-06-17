@@ -31,20 +31,11 @@ import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
 
-class HibernateMetadataFactory extends Factory[EntityMetadata] with ContainerAware with Initializing {
+class HibernateMetadataFactory(container: Container) extends Factory[EntityMetadata] {
 
-  private var meta: EntityMetadata = _
-
-  var container: Container = _
-
-  def init() {
-    import scala.collection.JavaConversions._
-    meta = EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values)
-  }
+  private val meta = EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values)
 
   override def getObject: EntityMetadata = meta
-
-  override def getObjectType = classOf[EntityMetadata]
 
   override def singleton: Boolean = true
 
