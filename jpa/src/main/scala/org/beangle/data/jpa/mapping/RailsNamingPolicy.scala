@@ -74,9 +74,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       debug(s"loading $url")
       val is = url.openStream()
       if (null != is) {
-        (scala.xml.XML.load(is) \ "module") foreach { ele =>
-          parseModule(ele, null)
-        }
+        (scala.xml.XML.load(is) \ "module") foreach { ele => parseModule(ele, null) }
         is.close()
       }
       autoWire()
@@ -175,7 +173,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     if (null != resources) {
       for (url <- resources.paths)
         addConfig(url)
-      info(s"Table name pattern: -> \n$this")
+      if (!modules.isEmpty) info(s"Table name pattern: -> \n${this.toString}")
     }
   }
 
@@ -207,6 +205,23 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     if (loc < 0) qualifiedName else qualifiedName.substring(loc + 1)
   }
 
+  override def toString: String = {
+    if (modules.isEmpty) return ""
+    val maxlength = modules.map(m => m._1.length).max
+    val sb = new StringBuilder()
+    modules foreach {
+      case (packageName, module) =>
+        sb.append(Strings.rightPad(packageName, maxlength, ' ')).append(" : [")
+          .append(module.schema.getOrElse(""));
+        sb.append(" , ").append(module.prefix);
+        //      if (!module.abbreviations.isEmpty()) {
+        //        sb.append(" , ").append(module.abbreviations);
+        //      }
+        sb.append(']').append('\n');
+    }
+    if (sb.length > 0) sb.deleteCharAt(sb.length - 1)
+    sb.toString()
+  }
   protected def addUnderscores(name: String): String = Strings.unCamel(name.replace('.', '_'), '_')
 
   class TableModule {
