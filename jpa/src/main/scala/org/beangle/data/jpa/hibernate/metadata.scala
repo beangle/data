@@ -31,6 +31,7 @@ import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
 
+//TODO add test by xml or annotation configuration
 class HibernateMetadataFactory(container: Container) extends Factory[EntityMetadata] {
 
   private val meta = EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values)
@@ -72,13 +73,15 @@ private[hibernate] class EntityMetadataBuilder extends Logging {
    * @param entityName
    */
   private def buildEntityType(factory: SessionFactory, entityName: String): EntityType = {
-    val entityType = entityTypes.get(entityName).orNull
+    var entityType = entityTypes.get(entityName).orNull
     if (null == entityType) {
       val cm = factory.getClassMetadata(entityName)
       if (null == cm) {
         error(s"Cannot find classMetadata for $entityName")
         return null
       }
+      entityType = new EntityType(cm.getMappedClass, cm.getEntityName, cm.getIdentifierPropertyName)
+      entityTypes.put(cm.getEntityName, entityType)
       val propertyTypes = new mutable.HashMap[String, Type]
       for (pname <- cm.getPropertyNames) {
         val htype = cm.getPropertyType(pname)
@@ -92,7 +95,7 @@ private[hibernate] class EntityMetadataBuilder extends Logging {
         }
       }
       propertyTypes.put(cm.getIdentifierPropertyName, new IdentifierType(cm.getIdentifierType.getReturnedClass))
-      entityTypes.put(cm.getEntityName, new EntityType(cm.getMappedClass, cm.getEntityName, cm.getIdentifierPropertyName, propertyTypes.toMap))
+      entityType.propertyTypes = propertyTypes.toMap
     }
     entityType
   }
@@ -102,17 +105,13 @@ private[hibernate] class EntityMetadataBuilder extends Logging {
     if (null == cm) return null
     val etype = cm.getElementType
     val elementType =
-      if (etype.isEntityType) {
-        entityTypes.get(etype.getName).getOrElse(buildEntityType(factory, etype.getName))
-      } else {
-        new IdentifierType(etype.getReturnedClass)
-      }
+      if (etype.isEntityType) entityTypes.get(etype.getName).getOrElse(buildEntityType(factory, etype.getName))
+      else new IdentifierType(etype.getReturnedClass)
 
     val collectionType = new CollectionType(collectionClass, elementType)
-    if (!collectionTypes.contains(collectionType.name)) {
-      collectionTypes.put(collectionType.name, collectionType)
-    }
-    return collectionType
+    if (!collectionTypes.contains(collectionType.name)) collectionTypes.put(collectionType.name, collectionType)
+
+    collectionType
   }
 
   private def buildComponentType(factory: SessionFactory, entityName: String, propertyName: String): ComponentType = {
@@ -123,8 +122,7 @@ private[hibernate] class EntityMetadataBuilder extends Logging {
 
     if (null == result) {
       val cm = factory.getClassMetadata(entityName)
-      val hcType = cm
-        .getPropertyType(propertyName).asInstanceOf[htype.ComponentType]
+      val hcType = cm.getPropertyType(propertyName).asInstanceOf[htype.ComponentType]
       val propertyNames = hcType.getPropertyNames
 
       val propertyTypes = new mutable.HashMap[String, Type]

@@ -42,15 +42,12 @@ protected[hibernate] object QuerySupport {
   def list[T](query: Query): Seq[T] = asScalaBuffer(query.list().asInstanceOf[java.util.List[T]])
 
   private def buildHibernateQuery(bquery: BQuery[_], session: Session): Query = {
-    var hibernateQuery: Query = null
-    if (bquery.lang.name == "hql") {
-      hibernateQuery = session.createQuery(bquery.statement)
-    } else {
-      hibernateQuery = session.createSQLQuery(bquery.statement)
-    }
+    val hibernateQuery: Query =
+      if (bquery.lang.name == "sql") session.createSQLQuery(bquery.statement)
+      else session.createQuery(bquery.statement)
     if (bquery.cacheable) hibernateQuery.setCacheable(bquery.cacheable)
     setParameters(hibernateQuery, bquery.params)
-    return hibernateQuery
+    hibernateQuery
   }
 
   /**

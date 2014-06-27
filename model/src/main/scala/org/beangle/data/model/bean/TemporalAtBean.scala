@@ -33,10 +33,10 @@ trait TemporalAtBean extends TemporalAt {
   /**
    * 获得生效时间
    */
-  var effectiveAt: Date = _ 
+  var beginAt: Date = _
 
   /**
    * 获得失效时间
    */
-  var invalidAt: Date = _ 
+  var endAt: Date = _
 }

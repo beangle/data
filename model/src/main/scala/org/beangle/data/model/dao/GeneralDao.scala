@@ -29,7 +29,6 @@ trait GeneralDao {
    *
    * @param clazz 类型
    * @param id 唯一标识
-   * @return null
    */
   def get[T, ID](clazz: Class[T], id: ID): T
 
@@ -67,6 +66,8 @@ trait GeneralDao {
    * remove entities by id
    */
   def remove[T, ID](clazz: Class[T], id: ID, ids: ID*)
+
+  def search[T](builder: QueryBuilder[T]): Seq[T]
 
   def search[T](query: Query[T]): Seq[T]
 

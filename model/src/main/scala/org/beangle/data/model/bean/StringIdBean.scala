@@ -21,7 +21,7 @@ package org.beangle.data.model.bean
 import org.beangle.data.model.Entity
 
 @SerialVersionUID(-6898498932182877104L)
-class StringIdBean extends Entity[String] {
+abstract class StringIdBean extends Entity[String] {
 
   var id: String = _
 }

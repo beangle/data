@@ -33,8 +33,10 @@ object EntityType {
  *
  * @author chaostone
  */
-class EntityType(val entityClass: Class[_], val entityName: String, val idName: String = "id", val propertyTypes: Map[String, Type]) extends AbstractType {
+class EntityType(val entityClass: Class[_], val entityName: String, val idName: String = "id") extends AbstractType {
   assert(null != idName && null != entityName && null != entityClass)
+
+  var propertyTypes: Map[String, Type] = Map.empty
 
   override def isEntityType = true
 
@@ -46,6 +48,6 @@ class EntityType(val entityClass: Class[_], val entityName: String, val idName: 
   override def name: String = entityName
 
   override def returnedClass = entityClass
-  
-  def idClass:Class[Serializable] = propertyTypes(idName).returnedClass.asInstanceOf
+
+  def idClass: Class[Serializable] = propertyTypes(idName).returnedClass.asInstanceOf
 }

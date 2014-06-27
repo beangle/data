@@ -73,30 +73,22 @@ object Conditions extends Logging {
 
   /**
    * 获得条件的绑定参数映射
-   *
-   * @param conditions
    */
-  def getParamMap(conditions: List[Condition]): Map[String, Any] = {
+  def getParamMap(conditions: Seq[Condition]): Map[String, Any] = {
     val params = new collection.mutable.HashMap[String, Any]
-    for (con <- conditions) {
-      params ++= getParamMap(con)
-    }
+    for (con <- conditions) params ++= getParamMap(con)
     params.toMap
   }
 
   /**
    * 获得条件的绑定参数映射
-   *
-   * @param condition
    */
   def getParamMap(condition: Condition): Map[String, Any] = {
     val params = new collection.mutable.HashMap[String, Any]
     if (!Strings.contains(condition.content, "?")) {
       val paramNames = condition.paramNames
-      if (paramNames.size > condition.params.size) throw new RuntimeException(
-        "condition params not set [" + condition.content + "] with value:" + condition.params)
       var i = 0
-      while (i < paramNames.size) {
+      while (i < Math.min(paramNames.size, condition.params.size)) {
         params.put(paramNames(i), condition.params(i))
         i += 1
       }
@@ -106,11 +98,6 @@ object Conditions extends Logging {
 
   /**
    * 为extractConditions使用的私有方法<br>
-   *
-   * @param conditions
-   * @param name
-   * @param value
-   * @param mode
    */
   def addAttrCondition(conditions: collection.mutable.ListBuffer[Condition], name: String, value: Any) {
     if (value.isInstanceOf[String]) {

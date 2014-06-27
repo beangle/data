@@ -52,3 +52,7 @@ trait Entity[ID] extends Serializable {
   }
 }
 
+trait IntIdEntity extends Entity[java.lang.Integer]
+
+trait LongIdEntity extends Entity[java.lang.Long]
+

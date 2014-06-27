@@ -20,7 +20,11 @@ package org.beangle.data.model.bean
 
 import org.beangle.data.model.Entity
 
-trait NumIdBean[ID] extends Entity[ID] {
+abstract class NumIdBean[ID] extends Entity[ID] {
 
   var id: ID = _
 }
+
+abstract class LongIdBean extends NumIdBean[java.lang.Long]
+
+abstract class IntIdBean extends NumIdBean[java.lang.Integer]

@@ -26,7 +26,6 @@ import javax.persistence.Entity
 object Jpas {
   def findEntityName(clazz: Class[_]): String = {
     val annotation = clazz.getAnnotation(classOf[javax.persistence.Entity])
-    Assert.notNull(annotation);
-    if (Strings.isNotBlank(annotation.name)) annotation.name else clazz.getName
+    if (null!=annotation && Strings.isNotBlank(annotation.name)) annotation.name else clazz.getName
   }
 }
