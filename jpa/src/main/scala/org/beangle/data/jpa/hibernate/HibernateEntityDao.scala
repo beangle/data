@@ -42,51 +42,39 @@ protected[hibernate] object QuerySupport {
   def list[T](query: Query): Seq[T] = asScalaBuffer(query.list().asInstanceOf[java.util.List[T]])
 
   private def buildHibernateQuery(bquery: BQuery[_], session: Session): Query = {
-    val hibernateQuery: Query =
+    val query =
       if (bquery.lang.name == "sql") session.createSQLQuery(bquery.statement)
       else session.createQuery(bquery.statement)
-    if (bquery.cacheable) hibernateQuery.setCacheable(bquery.cacheable)
-    setParameters(hibernateQuery, bquery.params)
-    hibernateQuery
+    if (bquery.cacheable) query.setCacheable(bquery.cacheable)
+    setParameters(query, bquery.params)
+    query
   }
 
   /**
    * 统计该查询的记录数
-   *
-   * @param limitQuery
-   * @param hibernateSession
-   * @return data count
    */
   def doCount(limitQuery: LimitQuery[_], hibernateSession: Session): Int = {
     val cntQuery = limitQuery.countQuery
     if (null == cntQuery) {
-      val hibernateQuery = buildHibernateQuery(limitQuery, hibernateSession)
-      return hibernateQuery.list().size()
+      buildHibernateQuery(limitQuery, hibernateSession).list().size()
     } else {
-      val hibernateQuery = buildHibernateQuery(cntQuery, hibernateSession)
-      val count = hibernateQuery.uniqueResult().asInstanceOf[Number]
+      val count = buildHibernateQuery(cntQuery, hibernateSession).uniqueResult().asInstanceOf[Number]
       if (null == count) 0 else count.intValue()
     }
   }
 
   /**
    * 查询结果集
-   *
-   * @param query
-   * @param session
-   * @return result list
    */
   def doFind[T](query: BQuery[_], session: Session): Seq[T] = {
     val hQuery = query match {
       case limitQuery: LimitQuery[_] =>
         val hibernateQuery = buildHibernateQuery(limitQuery, session)
-        if (null == limitQuery.limit) {
-          hibernateQuery
-        } else {
+        if (null != limitQuery.limit) {
           val limit = limitQuery.limit
           hibernateQuery.setFirstResult((limit.pageNo - 1) * limit.pageSize).setMaxResults(limit.pageSize)
-          hibernateQuery
         }
+        hibernateQuery
       case _ => buildHibernateQuery(query, session)
     }
     list[T](hQuery)
@@ -94,9 +82,6 @@ protected[hibernate] object QuerySupport {
 
   /**
    * 为query设置JPA style参数
-   *
-   * @param query
-   * @param argument
    */
   def setParameters(query: Query, argument: Any*): Query = {
     if (argument != null && argument.length > 0) {
@@ -108,10 +93,6 @@ protected[hibernate] object QuerySupport {
 
   /**
    * 为query设置参数
-   *
-   * @param query
-   * @param parameterMap
-   * @return query
    */
   def setParameters(query: Query, parameterMap: Map[String, Any]): Query = {
     if (parameterMap != null && !parameterMap.isEmpty) {
@@ -136,9 +117,6 @@ protected[hibernate] object QuerySupport {
 
   /**
    * 针对查询条件绑定查询的值
-   *
-   * @param query
-   * @param conditions
    */
   def bindValues(query: Query, conditions: List[Condition]) {
     var position = 0
@@ -356,7 +334,7 @@ class HibernateEntityDao extends GeneralDao with Logging {
       if (null == limitQuery.limit) {
         return doFind(limitQuery, currentSession)
       } else {
-        return new SinglePage[T](limitQuery.limit.pageNo, limitQuery.limit.pageSize,
+        new SinglePage[T](limitQuery.limit.pageNo, limitQuery.limit.pageSize,
           doCount(limitQuery, currentSession), doFind(query, currentSession))
       }
     } else {
