@@ -32,45 +32,26 @@ import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
 
 //TODO add test by xml or annotation configuration
-class HibernateMetadataFactory(container: Container) extends Factory[EntityMetadata] {
-
-  private val meta = EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values)
-
-  override def getObject: EntityMetadata = meta
-
-  override def singleton: Boolean = true
-
-}
-
-object EntityMetadataBuilder {
-  def apply(factories: Iterable[SessionFactory]): EntityMetadata = new EntityMetadataBuilder().build(factories)
-}
-
-private[hibernate] class EntityMetadataBuilder extends Logging {
+class EntityMetadataBuilder(factory: SessionFactory) extends Logging {
   /** entity-name->entity-type */
   val entityTypes = new mutable.HashMap[String, EntityType]
   val collectionTypes = new mutable.HashMap[String, CollectionType]
 
-  def build(factories: Iterable[SessionFactory]): EntityMetadata = {
-    require(null != factories)
-    for (factory <- factories) {
-      val watch = new Stopwatch(true)
-      val classMetadatas = factory.getAllClassMetadata
-      val entityCount = entityTypes.size
-      val collectionCount = collectionTypes.size
-      for (entry <- classMetadatas.entrySet)
-        buildEntityType(factory, entry.getValue.getEntityName)
+  def build(): EntityMetadata = {
+    val watch = new Stopwatch(true)
+    val classMetadatas = factory.getAllClassMetadata
+    val entityCount = entityTypes.size
+    val collectionCount = collectionTypes.size
+    for (entry <- classMetadatas.entrySet)
+      buildEntityType(factory, entry.getValue.getEntityName)
 
-      info(s"Find ${entityTypes.size - entityCount} entities,${collectionTypes.size - collectionCount} collections from hibernate in ${watch}")
-      collectionTypes.clear()
-    }
+    info(s"Find ${entityTypes.size - entityCount} entities,${collectionTypes.size - collectionCount} collections from hibernate in ${watch}")
+    collectionTypes.clear()
     new DefaultEntityMetadata(entityTypes.values)
   }
   /**
    * 按照实体名，构建或者查找实体类型信息.<br>
    * 调用后，实体类型则存放与entityTypes中.
-   *
-   * @param entityName
    */
   private def buildEntityType(factory: SessionFactory, entityName: String): EntityType = {
     var entityType = entityTypes.get(entityName).orNull
@@ -156,6 +137,4 @@ private[hibernate] class EntityMetadataBuilder extends Logging {
       classOf[ju.ArrayList[_]]
     }
   }
-
 }
-

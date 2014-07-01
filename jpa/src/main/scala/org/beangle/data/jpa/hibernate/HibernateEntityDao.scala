@@ -43,7 +43,7 @@ protected[hibernate] object QuerySupport {
 
   private def buildHibernateQuery(bquery: BQuery[_], session: Session): Query = {
     val query =
-      if (bquery.lang.name == "sql") session.createSQLQuery(bquery.statement)
+      if (bquery.lang.name == "Sql") session.createSQLQuery(bquery.statement)
       else session.createQuery(bquery.statement)
     if (bquery.cacheable) query.setCacheable(bquery.cacheable)
     setParameters(query, bquery.params)
@@ -139,15 +139,14 @@ protected[hibernate] object QuerySupport {
 /**
  * @author chaostone
  */
-class HibernateEntityDao extends GeneralDao with Logging {
+class HibernateEntityDao(val sessionFactory:SessionFactory) extends GeneralDao with Logging {
 
-  var sessionFactory: SessionFactory = _
-
-  var metadata: EntityMetadata = _
+  val metadata: EntityMetadata = new EntityMetadataBuilder(sessionFactory).build()
 
   protected def currentSession: Session = {
     sessionFactory.getCurrentSession()
   }
+  
   def get[T, ID](clazz: Class[T], id: ID): T = {
     (find(metadata.getType(clazz).get.entityName, id).orNull).asInstanceOf[T]
   }
