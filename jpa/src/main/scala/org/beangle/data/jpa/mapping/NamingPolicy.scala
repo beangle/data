@@ -58,6 +58,6 @@ trait NamingPolicy {
    * Mapped in multischema?
    *
    */
-  def isMultiSchema: Boolean
+  def hasSchema: Boolean
 
 }

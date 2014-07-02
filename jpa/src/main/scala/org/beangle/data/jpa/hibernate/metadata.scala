@@ -54,8 +54,10 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
       for (entry <- classMetadatas.entrySet)
         buildEntityType(factory, entry.getValue.getEntityName)
 
-      info(s"Find ${entityTypes.size - entityCount} entities,${collectionTypes.size - collectionCount} collections from hibernate in ${watch}")
       collectionTypes.clear()
+      if (debugEnabled) {
+        debug(s"Find ${entityTypes.size - entityCount} entities,${collectionTypes.size - collectionCount} collections from hibernate in ${watch}")
+      }
     }
     new DefaultEntityMetadata(entityTypes.values)
   }

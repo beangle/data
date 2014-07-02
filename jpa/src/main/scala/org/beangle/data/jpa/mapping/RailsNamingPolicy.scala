@@ -38,7 +38,7 @@ import org.beangle.data.model.annotation.code
 class RailsNamingPolicy extends NamingPolicy with Logging {
 
   /** 实体表表名长度限制 */
-  var entityTableMaxLength = 25
+  var entityTableMaxLength = 30
 
   /** 关联表表名长度限制 */
   var relationTableMaxLength = 30
@@ -167,12 +167,11 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   /**
    * is Multiple schema for entity
    */
-  def isMultiSchema: Boolean = !schemas.isEmpty
+  def hasSchema: Boolean = !schemas.isEmpty
 
   def setResources(resources: Resources) {
     if (null != resources) {
-      for (url <- resources.paths)
-        addConfig(url)
+      for (url <- resources.paths) addConfig(url)
       if (!modules.isEmpty) info(s"Table name pattern: -> \n${this.toString}")
     }
   }
@@ -254,7 +253,6 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       sb.append(", prefix:").append(_prefix).append(']')
       sb.toString()
     }
-
   }
 
   class AnnotationModule(val clazz: Class[_], val value: String) {

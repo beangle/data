@@ -55,7 +55,7 @@ class OverrideConfiguration(settings: SettingsFactory) extends Configuration(set
     if (getNamingStrategy().isInstanceOf[RailsNamingStrategy])
       namingPolicy = getNamingStrategy().asInstanceOf[RailsNamingStrategy].policy;
 
-    if (null == namingPolicy || !namingPolicy.isMultiSchema) return
+    if (null == namingPolicy || !namingPolicy.hasSchema) return
 
     for (clazz <- classes.values()) {
       namingPolicy.getSchema(clazz.getEntityName) foreach { schema =>
