@@ -20,10 +20,9 @@ package org.beangle.data.jpa.hibernate
 
 import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable
-
 import java.{ util => ju }
-import org.beangle.commons.bean.{ Factory, Initializing }
-import org.beangle.commons.inject.{ Container, ContainerAware }
+import org.beangle.commons.bean.Factory
+import org.beangle.commons.inject.Container
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.meta.{ CollectionType, ComponentType, DefaultEntityMetadata, EntityMetadata, EntityType, IdentifierType, Type }
@@ -31,22 +30,33 @@ import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
 
+class HibernateMetadataFactory(container: Container) extends Factory[EntityMetadata] {
+
+  private val meta = new EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values).build()
+
+  override def getObject: EntityMetadata = meta
+
+  override def singleton: Boolean = true
+}
+
 //TODO add test by xml or annotation configuration
-class EntityMetadataBuilder(factory: SessionFactory) extends Logging {
+class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging {
   /** entity-name->entity-type */
   val entityTypes = new mutable.HashMap[String, EntityType]
   val collectionTypes = new mutable.HashMap[String, CollectionType]
 
   def build(): EntityMetadata = {
-    val watch = new Stopwatch(true)
-    val classMetadatas = factory.getAllClassMetadata
-    val entityCount = entityTypes.size
-    val collectionCount = collectionTypes.size
-    for (entry <- classMetadatas.entrySet)
-      buildEntityType(factory, entry.getValue.getEntityName)
+    for (factory <- factories) {
+      val watch = new Stopwatch(true)
+      val classMetadatas = factory.getAllClassMetadata
+      val entityCount = entityTypes.size
+      val collectionCount = collectionTypes.size
+      for (entry <- classMetadatas.entrySet)
+        buildEntityType(factory, entry.getValue.getEntityName)
 
-    info(s"Find ${entityTypes.size - entityCount} entities,${collectionTypes.size - collectionCount} collections from hibernate in ${watch}")
-    collectionTypes.clear()
+      info(s"Find ${entityTypes.size - entityCount} entities,${collectionTypes.size - collectionCount} collections from hibernate in ${watch}")
+      collectionTypes.clear()
+    }
     new DefaultEntityMetadata(entityTypes.values)
   }
   /**

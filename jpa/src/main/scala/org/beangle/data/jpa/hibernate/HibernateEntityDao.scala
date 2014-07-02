@@ -139,14 +139,14 @@ protected[hibernate] object QuerySupport {
 /**
  * @author chaostone
  */
-class HibernateEntityDao(val sessionFactory:SessionFactory) extends GeneralDao with Logging {
+class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao with Logging {
 
-  val metadata: EntityMetadata = new EntityMetadataBuilder(sessionFactory).build()
+  val metadata: EntityMetadata = new EntityMetadataBuilder(List(sessionFactory)).build()
 
   protected def currentSession: Session = {
     sessionFactory.getCurrentSession()
   }
-  
+
   def get[T, ID](clazz: Class[T], id: ID): T = {
     (find(metadata.getType(clazz).get.entityName, id).orNull).asInstanceOf[T]
   }
