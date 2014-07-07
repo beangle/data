@@ -18,28 +18,26 @@
  */
 package org.beangle.data.jpa.hibernate
 
-import java.io.IOException
 import java.net.URL
-import java.{ util => ju }
+import java.{util => ju}
+
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jpa.bind.AbstractPersistModule
-import org.beangle.data.jpa.bind.EntityPersistConfig
-import org.hibernate.SessionFactory
-import org.hibernate.SessionFactoryObserver
-import org.hibernate.cfg.AvailableSettings.DATASOURCE
-import org.hibernate.cfg.AvailableSettings.DIALECT
-import org.hibernate.cfg.Configuration
-import org.hibernate.cfg.NamingStrategy
-import org.hibernate.service.ServiceRegistryBuilder
-import javax.sql.DataSource
+import org.beangle.data.jpa.bind.{AbstractPersistModule, EntityPersistConfig}
+import org.hibernate.{SessionFactory, SessionFactoryObserver}
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
+import org.hibernate.cfg.{Configuration, NamingStrategy}
+import org.hibernate.cfg.AvailableSettings.{DATASOURCE, DIALECT}
 
+import javax.sql.DataSource
+/**
+ * @author chaostone
+ */
 abstract class SessionFactoryBuilder extends Logging {
-  def build(): SessionFactory;
+  def build(): SessionFactory
 }
 
 class HbmSessionFactoryBuilder(val dataSource: DataSource, val properties: ju.Properties = new ju.Properties) extends SessionFactoryBuilder {
@@ -69,10 +67,7 @@ class HbmSessionFactoryBuilder(val dataSource: DataSource, val properties: ju.Pr
 
 }
 
-/**
- * @author chaostone
- * @version $Id: SessionFactoryBean.java Feb 27, 2012 10:52:27 PM chaostone $
- */
+
 class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration: Configuration, val properties: ju.Properties = new ju.Properties) extends SessionFactoryBuilder {
 
   /**
@@ -81,8 +76,6 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
    * <p>
    * Note: Can be omitted when all necessary properties and mapping resources are specified locally
    * via this bean.
-   *
-   * @see org.hibernate.cfg.Configuration#configure(java.net.URL)
    */
   var configLocations: Seq[URL] = List.empty
 
@@ -94,8 +87,6 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
   /**
    * Set a Hibernate NamingStrategy for the SessionFactory, determining the
    * physical column and table names given the info in the mapping document.
-   *
-   * @see org.hibernate.cfg.Configuration#setNamingStrategy
    */
   var namingStrategy: NamingStrategy = _
 
@@ -179,8 +170,6 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
 
   /**
    * Add annotation class from persist configuration
-   *
-   * @param epconfig
    */
   private def addPersistInfo(epconfig: EntityPersistConfig) {
     for (definition <- epconfig.entities) {
