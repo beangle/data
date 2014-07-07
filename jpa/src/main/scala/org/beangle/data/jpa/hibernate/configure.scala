@@ -20,16 +20,15 @@ package org.beangle.data.jpa.hibernate
 
 import java.io.Serializable
 import java.lang.reflect.Field
-
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
-
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.mapping.NamingPolicy
 import org.hibernate.{ AssertionFailure, DuplicateMappingException }
 import org.hibernate.cfg.{ Configuration, Mappings, NamingStrategy, SettingsFactory }
 import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass }
+import org.hibernate.DuplicateMappingException.Type
 
 class OverrideConfiguration extends Configuration with Logging {
 
@@ -149,7 +148,7 @@ class OverrideConfiguration extends Configuration with Logging {
           imports.put(rename, entityName)
         } else {
           throw new DuplicateMappingException("duplicate import: " + rename + " refers to both "
-            + entityName + " and " + existing + " (try using auto-import=\"false\")", "import", rename)
+            + entityName + " and " + existing + " (try using auto-import=\"false\")", Type.ENTITY, rename)
         }
       }
     }
