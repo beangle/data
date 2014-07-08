@@ -19,7 +19,7 @@ class IdFuncTest extends FunSpec with Matchers {
 
       val i3 = YearId8.gen(2014, 1)
       assert(i3.getClass() == classOf[java.lang.Long])
-      assert(i3 == 2014000000000000001L)
+      assert(i3 == 201400000000000001L)
     }
   }
 }

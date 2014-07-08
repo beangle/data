@@ -34,6 +34,13 @@ import RailsNamingStrategy.namingPolicy
 import java.text.SimpleDateFormat
 import org.hibernate.id.PersistentIdentifierGenerator
 import java.{ util => ju }
+import org.beangle.data.model.Coded
+import org.beangle.commons.lang.Numbers
+import org.hibernate.`type`.Type
+import org.hibernate.`type`.LongType
+import org.hibernate.`type`.ShortType
+import org.hibernate.`type`.IntegerType
+import org.hibernate.id.Configurable
 /**
  * 按照表明进行命名序列<br>
  * 依据命名模式进行，默认模式seq_{table}<br>
@@ -89,8 +96,10 @@ class DateIdGenerator extends IdentifierGenerator {
         case _ => if (year == curYear) Id8 else YearId8
       }
     } else {
+      year = Calendar.getInstance().get(Calendar.YEAR)
       obj match {
         case fastest: IdGrowFastest => DateId8
+        case slow: IdGrowSlow => YearId4
         case _ => Id8
       }
     }
@@ -140,5 +149,25 @@ object YearId4 extends IdFunc("seq_year4") {
   }
 }
 
+/**
+ * Id generator based on function or procedure
+ */
+class CodedIdGenerator extends IdentifierGenerator with Configurable {
+  var identifierType: Type = _
+  override def configure(t: Type, params: Properties, dialect: Dialect) {
+    this.identifierType = t;
+  }
 
+  def generate(session: SessionImplementor, obj: Object): java.io.Serializable = {
+    obj match {
+      case c: Coded =>
+        c match {
+          case lt: LongType => Numbers.toLong(c.code)
+          case it: IntegerType => Numbers.toInt(c.code)
+          case st: ShortType => Numbers.toShort(c.code)
+        }
+      case _ => throw new RuntimeException("CodedIdGenerator only support Coded")
+    }
+  }
+}
 

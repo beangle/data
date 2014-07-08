@@ -31,6 +31,7 @@ import org.beangle.commons.lang.ClassLoaders
 
 /**
  * @author chaostone
+ * FIXME port newest DdlGenerator
  */
 object DdlGenerator {
 

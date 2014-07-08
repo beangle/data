@@ -32,7 +32,7 @@ import org.hibernate.DuplicateMappingException.Type
 
 class OverrideConfiguration extends Configuration with Logging {
 
-  var dynaupdateMinColumn = 7
+  var minColumnEnableDynaUpdate = 7
 
   override def createMappings(): Mappings = new OverrideMappings()
 
@@ -99,7 +99,7 @@ class OverrideConfiguration extends Configuration with Logging {
      */
     override def addClass(pClass: PersistentClass) {
       // trigger dynamic update
-      if (!pClass.useDynamicUpdate() && pClass.getTable().getColumnSpan() >= dynaupdateMinColumn) pClass
+      if (!pClass.useDynamicUpdate() && pClass.getTable().getColumnSpan() >= minColumnEnableDynaUpdate) pClass
         .setDynamicUpdate(true);
       val className = pClass.getClassName();
       var entityName = pClass.getEntityName();
