@@ -83,7 +83,7 @@ class TableSeqGenerator extends SequenceStyleGenerator with Logging {
 /**
  * Id generator based on function or procedure
  */
-class DateIdGenerator extends IdentifierGenerator {
+class DateStyleGenerator extends IdentifierGenerator {
 
   def generate(session: SessionImplementor, obj: Object): java.io.Serializable = {
     var year = 0
@@ -152,7 +152,7 @@ object YearId4 extends IdFunc("seq_year4") {
 /**
  * Id generator based on function or procedure
  */
-class CodedIdGenerator extends IdentifierGenerator with Configurable {
+class CodeStyleGenerator extends IdentifierGenerator with Configurable {
   var identifierType: Type = _
   override def configure(t: Type, params: Properties, dialect: Dialect) {
     this.identifierType = t;

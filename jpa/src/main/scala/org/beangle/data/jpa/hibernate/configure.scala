@@ -9,7 +9,7 @@
  * (at your option) any later version.
  *
  * Beangle is distributed in the hope that it will be useful.
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
@@ -20,15 +20,17 @@ package org.beangle.data.jpa.hibernate
 
 import java.io.Serializable
 import java.lang.reflect.Field
+
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
+
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.mapping.NamingPolicy
 import org.hibernate.{ AssertionFailure, DuplicateMappingException }
-import org.hibernate.cfg.{ Configuration, Mappings, NamingStrategy, SettingsFactory }
-import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass }
 import org.hibernate.DuplicateMappingException.Type
+import org.hibernate.cfg.{ Configuration, Mappings, NamingStrategy }
+import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass }
 
 class OverrideConfiguration extends Configuration with Logging {
 
@@ -42,9 +44,9 @@ class OverrideConfiguration extends Configuration with Logging {
    * @see org.beangle.data.jpa.hibernate.RailsNamingStrategy
    */
   private def configSchema() {
-    var namingPolicy: NamingPolicy = null;
+    var namingPolicy: NamingPolicy = null
     if (getNamingStrategy().isInstanceOf[RailsNamingStrategy])
-      namingPolicy = getNamingStrategy().asInstanceOf[RailsNamingStrategy].policy;
+      namingPolicy = getNamingStrategy().asInstanceOf[RailsNamingStrategy].policy
 
     if (null == namingPolicy || !namingPolicy.hasSchema) return
 
@@ -67,14 +69,14 @@ class OverrideConfiguration extends Configuration with Logging {
    * Remove duplicated persistentClass register in classes map.
    */
   protected override def secondPassCompile() {
-    super.secondPassCompile();
-    configSchema();
+    super.secondPassCompile()
+    configSchema()
     val hackedEntityNames = new mutable.HashSet[String]
     for (entry <- classes.entrySet()) {
-      if (!entry.getKey().equals(entry.getValue().getEntityName())) hackedEntityNames.add(entry.getKey());
+      if (!entry.getKey().equals(entry.getValue().getEntityName())) hackedEntityNames.add(entry.getKey())
     }
     for (entityName <- hackedEntityNames)
-      classes.remove(entityName);
+      classes.remove(entityName)
   }
 
   protected class OverrideMappings extends MappingsImpl {
@@ -83,13 +85,19 @@ class OverrideConfiguration extends Configuration with Logging {
     /**
      * 注册缺省的sequence生成器
      */
-    this.addDefaultGenerator(newTableSequence())
+    addGenerator("table_sequence", classOf[TableSeqGenerator])
+    addGenerator("date", classOf[DateStyleGenerator])
+    addGenerator("code", classOf[CodeStyleGenerator])
 
-    private def newTableSequence(): IdGenerator = {
+    /**
+     * Add default generator for annotation and xml parsing 
+     */
+    private def addGenerator(name: String, clazz: Class[_]): Unit = {
       val idGen = new IdGenerator()
-      idGen.setName("table_sequence")
-      idGen.setIdentifierGeneratorStrategy(classOf[TableSeqGenerator].getName());
-      idGen
+      idGen.setName(name)
+      idGen.setIdentifierGeneratorStrategy(clazz.getName)
+      addDefaultGenerator(idGen)
+      getIdentifierGeneratorFactory().register(name, clazz)
     }
     /**
      * <ul>
@@ -100,37 +108,37 @@ class OverrideConfiguration extends Configuration with Logging {
     override def addClass(pClass: PersistentClass) {
       // trigger dynamic update
       if (!pClass.useDynamicUpdate() && pClass.getTable().getColumnSpan() >= minColumnEnableDynaUpdate) pClass
-        .setDynamicUpdate(true);
-      val className = pClass.getClassName();
-      var entityName = pClass.getEntityName();
+        .setDynamicUpdate(true)
+      val className = pClass.getClassName()
+      var entityName = pClass.getEntityName()
 
-      var entityNameChanged = false;
-      val jpaEntityName = pClass.getJpaEntityName();
+      var entityNameChanged = false
+      val jpaEntityName = pClass.getJpaEntityName()
       // Set real entityname using jpaEntityname
       if (null != jpaEntityName && jpaEntityName.contains(".")) {
-        entityName = jpaEntityName;
-        pClass.setEntityName(entityName);
-        entityNameChanged = true;
+        entityName = jpaEntityName
+        pClass.setEntityName(entityName)
+        entityNameChanged = true
       }
       // register class
-      val old = classes.get(entityName).asInstanceOf[PersistentClass];
+      val old = classes.get(entityName).asInstanceOf[PersistentClass]
       if (old == null) {
-        classes.put(entityName, pClass);
+        classes.put(entityName, pClass)
       } else if (old.getMappedClass().isAssignableFrom(pClass.getMappedClass())) {
-        PersistentClassMerger.merge(pClass, old);
+        PersistentClassMerger.merge(pClass, old)
       }
       // 为了欺骗hibernate中的ToOneFkSecondPass的部分代码,例如isInPrimaryKey。这些代码会根据className查找persistentClass，而不是根据entityName
-      if (entityNameChanged) classes.put(className, pClass);
+      if (entityNameChanged) classes.put(className, pClass)
 
       // add entitis collections
-      var cols = tmpColls.remove(entityName);
-      if (cols.isEmpty) cols = tmpColls.remove(className);
+      var cols = tmpColls.remove(entityName)
+      if (cols.isEmpty) cols = tmpColls.remove(className)
       if (!cols.isEmpty) {
         for (col <- cols.get) {
           val colName = if (col.getRole().startsWith(className)) col.getRole().substring(className.length() + 1)
           else col.getRole().substring(entityName.length() + 1)
-          col.setRole(entityName + "." + colName);
-          collections.put(col.getRole(), col);
+          col.setRole(entityName + "." + colName)
+          collections.put(col.getRole(), col)
         }
       }
     }
@@ -140,9 +148,9 @@ class OverrideConfiguration extends Configuration with Logging {
      * <code>DuplicateMappingException</code>
      */
     override def addImport(entityName: String, rename: String) {
-      val existing = imports.get(rename);
+      val existing = imports.get(rename)
       if (null == existing) {
-        imports.put(rename, entityName);
+        imports.put(rename, entityName)
       } else {
         if (ClassLoaders.loadClass(existing).isAssignableFrom(ClassLoaders.loadClass(entityName))) {
           imports.put(rename, entityName)
@@ -161,13 +169,13 @@ class OverrideConfiguration extends Configuration with Logging {
      * </ul>
      */
     override def addCollection(collection: Collection) {
-      val entityName = collection.getOwnerEntityName();
+      val entityName = collection.getOwnerEntityName()
       tmpColls.get(entityName) match {
-        case Some(list) => list += collection;
+        case Some(list) => list += collection
         case None => {
           val newlist = new mutable.ListBuffer[Collection]
           newlist += collection
-          tmpColls.put(entityName, newlist);
+          tmpColls.put(entityName, newlist)
         }
       }
     }
@@ -188,23 +196,23 @@ private[hibernate] object PersistentClassMerger extends Logging {
       field.setAccessible(true)
       field
     } catch {
-      case e: Exception => error(s"Cannot access PersistentClass $name field ,Override Mapping will be disabled", e);
+      case e: Exception => error(s"Cannot access PersistentClass $name field ,Override Mapping will be disabled", e)
     }
     null
   }
 
   def merge(sub: PersistentClass, parent: PersistentClass) {
-    if (!mergeSupport) throw new RuntimeException("Merge not supported!");
+    if (!mergeSupport) throw new RuntimeException("Merge not supported!")
 
-    val className = sub.getClassName();
+    val className = sub.getClassName()
     // 1. convert old to mappedsuperclass
-    val msc = new MappedSuperclass(parent.getSuperMappedSuperclass(), null);
-    msc.setMappedClass(parent.getMappedClass());
+    val msc = new MappedSuperclass(parent.getSuperMappedSuperclass(), null)
+    msc.setMappedClass(parent.getMappedClass())
 
     // 2.clear old subclass property
-    parent.setSuperMappedSuperclass(msc);
-    parent.setClassName(className);
-    parent.setProxyInterfaceName(className);
+    parent.setSuperMappedSuperclass(msc)
+    parent.setClassName(className)
+    parent.setProxyInterfaceName(className)
     if (parent.isInstanceOf[RootClass]) {
       val rootParent = parent.asInstanceOf[RootClass]
       rootParent.setDiscriminator(null)
@@ -213,18 +221,18 @@ private[hibernate] object PersistentClassMerger extends Logging {
     try {
       val declareProperties = declarePropertyField.get(parent).asInstanceOf[java.util.List[Property]]
       for (p <- declareProperties)
-        msc.addDeclaredProperty(p);
-      subPropertyField.get(parent).asInstanceOf[java.util.List[_]].clear();
-      subclassField.get(parent).asInstanceOf[java.util.List[_]].clear();
+        msc.addDeclaredProperty(p)
+      subPropertyField.get(parent).asInstanceOf[java.util.List[_]].clear()
+      subclassField.get(parent).asInstanceOf[java.util.List[_]].clear()
     } catch {
       case e: Exception =>
     }
 
     // 3. add property to old
     try {
-      val pIter = sub.getPropertyIterator();
+      val pIter = sub.getPropertyIterator()
       while (pIter.hasNext()) {
-        parent.addProperty(pIter.next().asInstanceOf[Property]);
+        parent.addProperty(pIter.next().asInstanceOf[Property])
       }
     } catch {
       case e: Exception =>
@@ -250,7 +258,7 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
    * 根据实体名(entityName)命名表
    */
   override def classToTableName(className: String): String = {
-    val tableName = policy.classToTableName(className);
+    val tableName = policy.classToTableName(className)
     if (tableName.length > NamingPolicy.defaultMaxLength) warn(s"$tableName's length greate than 30!")
     debug(s"Mapping entity[$className] to $tableName")
     tableName
@@ -299,25 +307,25 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
   /** Return the property name or propertyTableName */
   override def foreignKeyColumnName(propertyName: String, propertyEntityName: String,
     propertyTableName: String, referencedColumnName: String): String = {
-    var header = if (null == propertyName) propertyTableName else unqualify(propertyName);
-    if (header == null) { throw new AssertionFailure("NamingStrategy not properly filled"); }
+    var header = if (null == propertyName) propertyTableName else unqualify(propertyName)
+    if (header == null) { throw new AssertionFailure("NamingStrategy not properly filled") }
     header = if (isManyToOne) addUnderscores(header) else addUnderscores(propertyTableName)
-    return header + "_" + referencedColumnName;
+    return header + "_" + referencedColumnName
 
   }
 
   /** Collection Table */
   override def collectionTableName(ownerEntity: String, ownerEntityTable: String, associatedEntity: String,
     associatedEntityTable: String, propertyName: String): String = {
-    var ownerTable: String = null;
+    var ownerTable: String = null
     // Just for annotation configuration,it's ownerEntity is classname(not entityName), and
     // ownerEntityTable is class shortname
     if (Character.isUpperCase(ownerEntityTable.charAt(0))) {
-      ownerTable = policy.classToTableName(ownerEntity);
+      ownerTable = policy.classToTableName(ownerEntity)
     } else {
-      ownerTable = tableName(ownerEntityTable);
+      ownerTable = tableName(ownerEntityTable)
     }
-    val tblName = policy.collectionToTableName(ownerEntity, ownerTable, propertyName);
+    val tblName = policy.collectionToTableName(ownerEntity, ownerTable, propertyName)
     if (tblName.length() > NamingPolicy.defaultMaxLength) warn(s"$tblName's length greate than 30!")
     tblName
   }
