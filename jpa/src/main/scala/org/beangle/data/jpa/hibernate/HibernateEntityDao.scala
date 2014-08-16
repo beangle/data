@@ -405,7 +405,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     rs
   }
 
-  def remove[T](entities: Seq[T]) {
+  override def remove[T](entities: Iterable[T]) {
     if (null == entities || entities.isEmpty) return
     val session = currentSession
     for (entity <- entities; if (null != entity))
@@ -417,11 +417,11 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
       }
   }
 
-  def remove[T](first: T, entities: T*) {
+  override def remove[T](first: T, entities: T*) {
     remove(first :: entities.toList)
   }
 
-  def remove[T, ID](clazz: Class[T], id: ID, ids: ID*) {
+  override def remove[T, ID](clazz: Class[T], id: ID, ids: ID*) {
     removeBy(clazz, "id", id :: ids.toList)
   }
 
@@ -492,11 +492,11 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     }
   }
 
-  def saveOrUpdate[T](first: T, entities: T*) {
+  override def saveOrUpdate[T](first: T, entities: T*) {
     saveOrUpdate(first :: entities.toList)
   }
 
-  def saveOrUpdate[T](entities: Seq[T]) {
+  override def saveOrUpdate[T](entities: Iterable[T]) {
     if (!entities.isEmpty) {
       for (entity <- entities)
         entity match {

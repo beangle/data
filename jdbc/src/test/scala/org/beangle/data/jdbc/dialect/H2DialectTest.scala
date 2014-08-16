@@ -29,7 +29,7 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class H2DialectTest extends DialectTestCase {
 
-  val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
+  val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties"))
 
   "h2 " should "load tables and sequences" in {
     val ds: DataSource = new PoolingDataSourceFactory(properties("h2.driverClassName"),

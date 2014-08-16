@@ -54,8 +54,8 @@ abstract class AbstractDao[T <: Entity[ID], ID](val entityClass: Class[T], val g
   /**
    * remove entities.
    */
-  def remove(entities: Seq[T]) {
-    generalDao.saveOrUpdate(entities)
+  def remove(entities: Iterable[T]) {
+    generalDao.remove(entities)
   }
 
   /**

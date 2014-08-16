@@ -31,7 +31,7 @@ class RailsNamingPolicyTest extends FunSpec with Matchers {
   describe("RailsNamingPolicy") {
     it("Get Module") {
       val policy = new RailsNamingPolicy
-      for (resource <- ClassLoaders.getResources("META-INF/beangle/table.xml", classOf[RailsNamingPolicyTest]))
+      for (resource <- ClassLoaders.getResources("META-INF/beangle/table.xml"))
         policy.addConfig(resource)
       assert(policy.getSchema("org.beangle.data.jpa.sub").isDefined)
       val module = policy.getModule(classOf[TestBean])

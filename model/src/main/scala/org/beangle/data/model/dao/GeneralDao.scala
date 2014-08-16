@@ -50,12 +50,12 @@ trait GeneralDao {
   /**
    * save or update entities
    */
-  def saveOrUpdate[T](entities: Seq[T])
+  def saveOrUpdate[T](entities: Iterable[T])
 
   /**
    * remove entities.
    */
-  def remove[T](entities: Seq[T])
+  def remove[T](entities: Iterable[T])
 
   /**
    * remove entities.
