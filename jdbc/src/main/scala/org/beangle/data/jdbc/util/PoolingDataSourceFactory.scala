@@ -19,15 +19,13 @@
 package org.beangle.data.jdbc.util
 
 import javax.sql.DataSource
-
 import org.apache.commons.dbcp._
 import org.apache.commons.pool.impl.GenericObjectPool
 import org.slf4j._
 import java.util.Properties
+import org.beangle.commons.logging.Logging
 
-class PoolingDataSourceFactory(url: String, username: String, password: String, props: Properties) {
-
-  private val logger: Logger = LoggerFactory.getLogger(classOf[PoolingDataSourceFactory])
+class PoolingDataSourceFactory(url: String, username: String, password: String, props: Properties) extends Logging{
 
   val properties = if (null == props) new Properties() else new Properties(props)
 
@@ -49,7 +47,7 @@ class PoolingDataSourceFactory(url: String, username: String, password: String, 
         throw new IllegalStateException(
           "Could not load JDBC driver class [" + driverClassNameToUse + "]", ex)
     }
-    logger.debug("Loaded JDBC driver: {}", driverClassNameToUse)
+    debug(s"Loaded JDBC driver: $driverClassNameToUse")
   }
 
   def getObject: DataSource = {
