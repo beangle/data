@@ -26,20 +26,27 @@ import scala.collection.mutable
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
+
 /**
  * Mutable Map Type
  */
 class MapType extends UserCollectionType {
   type MMap = mutable.Map[Object, Object]
 
-  def instantiate(session: SessionImplementor, persister: CollectionPersister) = new PersistentMap(session)
+  def instantiate(session: SessionImplementor, persister: CollectionPersister) = {
+    new PersistentMap(session)
+  }
 
-  import scala.collection.JavaConversions.asJavaIterator
-  def wrap(session: SessionImplementor, collection: Object) = new PersistentMap(session, collection.asInstanceOf[MMap])
+  def wrap(session: SessionImplementor, collection: Object) = {
+    new PersistentMap(session, collection.asInstanceOf[MMap])
+  }
+  def getElementsIterator(collection: Object) = {
+    asJavaIterator(collection.asInstanceOf[MMap].iterator)
+  }
 
-  def getElementsIterator(collection: Object) = asJavaIterator(collection.asInstanceOf[MMap].iterator)
-
-  def contains(collection: Object, entity: Object) = collection.asInstanceOf[MMap].contains(entity)
+  def contains(collection: Object, entity: Object) = {
+    collection.asInstanceOf[MMap].contains(entity)
+  }
 
   def indexOf(collection: Object, entity: Object): Object = null
 
@@ -49,5 +56,7 @@ class MapType extends UserCollectionType {
     targetSeq ++= original.asInstanceOf[MMap]
   }
 
-  def instantiate(anticipatedSize: Int): Object = new mutable.HashMap[Object, Object]
+  def instantiate(anticipatedSize: Int): Object = {
+    new mutable.HashMap[Object, Object]
+  }
 }

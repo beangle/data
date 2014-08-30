@@ -26,21 +26,31 @@ import scala.collection.mutable.{ Buffer, ListBuffer }
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
+
 /**
  * Mutable Seq Type
  */
 class SeqType extends UserCollectionType {
 
-  override def instantiate(session: SessionImplementor, persister: CollectionPersister) = new PersistentSeq(session)
+  override def instantiate(session: SessionImplementor, persister: CollectionPersister) = {
+    new PersistentSeq(session)
+  }
 
-  import scala.collection.JavaConversions.asJavaIterator
-  override def wrap(session: SessionImplementor, collection: Object) = new PersistentSeq(session, collection.asInstanceOf[Buffer[Object]])
+  override def wrap(session: SessionImplementor, collection: Object) = {
+    new PersistentSeq(session, collection.asInstanceOf[Buffer[Object]])
+  }
 
-  override def getElementsIterator(collection: Object) = asJavaIterator(collection.asInstanceOf[Buffer[_]].iterator)
+  override def getElementsIterator(collection: Object) = {
+    asJavaIterator(collection.asInstanceOf[Buffer[_]].iterator)
+  }
 
-  override def contains(collection: Object, entity: Object) = collection.asInstanceOf[Buffer[_]].contains(entity)
+  override def contains(collection: Object, entity: Object) = {
+    collection.asInstanceOf[Buffer[_]].contains(entity)
+  }
 
-  override def indexOf(collection: Object, entity: Object) = Integer.valueOf(collection.asInstanceOf[Buffer[Object]].indexOf(entity))
+  override def indexOf(collection: Object, entity: Object) = {
+    Integer.valueOf(collection.asInstanceOf[Buffer[Object]].indexOf(entity))
+  }
 
   override def replaceElements(original: Object, target: Object, persister: CollectionPersister, owner: Object, copyCache: ju.Map[_, _], session: SessionImplementor) = {
     val targetSeq = target.asInstanceOf[Buffer[Any]]
@@ -48,5 +58,7 @@ class SeqType extends UserCollectionType {
     targetSeq ++= original.asInstanceOf[Seq[Any]]
   }
 
-  override def instantiate(anticipatedSize: Int): Object = new ListBuffer[Object]()
+  override def instantiate(anticipatedSize: Int): Object = {
+    new ListBuffer[Object]()
+  }
 }

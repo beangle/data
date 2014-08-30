@@ -19,7 +19,10 @@
 package org.beangle.data.jpa.hibernate.udt
 
 import java.{ util => ju }
+
+import scala.collection.JavaConversions.asJavaIterator
 import scala.collection.mutable
+
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
@@ -28,14 +31,22 @@ import org.hibernate.usertype.UserCollectionType
  */
 class SetType extends UserCollectionType {
   type MSet = mutable.Set[Object]
-  override def instantiate(session: SessionImplementor, persister: CollectionPersister) = new PersistentSet(session)
 
-  import scala.collection.JavaConversions.asJavaIterator
-  override def wrap(session: SessionImplementor, collection: Object) = new PersistentSet(session, collection.asInstanceOf[MSet]);
+  override def instantiate(session: SessionImplementor, persister: CollectionPersister) = {
+    new PersistentSet(session)
+  }
 
-  override def getElementsIterator(collection: Object) = asJavaIterator(collection.asInstanceOf[MSet].iterator)
+  override def wrap(session: SessionImplementor, collection: Object) = {
+    new PersistentSet(session, collection.asInstanceOf[MSet]);
+  }
 
-  override def contains(collection: Object, entity: Object) = collection.asInstanceOf[MSet].contains(entity)
+  override def getElementsIterator(collection: Object) = {
+    asJavaIterator(collection.asInstanceOf[MSet].iterator)
+  }
+
+  override def contains(collection: Object, entity: Object) = {
+    collection.asInstanceOf[MSet].contains(entity)
+  }
 
   override def indexOf(collection: Object, entity: Object): Object = null
 
@@ -45,5 +56,7 @@ class SetType extends UserCollectionType {
     targetSeq ++= original.asInstanceOf[Seq[Object]]
   }
 
-  override def instantiate(anticipatedSize: Int): Object = new mutable.HashSet[Object]
+  override def instantiate(anticipatedSize: Int): Object = {
+    new mutable.HashSet[Object]
+  }
 }
