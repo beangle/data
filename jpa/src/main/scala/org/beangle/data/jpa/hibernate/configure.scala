@@ -20,10 +20,9 @@ package org.beangle.data.jpa.hibernate
 
 import java.io.Serializable
 import java.lang.reflect.Field
-
+import java.{ util => ju }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
-
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.mapping.NamingPolicy
@@ -31,6 +30,16 @@ import org.hibernate.{ AssertionFailure, DuplicateMappingException }
 import org.hibernate.DuplicateMappingException.Type
 import org.hibernate.cfg.{ Configuration, Mappings, NamingStrategy }
 import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass }
+import org.beangle.data.jpa.hibernate.udt.OptionFloatType
+import org.beangle.data.jpa.hibernate.udt.OptionIntType
+import org.beangle.data.jpa.hibernate.udt.SeqType
+import org.beangle.data.jpa.hibernate.udt.OptionDoubleType
+import org.beangle.data.jpa.hibernate.udt.OptionCharType
+import org.beangle.data.jpa.hibernate.udt.OptionLongType
+import org.beangle.data.jpa.hibernate.udt.OptionBooleanType
+import org.beangle.data.jpa.hibernate.udt.OptionByteType
+import org.beangle.data.jpa.hibernate.udt.SetType
+import org.beangle.data.jpa.hibernate.udt.MapType
 
 class OverrideConfiguration extends Configuration with Logging {
 
@@ -89,8 +98,19 @@ class OverrideConfiguration extends Configuration with Logging {
     addGenerator("date", classOf[DateStyleGenerator])
     addGenerator("code", classOf[CodeStyleGenerator])
 
+    addCustomTypes()
+
+    private def addCustomTypes() {
+      Map(("seq", classOf[SeqType]), ("set", classOf[SetType]),
+        ("map", classOf[MapType]), ("byte?", classOf[OptionByteType]),
+        ("char?", classOf[OptionCharType]), ("int?", classOf[OptionIntType]),
+        ("bool?", classOf[OptionBooleanType]), ("long?", classOf[OptionLongType]),
+        ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType])) foreach {
+          case (name, clazz) => addTypeDef(name, clazz.getName, new ju.Properties)
+        }
+    }
     /**
-     * Add default generator for annotation and xml parsing 
+     * Add default generator for annotation and xml parsing
      */
     private def addGenerator(name: String, clazz: Class[_]): Unit = {
       val idGen = new IdGenerator()

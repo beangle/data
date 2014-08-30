@@ -23,7 +23,7 @@ import java.io.InputStream
 import java.net.URL
 import java.util.Properties
 import org.beangle.commons.inject.Resources
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.Strings._
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.inflector.Pluralizer
 import org.beangle.commons.text.inflector.en.EnNounPluralizer
@@ -56,14 +56,14 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     if (modules.size > 1) {
       modules.foreach {
         case (key, module) =>
-          var parentName = Strings.substringBeforeLast(key, ".")
-          while (Strings.isNotEmpty(parentName) && null == module.parent) {
+          var parentName = substringBeforeLast(key, ".")
+          while (isNotEmpty(parentName) && null == module.parent) {
             if (modules.contains(parentName) && module.packageName != parentName) {
               debug(s"set ${module.packageName}'s parent is $parentName")
               module.parent = modules(parentName)
             }
             val len = parentName.length
-            parentName = Strings.substringBeforeLast(parentName, ".")
+            parentName = substringBeforeLast(parentName, ".")
             if (parentName.length() == len) parentName = ""
           }
       }
@@ -106,7 +106,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       schemas += module._schema
     }
     if (!(melem \ "@prefix").isEmpty) module._prefix = (melem \ "@prefix").text
-    if (!(melem \ "@plau").isEmpty) module.plau = (melem \ "@plau").text == "true"
+    if (!(melem \ "@pluralize").isEmpty) module.pluralize = (melem \ "@pluralize").text == "true"
     modules.put(module.packageName, module)
     module.parent = parent
     (melem \ "module") foreach { child => parseModule(child, module) }
@@ -115,10 +115,10 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   def getSchema(packageName: String): Option[String] = {
     var name = packageName
     var matched: Option[TableModule] = None
-    while (Strings.isNotEmpty(name) && matched == None) {
+    while (isNotEmpty(name) && matched == None) {
       if (modules.contains(name)) matched = Some(modules(name))
       val len = name.length
-      name = Strings.substringBeforeLast(name, ".")
+      name = substringBeforeLast(name, ".")
       if (name.length() == len) name = ""
     }
     matched match {
@@ -155,10 +155,10 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   def getModule(clazz: Class[_]): Option[TableModule] = {
     var name = clazz.getName()
     var matched: Option[TableModule] = None
-    while (Strings.isNotEmpty(name) && matched == None) {
+    while (isNotEmpty(name) && matched == None) {
       if (modules.contains(name)) matched = Some(modules(name))
       val len = name.length
-      name = Strings.substringBeforeLast(name, ".")
+      name = substringBeforeLast(name, ".")
       if (name.length() == len) name = ""
     }
     matched
@@ -177,13 +177,13 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   }
 
   def classToTableName(clazzName: String): String = {
-    val className = if (clazzName.endsWith("Bean")) Strings.substringBeforeLast(clazzName, "Bean") else clazzName
+    val className = if (clazzName.endsWith("Bean")) substringBeforeLast(clazzName, "Bean") else clazzName
     var tableName = addUnderscores(unqualify(className))
     if (null != pluralizer) tableName = pluralizer.pluralize(tableName)
     tableName = getPrefix(ClassLoaders.loadClass(className)) + tableName
     //      if (tableName.length() > entityTableMaxLength) {
     //        for ((k, v) <- p.abbreviations)
-    //          tableName = Strings.replace(tableName, k, v)
+    //          tableName = replace(tableName, k, v)
     //      }
     tableName
   }
@@ -193,7 +193,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     //    getModule(ClassLoaders.loadClass(className)) foreach { p =>
     //      if ((collectionTableName.length() > relationTableMaxLength)) {
     //        for ((k, v) <- p.abbreviations)
-    //          collectionTableName = Strings.replace(collectionTableName, k, v)
+    //          collectionTableName = replace(collectionTableName, k, v)
     //      }
     //    }
     collectionTableName
@@ -210,7 +210,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     val sb = new StringBuilder()
     modules foreach {
       case (packageName, module) =>
-        sb.append(Strings.rightPad(packageName, maxlength, ' ')).append(" : [")
+        sb.append(rightPad(packageName, maxlength, ' ')).append(" : [")
           .append(module.schema.getOrElse(""));
         sb.append(" , ").append(module.prefix);
         //      if (!module.abbreviations.isEmpty()) {
@@ -221,22 +221,22 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     if (sb.length > 0) sb.deleteCharAt(sb.length - 1)
     sb.toString()
   }
-  protected def addUnderscores(name: String): String = Strings.unCamel(name.replace('.', '_'), '_')
+  protected def addUnderscores(name: String): String = unCamel(name.replace('.', '_'), '_')
 
   class TableModule {
     var packageName: String = _
-    var plau: Boolean = _
+    var pluralize: Boolean = _
     var _schema: String = _
     var _prefix: String = _
     var parent: TableModule = _
 
     def schema: Option[String] = {
-      if (Strings.isNotEmpty(_schema)) Some(_schema)
+      if (isNotEmpty(_schema)) Some(_schema)
       else if (null != parent) parent.schema
       else None
     }
     def prefix: String = {
-      if (Strings.isNotEmpty(_prefix)) _prefix
+      if (isNotEmpty(_prefix)) _prefix
       else if (null != parent) parent.prefix
       else ""
     }

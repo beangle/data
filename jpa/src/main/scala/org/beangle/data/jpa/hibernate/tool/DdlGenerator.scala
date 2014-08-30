@@ -39,7 +39,7 @@ object DdlGenerator {
     val configuration = new OverrideConfiguration()
     configuration.getProperties().put(AvailableSettings.DIALECT, dialect)
     val tableNamingPolicy = new RailsNamingPolicy
-    for (resource <- ClassLoaders.getResources("META-INF/beangle/table.xml"))
+    for (resource <- ClassLoaders.getResources("META-INF/beangle/orm-naming.xml"))
       tableNamingPolicy.addConfig(resource)
     configuration.setNamingStrategy(new RailsNamingStrategy(tableNamingPolicy))
 
