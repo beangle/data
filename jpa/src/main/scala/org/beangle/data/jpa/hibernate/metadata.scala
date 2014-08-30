@@ -18,11 +18,14 @@
  */
 package org.beangle.data.jpa.hibernate
 
+import java.{ util => ju }
+
 import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable
-import java.{ util => ju }
+
 import org.beangle.commons.bean.Factory
 import org.beangle.commons.inject.Container
+import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.meta.{ CollectionType, ComponentType, DefaultEntityMetadata, EntityMetadata, EntityType, IdentifierType, Type }
@@ -30,6 +33,7 @@ import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
 
+@description("基于Hibernate提供的元信息工厂")
 class HibernateMetadataFactory(container: Container) extends Factory[EntityMetadata] {
 
   private val meta = new EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values).build()

@@ -21,10 +21,12 @@ package org.beangle.data.jpa.hibernate
 import java.io.{ ByteArrayOutputStream, InputStream, Serializable }
 import java.sql.{ Blob, Clob }
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConversions.{ asScalaBuffer, mapAsJavaMap, seqAsJavaList }
+import scala.collection.mutable
 
 import org.beangle.commons.collection.page.{ Page, PageLimit, SinglePage }
 import org.beangle.commons.lang.{ Assert, Strings }
+import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.dao.OqlBuilder
 import org.beangle.data.model.Entity
@@ -33,9 +35,7 @@ import org.beangle.data.model.meta.EntityMetadata
 import org.hibernate.{ Hibernate, Query, SQLQuery, Session, SessionFactory }
 import org.hibernate.collection.spi.PersistentCollection
 import org.hibernate.engine.jdbc.StreamUtils
-import org.hibernate.proxy.{ HibernateProxy, LazyInitializer }
-import scala.collection.mutable
-import QuerySupport._
+import org.hibernate.proxy.HibernateProxy
 
 protected[hibernate] object QuerySupport {
 
@@ -139,7 +139,9 @@ protected[hibernate] object QuerySupport {
 /**
  * @author chaostone
  */
+@description("基于Hibernate提供的通用实体DAO")
 class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao with Logging {
+  import QuerySupport._
 
   val metadata: EntityMetadata = new EntityMetadataBuilder(List(sessionFactory)).build()
 

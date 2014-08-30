@@ -21,25 +21,19 @@ package org.beangle.data.jpa.hibernate
 import java.io.Serializable
 import java.lang.reflect.Field
 import java.{ util => ju }
+
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
+
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
+import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
+import org.beangle.data.jpa.hibernate.udt.{ MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType }
 import org.beangle.data.jpa.mapping.NamingPolicy
 import org.hibernate.{ AssertionFailure, DuplicateMappingException }
 import org.hibernate.DuplicateMappingException.Type
 import org.hibernate.cfg.{ Configuration, Mappings, NamingStrategy }
 import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass }
-import org.beangle.data.jpa.hibernate.udt.OptionFloatType
-import org.beangle.data.jpa.hibernate.udt.OptionIntType
-import org.beangle.data.jpa.hibernate.udt.SeqType
-import org.beangle.data.jpa.hibernate.udt.OptionDoubleType
-import org.beangle.data.jpa.hibernate.udt.OptionCharType
-import org.beangle.data.jpa.hibernate.udt.OptionLongType
-import org.beangle.data.jpa.hibernate.udt.OptionBooleanType
-import org.beangle.data.jpa.hibernate.udt.OptionByteType
-import org.beangle.data.jpa.hibernate.udt.SetType
-import org.beangle.data.jpa.hibernate.udt.MapType
 
 class OverrideConfiguration extends Configuration with Logging {
 
@@ -269,6 +263,7 @@ object RailsNamingStrategy {
   var namingPolicy: NamingPolicy = _
 }
 
+@description("类似Rails的数据库表名、列名命名策略")
 @SerialVersionUID(-2656604564223895758L)
 class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with Logging with Serializable {
 
