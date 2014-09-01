@@ -21,12 +21,14 @@ package org.beangle.data.jpa.hibernate
 import java.net.URL
 import java.{ util => ju }
 
-import org.beangle.commons.io.IOs
+import org.beangle.commons.io.{ IOs, ResourcePatternResolver }
 import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.bind.{ AbstractPersistModule, EntityPersistConfig }
+import org.beangle.data.jpa.mapping.RailsNamingPolicy
 import org.hibernate.{ SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.{ Configuration, NamingStrategy }
@@ -185,5 +187,21 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
       val region = if (null == definition.cacheRegion) role else definition.cacheRegion
       configuration.setCollectionCacheConcurrencyStrategy(role, definition.cacheUsage, region)
     }
+  }
+}
+
+object DefaultConfigurationBuilder {
+  def build(cfg: Configuration): Configuration = {
+    val resolver = new ResourcePatternResolver
+    val cfgBuilder = new DefaultSessionFactoryBuilder(null, cfg)
+    cfgBuilder.configLocations = resolver.getResources("classpath*:META-INF/hibernate.cfg.xml")
+    cfgBuilder.persistLocations = resolver.getResources("classpath*:META-INF/beangle/orm.properties")
+    val namingPolicy = new RailsNamingPolicy()
+    for (resource <- resolver.getResources("classpath*:META-INF/beangle/orm-naming.xml"))
+      namingPolicy.addConfig(resource)
+    cfgBuilder.namingStrategy = new RailsNamingStrategy(namingPolicy)
+    cfgBuilder.buildConfiguration()
+    cfg.buildMappings()
+    cfg
   }
 }

@@ -5,11 +5,8 @@ import java.lang.annotation.Annotation
 import java.lang.reflect.Method
 import java.{ util => ju }
 
-import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.lang.annotation.description
-import org.beangle.data.jpa.hibernate.{ DefaultSessionFactoryBuilder, OverrideConfiguration, RailsNamingStrategy }
-import org.beangle.data.jpa.mapping.RailsNamingPolicy
+import org.beangle.data.jpa.hibernate.{ DefaultConfigurationBuilder, OverrideConfiguration }
 import org.hibernate.`type`.{ CustomType, EnumType, Type }
 import org.hibernate.cfg.{ AvailableSettings, Configuration }
 import org.hibernate.dialect.Oracle10gDialect
@@ -32,24 +29,12 @@ object HbmGenerator {
  */
 class HbmGenerator {
 
-  private var hbconfig: Configuration = null
-  private var freemarkerConfig: freemarker.template.Configuration = _
+  private val hbconfig: Configuration = new OverrideConfiguration()
+  private val freemarkerConfig = new freemarker.template.Configuration
 
   def gen(file: String) {
-    val resolver = new ResourcePatternResolver
-    hbconfig = new OverrideConfiguration()
+    DefaultConfigurationBuilder.build(hbconfig)
     hbconfig.getProperties().put(AvailableSettings.DIALECT, new Oracle10gDialect())
-    val hbconfigBuilder = new DefaultSessionFactoryBuilder(null, hbconfig)
-    hbconfigBuilder.configLocations = resolver.getResources("classpath*:META-INF/hibernate.cfg.xml")
-    hbconfigBuilder.persistLocations = resolver.getResources("classpath*:META-INF/beangle/orm.properties")
-    val namingPolicy = new RailsNamingPolicy()
-    for (resource <- resolver.getResources("classpath*:META-INF/beangle/orm-naming.xml"))
-      namingPolicy.addConfig(resource)
-    hbconfigBuilder.namingStrategy = new RailsNamingStrategy(namingPolicy)
-    hbconfigBuilder.buildConfiguration()
-    hbconfig.buildMappings()
-
-    freemarkerConfig = new freemarker.template.Configuration()
     freemarkerConfig.setTemplateLoader(new ClassTemplateLoader(getClass(), "/"))
 
     val iter = hbconfig.getClassMappings
