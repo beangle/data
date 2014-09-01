@@ -19,18 +19,18 @@
 package org.beangle.data.jpa.hibernate
 
 import java.net.URL
-import java.{util => ju}
+import java.{ util => ju }
 
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jpa.bind.{AbstractPersistModule, EntityPersistConfig}
-import org.hibernate.{SessionFactory, SessionFactoryObserver}
+import org.beangle.data.jpa.bind.{ AbstractPersistModule, EntityPersistConfig }
+import org.hibernate.{ SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
-import org.hibernate.cfg.{Configuration, NamingStrategy}
-import org.hibernate.cfg.AvailableSettings.{DATASOURCE, DIALECT}
+import org.hibernate.cfg.{ Configuration, NamingStrategy }
+import org.hibernate.cfg.AvailableSettings.{ DATASOURCE, DIALECT }
 
 import javax.sql.DataSource
 /**
@@ -67,7 +67,6 @@ class HbmSessionFactoryBuilder(val dataSource: DataSource, val properties: ju.Pr
 
 }
 
-
 class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration: Configuration, val properties: ju.Properties = new ju.Properties) extends SessionFactoryBuilder {
 
   /**
@@ -94,7 +93,7 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
    * Import System properties and disable jdbc metadata lookup
    */
   private def processProperties() {
-    // 1. import system properties
+    // 1. Import system properties
     val sysProps = System.getProperties
     val keys = sysProps.propertyNames
     while (keys.hasMoreElements) {
@@ -111,8 +110,7 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
     // configuration.getProperties.put("hibernate.classLoader.application", beanClassLoader)
     if (dataSource != null) configuration.getProperties.put(DATASOURCE, dataSource)
     // Disable JdbcServicesImpl magic behaviour except declare explicitly,
-    // for it will slow startup performance. And it just consult medata's ddl semantic, which is
-    // seldom used.
+    // for it will slow startup performance. And it just consult medata's ddl semantic, which is seldom used.
     val useJdbcMetaName = "hibernate.temp.use_jdbc_metadata_defaults"
     if (properties.containsKey(DIALECT) && !properties.containsKey(useJdbcMetaName))
       properties.put(useJdbcMetaName, "false")
@@ -120,7 +118,7 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
     configuration.addProperties(this.properties)
   }
 
-  def build(): SessionFactory = {
+  def buildConfiguration() {
     processProperties()
 
     if (null != this.namingStrategy) configuration.setNamingStrategy(this.namingStrategy)
@@ -152,7 +150,9 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
       }
     } finally {
     }
-
+  }
+  def build(): SessionFactory = {
+    buildConfiguration()
     // do session factory build.
     val watch = new Stopwatch(true)
     val serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties).build()

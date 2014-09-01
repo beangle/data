@@ -11,9 +11,11 @@ class EnumType extends UserType with ParameterizedType {
   var enum: Enumeration = null
   var ordinal: Boolean = true
 
-  override def sqlTypes() = if (ordinal) Array(Types.INTEGER) else Array(Types.VARCHAR)
+  override def sqlTypes(): Array[Int] = {
+    if (ordinal) Array(Types.INTEGER) else Array(Types.VARCHAR)
+  }
 
-  override def returnedClass = classOf[Enumeration#Value]
+  override def returnedClass = enum.getClass()
 
   override def equals(x: Object, y: Object) = x == y
 
@@ -48,8 +50,9 @@ class EnumType extends UserType with ParameterizedType {
   }
 
   override def setParameterValues(parameters: ju.Properties) {
-    val objType = parameters.getProperty("type")
-    enum = Class.forName(objType + "$").getDeclaredField("MODULE$").get(null).asInstanceOf[Enumeration]
+    var enumClass = parameters.getProperty("enumClass")
+    if (!enumClass.endsWith("$")) enumClass += "$"
+    enum = Class.forName(enumClass).getDeclaredField("MODULE$").get(null).asInstanceOf[Enumeration]
   }
 
   override def deepCopy(value: Object): Object = value
