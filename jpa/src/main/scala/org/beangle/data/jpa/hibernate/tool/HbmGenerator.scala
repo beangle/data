@@ -17,7 +17,7 @@ import javax.validation.constraints.{ NotNull, Size }
 
 object HbmGenerator {
   def main(args: Array[String]) {
-    new HbmGenerator().gen("/tmp")
+    new HbmGenerator().gen("/tmp/hibernate.hbm.xml")
     println("/tmp/hibernate.hbm.xml generated.")
   }
 }
@@ -29,14 +29,17 @@ object HbmGenerator {
  */
 class HbmGenerator {
 
-  private val hbconfig: Configuration = new OverrideConfiguration()
   private val freemarkerConfig = new freemarker.template.Configuration
+  freemarkerConfig.setTemplateLoader(new ClassTemplateLoader(getClass(), "/"))
 
   def gen(file: String) {
+    val hbconfig: Configuration = new OverrideConfiguration()
     DefaultConfigurationBuilder.build(hbconfig)
     hbconfig.getProperties().put(AvailableSettings.DIALECT, new Oracle10gDialect())
-    freemarkerConfig.setTemplateLoader(new ClassTemplateLoader(getClass(), "/"))
+    gen(hbconfig, file)
+  }
 
+  def gen(hbconfig: Configuration, file: String): Unit = {
     val iter = hbconfig.getClassMappings
     val pcs = new ju.ArrayList[PersistentClass]
     while (iter.hasNext()) {
@@ -64,7 +67,7 @@ class HbmGenerator {
     data.put("classes", pcs)
     data.put("generator", this)
     val freemarkerTemplate = freemarkerConfig.getTemplate("hbm.ftl")
-    val fw = new FileWriter("/tmp/hibernate.hbm.xml")
+    val fw = new FileWriter(file)
     freemarkerTemplate.process(data, fw)
   }
 

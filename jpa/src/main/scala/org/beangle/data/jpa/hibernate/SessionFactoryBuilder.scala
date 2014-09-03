@@ -42,12 +42,11 @@ abstract class SessionFactoryBuilder extends Logging {
   def build(): SessionFactory
 }
 
-class HbmSessionFactoryBuilder(val dataSource: DataSource, val properties: ju.Properties = new ju.Properties) extends SessionFactoryBuilder {
+class HbmSessionFactoryBuilder(val dataSource: DataSource, val configuration: Configuration, val properties: ju.Properties = new ju.Properties) extends SessionFactoryBuilder {
   /** static and global hbm mapping without namingstrategy */
   var staticHbm: URL = _
 
   def build(): SessionFactory = {
-    val configuration = new Configuration
     configuration.addCacheableFile(staticHbm.getFile)
     import org.hibernate.cfg.AvailableSettings._
     if (dataSource != null) configuration.getProperties.put(DATASOURCE, dataSource)
@@ -153,6 +152,7 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
     } finally {
     }
   }
+
   def build(): SessionFactory = {
     buildConfiguration()
     // do session factory build.

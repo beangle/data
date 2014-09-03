@@ -19,10 +19,8 @@
 package org.beangle.data.jpa.hibernate
 
 import java.{ util => ju }
-
 import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable
-
 import org.beangle.commons.bean.Factory
 import org.beangle.commons.inject.Container
 import org.beangle.commons.lang.annotation.description
@@ -32,15 +30,16 @@ import org.beangle.data.model.meta.{ CollectionType, ComponentType, DefaultEntit
 import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
+import org.beangle.commons.inject.ContainerRefreshedHook
 
 @description("基于Hibernate提供的元信息工厂")
-class HibernateMetadataFactory(container: Container) extends Factory[EntityMetadata] {
+class HibernateMetadataFactory extends Factory[EntityMetadata] with ContainerRefreshedHook {
 
-  private val meta = new EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values).build()
+  var result: EntityMetadata = null
 
-  override def getObject: EntityMetadata = meta
-
-  override def singleton: Boolean = true
+  override def notify(container: Container): Unit = {
+    result = new EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values).build()
+  }
 }
 
 //TODO add test by xml or annotation configuration

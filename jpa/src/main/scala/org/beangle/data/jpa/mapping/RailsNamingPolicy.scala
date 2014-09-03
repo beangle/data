@@ -19,16 +19,14 @@
 package org.beangle.data.jpa.mapping
 
 import java.io.IOException
-import java.io.InputStream
 import java.net.URL
-import java.util.Properties
+
 import org.beangle.commons.inject.Resources
-import org.beangle.commons.lang.Strings._
+import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.Strings.{ isNotEmpty, rightPad, substringBeforeLast, unCamel }
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.inflector.Pluralizer
 import org.beangle.commons.text.inflector.en.EnNounPluralizer
-import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.model.annotation.code
 
 /**
  * 根据报名动态设置schema,prefix名字
@@ -49,6 +47,8 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
 
   private val schemas = new collection.mutable.HashSet[String]
 
+  //For information display
+  val configLocations = new collection.mutable.HashSet[URL]
   /**
    * adjust parent relation by package name
    */
@@ -69,11 +69,13 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       }
     }
   }
+
   def addConfig(url: URL): Unit = {
     try {
       debug(s"loading $url")
       val is = url.openStream()
       if (null != is) {
+        configLocations.add(url)
         (scala.xml.XML.load(is) \ "module") foreach { ele => parseModule(ele, null) }
         is.close()
       }
