@@ -43,7 +43,9 @@ class EntityType(val entityClass: Class[_], val entityName: String, val idName: 
   /**
    * Get the type of a particular (named) property
    */
-  override def getPropertyType(property: String): Option[Type] = propertyTypes.get(property)
+  override def getPropertyType(property: String): Option[Type] = {
+    propertyTypes.get(property)
+  }
 
   override def name: String = entityName
 

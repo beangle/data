@@ -88,6 +88,8 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
         } else if (htype.isCollectionType) {
           propertyTypes.put(pname,
             buildCollectionType(factory, defaultCollectionClass(htype), entityName + "." + pname))
+        } else {
+          propertyTypes.put(pname, new IdentifierType(htype.getReturnedClass))
         }
       }
       propertyTypes.put(cm.getIdentifierPropertyName, new IdentifierType(cm.getIdentifierType.getReturnedClass))
