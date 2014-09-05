@@ -58,7 +58,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
     while (index < attrs.length) {
       val nested = attrs(index)
       try {
-        property = getProperty(propObj, nested)
+        property = getProperty[Object](propObj, nested)
         objtype.getPropertyType(nested) match {
           case Some(t) => {
             if (null == property) {
@@ -137,7 +137,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
                 if (null == value) {
                   copyValue(entity, parentAttr, null)
                 } else {
-                  val oldValue = getProperty(entity, attr)
+                  val oldValue = getProperty[Object](entity, attr)
                   val newValue = convert(ot._2, foreignKey, value)
                   if (!Objects.equals(oldValue, newValue)) {
                     // 如果外键已经有值

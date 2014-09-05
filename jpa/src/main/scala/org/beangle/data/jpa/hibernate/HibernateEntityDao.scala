@@ -149,11 +149,11 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     sessionFactory.getCurrentSession()
   }
 
-  def get[T, ID](clazz: Class[T], id: ID): T = {
+  override def get[T, ID](clazz: Class[T], id: ID): T = {
     (find(metadata.getType(clazz).get.entityName, id).orNull).asInstanceOf[T]
   }
 
-  def getAll[T <: Entity[_]](clazz: Class[T]): Seq[T] = {
+  override def getAll[T](clazz: Class[T]): Seq[T] = {
     val hql = "from " + metadata.getType(clazz).orNull.entityName
     val query = currentSession.createQuery(hql)
     query.setCacheable(true)
@@ -173,14 +173,14 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     }
   }
 
-  def find[T, ID](clazz: Class[T], id: ID): Option[T] = {
+  override def find[T, ID](clazz: Class[T], id: ID): Option[T] = {
     find[T, ID](metadata.getType(clazz).get.entityName, id)
   }
 
   /**
    * search T by id.
    */
-  def find[T, ID](clazz: Class[T], first: ID, ids: ID*): Seq[T] = {
+  override def find[T, ID](clazz: Class[T], first: ID, ids: ID*): Seq[T] = {
     find(clazz, first :: ids.toList)
   }
 
@@ -248,7 +248,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     if (rs.isEmpty) 0 else rs.get(0).asInstanceOf[Number].longValue
   }
 
-  def count(entityClass: Class[_], keyName: String, value: Any): Long = count(entityClass.getName, keyName, value)
+  override def count(entityClass: Class[_], keyName: String, value: Any): Long = count(entityClass.getName, keyName, value)
 
   def count(entityClass: Class[_], attrs: List[String], values: List[Any], countAttr: String): Long = {
     Assert.isTrue(null != attrs && null != values && attrs.size == values.size)
@@ -279,13 +279,13 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     search(hql.toString, params).get(0).asInstanceOf[Number].longValue
   }
 
-  def exists(entityClass: Class[_], attr: String, value: Any): Boolean = count(entityClass, attr, value) > 0
+  override def exists(entityClass: Class[_], attr: String, value: Any): Boolean = count(entityClass, attr, value) > 0
 
   def exists(entityName: String, attr: String, value: Any): Boolean = count(entityName, attr, value) > 0
 
   def exists(entityClass: Class[_], attrs: List[String], values: List[Any]): Boolean = count(entityClass, attrs, values, null) > 0
 
-  def duplicate(entityClass: Class[_], id: Any, params: Map[String, Any]): Boolean = {
+  override def duplicate(entityClass: Class[_], id: Any, params: Map[String, Any]): Boolean = {
     duplicate(metadata.getType(entityClass).get.entityName, id, params)
   }
   def duplicate(entityName: String, id: Any, params: Map[String, Any]): Boolean = {
@@ -329,7 +329,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
   /**
    * 依据自构造的查询语句进行查询
    */
-  def search[T](query: BQuery[T]): Seq[T] = {
+  override def search[T](query: BQuery[T]): Seq[T] = {
     if (query.isInstanceOf[LimitQuery[T]]) {
       val limitQuery = query.asInstanceOf[LimitQuery[T]]
       if (null == limitQuery.limit) {
@@ -343,7 +343,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     }
   }
 
-  def search[T](builder: QueryBuilder[T]): Seq[T] = search[T](builder.build())
+  override def search[T](builder: QueryBuilder[T]): Seq[T] = search[T](builder.build())
 
   def uniqueResult[T](builder: QueryBuilder[T]): T = {
     val list = search(builder.build())
@@ -383,16 +383,16 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     new SinglePage[T](limit.pageNo, limit.pageSize, countQuery.uniqueResult().asInstanceOf[Number].intValue, asScalaBuffer(targetList))
   }
 
-  def evict(entity: AnyRef) {
+  override def evict(entity: AnyRef) {
     currentSession.evict(entity)
   }
 
-  def refresh[T](entity: T): T = {
+  override def refresh[T](entity: T): T = {
     currentSession.refresh(entity);
     entity
   }
 
-  def initialize[T](proxy: T): T = {
+  override def initialize[T](proxy: T): T = {
     var rs = proxy
     proxy match {
       case hp: HibernateProxy =>
@@ -472,7 +472,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     updates.toList
   }
 
-  def execute(opts: Operation*) {
+  override def execute(opts: Operation*) {
     for (operation <- opts) {
       operation.t match {
         case Operation.SaveUpdate =>
@@ -483,7 +483,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     }
   }
 
-  def execute(builder: Operation.Builder) {
+  override def execute(builder: Operation.Builder) {
     for (operation <- builder.build()) {
       operation.t match {
         case Operation.SaveUpdate =>

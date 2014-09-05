@@ -161,7 +161,7 @@ class CodeStyleGenerator extends IdentifierGenerator with Configurable {
   def generate(session: SessionImplementor, obj: Object): java.io.Serializable = {
     obj match {
       case c: Coded =>
-        c match {
+        identifierType match {
           case lt: LongType => Numbers.toLong(c.code)
           case it: IntegerType => Numbers.toInt(c.code)
           case st: ShortType => Numbers.toShort(c.code)

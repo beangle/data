@@ -32,6 +32,8 @@ trait GeneralDao {
    */
   def get[T, ID](clazz: Class[T], id: ID): T
 
+  def getAll[T](clazz: Class[T]): Seq[T]
+
   /**
    * find T by id.
    */
