@@ -18,6 +18,7 @@
  */
 package org.beangle.data.model.meta
 
+import java.{ io => jo }
 import org.beangle.data.model.Entity
 import org.beangle.commons.lang.Assert
 import org.beangle.commons.bean.PropertyUtils
@@ -51,5 +52,5 @@ class EntityType(val entityClass: Class[_], val entityName: String, val idName: 
 
   override def returnedClass = entityClass
 
-  def idClass: Class[Serializable] = propertyTypes(idName).returnedClass.asInstanceOf[Class[Serializable]]
+  def idClass: Class[jo.Serializable] = propertyTypes(idName).returnedClass.asInstanceOf[Class[jo.Serializable]]
 }
