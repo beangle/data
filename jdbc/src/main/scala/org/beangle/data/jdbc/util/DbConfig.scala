@@ -34,6 +34,7 @@ object DbConfig {
     dbconf.password = (xml \\ "password").text.trim
     dbconf.schema = (xml \\ "schema").text.trim
     dbconf.catalog = (xml \\ "catalog").text.trim
+    if (Strings.isEmpty(dbconf.catalog)) dbconf.catalog = null
     (xml \\ "db" \\ "props" \\ "prop").foreach { ele =>
       dbconf.props.put((ele \ "@name").text, (ele \ "@value").text);
     }

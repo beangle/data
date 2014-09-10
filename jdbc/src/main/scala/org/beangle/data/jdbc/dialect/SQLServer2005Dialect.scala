@@ -42,9 +42,9 @@ class SQLServer2005Dialect(version: String) extends SQLServerDialect(version) {
   override def limitGrammar: LimitGrammar = {
     class SqlServerLimitGrammar extends LimitGrammarBean(null, null, false, false, true) {
       override def limit(querySqlString: String, hasOffset: Boolean) = {
-        val sb: StringBuilder = new StringBuilder(querySqlString.trim().toLowerCase())
+        val sb: StringBuilder = new StringBuilder(querySqlString)
 
-        val orderByIndex: Int = sb.indexOf("order by")
+        val orderByIndex: Int = querySqlString.toLowerCase().indexOf("order by")
         var orderby: CharSequence = "ORDER BY CURRENT_TIMESTAMP";
         if (orderByIndex > 0) orderby = sb.subSequence(orderByIndex, sb.length())
 
@@ -60,8 +60,10 @@ class SQLServer2005Dialect(version: String) extends SQLServerDialect(version) {
 
         // Wrap the query within a with statement:
         sb.insert(0, "WITH query AS (").append(") SELECT * FROM query ")
-        sb.append("WHERE __hibernate_row_nr__ BETWEEN ? AND ?")
-
+        if (hasOffset)
+          sb.append("WHERE _row_nr_ BETWEEN ? AND ?")
+        else
+          sb.append("WHERE _row_nr_ BETWEEN 1 AND ?")
         sb.toString()
       }
     }
@@ -80,7 +82,7 @@ class SQLServer2005Dialect(version: String) extends SQLServerDialect(version) {
     // Find the end of the select statement
     val selectEndIndex = sql.indexOf(SELECT) + SELECT.length()
     // Insert after the select statement the row_number() function:
-    sql.insert(selectEndIndex, " ROW_NUMBER() OVER (" + orderby + ") as __hibernate_row_nr__,")
+    sql.insert(selectEndIndex, " ROW_NUMBER() OVER (" + orderby + ") as _row_nr_,")
   }
 
   protected def getSelectFieldsWithoutAliases(sql: StringBuilder) = {

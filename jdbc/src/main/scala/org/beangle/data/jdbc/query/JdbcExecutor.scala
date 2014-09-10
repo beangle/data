@@ -285,7 +285,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
               else stmt.setAsciiStream(index, value.asInstanceOf[Clob].getAsciiStream)
             }
             case BLOB => stmt.setBinaryStream(index, value.asInstanceOf[Blob].getBinaryStream)
-            case _ => stmt.setObject(index, value, sqltype)
+            case _ => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
           }
         } catch {
           case e: Exception => error("set value error", e);
@@ -311,8 +311,9 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
     val rows = new collection.mutable.ListBuffer[Seq[_]]
     val meta = rs.getMetaData()
     val cols = meta.getColumnCount()
+    val start = if (meta.getColumnName(1) == "_row_nr_") 1 else 0
     while (rs.next()) {
-      rows += (for (i <- 0 until cols) yield {
+      rows += (for (i <- start until cols) yield {
         var v = rs.getObject(i + 1)
         if (null != v && meta.getColumnType(i + 1) == TIMESTAMP && !v.isInstanceOf[Timestamp]) {
           if (null != JdbcExecutor.oracleTimestampMethod)
