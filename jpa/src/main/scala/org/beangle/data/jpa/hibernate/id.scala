@@ -107,8 +107,10 @@ class DateStyleGenerator extends IdentifierGenerator {
     val st = jdbcCoordinator.getStatementPreparer().prepareStatement(session.getFactory().getDialect().getSequenceNextValString(func.sequence))
     try {
       val rs = jdbcCoordinator.getResultSetReturn().extract(st)
+      rs.next()
+      val id = func.gen(year, rs.getLong(1))
       jdbcCoordinator.release(rs, st)
-      func.gen(year, rs.getLong(1))
+      id
     } finally {
       jdbcCoordinator.release(st)
     }
