@@ -162,7 +162,13 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         idx.unique = (rs.getBoolean("NON_UNIQUE") == false)
         val ascOrDesc = rs.getString("ASC_OR_DESC")
         if (null != ascOrDesc) idx.ascOrDesc = Some("A" == ascOrDesc)
-        idx.addColumn(table.column(rs.getString("COLUMN_NAME")))
+        val columnName = rs.getString("COLUMN_NAME")
+        //for oracle m_row$$ column
+        val column = table.getColumn(columnName) match {
+          case Some(column) => column
+          case None => new Column(columnName, 0)
+        }
+        idx.addColumn(column)
       }
     }
     rs.close()
