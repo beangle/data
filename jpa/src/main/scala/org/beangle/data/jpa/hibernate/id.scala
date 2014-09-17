@@ -18,29 +18,23 @@
  */
 package org.beangle.data.jpa.hibernate;
 
-import java.util.{ Calendar, Properties }
-import org.beangle.commons.lang.Strings
+import java.text.SimpleDateFormat
+import java.{util => ju}
+
+import org.beangle.commons.lang.{Numbers, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.mapping.NamingPolicy
-import org.beangle.data.model.{ IdGrowFastest, IdGrowSlow, YearId }
+import org.beangle.data.model.{Coded, IdGrowFastest, IdGrowSlow, YearId}
+import org.hibernate.`type`.{IntegerType, LongType, ShortType, Type}
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.spi.SessionImplementor
-import org.hibernate.id.IdentifierGenerator
-import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, SCHEMA, TABLE }
+import org.hibernate.id.{Configurable, IdentifierGenerator}
+import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, SCHEMA, TABLE}
 import org.hibernate.id.enhanced.SequenceStyleGenerator
-import org.hibernate.id.enhanced.SequenceStyleGenerator.{ DEF_SEQUENCE_NAME, SEQUENCE_PARAM }
+import org.hibernate.id.enhanced.SequenceStyleGenerator.{DEF_SEQUENCE_NAME, SEQUENCE_PARAM}
 import org.hibernate.mapping.Table
+
 import RailsNamingStrategy.namingPolicy
-import java.text.SimpleDateFormat
-import org.hibernate.id.PersistentIdentifierGenerator
-import java.{ util => ju }
-import org.beangle.data.model.Coded
-import org.beangle.commons.lang.Numbers
-import org.hibernate.`type`.Type
-import org.hibernate.`type`.LongType
-import org.hibernate.`type`.ShortType
-import org.hibernate.`type`.IntegerType
-import org.hibernate.id.Configurable
 /**
  * 按照表明进行命名序列<br>
  * 依据命名模式进行，默认模式seq_{table}<br>
@@ -58,10 +52,9 @@ class TableSeqGenerator extends SequenceStyleGenerator with Logging {
 
   var sequencePrefix = "seq_"
 
-  protected override def determineSequenceName(params: Properties, dialect: Dialect): String = {
+  protected override def determineSequenceName(params: ju.Properties, dialect: Dialect): String = {
     import SequenceStyleGenerator._
     import RailsNamingStrategy._
-    import PersistentIdentifierGenerator._
     var seqName = params.getProperty(SEQUENCE_PARAM)
     if (Strings.isEmpty(seqName)) {
       val tableName = params.getProperty(TABLE)
@@ -89,14 +82,14 @@ class DateStyleGenerator extends IdentifierGenerator {
     var year = 0
     val func = if (obj.isInstanceOf[YearId]) {
       year = obj.asInstanceOf[YearId].year
-      val curYear = Calendar.getInstance().get(Calendar.YEAR)
+      val curYear = ju.Calendar.getInstance().get(ju.Calendar.YEAR)
       obj match {
         case fastest: IdGrowFastest => if (year == curYear) DateId8 else YearId8
         case slow: IdGrowSlow => YearId4
         case _ => if (year == curYear) Id8 else YearId8
       }
     } else {
-      year = Calendar.getInstance().get(Calendar.YEAR)
+      year = ju.Calendar.getInstance().get(ju.Calendar.YEAR)
       obj match {
         case fastest: IdGrowFastest => DateId8
         case slow: IdGrowSlow => YearId4
@@ -124,22 +117,22 @@ abstract class IdFunc(val sequence: String) {
 object Id8 extends IdFunc("seq_second4") {
   val format = new SimpleDateFormat("YYYYMMDDHHmmss")
   override def gen(year: Int, seq: Number): Number = {
-    val cal = Calendar.getInstance
+    val cal = ju.Calendar.getInstance
     java.lang.Long.valueOf(format.format(new ju.Date)) * 10000 + seq.intValue
   }
 }
 
 object DateId8 extends IdFunc("seq_day10") {
   val format = new SimpleDateFormat("YYYYMMDD")
-  val base = Math.pow(10, 10).longValue
+  val base = Math.pow(10, 10).asInstanceOf[Long]
   override def gen(year: Int, seq: Number): Number = {
-    val cal = Calendar.getInstance
+    val cal = ju.Calendar.getInstance
     java.lang.Long.valueOf(format.format(new ju.Date)) * base + seq.longValue
   }
 }
 
 object YearId8 extends IdFunc("seq_year14") {
-  val base = Math.pow(10, 14).longValue
+  val base = Math.pow(10, 13).asInstanceOf[Long]
   override def gen(year: Int, seq: Number): Number = {
     year * base + seq.longValue()
   }
@@ -156,7 +149,7 @@ object YearId4 extends IdFunc("seq_year4") {
  */
 class CodeStyleGenerator extends IdentifierGenerator with Configurable {
   var identifierType: Type = _
-  override def configure(t: Type, params: Properties, dialect: Dialect) {
+  override def configure(t: Type, params: ju.Properties, dialect: Dialect) {
     this.identifierType = t;
   }
 
