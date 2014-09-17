@@ -132,9 +132,9 @@ object DateId8 extends IdFunc("seq_day10") {
 }
 
 object YearId8 extends IdFunc("seq_year14") {
-  val base = Math.pow(10, 13).asInstanceOf[Long]
+  val base = Math.pow(10, 14).asInstanceOf[Long]
   override def gen(year: Int, seq: Number): Number = {
-    year * base + seq.longValue()
+    year * base + seq.longValue
   }
 }
 
