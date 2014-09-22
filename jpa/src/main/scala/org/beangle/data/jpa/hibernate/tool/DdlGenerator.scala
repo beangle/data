@@ -21,7 +21,6 @@ package org.beangle.data.jpa.hibernate.tool
 import java.io.{ FileWriter, Writer }
 import java.{ util => ju }
 import java.util.Locale
-
 import org.beangle.commons.lang.{ ClassLoaders, Locales }
 import org.beangle.commons.lang.Strings.{ isBlank, split, substringAfter, substringAfterLast, substringBeforeLast }
 import org.beangle.commons.lang.SystemInfo
@@ -33,6 +32,7 @@ import org.hibernate.dialect.Dialect
 import org.hibernate.engine.spi.Mapping
 import org.hibernate.id.PersistentIdentifierGenerator
 import org.hibernate.mapping.{ Collection, Column, Component, ForeignKey, IdentifierCollection, IndexedCollection, ManyToOne, PersistentClass, Property, RootClass, Table, ToOne }
+import org.beangle.commons.lang.Strings
 
 object DdlGenerator {
   def main(args: Array[String]): Unit = {
@@ -46,7 +46,14 @@ object DdlGenerator {
     if (args.length > 2) locale = Locales.toLocale(args(2))
     var pattern: String = null
     if (args.length > 3) pattern = args(3)
-    new DdlGenerator(ClassLoaders.loadClass(args(0)).newInstance().asInstanceOf[Dialect], locale).gen(dir, pattern)
+
+    var dialect = args(0)
+
+    if (!dialect.contains(".")) {
+      if (!dialect.endsWith("Dialect")) dialect += "Dialect"
+      dialect = "org.hibernate.dialect." + Strings.capitalize(dialect)
+    }
+    new DdlGenerator(ClassLoaders.loadClass(dialect).newInstance().asInstanceOf[Dialect], locale).gen(dir, pattern)
   }
 }
 
@@ -74,11 +81,11 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
   /**
    * Generate sql scripts
    *
-   * @param fileName
+   * @param dirName
    * @param packageName
    * @throws Exception
    */
-  def gen(fileName: String, packageName: String): Unit = {
+  def gen(dirName: String, packageName: String): Unit = {
     configuration = DefaultConfigurationBuilder.build(new OverrideConfiguration())
     mapping = configuration.buildMapping()
     defaultCatalog = configuration.getProperties().getProperty(DEFAULT_CATALOG)
@@ -160,8 +167,8 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     // 3. export to files
     files foreach {
       case (key, sqls) =>
-        println("writing " + fileName + "/" + key)
-        val writer = new FileWriter(fileName + "/" + key, false)
+        println("writing " + dirName + "/" + key)
+        val writer = new FileWriter(dirName + "/" + key, false)
         writes(writer, sqls)
         writer.flush()
         writer.close()
