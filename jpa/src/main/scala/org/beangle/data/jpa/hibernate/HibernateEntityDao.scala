@@ -149,7 +149,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     sessionFactory.getCurrentSession()
   }
 
-  override def get[T, ID](clazz: Class[T], id: ID): T = {
+  override def get[T <: Entity[ID], ID <: Serializable](clazz: Class[T], id: ID): T = {
     (find(metadata.getType(clazz).get.entityName, id).orNull).asInstanceOf[T]
   }
 
@@ -160,7 +160,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     asScalaBuffer(query.list()).toList.asInstanceOf[List[T]]
   }
 
-  def find[T, ID](entityName: String, id: ID): Option[T] = {
+  def find[T <: Entity[ID], ID <: Serializable](entityName: String, id: ID): Option[T] = {
     if (Strings.contains(entityName, '.')) {
       val obj = currentSession.get(entityName, id.asInstanceOf[Serializable])
       if (null == obj) None else Some(obj.asInstanceOf[T])
@@ -173,18 +173,18 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     }
   }
 
-  override def find[T <: Entity[_], ID <: java.io.Serializable](clazz: Class[T], id: ID): Option[T] = {
+  override def find[T <: Entity[ID], ID <: Serializable](clazz: Class[T], id: ID): Option[T] = {
     find[T, ID](metadata.getType(clazz).get.entityName, id)
   }
 
   /**
    * search T by id.
    */
-  override def find[T <: Entity[_], ID <: java.io.Serializable](clazz: Class[T], first: ID, ids: ID*): Seq[T] = {
-    find(clazz, (first :: ids.toList).asInstanceOf[Iterable[_]])
+  override def find[T <: Entity[ID], ID <: Serializable](clazz: Class[T], first: ID, ids: ID*): Seq[T] = {
+    find(clazz, (first :: ids.toList).asInstanceOf[Iterable[ID]])
   }
 
-  override def find[T <: Entity[_]](entityClass: Class[T], ids: Iterable[_]): Seq[T] = {
+  override def find[T <: Entity[ID], ID <: Serializable](entityClass: Class[T], ids: Iterable[ID]): Seq[T] = {
     findBy(metadata.getType(entityClass).get.entityName, "id", ids)
   }
 
@@ -314,7 +314,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
    */
   def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, codeName: String, codeValue: Any): Boolean = {
     if (null != codeValue && Strings.isNotEmpty(codeValue.toString())) {
-      val list = find(clazz, codeName, List(codeValue))
+      val list = findBy(clazz, codeName, List(codeValue))
       if (!list.isEmpty) {
         if (id == null) true
         else {

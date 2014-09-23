@@ -31,6 +31,7 @@ import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
 import org.beangle.commons.inject.ContainerRefreshedHook
+import org.beangle.data.model.Entity
 
 @description("基于Hibernate提供的元信息工厂")
 class HibernateMetadataFactory extends Factory[EntityMetadata] with ContainerRefreshedHook {
