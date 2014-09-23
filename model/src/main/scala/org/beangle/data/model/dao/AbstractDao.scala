@@ -20,7 +20,7 @@ package org.beangle.data.model.dao
 
 import org.beangle.data.model.Entity
 
-abstract class AbstractDao[T <: Entity[ID], ID](val entityClass: Class[T], val generalDao: GeneralDao) extends Dao[T, ID] {
+abstract class AbstractDao[T <: Entity[ID], ID <: java.io.Serializable](val entityClass: Class[T], val generalDao: GeneralDao) extends Dao[T, ID] {
 
   /**
    * get T by id.

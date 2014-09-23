@@ -21,15 +21,14 @@ package org.beangle.data.model.dao
 import org.beangle.commons.collection.page.Page
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.collection.page.SinglePage
+import org.beangle.data.model.Entity
 
 /**
- * <p>
  * QueryPage class.
- * </p>
  *
  * @author chaostone
  */
-class QueryPage[T](query: LimitQuery[T], val generalDao: GeneralDao) extends AbstractQueryPage[T](query) {
+class QueryPage[T <: Entity[_]](query: LimitQuery[T], val generalDao: GeneralDao) extends AbstractQueryPage[T](query) {
 
   next()
 

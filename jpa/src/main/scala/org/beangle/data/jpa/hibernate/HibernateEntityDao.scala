@@ -173,26 +173,26 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     }
   }
 
-  override def find[T, ID](clazz: Class[T], id: ID): Option[T] = {
+  override def find[T <: Entity[_], ID <: java.io.Serializable](clazz: Class[T], id: ID): Option[T] = {
     find[T, ID](metadata.getType(clazz).get.entityName, id)
   }
 
   /**
    * search T by id.
    */
-  override def find[T, ID](clazz: Class[T], first: ID, ids: ID*): Seq[T] = {
-    find(clazz, first :: ids.toList)
+  override def find[T <: Entity[_], ID <: java.io.Serializable](clazz: Class[T], first: ID, ids: ID*): Seq[T] = {
+    find(clazz, (first :: ids.toList).asInstanceOf[Iterable[_]])
   }
 
-  def find[T <: Entity[_]](entityClass: Class[T], ids: Iterable[Any]): Seq[T] = {
-    find(metadata.getType(entityClass).get.entityName, "id", ids)
+  override def find[T <: Entity[_]](entityClass: Class[T], ids: Iterable[_]): Seq[T] = {
+    findBy(metadata.getType(entityClass).get.entityName, "id", ids)
   }
 
-  def find[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[Any]): Seq[T] = {
-    find(metadata.getType(entityClass).get.entityName, keyName, values)
+  override def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[Any]): Seq[T] = {
+    findBy(metadata.getType(entityClass).get.entityName, keyName, values)
   }
 
-  def find[T](entityName: String, keyName: String, values: Iterable[Any]): Seq[T] = {
+  override def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[Any]): Seq[T] = {
     if (values.isEmpty) return List.empty
     val hql = new StringBuilder()
     hql.append("select entity from ").append(entityName).append(" as entity where entity.").append(keyName)

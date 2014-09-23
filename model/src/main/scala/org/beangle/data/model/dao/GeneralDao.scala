@@ -18,6 +18,8 @@
  */
 package org.beangle.data.model.dao
 
+import org.beangle.data.model.Entity
+
 /**
  * dao 查询辅助类
  *
@@ -30,20 +32,25 @@ trait GeneralDao {
    * @param clazz 类型
    * @param id 唯一标识
    */
-  def get[T, ID](clazz: Class[T], id: ID): T
+  def get[T <: Entity[_], ID <: java.io.Serializable](clazz: Class[T], id: ID): T
 
-  def getAll[T](clazz: Class[T]): Seq[T]
+  def getAll[T <: Entity[_]](clazz: Class[T]): Seq[T]
 
   /**
    * find T by id.
    */
-  def find[T, ID](clazz: Class[T], id: ID): Option[T]
+  def find[T <: Entity[_], ID <: java.io.Serializable](clazz: Class[T], id: ID): Option[T]
 
   /**
    * search T by id.
    */
-  def find[T, ID](clazz: Class[T], first: ID, ids: ID*): Seq[T]
+  def find[T <: Entity[_], ID <: java.io.Serializable](clazz: Class[T], first: ID, ids: ID*): Seq[T]
 
+  def find[T <: Entity[_]](entityClass: Class[T], ids: Iterable[_]): Seq[T]
+
+  def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[Any]): Seq[T]
+
+  def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[Any]): Seq[T]
   /**
    * save or update entities
    */
@@ -67,11 +74,11 @@ trait GeneralDao {
   /**
    * remove entities by id
    */
-  def remove[T, ID](clazz: Class[T], id: ID, ids: ID*)
+  def remove[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], id: ID, ids: ID*)
 
-  def search[T](builder: QueryBuilder[T]): Seq[T]
+  def search[T <: Entity[_]](builder: QueryBuilder[T]): Seq[T]
 
-  def search[T](query: Query[T]): Seq[T]
+  def search[T <: Entity[_]](query: Query[T]): Seq[T]
 
   /**
    * 在同一个session保存、删除
