@@ -52,5 +52,5 @@ class EntityType(val entityClass: Class[_], val entityName: String, val idName: 
 
   override def returnedClass = entityClass
 
-  def idClass: Class[jo.Serializable] = propertyTypes(idName).returnedClass.asInstanceOf[Class[jo.Serializable]]
+  def idType: Class[jo.Serializable] = propertyTypes(idName).returnedClass.asInstanceOf[Class[jo.Serializable]]
 }
