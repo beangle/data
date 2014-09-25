@@ -30,7 +30,7 @@ import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.dao.OqlBuilder
 import org.beangle.data.model.Entity
-import org.beangle.data.model.dao.{ Condition, GeneralDao, LimitQuery, Operation, Query => BQuery, QueryBuilder }
+import org.beangle.data.model.dao.{ Condition, EntityDao, LimitQuery, Operation, Query => BQuery, QueryBuilder }
 import org.beangle.data.model.meta.EntityMetadata
 import org.hibernate.{ Hibernate, Query, SQLQuery, Session, SessionFactory }
 import org.hibernate.collection.spi.PersistentCollection
@@ -140,7 +140,7 @@ protected[hibernate] object QuerySupport {
  * @author chaostone
  */
 @description("基于Hibernate提供的通用实体DAO")
-class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao with Logging {
+class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao with Logging {
   import QuerySupport._
 
   val metadata: EntityMetadata = new EntityMetadataBuilder(List(sessionFactory)).build()
@@ -200,10 +200,10 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends GeneralDao 
     val parameterMap = new mutable.HashMap[String, Any]
     if (values.size < 500) {
       parameterMap.put("keyName", values)
-      val query = OqlBuilder.hql(hql.toString())
+      val query = OqlBuilder.oql(hql.toString())
       return search(query.params(parameterMap).build())
     } else {
-      val query = OqlBuilder.hql(hql.toString())
+      val query = OqlBuilder.oql(hql.toString())
       val rs = new mutable.ListBuffer[T]
       var i = 0
       while (i < values.size) {

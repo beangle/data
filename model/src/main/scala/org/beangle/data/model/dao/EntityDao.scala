@@ -25,7 +25,7 @@ import org.beangle.data.model.Entity
  *
  * @author chaostone
  */
-trait GeneralDao {
+trait EntityDao {
   /**
    * 查询指定id的对象
    *

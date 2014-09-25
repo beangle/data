@@ -28,13 +28,13 @@ import org.beangle.data.model.Entity
  *
  * @author chaostone
  */
-class QueryPage[T <: Entity[_]](query: LimitQuery[T], val generalDao: GeneralDao) extends AbstractQueryPage[T](query) {
+class QueryPage[T <: Entity[_]](query: LimitQuery[T], val entityDao: EntityDao) extends AbstractQueryPage[T](query) {
 
   next()
 
   def moveTo(pageNo: Int): Page[T] = {
     query.limit(PageLimit(pageNo, query.limit.pageSize))
-    updatePage(generalDao.search(query).asInstanceOf[SinglePage[T]])
+    updatePage(entityDao.search(query).asInstanceOf[SinglePage[T]])
     this
   }
 }

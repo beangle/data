@@ -27,9 +27,9 @@ import org.beangle.data.jpa.util.Jpas
 object OqlBuilder {
   val Lang = Query.Lang("Oql")
 
-  def hql[E](hql: String): OqlBuilder[E] = {
+  def oql[E](oql: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
-    query.statement = hql
+    query.statement = oql
     query
   }
 
