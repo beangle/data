@@ -15,6 +15,7 @@
     <module>jdbc</module>
     <module>model</module>
     <module>jpa</module>
+    <module>serializer</module>
     <module>report</module>
     <module>conversion</module>
     <module>lint</module>

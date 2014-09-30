@@ -299,7 +299,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
       i += 1
     }
     val list = search(b.toString(), paramsMap).asInstanceOf[Seq[Entity[_]]]
-    if (!list.isEmpty()) {
+    if (!list.isEmpty) {
       if (null == id) false
       else {
         for (e <- list) if (!(e.id == id)) return false
