@@ -1,11 +1,11 @@
-package org.beangle.data.serializer.format
+package org.beangle.data.serializer
 
 import java.util.TreeMap
 
-object FormatterException {
+object SerializeException {
   final val SEPARATOR = "\n-------------------------------";
 }
-class FormatterException(message: String, cause: Throwable = null) extends RuntimeException(message, cause) {
+class SerializeException(message: String, cause: Throwable = null) extends RuntimeException(message, cause) {
   private val stuff = new TreeMap[String, String]();
 
   def add(name: String, information: String) {

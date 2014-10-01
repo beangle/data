@@ -1,7 +1,7 @@
 package org.beangle.data.serializer.marshal
 
 import org.beangle.data.serializer.converter.{ Converter, ConverterRegistry }
-import org.beangle.data.serializer.format.FormatterException
+import org.beangle.data.serializer.SerializeException
 import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.io.path.{ Path, PathTracker }
 import org.beangle.data.serializer.util.ObjectIdDictionary
@@ -39,10 +39,10 @@ class MarshallingContext(val marshaller: Marshaller, val writer: StreamWriter, r
   }
 }
 
-class CircularReferenceException(msg: String) extends FormatterException(msg) {
+class CircularReferenceException(msg: String) extends SerializeException(msg) {
 }
 class Id(val item: AnyRef, val path: Path)
-class ReferencedImplicitElementException(item: Object, path: Path) extends FormatterException("Cannot reference implicit element") {
+class ReferencedImplicitElementException(item: Object, path: Path) extends SerializeException("Cannot reference implicit element") {
   add("implicit-element", item.toString())
   add("referencing-element", path.toString())
 }

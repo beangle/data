@@ -5,7 +5,7 @@ import java.{ util => ju }
 import scala.collection.mutable
 
 import org.beangle.commons.lang.reflect.Reflections
-import org.beangle.data.serializer.format.FormatterException
+import org.beangle.data.serializer.SerializeException
 import org.beangle.data.serializer.mapper.Mapper
 
 class DefaultConverterRegistry extends ConverterRegistry {
@@ -20,7 +20,7 @@ class DefaultConverterRegistry extends ConverterRegistry {
     var converter = cache.get(clazz)
     if (null == converter) {
       converter = searchConverter(clazz)
-      if (null == converter) throw new FormatterException("No converter specified for " + clazz, null)
+      if (null == converter) throw new SerializeException("No converter specified for " + clazz, null)
       else cache.put(clazz, converter)
     }
     converter.asInstanceOf[Converter[T]]
