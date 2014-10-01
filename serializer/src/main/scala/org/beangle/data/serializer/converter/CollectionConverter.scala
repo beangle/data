@@ -1,4 +1,4 @@
-package org.beangle.data.serializer.marshal.converter
+package org.beangle.data.serializer.converter
 
 import java.{ util => ju }
 import org.beangle.data.serializer.io.StreamWriter

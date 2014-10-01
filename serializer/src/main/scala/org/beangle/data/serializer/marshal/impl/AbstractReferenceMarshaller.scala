@@ -1,9 +1,10 @@
 package org.beangle.data.serializer.marshal.impl
 
+import org.beangle.data.serializer.converter.{ Converter, ConverterRegistry }
 import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.io.path.Path
 import org.beangle.data.serializer.mapper.Mapper
-import org.beangle.data.serializer.marshal.{ Converter, ConverterRegistry, Id, MarshallingContext }
+import org.beangle.data.serializer.marshal.{ Id, MarshallingContext }
 
 object ReferenceMarshaller {
   val RELATIVE = 0;

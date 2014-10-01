@@ -1,4 +1,4 @@
-package org.beangle.data.serializer.marshal.converter
+package org.beangle.data.serializer.converter
 
 import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper

@@ -1,16 +1,9 @@
 package org.beangle.data.serializer.marshal.impl
 
-import org.beangle.data.serializer.formatter.FormatterException
+import org.beangle.data.serializer.converter.{ Converter, ConverterRegistry }
 import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper
-import org.beangle.data.serializer.util.ObjectIdDictionary
-import org.beangle.data.serializer.marshal.DefaultDataHolder
-import org.beangle.data.serializer.marshal.DataHolder
-import org.beangle.data.serializer.marshal.MarshallingContext
-import org.beangle.data.serializer.marshal.ConverterRegistry
-import org.beangle.data.serializer.marshal.Converter
-import org.beangle.data.serializer.marshal.Marshaller
-import org.beangle.data.serializer.marshal.CircularReferenceException
+import org.beangle.data.serializer.marshal.{ CircularReferenceException, DataHolder, Marshaller, MarshallingContext }
 
 class TreeMarshaller(val registry: ConverterRegistry, val mapper: Mapper) extends Marshaller {
 

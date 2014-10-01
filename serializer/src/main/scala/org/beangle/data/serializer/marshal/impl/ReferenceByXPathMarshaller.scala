@@ -1,10 +1,11 @@
 package org.beangle.data.serializer.marshal.impl
 
-import org.beangle.data.serializer.io.StreamWriter
-import org.beangle.data.serializer.mapper.Mapper
+import org.beangle.data.serializer.converter.ConverterRegistry
 import org.beangle.data.serializer.io.path.Path
-import org.beangle.data.serializer.marshal.ConverterRegistry
+import org.beangle.data.serializer.mapper.Mapper
 import org.beangle.data.serializer.marshal.MarshallingContext
+
+import ReferenceMarshaller.{ ABSOLUTE, SINGLE_NODE }
 
 class ReferenceByXPathMarshaller(registry: ConverterRegistry, mapper: Mapper, mode: Int) extends AbstractReferenceMarshaller(registry, mapper) {
 

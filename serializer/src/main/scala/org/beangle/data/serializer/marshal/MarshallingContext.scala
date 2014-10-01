@@ -1,10 +1,10 @@
 package org.beangle.data.serializer.marshal
 
+import org.beangle.data.serializer.converter.{ Converter, ConverterRegistry }
+import org.beangle.data.serializer.format.FormatterException
 import org.beangle.data.serializer.io.StreamWriter
+import org.beangle.data.serializer.io.path.{ Path, PathTracker }
 import org.beangle.data.serializer.util.ObjectIdDictionary
-import org.beangle.data.serializer.io.path.PathTracker
-import org.beangle.data.serializer.io.path.Path
-import org.beangle.data.serializer.formatter.FormatterException
 
 class MarshallingContext(val marshaller: Marshaller, val writer: StreamWriter, registry: ConverterRegistry) {
 

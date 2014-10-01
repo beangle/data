@@ -1,11 +1,10 @@
 package org.beangle.data.serializer.mapper
 
 class Null {}
+
 trait Mapper {
 
   def serializedClass(clazz: Class[_]): String
-
-  //def isImmutableValueType(clazz: Class[_]): Boolean
 
   def aliasForSystemAttribute(name: String): String
 
@@ -13,27 +12,9 @@ trait Mapper {
 
   def serializedMember(clazz: Class[_], memberName: String): String
 
-}
+  def alias(alias: String, clazz: Class[_]): Unit
 
-class DefaultMapper extends Mapper {
-  override def serializedClass(clazz: Class[_]): String = {
-    clazz.getSimpleName()
-  }
-
-//  override def isImmutableValueType(clazz: Class[_]): Boolean = {
-//    false
-//  }
-
-  override def aliasForSystemAttribute(name: String): String = {
-    name
-  }
-
-  override def defaultImplementationOf(clazz: Class[_]): Class[_] = {
-    clazz
-  }
-
-  override def serializedMember(clazz: Class[_], memberName: String): String = {
-    memberName
-  }
-
+  def alias(alias: String, className: String): Unit
+  
+  def aliasUnCamel(classes: Class[_]*): Unit
 }

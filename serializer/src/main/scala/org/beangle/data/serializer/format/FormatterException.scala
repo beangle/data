@@ -1,4 +1,4 @@
-package org.beangle.data.serializer.formatter
+package org.beangle.data.serializer.format
 
 import java.util.TreeMap
 
