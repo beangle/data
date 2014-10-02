@@ -1,15 +1,12 @@
-package org.beangle.data.serializer.mapper.impl
+package org.beangle.data.serializer.mapper
 
 import java.io.File
-import java.lang.reflect.{ Field, Method, Constructor }
 import java.net.{ URI, URL }
 import java.{ util => ju }
 import java.{ lang => jl }
-import java.util.{ BitSet, Calendar, Date, Locale, Properties, UUID }
+import scala.math.{ BigDecimal, BigInt }
 
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
-import org.beangle.data.serializer.mapper.Mapper
-
 class DefaultMapper extends Mapper {
 
   val classAlias = new collection.mutable.HashMap[Class[_], String]
@@ -59,7 +56,7 @@ class DefaultMapper extends Mapper {
     aliasUnCamel(classOf[Null], classOf[jl.Float], classOf[jl.Double], classOf[jl.Long], classOf[jl.Short])
     aliasUnCamel(classOf[jl.Byte], classOf[jl.Boolean], classOf[jl.Number], classOf[jl.Object], classOf[BigDecimal])
     aliasUnCamel(classOf[jl.StringBuilder], classOf[StringBuffer], classOf[scala.StringBuilder])
-    aliasUnCamel(classOf[String], classOf[Method], classOf[Constructor[_]], classOf[Field], classOf[ju.Date])
+    aliasUnCamel(classOf[String], classOf[jl.reflect.Method], classOf[jl.reflect.Constructor[_]], classOf[jl.reflect.Field], classOf[ju.Date])
     aliasUnCamel(classOf[URI], classOf[URL])
     aliasUnCamel(classOf[scala.math.BigInt], classOf[scala.math.BigDecimal])
 
@@ -90,8 +87,8 @@ class DefaultMapper extends Mapper {
     alias("sql-date", "java.sql.Date")
 
     alias("file", classOf[File])
-    alias("locale", classOf[Locale])
-    alias("gregorian-calendar", classOf[Calendar])
+    alias("locale", classOf[ju.Locale])
+    alias("gregorian-calendar", classOf[ju.Calendar])
 
     alias("duration", "javax.xml.datatype.Duration")
     alias("concurrent-hash-map", classOf[ju.concurrent.ConcurrentHashMap[_, _]])

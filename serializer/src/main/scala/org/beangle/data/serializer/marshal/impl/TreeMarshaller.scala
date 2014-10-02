@@ -3,7 +3,7 @@ package org.beangle.data.serializer.marshal.impl
 import org.beangle.data.serializer.converter.{ Converter, ConverterRegistry }
 import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper
-import org.beangle.data.serializer.marshal.{ CircularReferenceException, DataHolder, Marshaller, MarshallingContext }
+import org.beangle.data.serializer.marshal.{ CircularReferenceException, Marshaller, MarshallingContext }
 
 class TreeMarshaller(val registry: ConverterRegistry, val mapper: Mapper) extends Marshaller {
 
@@ -20,8 +20,8 @@ class TreeMarshaller(val registry: ConverterRegistry, val mapper: Mapper) extend
     parentObjects.removeId(item)
   }
 
-  override def marshal(item: Object, writer: StreamWriter, dataHolder: DataHolder): Unit = {
-    val context = createMarshallingContext(writer, registry, dataHolder)
+  override def marshal(item: Object, writer: StreamWriter): Unit = {
+    val context = createMarshallingContext(writer, registry)
     if (item == null) {
       writer.startNode(mapper.serializedClass(null), null)
     } else {
@@ -31,7 +31,7 @@ class TreeMarshaller(val registry: ConverterRegistry, val mapper: Mapper) extend
     writer.endNode()
   }
 
-  protected def createMarshallingContext(writer: StreamWriter, registry: ConverterRegistry, dataHolder: DataHolder): MarshallingContext = {
+  protected def createMarshallingContext(writer: StreamWriter, registry: ConverterRegistry): MarshallingContext = {
     return new MarshallingContext(this, writer, registry)
   }
 }

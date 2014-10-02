@@ -4,8 +4,8 @@ import java.io.{ OutputStream, StringWriter, Writer }
 import org.beangle.data.serializer.converter.{ ConverterRegistry, DefaultConverterRegistry }
 import org.beangle.data.serializer.io.{ StreamDriver, StreamWriter }
 import org.beangle.data.serializer.mapper.Mapper
-import org.beangle.data.serializer.mapper.impl.DefaultMapper
-import org.beangle.data.serializer.marshal.{ DataHolder, Marshaller }
+import org.beangle.data.serializer.mapper.DefaultMapper
+import org.beangle.data.serializer.marshal.Marshaller
 import org.beangle.data.serializer.marshal.impl.ReferenceByXPathMarshaller
 import org.beangle.data.serializer.marshal.impl.ReferenceMarshaller.{ ABSOLUTE, RELATIVE, SINGLE_NODE }
 import org.beangle.data.serializer.marshal.impl.TreeMarshaller
@@ -20,11 +20,6 @@ object Serializer {
   val XPATH_ABSOLUTE_REFERENCES = 1004
   val SINGLE_NODE_XPATH_RELATIVE_REFERENCES = 1005
   val SINGLE_NODE_XPATH_ABSOLUTE_REFERENCES = 1006
-
-  val PRIORITY_VERY_HIGH = 10000
-  val PRIORITY_NORMAL = 0
-  val PRIORITY_LOW = -10
-  val PRIORITY_VERY_LOW = -20
 
   def apply(driver: StreamDriver): Serializer = {
     new Serializer(driver, new DefaultMapper, new DefaultConverterRegistry).setMode(XPATH_RELATIVE_REFERENCES)
@@ -63,11 +58,7 @@ class Serializer(val streamDriver: StreamDriver, val mapper: Mapper, val registr
   }
 
   def marshal(obj: Object, writer: StreamWriter): Unit = {
-    marshal(obj, writer, null)
-  }
-
-  def marshal(obj: Object, writer: StreamWriter, dataHolder: DataHolder): Unit = {
-    marshaller.marshal(obj, writer, dataHolder)
+    marshaller.marshal(obj, writer)
   }
 
   def setMode(mode: Int): this.type = {
