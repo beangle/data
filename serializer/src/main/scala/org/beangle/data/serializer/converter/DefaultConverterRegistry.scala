@@ -29,7 +29,13 @@ class DefaultConverterRegistry extends ConverterRegistry {
   override def register[T](converter: Converter[T]) {
     val clazz = Reflections.getGenericParamType(converter.getClass, classOf[Converter[_]])("T")
     converterMap.get(clazz) match {
-      case Some(converters) => converterMap.put(clazz, converters + converter)
+      case Some(converters) =>
+        converters.find { each =>
+          each.getClass() == converter.getClass()
+        } match {
+          case Some(c) => converterMap.put(clazz, converters - c + converter)
+          case None => converterMap.put(clazz, converters + converter)
+        }
       case None => converterMap.put(clazz, Set(converter))
     }
   }
@@ -46,6 +52,7 @@ class DefaultConverterRegistry extends ConverterRegistry {
     register(new SqlDateConverter)
     register(new CalendarConverter)
     register(new TimestampConverter)
+    register(new TimeConverter)
   }
 
   private def searchConverter(sourceType: Class[_]): Converter[_] = {
@@ -68,7 +75,7 @@ class DefaultConverterRegistry extends ConverterRegistry {
     }
 
     val converter = searchSupport(sourceType, converterMap.get(classOf[AnyRef]))
-    if (converter != null) converter else null
+    if (converter != null) converter else ObjectConverter
   }
 
   private def searchSupport(clazz: Class[_], converterSet: Option[Set[Converter[_]]]): Converter[_] = {

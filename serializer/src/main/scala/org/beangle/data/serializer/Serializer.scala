@@ -10,6 +10,8 @@ import org.beangle.data.serializer.marshal.impl.ReferenceByXPathMarshaller
 import org.beangle.data.serializer.marshal.impl.ReferenceMarshaller.{ ABSOLUTE, RELATIVE, SINGLE_NODE }
 import org.beangle.data.serializer.marshal.impl.TreeMarshaller
 import org.beangle.data.serializer.marshal.impl.ReferenceMarshaller
+import org.beangle.data.serializer.converter.DateConverter
+import java.text.SimpleDateFormat
 
 object Serializer {
   val NO_REFERENCES = 1001

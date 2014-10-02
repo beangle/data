@@ -17,18 +17,15 @@ object PrettyPrintWriter {
   val APOS = "&apos;".toCharArray()
   val CLOSE = "</".toCharArray()
 
-  val XML_QUIRKS = -1
-  val XML_1_0 = 0
-  val XML_1_1 = 1
 }
+
 //TODO QuickWriter FastStack
-class PrettyPrintWriter(writer: Writer, var mode: Int, val lineIndenter: Array[Char],
-  nameCoder: NameCoder, val newLine: String) extends AbstractWriter(nameCoder) {
+class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], nameCoder: NameCoder, newLine: String) extends AbstractWriter(nameCoder) {
 
   import PrettyPrintWriter._
 
   def this(writer: Writer, nameCoder: NameCoder) {
-    this(writer, PrettyPrintWriter.XML_QUIRKS, Array(' ', ' '), nameCoder, "\n")
+    this(writer, Array(' ', ' '), nameCoder, "\n")
   }
 
   private var tagInProgress: Boolean = _
@@ -38,7 +35,7 @@ class PrettyPrintWriter(writer: Writer, var mode: Int, val lineIndenter: Array[C
 
   private final val elementStack = new Stack[String]
 
-  override def startNode(name: String,clazz:Class[_]): Unit = {
+  override def startNode(name: String, clazz: Class[_]): Unit = {
     val escapedName = encodeNode(name)
     tagIsEmpty = false
     finishTag()
@@ -103,28 +100,11 @@ class PrettyPrintWriter(writer: Writer, var mode: Int, val lineIndenter: Array[C
     writeText(text, false)
   }
   private def writerChar(c: Char): Unit = {
+    if (  c <= '\u001f' || c > '\ud7ff' && c < '\ue000' || c >= '\ufffe')
+      throw new StreamException("Invalid character 0x" + Integer.toHexString(c) + " in XML 1.0 stream")
     if (Character.isDefined(c) && !Character.isISOControl(c)) {
-      if (mode != XML_QUIRKS) {
-        if (c > '\ud7ff' && c < '\ue000') {
-          throw new StreamException("Invalid character 0x" + Integer.toHexString(c) + " in XML stream")
-        }
-      }
       this.writer.write(c)
     } else {
-      if (mode == XML_1_0) {
-        if (c < 9
-          || c == '\u000b'
-          || c == '\u000c'
-          || c == '\u000e'
-          || (c >= '\u000f' && c <= '\u001f')) {
-          throw new StreamException("Invalid character 0x" + Integer.toHexString(c) + " in XML 1.0 stream")
-        }
-      }
-      if (mode != XML_QUIRKS) {
-        if (c == '\ufffe' || c == '\uffff') {
-          throw new StreamException("Invalid character 0x" + Integer.toHexString(c) + " in XML stream")
-        }
-      }
       this.writer.write("&#x")
       this.writer.write(Integer.toHexString(c))
       this.writer.write(';')
@@ -135,24 +115,13 @@ class PrettyPrintWriter(writer: Writer, var mode: Int, val lineIndenter: Array[C
     (0 until length) foreach { i =>
       var c = text.charAt(i)
       c match {
-        case '\u0000' =>
-          if (mode == XML_QUIRKS) this.writer.write(NULL)
-          else throw new StreamException("Invalid character 0x0 in XML stream")
-        case '&' =>
-          this.writer.write(AMP)
-        case '<' =>
-          this.writer.write(LT)
-        case '>' =>
-          this.writer.write(GT)
-        case '"' =>
-          this.writer.write(QUOT)
-        case '\'' =>
-          this.writer.write(APOS)
-        case '\r' =>
-          this.writer.write(CR)
-        case '\t' | '\n' =>
-          if (!isAttribute) this.writer.write(c)
-          else writerChar(c)
+        case '&' => this.writer.write(AMP)
+        case '<' => this.writer.write(LT)
+        case '>' => this.writer.write(GT)
+        case '"' => this.writer.write(QUOT)
+        case '\'' => this.writer.write(APOS)
+        case '\r' => this.writer.write(CR)
+        case '\t' | '\n' => if (!isAttribute) this.writer.write(c) else writerChar(c)
         case _ => writerChar(c)
       }
     }

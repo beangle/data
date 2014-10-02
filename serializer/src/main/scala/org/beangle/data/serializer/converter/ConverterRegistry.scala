@@ -6,7 +6,7 @@ trait ConverterRegistry {
 
   def lookup[T](clazz: Class[T]): Converter[T]
 
-  def register[T](marshaller: Converter[T]): Unit
+  def register[T](converter: Converter[T]): Unit
 
   def registerBuildin(mapper: Mapper): Unit
 }
