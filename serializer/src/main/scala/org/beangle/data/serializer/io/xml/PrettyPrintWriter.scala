@@ -1,11 +1,10 @@
 package org.beangle.data.serializer.io.xml
 
-import org.beangle.data.serializer.io.NameCoder
 import java.io.Writer
-import org.beangle.data.serializer.io.StreamWriter
+
 import scala.collection.mutable.Stack
-import org.beangle.data.serializer.io.StreamException
-import org.beangle.data.serializer.io.AbstractWriter
+
+import org.beangle.data.serializer.io.{ AbstractWriter, StreamException }
 
 object PrettyPrintWriter {
   val NULL = "&#x0;".toCharArray()
@@ -20,12 +19,12 @@ object PrettyPrintWriter {
 }
 
 //TODO QuickWriter FastStack
-class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], nameCoder: NameCoder, newLine: String) extends AbstractWriter(nameCoder) {
+class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: String) extends AbstractWriter {
 
   import PrettyPrintWriter._
 
-  def this(writer: Writer, nameCoder: NameCoder) {
-    this(writer, Array(' ', ' '), nameCoder, "\n")
+  def this(writer: Writer) {
+    this(writer, Array(' ', ' '), "\n")
   }
 
   private var tagInProgress: Boolean = _
@@ -36,12 +35,11 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], nameCoder: Na
   private final val elementStack = new Stack[String]
 
   override def startNode(name: String, clazz: Class[_]): Unit = {
-    val escapedName = encodeNode(name)
     tagIsEmpty = false
     finishTag()
     writer.write('<')
-    writer.write(escapedName)
-    elementStack.push(escapedName)
+    writer.write(name)
+    elementStack.push(name)
     tagInProgress = true
     depth += 1
     readyForNewLine = true
@@ -50,7 +48,7 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], nameCoder: Na
 
   override def addAttribute(key: String, value: String): Unit = {
     writer.write(' ')
-    writer.write(encodeAttribute(key))
+    writer.write(key)
     writer.write('=')
     writer.write('\"')
     writeAttributeValue(writer, value)
@@ -100,7 +98,7 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], nameCoder: Na
     writeText(text, false)
   }
   private def writerChar(c: Char): Unit = {
-    if (  c <= '\u001f' || c > '\ud7ff' && c < '\ue000' || c >= '\ufffe')
+    if (c <= '\u001f' || c > '\ud7ff' && c < '\ue000' || c >= '\ufffe')
       throw new StreamException("Invalid character 0x" + Integer.toHexString(c) + " in XML 1.0 stream")
     if (Character.isDefined(c) && !Character.isISOControl(c)) {
       this.writer.write(c)

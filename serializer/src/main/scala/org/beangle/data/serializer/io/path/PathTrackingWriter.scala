@@ -6,13 +6,8 @@ import org.beangle.data.serializer.io.AbstractWriter
 
 class PathTrackingWriter(writer: StreamWriter, pathTracker: PathTracker) extends WriterWrapper(writer) {
 
-  private val nameEncoderWriter = writer.underlying match {
-    case aw: AbstractWriter => aw
-    case _ => null
-  }
-
   override def startNode(name: String, clazz: Class[_]): Unit = {
-    pathTracker.pushElement(if (null == nameEncoderWriter) name else nameEncoderWriter.encodeNode(name));
+    pathTracker.pushElement(name)
     super.startNode(name, clazz)
   }
 
