@@ -16,4 +16,6 @@ class BasicConverter extends Converter[Object] {
       clazz.getName.startsWith("java.math") ||
       clazz.getName.startsWith("scala.math")
   }
+
+  override def isConverterToLiteral: Boolean = true
 }

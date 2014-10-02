@@ -11,4 +11,8 @@ class IterableConverter(mapper: Mapper) extends AbstractIterableConverter[Iterab
       writeItem(item, writer, context)
     }
   }
+
+  override def support(clazz: Class[_]): Boolean = {
+    !classOf[collection.Map[_, _]].isAssignableFrom(clazz)
+  }
 }

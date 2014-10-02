@@ -8,17 +8,17 @@ import org.scalatest.{ FunSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class SerializerTest extends FunSpec with Matchers {
+class XmlSerializerTest extends FunSpec with Matchers {
 
-  describe("Serializer") {
+  describe("XmlSerializer") {
     it("serializer xml ") {
-      val serializer = Serializer(new DomDriver)
+      val serializer = XmlSerializer(new DomDriver)
       serializer.alias("person", classOf[Person])
       serializer.alias("address", classOf[Address])
       serializer.alias("list", classOf[::[_]])
-      println(serializer.toXML(List(Some(new Person("002", "admin2")), new Person("001", "admin"))))
-      
-      println(serializer.toXML("3"))
+      println(serializer.serialize(List(Some(new Person("002", "admin2")), new Person("001", "admin"))))
+
+      println(serializer.serialize("3"))
     }
   }
 }

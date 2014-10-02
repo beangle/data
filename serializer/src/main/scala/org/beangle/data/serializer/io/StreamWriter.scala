@@ -2,7 +2,9 @@ package org.beangle.data.serializer.io
 
 trait StreamWriter {
 
-  def startNode(name: String,clazz: Class[_])
+  def currentPath: Path
+
+  def startNode(name: String, clazz: Class[_])
 
   def addAttribute(key: String, value: String)
 

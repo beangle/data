@@ -1,10 +1,10 @@
 package org.beangle.data.serializer.io.xml
 
 import java.io.Writer
-
 import scala.collection.mutable.Stack
-
 import org.beangle.data.serializer.io.{ AbstractWriter, StreamException }
+import org.beangle.commons.collection.FastStack
+import org.beangle.data.serializer.io.PathStack
 
 object PrettyPrintWriter {
   val NULL = "&#x0;".toCharArray()
@@ -19,7 +19,7 @@ object PrettyPrintWriter {
 }
 
 //TODO QuickWriter FastStack
-class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: String) extends AbstractWriter {
+class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: String) extends AbstractWriter{
 
   import PrettyPrintWriter._
 
@@ -32,14 +32,13 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Stri
   private var readyForNewLine: Boolean = _
   private var tagIsEmpty: Boolean = _
 
-  private final val elementStack = new Stack[String]
 
   override def startNode(name: String, clazz: Class[_]): Unit = {
     tagIsEmpty = false
     finishTag()
     writer.write('<')
     writer.write(name)
-    elementStack.push(name)
+    pathStack.push(name)
     tagInProgress = true
     depth += 1
     readyForNewLine = true
@@ -59,12 +58,11 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Stri
     readyForNewLine = false
     tagIsEmpty = false
     finishTag()
-
     writeText(writer, text)
   }
 
   override def endNode(): Unit = {
-    val name = elementStack.pop()
+    val name = pathStack.pop()
     depth -= 1
     if (tagIsEmpty) {
       writer.write('/')

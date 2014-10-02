@@ -18,10 +18,12 @@ class Person(var code: String, var name: String) {
   val locale = ju.Locale.SIMPLIFIED_CHINESE
   val homepage = new URL("http://www.some.com/info")
   var birthAt = java.sql.Time.valueOf("23:23:23")
-  var remark="""
+  var remark = """
                 A very famous Basketball Player, and
-                so ... & <>
-                 """
+                so ... & <>"""
+  var families = Map("wife" -> "a girl", "daught" -> "ketty")
+
+  val sidekick = this
 }
 
 trait Addressable {
