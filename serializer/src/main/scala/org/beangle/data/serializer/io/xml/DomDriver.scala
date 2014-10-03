@@ -7,12 +7,13 @@ import org.beangle.data.serializer.io.StreamWriter
 import java.io.Writer
 import java.io.OutputStream
 import java.io.OutputStreamWriter
+import org.beangle.commons.io.BufferedWriter
 
 class DomDriver(encoding: String = "UTF-8") extends AbstractDriver(encoding) {
 
   private final val documentBuilderFactory = DocumentBuilderFactory.newInstance()
 
   def createWriter(out: Writer): StreamWriter = {
-    return new PrettyPrintWriter(out)
+    return new PrettyPrintWriter(new BufferedWriter(out))
   }
 }
