@@ -32,6 +32,11 @@ trait Addressable {
   val city: String
 }
 
+class Member {
+  var families = new ju.HashMap[String, String]
+  families.put("wife", "a girl")
+  families.put("daught", "ketty")
+}
 class Skill(val name: String) {
 
   def excellent: Boolean = name.contains("Best")

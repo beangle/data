@@ -11,7 +11,6 @@ import java.{ util => ju }
 import java.{ lang => jl }
 import java.io.Externalizable
 
-//TODO QuickWriter FastStack
 class JsonWriter(writer: Writer, registry: ConverterRegistry, lineIndenter: Array[Char], newLine: Array[Char]) extends AbstractWriter {
 
   def this(writer: Writer, registry: ConverterRegistry) {
@@ -19,15 +18,15 @@ class JsonWriter(writer: Writer, registry: ConverterRegistry, lineIndenter: Arra
   }
 
   override def startNode(name: String, clazz: Class[_]): Unit = {
-    val depath = pathStack.size
-    var inArray = (pathStack.size > 0 && registry.lookup(this.pathStack.peek().clazz).targetType == Collection)
+    val depth = pathStack.size
+    var inArray = (depth > 0 && registry.lookup(this.pathStack.peek().clazz).targetType == Collection)
     pathStack.push(name, clazz)
     if (!pathStack.isFirstInLevel) {
       writer.write(',')
       writer.write(newLine)
     }
-    indent(depath)
-    if (!inArray) {
+    indent(depth)
+    if (!inArray && depth > 0) {
       writer.write("\"")
       writer.write(name)
       writer.write("\":")

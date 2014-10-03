@@ -47,4 +47,3 @@ abstract class AbstractCollectionConverter[T](val mapper: Mapper) extends Conver
     Type.Collection
   }
 }
-

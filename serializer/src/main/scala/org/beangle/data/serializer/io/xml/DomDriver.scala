@@ -1,17 +1,11 @@
 package org.beangle.data.serializer.io.xml
 
-import org.beangle.data.serializer.io.AbstractDriver
-import javax.xml.parsers.DocumentBuilderFactory
-import java.io.UnsupportedEncodingException
-import org.beangle.data.serializer.io.StreamWriter
 import java.io.Writer
-import java.io.OutputStream
-import java.io.OutputStreamWriter
+
 import org.beangle.commons.io.BufferedWriter
+import org.beangle.data.serializer.io.{ AbstractDriver, StreamWriter }
 
-class DomDriver(encoding: String = "UTF-8") extends AbstractDriver(encoding) {
-
-  private final val documentBuilderFactory = DocumentBuilderFactory.newInstance()
+class DomDriver(encoding: String = "UTF-8") extends AbstractDriver(encoding) with XmlDriver {
 
   def createWriter(out: Writer): StreamWriter = {
     return new PrettyPrintWriter(new BufferedWriter(out))

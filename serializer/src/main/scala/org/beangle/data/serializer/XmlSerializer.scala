@@ -6,9 +6,9 @@ import org.beangle.data.serializer.converter.{ ConverterRegistry, DefaultConvert
 import org.beangle.data.serializer.io.StreamDriver
 import org.beangle.data.serializer.io.xml.DomDriver
 import org.beangle.data.serializer.mapper.{ DefaultMapper, Mapper }
-
 import AbstractSerializer.SINGLE_NODE_XPATH_ABSOLUTE_REFERENCES
 import javax.activation.MimeType
+import org.beangle.data.serializer.io.xml.XmlDriver
 
 object XmlSerializer {
 
@@ -21,12 +21,12 @@ object XmlSerializer {
   }
 }
 
-class XmlSerializer(streamDriver: StreamDriver, mapper: Mapper, registry: ConverterRegistry)
-  extends AbstractSerializer(streamDriver, mapper, registry) with Serializer {
+class XmlSerializer(driver: XmlDriver, mapper: Mapper, registry: ConverterRegistry)
+  extends AbstractSerializer(driver, mapper, registry) with Serializer {
 
   import XmlSerializer._
 
-  override def supportedMediaTypes: Seq[MimeType] = {
+  override def supportMediaTypes: Seq[MimeType] = {
     List(MimeTypes.ApplicationXml)
   }
 

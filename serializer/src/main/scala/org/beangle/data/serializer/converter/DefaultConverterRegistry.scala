@@ -3,6 +3,7 @@ package org.beangle.data.serializer.converter
 import java.{ util => ju }
 
 import scala.collection.mutable
+import scala.language.existentials
 
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.data.serializer.SerializeException
@@ -45,6 +46,7 @@ class DefaultConverterRegistry extends ConverterRegistry {
     register(new IterableConverter(mapper))
     register(new MapConverter(mapper))
     register(new JavaMapConverter(mapper))
+    register(new JavaMapEntryConverter(mapper))
     register(new BeanConverter(mapper))
     register(new TupleConvertor(mapper))
     register(new NumberConverter)

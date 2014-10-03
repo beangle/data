@@ -78,6 +78,8 @@ class DefaultMapper extends Mapper {
     alias("singleton-map", ju.Collections.singletonMap(this, null).getClass())
     alias("singleton-set", ju.Collections.singleton(this).getClass())
 
+    //scala collection
+    alias("list", classOf[::[_]])
     alias("sql-timestamp", "java.sql.Timestamp")
     alias("sql-time", "java.sql.Time")
     alias("sql-date", "java.sql.Date")
