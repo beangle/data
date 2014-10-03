@@ -6,11 +6,9 @@ trait Mapper {
 
   def serializedClass(clazz: Class[_]): String
 
-  def aliasForSystemAttribute(name: String): String
-
-  def defaultImplementationOf(clazz: Class[_]): Class[_]
-
   def serializedMember(clazz: Class[_], memberName: String): String
+
+  def aliasForSystemAttribute(name: String): String
 
   def alias(alias: String, clazz: Class[_]): Unit
 

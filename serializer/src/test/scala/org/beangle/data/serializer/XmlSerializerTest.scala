@@ -12,7 +12,7 @@ class XmlSerializerTest extends FunSpec with Matchers {
 
   describe("XmlSerializer") {
     it("serializer xml ") {
-      val serializer = XmlSerializer(new DomDriver)
+      val serializer = XmlSerializer()
       serializer.alias("person", classOf[Person])
       serializer.alias("address", classOf[Address])
       serializer.alias("list", classOf[::[_]])

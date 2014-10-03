@@ -1,23 +1,23 @@
 package org.beangle.data.serializer
 
-import java.io.{ OutputStream, StringWriter, Writer }
-import org.beangle.data.serializer.converter.{ ConverterRegistry, DefaultConverterRegistry }
-import org.beangle.data.serializer.io.{ StreamDriver, StreamWriter }
-import org.beangle.data.serializer.mapper.{ DefaultMapper, Mapper }
-import org.beangle.data.serializer.marshal.Marshaller
-import org.beangle.data.serializer.marshal.impl.{ ReferenceByIdMarshaller, ReferenceByXPathMarshaller }
-import org.beangle.data.serializer.marshal.impl.ReferenceMarshaller.{ ABSOLUTE, RELATIVE, SINGLE_NODE }
-import org.beangle.data.serializer.marshal.impl.TreeMarshaller
-import org.beangle.data.serializer.marshal.impl.ReferenceMarshaller
-import javax.activation.MimeType
-import org.beangle.commons.io.Serializer
 import org.beangle.commons.activation.MimeTypes
+import org.beangle.commons.io.Serializer
+import org.beangle.data.serializer.converter.{ ConverterRegistry, DefaultConverterRegistry }
+import org.beangle.data.serializer.io.StreamDriver
+import org.beangle.data.serializer.io.xml.DomDriver
+import org.beangle.data.serializer.mapper.{ DefaultMapper, Mapper }
+
+import AbstractSerializer.SINGLE_NODE_XPATH_ABSOLUTE_REFERENCES
+import javax.activation.MimeType
 
 object XmlSerializer {
 
   import AbstractSerializer._
-  def apply(driver: StreamDriver): XmlSerializer = {
-    new XmlSerializer(driver, new DefaultMapper, new DefaultConverterRegistry).setMode(SINGLE_NODE_XPATH_ABSOLUTE_REFERENCES)
+  def apply(): XmlSerializer = {
+    val driver = new DomDriver
+    val registry = new DefaultConverterRegistry
+    driver.registry = registry
+    new XmlSerializer(driver, new DefaultMapper, registry).setMode(SINGLE_NODE_XPATH_ABSOLUTE_REFERENCES)
   }
 }
 

@@ -6,6 +6,8 @@ import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper
 import org.beangle.data.serializer.marshal.MarshallingContext
 
+import Type.Type
+
 class JavaMapConverter(mapper: Mapper) extends AbstractCollectionConverter[ju.Map[Object, Object]](mapper) {
 
   def marshal(source: ju.Map[Object, Object], writer: StreamWriter, context: MarshallingContext): Unit = {
@@ -19,4 +21,9 @@ class JavaMapConverter(mapper: Mapper) extends AbstractCollectionConverter[ju.Ma
       writer.endNode()
     }
   }
+
+  override def targetType: Type = {
+    Type.Collection
+  }
+
 }

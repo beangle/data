@@ -39,10 +39,6 @@ class DefaultMapper extends Mapper {
     name
   }
 
-  override def defaultImplementationOf(clazz: Class[_]): Class[_] = {
-    clazz
-  }
-
   override def serializedMember(clazz: Class[_], memberName: String): String = {
     memberName
   }

@@ -4,6 +4,7 @@ import org.beangle.commons.lang.reflect.BeanManifest
 import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper
 import org.beangle.data.serializer.marshal.MarshallingContext
+import Type.Type
 
 class BeanConverter(val mapper: Mapper) extends Converter[Object] {
 
@@ -26,5 +27,9 @@ class BeanConverter(val mapper: Mapper) extends Converter[Object] {
 
   override def support(clazz: Class[_]): Boolean = {
     !(clazz.getName.startsWith("java.") || clazz.getName.startsWith("scala."))
+  }
+
+  override def targetType: Type = {
+    Type.Object
   }
 }

@@ -4,6 +4,8 @@ import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper
 import org.beangle.data.serializer.marshal.MarshallingContext
 
+import Type.Type
+
 class TupleConvertor(mapper: Mapper) extends Converter[Product] {
   def marshal(source: Product, writer: StreamWriter, context: MarshallingContext): Unit = {
     val iter = source.productIterator
@@ -34,5 +36,9 @@ class TupleConvertor(mapper: Mapper) extends Converter[Product] {
       context.convert(realitem, writer)
     }
     writer.endNode()
+  }
+
+  override def targetType: Type = {
+    Type.Collection
   }
 }

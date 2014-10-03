@@ -3,6 +3,8 @@ package org.beangle.data.serializer.converter
 import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.marshal.MarshallingContext
 
+import Type.Type
+
 trait Converter[T] {
   def marshal(source: T, writer: StreamWriter, context: MarshallingContext): Unit
 
@@ -10,7 +12,9 @@ trait Converter[T] {
     true
   }
 
-  def isConverterToLiteral: Boolean = false
+  def targetType: Type = {
+    Type.String
+  }
 
   def extractOption(item: AnyRef): AnyRef = {
     if (item == null) return null

@@ -9,4 +9,5 @@ trait ConverterRegistry {
   def register[T](converter: Converter[T]): Unit
 
   def registerBuildin(mapper: Mapper): Unit
+  
 }

@@ -1,19 +1,21 @@
 package org.beangle.data.serializer
 
-import java.io.{ OutputStream, StringWriter, Writer }
 import org.beangle.commons.activation.MimeTypes
-import org.beangle.commons.io.Serializer
-import org.beangle.data.serializer.converter.ConverterRegistry
+import org.beangle.data.serializer.converter.{ ConverterRegistry, DefaultConverterRegistry }
 import org.beangle.data.serializer.io.StreamDriver
-import org.beangle.data.serializer.mapper.Mapper
+import org.beangle.data.serializer.io.json.JsonDriver
+import org.beangle.data.serializer.mapper.{ DefaultMapper, Mapper }
+
+import AbstractSerializer.SINGLE_NODE_XPATH_ABSOLUTE_REFERENCES
 import javax.activation.MimeType
-import org.beangle.data.serializer.mapper.DefaultMapper
-import org.beangle.data.serializer.converter.DefaultConverterRegistry
 
 object JsonSerializer {
   import AbstractSerializer._
-  def apply(driver: StreamDriver): XmlSerializer = {
-    new XmlSerializer(driver, new DefaultMapper, new DefaultConverterRegistry).setMode(SINGLE_NODE_XPATH_ABSOLUTE_REFERENCES)
+  def apply(): XmlSerializer = {
+    val driver = new JsonDriver
+    val registry = new DefaultConverterRegistry
+    driver.registry = registry
+    new XmlSerializer(driver, new DefaultMapper, registry).setMode(SINGLE_NODE_XPATH_ABSOLUTE_REFERENCES)
   }
 }
 

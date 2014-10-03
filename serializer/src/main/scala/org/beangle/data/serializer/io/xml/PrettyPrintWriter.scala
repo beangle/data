@@ -19,26 +19,26 @@ object PrettyPrintWriter {
 }
 
 //TODO QuickWriter FastStack
-class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: String) extends AbstractWriter{
+class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Array[Char]) extends AbstractWriter {
 
   import PrettyPrintWriter._
 
   def this(writer: Writer) {
-    this(writer, Array(' ', ' '), "\n")
+    this(writer, Array(' ', ' '), Array('\n'))
   }
 
   private var tagInProgress: Boolean = _
+  //FIXME TODO integrated with path stack
   protected var depth: Int = _
   private var readyForNewLine: Boolean = _
   private var tagIsEmpty: Boolean = _
-
 
   override def startNode(name: String, clazz: Class[_]): Unit = {
     tagIsEmpty = false
     finishTag()
     writer.write('<')
     writer.write(name)
-    pathStack.push(name)
+    pathStack.push(name,clazz)
     tagInProgress = true
     depth += 1
     readyForNewLine = true
@@ -50,7 +50,7 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Stri
     writer.write(key)
     writer.write('=')
     writer.write('\"')
-    writeAttributeValue(writer, value)
+    writeAttributeValue(value)
     writer.write('\"')
   }
 
@@ -58,11 +58,11 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Stri
     readyForNewLine = false
     tagIsEmpty = false
     finishTag()
-    writeText(writer, text)
+    writeText(text)
   }
 
   override def endNode(): Unit = {
-    val name = pathStack.pop()
+    val name = pathStack.pop().name
     depth -= 1
     if (tagIsEmpty) {
       writer.write('/')
@@ -75,9 +75,7 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Stri
       writer.write('>')
     }
     readyForNewLine = true
-    if (depth == 0) {
-      writer.flush()
-    }
+    if (depth == 0) writer.flush()
   }
 
   override def flush(): Unit = {
@@ -88,11 +86,11 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Stri
     writer.close()
   }
 
-  protected def writeAttributeValue(writer: Writer, text: String): Unit = {
+  protected def writeAttributeValue(text: String): Unit = {
     writeText(text, true)
   }
 
-  protected def writeText(writer: Writer, text: String): Unit = {
+  protected def writeText(text: String): Unit = {
     writeText(text, false)
   }
   private def writerChar(c: Char): Unit = {

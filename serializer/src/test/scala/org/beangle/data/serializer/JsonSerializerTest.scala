@@ -13,11 +13,11 @@ class JsonSerializerTest extends FunSpec with Matchers {
 
   describe("JsonSerializer") {
     it("serializer json ") {
-      val serializer = JsonSerializer(new JsonDriver)
-      serializer.alias("person", classOf[Person])
-      serializer.alias("address", classOf[Address])
-      serializer.alias("list", classOf[::[_]])
-      println(serializer.serialize(List(Some(new Person("002", "admin2")), new Person("001", "admin"))))
+      val json = JsonSerializer()
+      json.alias("person", classOf[Person])
+      json.alias("address", classOf[Address])
+      json.alias("list", classOf[::[_]])
+      println(json.serialize(List(Some(new Person("002", "admin2")), new Person("001", "admin"))))
     }
   }
 }

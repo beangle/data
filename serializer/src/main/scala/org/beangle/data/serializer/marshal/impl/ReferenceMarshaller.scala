@@ -18,7 +18,7 @@ object ReferenceMarshaller {
 abstract class ReferenceMarshaller(registry: ConverterRegistry, mapper: Mapper) extends TreeMarshaller(registry, mapper) {
 
   override def convert(item: Object, writer: StreamWriter, converter: Converter[Object], context: MarshallingContext): Unit = {
-    if (converter.isConverterToLiteral) {
+    if (converter.targetType.scalar) {
       // strings, ints, dates, etc... don't bother using references.
       converter.marshal(item, writer, context)
     } else {
@@ -61,10 +61,7 @@ class ReferenceByXPathMarshaller(registry: ConverterRegistry, mapper: Mapper, mo
     return currentPath
   }
 
-  //TODO
   protected override def fireValidReference(referenceKey: Object, context: MarshallingContext) {
-    val attributeName = mapper.aliasForSystemAttribute("id");
-    if (attributeName != null) context.writer.addAttribute(attributeName, referenceKey.toString())
   }
 }
 

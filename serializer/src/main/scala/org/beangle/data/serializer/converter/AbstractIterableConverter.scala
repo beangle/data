@@ -4,6 +4,8 @@ import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper
 import org.beangle.data.serializer.marshal.MarshallingContext
 
+import Type.Type
+
 abstract class AbstractIterableConverter[T <: Iterable[_]](val mapper: Mapper) extends Converter[T] {
 
   protected def writeItem(item: Object, writer: StreamWriter, context: MarshallingContext) {
@@ -18,6 +20,10 @@ abstract class AbstractIterableConverter[T <: Iterable[_]](val mapper: Mapper) e
       context.convert(realitem, writer)
     }
     writer.endNode()
+  }
+
+  override def targetType: Type = {
+    Type.Collection
   }
 }
 
@@ -35,6 +41,10 @@ abstract class AbstractCollectionConverter[T](val mapper: Mapper) extends Conver
       context.convert(realitem, writer)
     }
     writer.endNode()
+  }
+
+  override def targetType: Type = {
+    Type.Collection
   }
 }
 

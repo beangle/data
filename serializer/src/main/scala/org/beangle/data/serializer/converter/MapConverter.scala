@@ -3,6 +3,7 @@ package org.beangle.data.serializer.converter
 import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper
 import org.beangle.data.serializer.marshal.MarshallingContext
+import Type.Type
 
 class MapConverter(mapper: Mapper) extends Converter[collection.Map[Object, Object]] {
 
@@ -28,5 +29,9 @@ class MapConverter(mapper: Mapper) extends Converter[collection.Map[Object, Obje
       context.convert(realitem, writer)
     }
     writer.endNode()
+  }
+  
+  override def targetType: Type = {
+    Type.Collection
   }
 }
