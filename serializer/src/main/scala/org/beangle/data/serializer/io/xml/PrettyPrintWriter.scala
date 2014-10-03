@@ -18,7 +18,6 @@ object PrettyPrintWriter {
 
 }
 
-//TODO QuickWriter FastStack
 class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Array[Char]) extends AbstractWriter {
 
   import PrettyPrintWriter._
@@ -28,19 +27,18 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Arra
   }
 
   private var tagInProgress: Boolean = _
-  //FIXME TODO integrated with path stack
-  protected var depth: Int = _
   private var readyForNewLine: Boolean = _
   private var tagIsEmpty: Boolean = _
 
   override def startNode(name: String, clazz: Class[_]): Unit = {
+    val depth = pathStack.size
+    if (depth == 0) writer.write("<?xml version=\"1.0\"?>\n")
     tagIsEmpty = false
-    finishTag()
+    finishTag(depth)
     writer.write('<')
     writer.write(name)
-    pathStack.push(name,clazz)
+    pathStack.push(name, clazz)
     tagInProgress = true
-    depth += 1
     readyForNewLine = true
     tagIsEmpty = true
   }
@@ -57,19 +55,19 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Arra
   override def setValue(text: String): Unit = {
     readyForNewLine = false
     tagIsEmpty = false
-    finishTag()
+    finishTag(pathStack.size)
     writeText(text)
   }
 
   override def endNode(): Unit = {
     val name = pathStack.pop().name
-    depth -= 1
+    val depth = pathStack.size
     if (tagIsEmpty) {
       writer.write('/')
       readyForNewLine = false
-      finishTag()
+      finishTag(depth)
     } else {
-      finishTag()
+      finishTag(depth)
       writer.write(CLOSE)
       writer.write(name)
       writer.write('>')
@@ -121,18 +119,19 @@ class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Arra
     }
   }
 
-  private def finishTag() {
+  private def finishTag(depth: Int) {
     if (tagInProgress) {
       writer.write('>')
       tagInProgress = false
     }
     if (readyForNewLine) {
-      endOfLine()
+      indentNewLine(depth)
       readyForNewLine = false
     }
     tagIsEmpty = false
   }
-  protected def endOfLine() {
+
+  protected def indentNewLine(depth: Int) {
     writer.write(newLine)
     (0 until depth) foreach (i => writer.write(lineIndenter))
   }
