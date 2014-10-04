@@ -13,7 +13,7 @@ class TreeMarshaller(val registry: ConverterRegistry, val mapper: Mapper) extend
       converter.marshal(item, writer, context)
     } else {
       val references = context.references
-      if (references.containsKey(item)) {
+      if (references.contains(item)) {
         val e = new SerializeException("Recursive reference to parent object")
         e.add("item-type", item.getClass().getName())
         e.add("converter-type", converter.getClass().getName())
@@ -29,7 +29,7 @@ class TreeMarshaller(val registry: ConverterRegistry, val mapper: Mapper) extend
     val context = createMarshallingContext(writer, registry)
     val newwriter = context.writer
     if (item == null) {
-      newwriter.startNode(mapper.serializedClass(null), null)
+      newwriter.startNode(mapper.serializedClass(classOf[Null]), classOf[Null])
     } else {
       newwriter.startNode(mapper.serializedClass(item.getClass()), item.getClass())
       context.convert(item, newwriter, null)

@@ -7,6 +7,7 @@ class Person(var code: String, var name: String) {
   var address = Address("minzu", "500", "jiading")
   var mobile: String = _
   var skills = List(new Skill("Play Basketball Best"), new Skill("Play football"))
+  var skillsArray = Array(new Skill("Play Basketball Best"), new Skill("Play football"))
   val bestSkill = Some(skills.head)
   val badestSkill = None
   var accountMoney1: BigInt = new BigInt(new BigInteger("1234567890"))

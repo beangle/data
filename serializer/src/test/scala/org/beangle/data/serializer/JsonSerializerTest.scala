@@ -19,6 +19,7 @@ class JsonSerializerTest extends FunSpec with Matchers {
       json.alias("address", classOf[Address])
       json.alias("list", classOf[::[_]])
       //      println(json.serialize(List(Some(new Person("002", "admin2")), new Person("001", "admin"))))
+      //      println(json.serialize(Array("a","b")))
       //      println(json.serialize(new Member))
     }
   }

@@ -5,10 +5,11 @@ import org.beangle.data.serializer.io.StreamWriter
 import java.{ util => ju }
 import org.beangle.data.serializer.io.Path
 import org.beangle.data.serializer.io.PathStack
+import org.beangle.commons.collection.IdentityCache
 
 class MarshallingContext(val marshaller: Marshaller, val writer: StreamWriter, registry: ConverterRegistry) {
 
-  val references = new ju.IdentityHashMap[AnyRef, Id]
+  val references = new IdentityCache[AnyRef, Id]
 
   def convert(item: Object, writer: StreamWriter): Unit = {
     convert(item, writer, null)

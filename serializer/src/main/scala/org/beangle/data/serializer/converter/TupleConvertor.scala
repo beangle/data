@@ -25,9 +25,7 @@ class TupleConvertor(mapper: Mapper) extends Converter[Product] {
   protected def writeItem(item: AnyRef, writer: StreamWriter, context: MarshallingContext, index: Int) {
     val realitem = extractOption(item)
     if (realitem == null) {
-      // todo: this is duplicated in TreeMarshaller.start
-      val name = mapper.serializedClass(null);
-      writer.startNode(name, classOf[Null])
+      writer.startNode(mapper.serializedClass(classOf[Null]), classOf[Null])
       writer.addAttribute("index", String.valueOf(index))
     } else {
       val name = mapper.serializedClass(realitem.getClass)

@@ -11,9 +11,7 @@ abstract class AbstractIterableConverter[T <: Iterable[_]](val mapper: Mapper) e
   protected def writeItem(item: Object, writer: StreamWriter, context: MarshallingContext) {
     val realitem = extractOption(item)
     if (realitem == null) {
-      // todo: this is duplicated in TreeMarshaller.start()
-      val name = mapper.serializedClass(null);
-      writer.startNode(name, classOf[Null])
+      writer.startNode(mapper.serializedClass(classOf[Null]), classOf[Null])
     } else {
       val name = mapper.serializedClass(realitem.getClass())
       writer.startNode(name, realitem.getClass())
@@ -32,9 +30,7 @@ abstract class AbstractCollectionConverter[T](val mapper: Mapper) extends Conver
   protected def writeItem(item: Object, writer: StreamWriter, context: MarshallingContext) {
     val realitem = extractOption(item)
     if (realitem == null) {
-      // todo: this is duplicated in TreeMarshaller.start()
-      val name = mapper.serializedClass(null)
-      writer.startNode(name, classOf[Null])
+      writer.startNode(mapper.serializedClass(classOf[Null]), classOf[Null])
     } else {
       val name = mapper.serializedClass(realitem.getClass())
       writer.startNode(name, realitem.getClass())

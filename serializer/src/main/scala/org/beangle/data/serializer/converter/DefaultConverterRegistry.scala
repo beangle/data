@@ -1,17 +1,17 @@
 package org.beangle.data.serializer.converter
 
-import java.{ util => ju }
-
 import scala.collection.mutable
 import scala.language.existentials
 
+import org.beangle.commons.collection.IdentityCache
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.data.serializer.SerializeException
 import org.beangle.data.serializer.mapper.Mapper
 
 class DefaultConverterRegistry extends ConverterRegistry {
 
-  private val cache = new ju.concurrent.ConcurrentHashMap[Class[_], Converter[_]]
+  private val cache = new IdentityCache[Class[_], Converter[_]]
+  private var mapper: Mapper = _
   /**
    * [Object,List(BeanConverter,PrimitiveConverter)]
    */
@@ -48,6 +48,7 @@ class DefaultConverterRegistry extends ConverterRegistry {
     register(new JavaMapConverter(mapper))
     register(new JavaMapEntryConverter(mapper))
     register(new BeanConverter(mapper))
+    register(new ArrayConverter(mapper))
     register(new TupleConvertor(mapper))
     register(new NumberConverter)
     register(new BooleanConverter)
@@ -56,6 +57,7 @@ class DefaultConverterRegistry extends ConverterRegistry {
     register(new CalendarConverter)
     register(new TimestampConverter)
     register(new TimeConverter)
+    this.mapper = mapper
   }
 
   private def searchConverter(sourceType: Class[_]): Converter[_] = {
@@ -78,7 +80,11 @@ class DefaultConverterRegistry extends ConverterRegistry {
     }
 
     val converter = searchSupport(sourceType, converterMap.get(classOf[AnyRef]))
-    if (converter != null) converter else ObjectConverter
+    if (converter != null) converter
+    else {
+      if (sourceType.isArray) new ArrayConverter(mapper)
+      else ObjectConverter
+    }
   }
 
   private def searchSupport(clazz: Class[_], converterSet: Option[Set[Converter[_]]]): Converter[_] = {
