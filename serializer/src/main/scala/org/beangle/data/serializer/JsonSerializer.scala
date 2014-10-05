@@ -16,6 +16,7 @@ object JsonSerializer {
     val driver = new DefaultJsonDriver
     val registry = new DefaultConverterRegistry
     driver.registry = registry
+    driver.compressOutput = false
     new JsonSerializer(driver, new DefaultMapper, registry).setMode(SINGLE_NODE_XPATH_ABSOLUTE_REFERENCES)
   }
 }

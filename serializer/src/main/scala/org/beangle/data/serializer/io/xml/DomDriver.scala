@@ -8,6 +8,6 @@ import org.beangle.data.serializer.io.{ AbstractDriver, StreamWriter }
 class DomDriver(encoding: String = "UTF-8") extends AbstractDriver(encoding) with XmlDriver {
 
   def createWriter(out: Writer): StreamWriter = {
-    return new PrettyPrintWriter(new BufferedWriter(out))
+    return new PrettyXmlWriter(new BufferedWriter(out))
   }
 }

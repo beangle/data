@@ -6,7 +6,7 @@ import org.beangle.data.serializer.io.{ AbstractWriter, StreamException }
 import org.beangle.commons.collection.FastStack
 import org.beangle.data.serializer.io.PathStack
 
-object PrettyPrintWriter {
+object PrettyXmlWriter {
   val NULL = "&#x0;".toCharArray()
   val AMP = "&amp;".toCharArray()
   val LT = "&lt;".toCharArray()
@@ -18,9 +18,9 @@ object PrettyPrintWriter {
 
 }
 
-class PrettyPrintWriter(writer: Writer, lineIndenter: Array[Char], newLine: Array[Char]) extends AbstractWriter {
+class PrettyXmlWriter(writer: Writer, lineIndenter: Array[Char], newLine: Array[Char]) extends AbstractWriter {
 
-  import PrettyPrintWriter._
+  import PrettyXmlWriter._
 
   def this(writer: Writer) {
     this(writer, Array(' ', ' '), Array('\n'))
