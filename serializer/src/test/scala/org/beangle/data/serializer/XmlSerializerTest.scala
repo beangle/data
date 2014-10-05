@@ -16,9 +16,8 @@ class XmlSerializerTest extends FunSpec with Matchers {
       serializer.alias("person", classOf[Person])
       serializer.alias("address", classOf[Address])
       serializer.alias("list", classOf[::[_]])
-      println(serializer.serialize(List(Some(new Person("002", "admin2")), new Person("001", "admin"))))
-
-      println(serializer.serialize("3"))
+      //println(serializer.serialize(List(Some(new Person("002", "admin2")), new Person("001", "admin"))))
+      //println(serializer.serialize("3"))
     }
   }
 }
