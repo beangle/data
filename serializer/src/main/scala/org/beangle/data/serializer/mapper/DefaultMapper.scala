@@ -5,8 +5,10 @@ import java.net.{ URI, URL }
 import java.{ util => ju }
 import java.{ lang => jl }
 import scala.math.{ BigDecimal, BigInt }
-
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
+import scala.collection.convert.Wrappers.JListWrapper
+import scala.collection.convert.Wrappers.JSetWrapper
+import scala.collection.convert.Wrappers.JMapWrapper
 class DefaultMapper extends Mapper {
 
   val classAlias = new collection.mutable.HashMap[Class[_], String]
@@ -80,6 +82,9 @@ class DefaultMapper extends Mapper {
 
     //scala collection
     alias("list", classOf[::[_]])
+    alias("list", classOf[JListWrapper[_]])
+    alias("set", classOf[JSetWrapper[_]])
+    alias("map", classOf[JMapWrapper[_, _]])
     alias("sql-timestamp", "java.sql.Timestamp")
     alias("sql-time", "java.sql.Time")
     alias("sql-date", "java.sql.Date")

@@ -7,7 +7,7 @@ import org.beangle.data.serializer.io.Path
 import org.beangle.data.serializer.io.PathStack
 import org.beangle.commons.collection.IdentityCache
 
-class MarshallingContext(val marshaller: Marshaller, val writer: StreamWriter, registry: ConverterRegistry) {
+class MarshallingContext(val marshaller: Marshaller, val writer: StreamWriter, val registry: ConverterRegistry) {
 
   val references = new IdentityCache[AnyRef, Id]
 
