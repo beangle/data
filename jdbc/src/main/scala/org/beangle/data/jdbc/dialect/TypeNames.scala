@@ -24,35 +24,35 @@ import org.beangle.commons.lang.Strings
  * Calling the get() method with a type and actual size n will return the
  * associated name with smallest capacity >= n, if available and an unmarked
  * default type otherwise. Eg, setting
- *
- * <pre>
+ * @define l $l
+ * {{{
  * names.put(type, &quot;TEXT&quot;);
  * names.put(type, 255, &quot;VARCHAR($l)&quot;);
  * names.put(type, 65534, &quot;LONGVARCHAR($l)&quot;);
- * </pre>
+ * }}}
  *
  * will give you back the following:
  *
- * <pre>
+ * {{{
  * names.get(type)         // --&gt; &quot;TEXT&quot; (default)
  * names.get(type,    100) // --&gt; &quot;VARCHAR(100)&quot; (100 is in [0:255])
  * names.get(type,   1000) // --&gt; &quot;LONGVARCHAR(1000)&quot; (1000 is in [256:65534])
  * names.get(type, 100000) // --&gt; &quot;TEXT&quot; (default)
- * </pre>
+ * }}}
  *
  * On the other hand, simply putting
  *
- * <pre>
+ * {{{
  * names.put(type, &quot;VARCHAR($l)&quot;);
- * </pre>
+ * }}}
  *
  * would result in
  *
- * <pre>
+ * {{{
  * names.get(type)        // --&gt; &quot;VARCHAR($l)&quot; (will cause trouble)
  * names.get(type, 100)   // --&gt; &quot;VARCHAR(100)&quot;
  * names.get(type, 10000) // --&gt; &quot;VARCHAR(10000)&quot;
- * </pre>
+ * }}}
  *
  * @author chaostone
  */

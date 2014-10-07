@@ -19,22 +19,21 @@
 package org.beangle.data.jpa.hibernate;
 
 import java.text.SimpleDateFormat
-import java.{util => ju}
+import java.{ util => ju }
 
-import org.beangle.commons.lang.{Numbers, Strings}
+import org.beangle.commons.lang.{ Chars, Numbers, Strings }
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.mapping.NamingPolicy
-import org.beangle.data.model.{Coded, IdGrowFastest, IdGrowSlow, YearId}
-import org.hibernate.`type`.{IntegerType, LongType, ShortType, Type}
+import org.beangle.data.model.{ Coded, IdGrowFastest, IdGrowSlow, YearId }
+import org.hibernate.`type`.{ IntegerType, LongType, ShortType, Type }
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.spi.SessionImplementor
-import org.hibernate.id.{Configurable, IdentifierGenerator}
-import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, SCHEMA, TABLE}
+import org.hibernate.id.{ Configurable, IdentifierGenerator }
+import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, SCHEMA, TABLE }
 import org.hibernate.id.enhanced.SequenceStyleGenerator
-import org.hibernate.id.enhanced.SequenceStyleGenerator.{DEF_SEQUENCE_NAME, SEQUENCE_PARAM}
+import org.hibernate.id.enhanced.SequenceStyleGenerator.{ DEF_SEQUENCE_NAME, SEQUENCE_PARAM }
 import org.hibernate.mapping.Table
 
-import RailsNamingStrategy.namingPolicy
 /**
  * 按照表明进行命名序列<br>
  * 依据命名模式进行，默认模式seq_{table}<br>
@@ -54,7 +53,6 @@ class TableSeqGenerator extends SequenceStyleGenerator with Logging {
 
   protected override def determineSequenceName(params: ju.Properties, dialect: Dialect): String = {
     import SequenceStyleGenerator._
-    import RailsNamingStrategy._
     var seqName = params.getProperty(SEQUENCE_PARAM)
     if (Strings.isEmpty(seqName)) {
       val tableName = params.getProperty(TABLE)
@@ -63,12 +61,12 @@ class TableSeqGenerator extends SequenceStyleGenerator with Logging {
 
     if (seqName.indexOf('.') < 0) {
       val entityName = params.getProperty(IdentifierGenerator.ENTITY_NAME)
-      if (null != entityName && null != namingPolicy) {
-        val schema = namingPolicy.getSchema(entityName).getOrElse(params.getProperty(SCHEMA))
+      if (null != entityName && null != NamingPolicy.Instance) {
+        val schema = NamingPolicy.Instance.getSchema(entityName).getOrElse(params.getProperty(SCHEMA))
         seqName = Table.qualify(dialect.quote(params.getProperty(CATALOG)), dialect.quote(schema), dialect.quote(seqName))
       }
     }
-    if (Strings.substringAfterLast(seqName, ".").length > NamingPolicy.defaultMaxLength) warn(s"$seqName's length >=30, wouldn't be supported in oracle!")
+    if (Strings.substringAfterLast(seqName, ".").length > NamingPolicy.DefaultMaxLength) warn(s"$seqName's length >=30, wouldn't be supported in oracle!")
     seqName
   }
 }
@@ -155,12 +153,30 @@ class CodeStyleGenerator extends IdentifierGenerator with Configurable {
 
   def generate(session: SessionImplementor, obj: Object): java.io.Serializable = {
     obj match {
-      case c: Coded =>
-        identifierType match {
-          case lt: LongType => Numbers.toLong(c.code)
-          case it: IntegerType => Numbers.toInt(c.code)
-          case st: ShortType => Numbers.toShort(c.code)
+      case coded: Coded =>
+        var result = identifierType match {
+          case lt: LongType => Numbers.convert2Long(coded.code, null)
+          case it: IntegerType => Numbers.convert2Int(coded.code, null)
+          case st: ShortType => Numbers.convert2Short(coded.code, null)
         }
+        if (null == result) {
+          val code = coded.code
+          val builder = new StringBuilder
+          for (i <- 0 until code.length) {
+            val ch = code.charAt(i)
+            if (Chars.isAsciiAlpha(ch)) {
+              builder ++= String.valueOf((Character.toLowerCase(ch.asInstanceOf[Int]) - 'a'.asInstanceOf[Int] + 10))
+            } else {
+              builder ++= String.valueOf(ch)
+            }
+          }
+          result = identifierType match {
+            case lt: LongType => Numbers.convert2Long(builder.toString)
+            case it: IntegerType => Numbers.convert2Int(builder.toString)
+            case st: ShortType => Numbers.convert2Short(builder.toString)
+          }
+        }
+        result
       case _ => throw new RuntimeException("CodedIdGenerator only support Coded")
     }
   }

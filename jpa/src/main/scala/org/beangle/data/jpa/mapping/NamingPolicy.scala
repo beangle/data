@@ -22,7 +22,9 @@ object NamingPolicy {
   /**
    * 表名最大长度
    */
-  val defaultMaxLength = 30;
+  val DefaultMaxLength = 30
+
+  var Instance: NamingPolicy = _
 }
 /**
  * Entity table and Collection Table Naming Strategy.
