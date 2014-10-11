@@ -57,6 +57,7 @@ class DefaultConverterRegistry extends ConverterRegistry {
     register(new CalendarConverter)
     register(new TimestampConverter)
     register(new TimeConverter)
+    register(new EnumConverter)
     this.mapper = mapper
   }
 

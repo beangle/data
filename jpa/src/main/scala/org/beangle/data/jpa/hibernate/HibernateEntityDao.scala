@@ -188,11 +188,11 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     findBy(metadata.getType(entityClass).get.entityName, "id", ids)
   }
 
-  override def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[Any]): Seq[T] = {
+  override def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[_]): Seq[T] = {
     findBy(metadata.getType(entityClass).get.entityName, keyName, values)
   }
 
-  override def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[Any]): Seq[T] = {
+  override def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T] = {
     if (values.isEmpty) return List.empty
     val hql = new StringBuilder()
     hql.append("select entity from ").append(entityName).append(" as entity where entity.").append(keyName)
@@ -281,14 +281,15 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
 
   override def exists(entityClass: Class[_], attr: String, value: Any): Boolean = count(entityClass, attr, value) > 0
 
-  def exists(entityName: String, attr: String, value: Any): Boolean = count(entityName, attr, value) > 0
+  override def exists(entityName: String, attr: String, value: Any): Boolean = count(entityName, attr, value) > 0
 
   def exists(entityClass: Class[_], attrs: List[String], values: List[Any]): Boolean = count(entityClass, attrs, values, null) > 0
 
   override def duplicate(entityClass: Class[_], id: Any, params: Map[String, Any]): Boolean = {
     duplicate(metadata.getType(entityClass).get.entityName, id, params)
   }
-  def duplicate(entityName: String, id: Any, params: Map[String, Any]): Boolean = {
+
+  override def duplicate(entityName: String, id: Any, params: Map[String, Any]): Boolean = {
     val b = new StringBuilder("from ")
     b.append(entityName).append(" where (1=1)")
     val paramsMap = new mutable.HashMap[String, Any]
@@ -312,7 +313,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
    * 检查持久化对象是否存在e
    * @return boolean(是否存在) 如果entityId为空或者有不一样的entity存在则认为存在。
    */
-  def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, codeName: String, codeValue: Any): Boolean = {
+  override def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, codeName: String, codeValue: Any): Boolean = {
     if (null != codeValue && Strings.isNotEmpty(codeValue.toString())) {
       val list = findBy(clazz, codeName, List(codeValue))
       if (!list.isEmpty) {

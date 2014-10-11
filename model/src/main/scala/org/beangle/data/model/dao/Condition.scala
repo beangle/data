@@ -93,7 +93,7 @@ class Condition(val content: String, initParams: Any*) {
   /**
    * params.
    */
-  def params(values: List[Any]): this.type = {
+  def params(values: Seq[Any]): this.type = {
     params.clear()
     params ++= values
     this

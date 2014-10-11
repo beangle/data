@@ -48,9 +48,9 @@ trait EntityDao {
 
   def find[T <: Entity[ID], ID <: java.io.Serializable](entityClass: Class[T], ids: Iterable[ID]): Seq[T]
 
-  def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[Any]): Seq[T]
+  def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[_]): Seq[T]
 
-  def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[Any]): Seq[T]
+  def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T]
   /**
    * save or update entities
    */
@@ -109,6 +109,11 @@ trait EntityDao {
 
   def exists(entityClass: Class[_], attr: String, value: Any): Boolean
 
+  def exists(entityName: String, attr: String, value: Any): Boolean
+
   def duplicate(entityClass: Class[_], id: Any, params: Map[String, Any]): Boolean
 
+  def duplicate(entityName: String, id: Any, params: Map[String, Any]): Boolean
+
+  def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, codeName: String, codeValue: Any): Boolean
 }
