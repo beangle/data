@@ -35,7 +35,7 @@ abstract class AbstractDao[T <: Entity[ID], ID <: java.io.Serializable](val enti
   /**
    * search T by id.
    */
-  def find(first: ID, ids: ID*): Seq[T] = entityDao.find(entityClass, first, ids: _*)
+  def find(ids: Array[ID]): Seq[T] = entityDao.find(entityClass, ids)
 
   /**
    * save or update entities

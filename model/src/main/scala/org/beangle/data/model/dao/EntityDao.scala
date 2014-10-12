@@ -44,7 +44,7 @@ trait EntityDao {
   /**
    * search T by id.
    */
-  def find[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], first: ID, ids: ID*): Seq[T]
+  def find[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], ids: Array[ID]): Seq[T]
 
   def find[T <: Entity[ID], ID <: java.io.Serializable](entityClass: Class[T], ids: Iterable[ID]): Seq[T]
 
