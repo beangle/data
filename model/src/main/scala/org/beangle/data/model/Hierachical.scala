@@ -24,7 +24,7 @@ package org.beangle.data.model
  *
  * @author chaostone
  */
-trait Hierarchical[T <: Entity[_]] {
+trait Hierarchical[T] {
 
   def indexno: String
 
