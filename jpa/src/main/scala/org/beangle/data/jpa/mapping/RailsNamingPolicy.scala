@@ -182,7 +182,13 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     val className = if (clazzName.endsWith("Bean")) substringBeforeLast(clazzName, "Bean") else clazzName
     var tableName = addUnderscores(unqualify(className))
     if (null != pluralizer) tableName = pluralizer.pluralize(tableName)
-    tableName = getPrefix(ClassLoaders.loadClass(className)) + tableName
+    val clazz: Class[_] = try {
+      ClassLoaders.loadClass(className)
+    } catch {
+      case e: ClassNotFoundException => if (clazzName != className) ClassLoaders.loadClass(clazzName) else throw e
+      case e: Throwable => throw e
+    }
+    tableName = getPrefix(clazz) + tableName
     //      if (tableName.length() > entityTableMaxLength) {
     //        for ((k, v) <- p.abbreviations)
     //          tableName = replace(tableName, k, v)

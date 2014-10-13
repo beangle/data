@@ -27,7 +27,7 @@ class DefaultJsonWriter(writer: Writer, registry: ConverterRegistry) extends Abs
   }
 
   override def addAttribute(key: String, value: String): Unit = {
-    writer.write(" \"@")
+    writer.write(" \"")
     writer.write(key)
     writer.write("\":")
     writeText(value.toCharArray(), true)

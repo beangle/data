@@ -6,6 +6,7 @@ import org.beangle.data.serializer.mapper.Mapper
 import org.beangle.data.serializer.marshal.MarshallingContext
 import Type.Type
 import java.beans.Transient
+import org.beangle.commons.bean.PropertyUtils
 
 class BeanConverter(val mapper: Mapper) extends Converter[Object] {
 
@@ -17,7 +18,14 @@ class BeanConverter(val mapper: Mapper) extends Converter[Object] {
           val value = extractOption(getter.method.invoke(source))
           if (null != value) {
             writer.startNode(mapper.serializedMember(source.getClass(), name), value.getClass)
-            context.convert(value, writer)
+            if (value.getClass().getName.contains("$$")) {
+              BeanManifest.get(value.getClass).getGetter("id") match {
+                case Some(getter) => writer.addAttribute("id", String.valueOf(getter.method.invoke(value)))
+                case None =>
+              }
+            } else {
+              context.convert(value, writer)
+            }
             writer.endNode()
           }
         }
