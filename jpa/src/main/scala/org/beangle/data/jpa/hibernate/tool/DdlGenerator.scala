@@ -208,9 +208,9 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     if (p.getColumnSpan() == 1) {
       val column = p.getColumnIterator().next().asInstanceOf[Column]
       if (isForeignColumn(table, column)) {
-        column.setComment(messages.get(clazz, p.getName()) + " ID")
+        column.setComment(messages.get(clazz, p.getName) + " ID")
       } else {
-        column.setComment(messages.get(clazz, p.getName()))
+        column.setComment(messages.get(clazz, p.getName))
       }
     } else if (p.getColumnSpan() > 1) {
       val pc = p.getValue.asInstanceOf[Component]
