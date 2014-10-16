@@ -82,16 +82,16 @@ class DateStyleGenerator extends IdentifierGenerator {
       year = obj.asInstanceOf[YearId].year
       val curYear = ju.Calendar.getInstance().get(ju.Calendar.YEAR)
       obj match {
-        case fastest: IdGrowFastest => if (year == curYear) DateId8 else YearId8
-        case slow: IdGrowSlow => YearId4
-        case _ => if (year == curYear) Id8 else YearId8
+        case fastest: IdGrowFastest => if (year == curYear) LongDateId else LongYearId
+        case slow: IdGrowSlow => IntYearId
+        case _ => if (year == curYear) LongSecondId else LongYearId
       }
     } else {
       year = ju.Calendar.getInstance().get(ju.Calendar.YEAR)
       obj match {
-        case fastest: IdGrowFastest => DateId8
-        case slow: IdGrowSlow => YearId4
-        case _ => Id8
+        case fastest: IdGrowFastest => LongDateId
+        case slow: IdGrowSlow => IntYearId
+        case _ => LongSecondId
       }
     }
     val jdbcCoordinator = session.getTransactionCoordinator().getJdbcCoordinator()
@@ -112,7 +112,7 @@ abstract class IdFunc(val sequence: String) {
   def gen(year: Int = 0, seq: Number): Number
 }
 
-object Id8 extends IdFunc("seq_second4") {
+object LongSecondId extends IdFunc("seq_second4") {
   val format = new SimpleDateFormat("YYYYMMDDHHmmss")
   override def gen(year: Int, seq: Number): Number = {
     val cal = ju.Calendar.getInstance
@@ -120,7 +120,7 @@ object Id8 extends IdFunc("seq_second4") {
   }
 }
 
-object DateId8 extends IdFunc("seq_day10") {
+object LongDateId extends IdFunc("seq_day10") {
   val format = new SimpleDateFormat("YYYYMMDD")
   val base = Math.pow(10, 10).asInstanceOf[Long]
   override def gen(year: Int, seq: Number): Number = {
@@ -129,16 +129,16 @@ object DateId8 extends IdFunc("seq_day10") {
   }
 }
 
-object YearId8 extends IdFunc("seq_year14") {
+object LongYearId extends IdFunc("seq_year14") {
   val base = Math.pow(10, 14).asInstanceOf[Long]
   override def gen(year: Int, seq: Number): Number = {
     year * base + seq.longValue
   }
 }
 
-object YearId4 extends IdFunc("seq_year4") {
+object IntYearId extends IdFunc("seq_year5") {
   override def gen(year: Int, seq: Number): Number = {
-    year * 10000 + seq.intValue
+    year * 100000 + seq.intValue
   }
 }
 
