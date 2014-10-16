@@ -174,7 +174,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   def setResources(resources: Resources) {
     if (null != resources) {
       for (url <- resources.paths) addConfig(url)
-      if (!modules.isEmpty) info(s"Table name pattern: -> \n${this.toString}")
+      if (!modules.isEmpty) info(s"Table name pattern: -> ${this.toString}")
     }
   }
 
@@ -219,12 +219,12 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     modules foreach {
       case (packageName, module) =>
         sb.append(rightPad(packageName, maxlength, ' ')).append(" : [")
-          .append(module.schema.getOrElse(""));
-        sb.append(" , ").append(module.prefix);
+          .append(module.schema.getOrElse(""))
+        sb.append(",").append(module.prefix)
         //      if (!module.abbreviations.isEmpty()) {
-        //        sb.append(" , ").append(module.abbreviations);
+        //        sb.append(" , ").append(module.abbreviations)
         //      }
-        sb.append(']').append('\n');
+        sb.append(']').append(';')
     }
     if (sb.length > 0) sb.deleteCharAt(sb.length - 1)
     sb.toString()
