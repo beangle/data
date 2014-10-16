@@ -28,16 +28,10 @@ private[udt] object SeqHelper {
 
   def getOrphans(oldElements: Iterable[_], currentElements: Iterable[_], entityName: String, session: SessionImplementor): ju.Collection[Any] = {
     // short-circuit(s)
-    if (currentElements.size == 0) {
-      // no new elements, the old list contains only Orphans
-      return ju.Collections.emptyList()
-    }
-    if (oldElements.size == 0) {
-      // no old elements, so no Orphans neither
-      return ju.Collections.emptyList()
-    }
+    if (currentElements.size == 0) return collection.JavaConversions.asJavaCollection(oldElements)
+    if (oldElements.size == 0) return ju.Collections.emptyList()
 
-    val entityPersister = session.getFactory().getEntityPersister(entityName)
+    val entityPersister = session.getFactory.getEntityPersister(entityName)
     val idType = entityPersister.getIdentifierType()
 
     // create the collection holding the Orphans
@@ -52,10 +46,7 @@ private[udt] object SeqHelper {
         if (ee != null && ee.getStatus() == Status.SAVING) {
           currentSaving.add(current)
         } else {
-          val currentId = ForeignKeys.getEntityIdentifierIfNotUnsaved(
-            entityName,
-            current,
-            session)
+          val currentId = ForeignKeys.getEntityIdentifierIfNotUnsaved(entityName, current, session)
           currentIds.add(new TypedValue(idType, currentId))
         }
       }
@@ -71,6 +62,6 @@ private[udt] object SeqHelper {
       }
     }
 
-    return res
+    res
   }
 }

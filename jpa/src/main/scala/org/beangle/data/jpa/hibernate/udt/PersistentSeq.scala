@@ -36,6 +36,11 @@ import org.hibernate.persister.collection.CollectionPersister
 class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null)
   extends AbstractPersistentCollection(session) with collection.mutable.Buffer[Object] {
 
+  if (null != list) {
+    setInitialized()
+    setDirectlyAccessible(true)
+  }
+
   override def getSnapshot(persister: CollectionPersister): jo.Serializable = {
     val clonedList = new ListBuffer[Object]
     list.foreach { ele => clonedList += persister.getElementType().deepCopy(ele, persister.getFactory) }
@@ -66,8 +71,11 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     array foreach { ele => list += persister.getElementType().assemble(ele, getSession(), owner) }
   }
 
-  override def isWrapper(collection: Object): Boolean = list eq collection
+  override def isWrapper(collection: Object): Boolean = {
+    list eq collection
+  }
 
+  //FIXME
   override def readFrom(rs: ResultSet, persister: CollectionPersister, descriptor: CollectionAliases, owner: Object): Object = {
     val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases(), getSession())
     if (null == descriptor.getSuffixedIndexAliases()) {
@@ -81,7 +89,9 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     element
   }
 
-  override def entries(persister: CollectionPersister): ju.Iterator[_] = asJavaIterator(list.iterator)
+  override def entries(persister: CollectionPersister): ju.Iterator[_] = {
+    asJavaIterator(list.iterator)
+  }
 
   override def disassemble(persister: CollectionPersister): jo.Serializable = {
     list.map(ele => persister.getElementType().disassemble(ele, getSession(), null)).toArray.asInstanceOf[Array[jo.Serializable]]
@@ -191,7 +201,9 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     if (result eq UNKNOWN) list(index) else result
   }
 
-  override def isCollectionEmpty: Boolean = list.isEmpty
+  override def isCollectionEmpty: Boolean = {
+    list.isEmpty
+  }
 
   override def toString(): String = {
     read(); list.toString()

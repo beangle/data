@@ -18,8 +18,8 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
   extends AbstractPersistentCollection(session) with collection.mutable.Set[Object] {
 
   protected var tempList = new mutable.ListBuffer[Object]
-  setInitialized();
-  setDirectlyAccessible(true);
+  setInitialized()
+  setDirectlyAccessible(true)
 
   override def getSnapshot(persister: CollectionPersister): jo.Serializable = {
     val cloned = new mutable.HashMap[Object, Object]
