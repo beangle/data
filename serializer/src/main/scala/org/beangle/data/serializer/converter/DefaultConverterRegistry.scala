@@ -50,6 +50,8 @@ class DefaultConverterRegistry extends ConverterRegistry {
     register(new BeanConverter(mapper))
     register(new ArrayConverter(mapper))
     register(new TupleConvertor(mapper))
+    register(new PropertiesConverter(mapper))
+    register(new JsonObjectConverter(mapper))
     register(new NumberConverter)
     register(new BooleanConverter)
     register(new DateConverter)

@@ -33,7 +33,9 @@ class BeanConverter(val mapper: Mapper) extends Converter[Object] {
   }
 
   override def support(clazz: Class[_]): Boolean = {
-    !(clazz.getName.startsWith("java.") || clazz.getName.startsWith("scala.") || clazz.isArray)
+    !(clazz.getName.startsWith("java.") || clazz.getName.startsWith("scala.") ||
+      clazz.isArray || classOf[Seq[_]].isAssignableFrom(clazz) ||
+      classOf[collection.Map[_, _]].isAssignableFrom(clazz))
   }
 
   override def targetType: Type = {

@@ -4,8 +4,8 @@ import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper
 import org.beangle.data.serializer.marshal.MarshallingContext
 import Type.Type
-
 import java.{ util => ju }
+import org.beangle.data.serializer.io.json.JsonObject
 
 abstract class AbstractMapConverter[T] extends Converter[T] {
   protected def writeItem(key: Boolean, item: Object, writer: StreamWriter, context: MarshallingContext) {
@@ -37,6 +37,11 @@ class MapConverter(mapper: Mapper) extends AbstractMapConverter[collection.Map[O
       writer.endNode();
     }
   }
+
+  override def support(clazz: Class[_]): Boolean = {
+    clazz != classOf[JsonObject]
+  }
+
 }
 
 class JavaMapConverter(mapper: Mapper) extends AbstractMapConverter[ju.Map[Object, Object]] {
