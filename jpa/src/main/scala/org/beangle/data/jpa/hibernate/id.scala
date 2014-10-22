@@ -24,7 +24,7 @@ import java.{ util => ju }
 import org.beangle.commons.lang.{ Chars, Numbers, Strings }
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.mapping.NamingPolicy
-import org.beangle.data.model.{ Coded, IdGrowFastest, IdGrowSlow, YearId }
+import org.beangle.data.model.{ Coded, FastId, FasterId, SlowId, YearId }
 import org.hibernate.`type`.{ IntegerType, LongType, ShortType, Type }
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.spi.SessionImplementor
@@ -71,6 +71,41 @@ class TableSeqGenerator extends SequenceStyleGenerator with Logging {
   }
 }
 
+class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
+  var identifierType: Type = _
+  var query: String = _
+
+  override def configure(t: Type, params: ju.Properties, dialect: Dialect) {
+    this.identifierType = t
+    val entityName = params.getProperty(IdentifierGenerator.ENTITY_NAME)
+    val schema = NamingPolicy.Instance.getSchema(entityName).getOrElse(params.getProperty(SCHEMA))
+    val tableName = Table.qualify(dialect.quote(params.getProperty(CATALOG)), dialect.quote(schema), dialect.quote(params.getProperty(TABLE)))
+    query = "select max(id) from " + tableName
+  }
+
+  def generate(session: SessionImplementor, obj: Object): java.io.Serializable = {
+    val jdbcCoordinator = session.getTransactionCoordinator().getJdbcCoordinator()
+    val st = jdbcCoordinator.getStatementPreparer().prepareStatement(query)
+    try {
+      val rs = jdbcCoordinator.getResultSetReturn().extract(st)
+      if (rs.next()) {
+        identifierType match {
+          case lt: LongType => rs.getLong(1)
+          case it: IntegerType => rs.getInt(1)
+          case st: ShortType => rs.getShort(1)
+        }
+      } else {
+        identifierType match {
+          case lt: LongType => 1L
+          case it: IntegerType => 1
+          case st: ShortType => 1.asInstanceOf[Short]
+        }
+      }
+    } finally {
+      jdbcCoordinator.release(st)
+    }
+  }
+}
 /**
  * Id generator based on function or procedure
  */
@@ -82,16 +117,16 @@ class DateStyleGenerator extends IdentifierGenerator {
       year = obj.asInstanceOf[YearId].year
       val curYear = ju.Calendar.getInstance().get(ju.Calendar.YEAR)
       obj match {
-        case fastest: IdGrowFastest => if (year == curYear) LongDateId else LongYearId
-        case slow: IdGrowSlow => IntYearId
-        case _ => if (year == curYear) LongSecondId else LongYearId
+        case fastr: FasterId => if (year == curYear) LongDateId else LongYearId
+        case fast: FastId => if (year == curYear) LongSecondId else LongYearId
+        case slow: SlowId => IntYearId
       }
     } else {
       year = ju.Calendar.getInstance().get(ju.Calendar.YEAR)
       obj match {
-        case fastest: IdGrowFastest => LongDateId
-        case slow: IdGrowSlow => IntYearId
-        case _ => LongSecondId
+        case faster: FasterId => LongDateId
+        case fast: FastId => LongSecondId
+        case slow: SlowId => IntYearId
       }
     }
     val jdbcCoordinator = session.getTransactionCoordinator().getJdbcCoordinator()
@@ -102,6 +137,7 @@ class DateStyleGenerator extends IdentifierGenerator {
       val id = func.gen(year, rs.getLong(1))
       jdbcCoordinator.release(rs, st)
       id
+
     } finally {
       jdbcCoordinator.release(st)
     }
@@ -141,12 +177,12 @@ object IntYearId extends IdFunc("seq_year5") {
     year * 100000 + seq.intValue
   }
 }
-
 /**
  * Id generator based on function or procedure
  */
 class CodeStyleGenerator extends IdentifierGenerator with Configurable {
   var identifierType: Type = _
+
   override def configure(t: Type, params: ju.Properties, dialect: Dialect) {
     this.identifierType = t;
   }

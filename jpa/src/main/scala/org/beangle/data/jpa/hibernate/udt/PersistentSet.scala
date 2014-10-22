@@ -3,24 +3,25 @@ package org.beangle.data.jpa.hibernate.udt
 import java.{ io => jo }
 import java.sql.ResultSet
 import java.{ util => ju }
-
 import scala.collection.JavaConversions.asJavaIterator
 import scala.collection.mutable
-
 import org.hibernate.`type`.Type
 import org.hibernate.collection.internal.AbstractPersistentCollection
 import org.hibernate.collection.internal.AbstractPersistentCollection.DelayedOperation
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
+import scala.collection.mutable.Buffer
 
 class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = null)
   extends AbstractPersistentCollection(session) with collection.mutable.Set[Object] {
 
-  protected var tempList = new mutable.ListBuffer[Object]
-  setInitialized()
-  setDirectlyAccessible(true)
+  protected var tempList: Buffer[Object] = _
 
+  if (null != set) {
+    setInitialized()
+    setDirectlyAccessible(true)
+  }
   override def getSnapshot(persister: CollectionPersister): jo.Serializable = {
     val cloned = new mutable.HashMap[Object, Object]
     set foreach { ele =>

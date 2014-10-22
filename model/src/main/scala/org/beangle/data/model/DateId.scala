@@ -27,14 +27,19 @@ trait YearId extends {
 /**
  * 10 billion per day.
  */
-trait IdGrowFastest
+trait FasterId
 
 /**
  * 10,000 record per second
  */
-trait IdGrowFaster
+trait FastId
 
 /**
  * 100,000 record per year
  */
-trait IdGrowSlow
+trait SlowId
+
+/**
+ * 1000 record per year
+ */
+trait SlowerId

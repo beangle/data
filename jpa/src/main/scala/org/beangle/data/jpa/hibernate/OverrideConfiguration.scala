@@ -88,6 +88,7 @@ class OverrideConfiguration extends Configuration with Logging {
      * 注册缺省的sequence生成器
      */
     addGenerator("table_sequence", classOf[TableSeqGenerator])
+    addGenerator("auto_increment", classOf[AutoIncrementGenerator])
     addGenerator("date", classOf[DateStyleGenerator])
     addGenerator("code", classOf[CodeStyleGenerator])
 
