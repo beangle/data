@@ -38,8 +38,3 @@ trait FastId
  * 100,000 record per year
  */
 trait SlowId
-
-/**
- * 1000 record per year
- */
-trait SlowerId

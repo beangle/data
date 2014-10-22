@@ -1,4 +1,4 @@
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.jpa.hibernate.id
 
 import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
