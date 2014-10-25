@@ -49,7 +49,7 @@ object Reporter extends Logging {
       return ;
     }
     if (args.length < 1) {
-      info("Usage: Reporter /path/to/your/report.xml -debug");
+      info("Usage: Reporter /path/to/your/report.xml -debug")
       return
     }
 
