@@ -32,6 +32,7 @@ import org.hibernate.DuplicateMappingException.Type
 import org.hibernate.cfg.{ Configuration, Mappings }
 import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass }
 import org.beangle.data.jpa.hibernate.udt.EnumType
+import org.beangle.data.jpa.hibernate.udt.HourMinuteType
 
 class OverrideConfiguration extends Configuration with Logging {
 
@@ -104,6 +105,7 @@ class OverrideConfiguration extends Configuration with Logging {
       val p = new ju.Properties
       p.put("enumClass", "org.beangle.commons.lang.time.WeekDays")
       addTypeDef("weekday", classOf[EnumType].getName, p)
+      addTypeDef("hourminute", classOf[HourMinuteType].getName, new ju.Properties)
     }
     /**
      * Add default generator for annotation and xml parsing
