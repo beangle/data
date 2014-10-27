@@ -18,15 +18,16 @@
  */
 package org.beangle.data.model.event
 
-import org.beangle.data.model.Entity;
-import org.beangle.commons.event.Event;
+import org.beangle.commons.event.Event
+import org.beangle.data.model.Entity
+import org.beangle.data.model.annotation.config
 
 /**
  * 实体操作相关事件
  *
  * @author chaostone
  */
-abstract class AbstractEntityEvent[T <: Entity[_]](clazz: Class[T], source: List[T]) extends Event(source) {
+abstract class AbstractEntityEvent[T <: Entity[_]](clazz: Class[T], source: Seq[T]) extends Event(source) {
 
-  def entities: List[T] = source
+  def entities: Seq[T] = source
 }

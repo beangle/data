@@ -24,10 +24,12 @@ import org.beangle.data.model.dao.Query
 import org.beangle.commons.lang.Assert
 import org.beangle.commons.lang.Strings
 
+/**
+ * SqlBuilder
+ * @author chaostone
+ */
 object SqlBuilder {
-  /**
-   * sql.
-   */
+
   def sql(queryStr: String): SqlBuilder = {
     val sqlQuery = new SqlBuilder()
     sqlQuery.statement = queryStr
@@ -35,16 +37,9 @@ object SqlBuilder {
   }
   val Lang = Query.Lang("Sql")
 }
-/**
- * sql查询
- *
- * @author chaostone
- */
+
 class SqlBuilder extends AbstractQueryBuilder[Array[Any]] {
 
-  /**
-   * genCountStatement.
-   */
   protected def genCountStatement() = "select count(*) from (" + genQueryStatement(false) + ")"
 
   override def lang = SqlBuilder.Lang

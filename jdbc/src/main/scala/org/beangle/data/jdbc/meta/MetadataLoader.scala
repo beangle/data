@@ -65,7 +65,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       }
     }
     rs.close()
-    logger.info("Load {} tables in {}", tables.size, sw)
+    info(s"Load ${tables.size} tables in ${sw.toString}")
 
     // Loading columns
     sw.reset().start();
@@ -93,12 +93,12 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
     //evict empty column tables
     val origTabCount = tables.size
     tables.retain((name, table) => !table.columns.isEmpty)
-    if (tables.size == origTabCount) logger.info("Load {} columns in {},", cols, sw)
-    else logger.info("Load {} columns and evict empty {} tables in {}.", Array(cols, (origTabCount - tables.size), sw))
+    if (tables.size == origTabCount) info(s"Load $cols columns in sw")
+    else info(s"Load $cols columns and evict empty ${origTabCount - tables.size} tables in $sw.")
 
     if (extras) {
       if (null == dialect.metadataGrammar) {
-        logger.info("Loading primary key,foreign key and index.")
+        info("Loading primary key,foreign key and index.")
         val tableNames = new mutable.ArrayBuffer[String] with mutable.SynchronizedBuffer[String]
         tableNames ++= tables.keySet.toList.sortWith(_ < _)
         ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
@@ -162,11 +162,17 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         idx.unique = (rs.getBoolean("NON_UNIQUE") == false)
         val ascOrDesc = rs.getString("ASC_OR_DESC")
         if (null != ascOrDesc) idx.ascOrDesc = Some("A" == ascOrDesc)
-        idx.addColumn(table.column(rs.getString("COLUMN_NAME")))
+        val columnName = rs.getString("COLUMN_NAME")
+        //for oracle m_row$$ column
+        val column = table.getColumn(columnName) match {
+          case Some(column) => column
+          case None => new Column(columnName, 0)
+        }
+        idx.addColumn(column)
       }
     }
     rs.close()
-    logger.info("Load contraint and index in {}.", sw)
+    info(s"Load contraint and index in $sw.")
   }
 
   class MetaLoadTask(val buffer: mutable.Buffer[String], val tables: mutable.HashMap[String, Table]) extends Runnable {
@@ -175,7 +181,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       while (!buffer.isEmpty) {
         try {
           val table = tables(buffer.remove(0))
-          logger.info("Loading {}.", table)
+          info(s"Loading $table.")
           // load primary key
           var rs: ResultSet = null
           rs = meta.getPrimaryKeys(null, table.schema, table.name)
@@ -227,10 +233,10 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           completed += 1
         } catch {
           case e: IndexOutOfBoundsException =>
-          case e: Exception => logger.error("Error in convertion ", e)
+          case e: Exception => error("Error in convertion ", e)
         }
       }
-      logger.debug("{} load table {}", Thread.currentThread().getName(), completed)
+      debug(s"${Thread.currentThread().getName()} load table $completed")
     }
   }
 

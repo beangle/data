@@ -35,6 +35,7 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
     registerType(INTEGER, "int4")
 
     registerType(FLOAT, "float4")
+    registerType(REAL, "float4")
     registerType(DOUBLE, "float8")
 
     registerType(DECIMAL, "numeric($p, $s)")
@@ -56,7 +57,7 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
 
   override def sequenceGrammar = {
     val ss = new SequenceGrammar()
-    ss.querySequenceSql = "select relname as sequence_name from pg_class where relkind='S'"
+    ss.querySequenceSql = "select c.relname as sequence_name from pg_class c,pg_roles r where c.relkind='S' and c.relowner=r.oid and r.rolname=':schema'"
     ss.nextValSql = "select nextval (':name')"
     ss.selectNextValSql = "nextval (':name')"
     ss

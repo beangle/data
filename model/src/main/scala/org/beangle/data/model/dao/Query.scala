@@ -20,8 +20,8 @@ package org.beangle.data.model.dao
 
 object Query {
   case class Lang(val name: String)
-  val hql = new Lang("hql")
-  val sql = new Lang("sql")
+  val OQL = new Lang("hql")
+  val SQL = new Lang("sql")
 }
 import Query._
 /**

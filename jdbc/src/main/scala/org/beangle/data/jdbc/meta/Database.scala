@@ -27,7 +27,7 @@ import org.beangle.data.jdbc.dialect.Dialect
  *
  * @author chaostone
  */
-class Database(meta: DatabaseMetaData, val dialect: Dialect, val catalog: String, val schema: String) {
+class Database(val meta: DatabaseMetaData, val dialect: Dialect, val catalog: String, val schema: String) {
 
   val tables = if (meta.storesMixedCaseIdentifiers) new mutable.HashMap[String, Table] else new CaseInsensitiveMap[Table]
 

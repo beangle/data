@@ -19,6 +19,7 @@
 package org.beangle.data.model
 
 import org.beangle.data.model.util.ValidKey
+import java.beans.Transient
 
 trait Entity[ID] extends Serializable {
 
@@ -30,6 +31,7 @@ trait Entity[ID] extends Serializable {
   /**
    * Return true if persisted
    */
+  @Transient
   def persisted: Boolean = ValidKey(id)
 
   /**
@@ -51,4 +53,8 @@ trait Entity[ID] extends Serializable {
     case _ => false
   }
 }
+
+trait IntIdEntity extends Entity[java.lang.Integer]
+
+trait LongIdEntity extends Entity[java.lang.Long]
 

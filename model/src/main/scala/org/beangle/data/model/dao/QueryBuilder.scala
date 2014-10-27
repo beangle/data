@@ -42,7 +42,7 @@ trait QueryBuilder[T] {
   /**
    * getParams.
    */
-  def params: Map[String, Any]
+  def params: collection.Map[String, Any]
 
   /**
    * params.

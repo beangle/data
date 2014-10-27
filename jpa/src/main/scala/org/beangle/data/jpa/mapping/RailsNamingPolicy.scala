@@ -19,12 +19,11 @@
 package org.beangle.data.jpa.mapping
 
 import java.io.IOException
-import java.io.InputStream
 import java.net.URL
-import java.util.Properties
 
 import org.beangle.commons.inject.Resources
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.Strings.{ isNotEmpty, rightPad, substringBeforeLast, unCamel }
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.inflector.Pluralizer
 import org.beangle.commons.text.inflector.en.EnNounPluralizer
@@ -37,166 +36,174 @@ import org.beangle.commons.text.inflector.en.EnNounPluralizer
 class RailsNamingPolicy extends NamingPolicy with Logging {
 
   /** 实体表表名长度限制 */
-  var entityTableMaxLength = 25
+  var entityTableMaxLength = 30
 
   /** 关联表表名长度限制 */
   var relationTableMaxLength = 30
 
   private var pluralizer: Pluralizer = new EnNounPluralizer()
 
-  private var patterns: List[TableNamePattern] = List.empty
+  private val modules = new collection.mutable.HashMap[String, TableModule]
 
-  private val packagePatterns = new collection.mutable.HashMap[String, TableNamePattern]
+  private val schemas = new collection.mutable.HashSet[String]
 
-  def addConfig(url: URL) {
-    loadProperties(url)
-    patterns = patterns.sorted
+  //For information display
+  val configLocations = new collection.mutable.HashSet[URL]
+  /**
+   * adjust parent relation by package name
+   */
+  def autoWire(): Unit = {
+    if (modules.size > 1) {
+      modules.foreach {
+        case (key, module) =>
+          var parentName = substringBeforeLast(key, ".")
+          while (isNotEmpty(parentName) && null == module.parent) {
+            if (modules.contains(parentName) && module.packageName != parentName) {
+              debug(s"set ${module.packageName}'s parent is $parentName")
+              module.parent = modules(parentName)
+            }
+            val len = parentName.length
+            parentName = substringBeforeLast(parentName, ".")
+            if (parentName.length() == len) parentName = ""
+          }
+      }
+    }
   }
 
-  private def loadProperties(url: URL) {
+  def addConfig(url: URL): Unit = {
     try {
-      logger.debug("loading {}", url)
+      debug(s"loading $url")
       val is = url.openStream()
-      val props = new Properties()
       if (null != is) {
-        props.load(is)
+        configLocations.add(url)
+        (scala.xml.XML.load(is) \ "module") foreach { ele => parseModule(ele, null) }
+        is.close()
       }
-      val iter = props.keySet().iterator
-      while (iter.hasNext()) {
-        val packageName = iter.next().asInstanceOf[String]
-        val schemaPrefix = props.getProperty(packageName).trim()
-
-        var schema: String = null
-        var prefix: String = null
-        var abbreviationStr: String = null
-        val commaIndex = schemaPrefix.indexOf(',')
-        if (commaIndex < 0 || (commaIndex + 1 == schemaPrefix.length())) {
-          schema = schemaPrefix
-        } else if (commaIndex == 0) {
-          prefix = schemaPrefix.substring(1)
-        } else {
-          schema = Strings.substringBefore(schemaPrefix, ",")
-          prefix = Strings.substringAfter(schemaPrefix, ",")
-        }
-        if (Strings.contains(prefix, ",")) {
-          abbreviationStr = Strings.substringAfter(prefix, ",").toLowerCase()
-          prefix = Strings.substringBefore(prefix, ",")
-        }
-
-        if (null == schema) schema = ""
-        if (null == prefix) prefix = ""
-
-        var pattern = packagePatterns.get(packageName).orNull
-        if (null == pattern) {
-          pattern = new TableNamePattern(packageName, schema, prefix)
-          packagePatterns.put(packageName, pattern)
-          patterns ::= pattern
-        } else {
-          pattern.schema = schema
-          pattern.prefix = prefix
-        }
-        if (null != abbreviationStr) {
-          val pairs = Strings.split(abbreviationStr, "")
-          for (pair <- pairs) {
-            val longName = Strings.substringBefore(pair, "=")
-            val shortName = Strings.substringAfter(pair, "=")
-            pattern.abbreviations += (longName -> shortName)
-          }
-        }
-      }
-      is.close()
+      autoWire()
     } catch {
-      case e: IOException => logger.error("property load error", e)
+      case e: IOException => error("property load error", e)
     }
+  }
+
+  private def parseModule(melem: scala.xml.Node, parent: TableModule): Unit = {
+    val module = new TableModule
+    if (!(melem \ "@package").isEmpty) {
+      module.packageName = (melem \ "@package").text
+      if (null != parent) module.packageName = parent.packageName + "." + module.packageName
+    }
+    (melem \ "class") foreach { anElem =>
+      val clazz = ClassLoaders.loadClass((anElem \ "@annotation").text)
+      val value = (anElem \ "@value").text
+      val annModule = new AnnotationModule(clazz, value)
+      module._annotations += annModule
+
+      if (!(anElem \ "@schema").isEmpty) {
+        annModule.schema = (anElem \ "@schema").text
+        schemas += annModule.schema
+      }
+      if (!(anElem \ "@prefix").isEmpty) annModule.prefix = (anElem \ "@prefix").text
+    }
+    if (!(melem \ "@schema").isEmpty) {
+      module._schema = (melem \ "@schema").text
+      schemas += module._schema
+    }
+    if (!(melem \ "@prefix").isEmpty) module._prefix = (melem \ "@prefix").text
+    if (!(melem \ "@pluralize").isEmpty) module.pluralize = (melem \ "@pluralize").text == "true"
+    modules.put(module.packageName, module)
+    module.parent = parent
+    (melem \ "module") foreach { child => parseModule(child, module) }
   }
 
   def getSchema(packageName: String): Option[String] = {
-    val schemas =
-      for (pattern <- patterns if (packageName.indexOf(pattern.packageName) == 0))
-        yield pattern.schema
-    if (schemas.isEmpty) None else Some(schemas.last)
-  }
-
-  def getPattern(packageName: String): Option[TableNamePattern] = {
-    val patters =
-      for (pattern <- patterns if (packageName.indexOf(pattern.packageName) == 0))
-        yield pattern
-    if (patters.isEmpty) None else Some(patters.last)
-  }
-
-  def getPrefix(packageName: String): String = {
-    var prefix: String = null
-    for (pattern <- patterns) {
-      if (packageName.indexOf(pattern.packageName) == 0) prefix = pattern.prefix
+    var name = packageName
+    var matched: Option[TableModule] = None
+    while (isNotEmpty(name) && matched == None) {
+      if (modules.contains(name)) matched = Some(modules(name))
+      val len = name.length
+      name = substringBeforeLast(name, ".")
+      if (name.length() == len) name = ""
     }
-    return prefix
+    matched match {
+      case None => None
+      case Some(m) => m.schema
+    }
+  }
+
+  def getPrefix(clazz: Class[_]): String = {
+    getModule(clazz) match {
+      case None => ""
+      case Some(module) => {
+        var prefix = module.prefix
+        val anno = module.annotations find { ann =>
+          clazz.getAnnotations() exists { annon =>
+            if (ann.clazz.isAssignableFrom(annon.getClass())) {
+              if (null != ann.value) {
+                try {
+                  val method = annon.getClass().getMethod("value")
+                  String.valueOf(method.invoke(annon)) == ann.value
+                } catch {
+                  case e: Exception => e.printStackTrace(); false
+                }
+              } else true
+            } else false
+          }
+        }
+        anno foreach (an => prefix = an.prefix)
+        prefix
+      }
+    }
+  }
+
+  def getModule(clazz: Class[_]): Option[TableModule] = {
+    var name = clazz.getName()
+    var matched: Option[TableModule] = None
+    while (isNotEmpty(name) && matched == None) {
+      if (modules.contains(name)) matched = Some(modules(name))
+      val len = name.length
+      name = substringBeforeLast(name, ".")
+      if (name.length() == len) name = ""
+    }
+    matched
   }
 
   /**
    * is Multiple schema for entity
    */
-  def isMultiSchema: Boolean = {
-    val schemas = new collection.mutable.HashSet[String]
-    for (pattern <- patterns) {
-      schemas += (if (null == pattern.schema) "" else pattern.schema)
-    }
-    schemas.size > 1
-  }
+  def hasSchema: Boolean = !schemas.isEmpty
 
   def setResources(resources: Resources) {
     if (null != resources) {
-      for (url <- resources.paths)
-        addConfig(url)
-      logger.info("Table name pattern: -> \n{}", this)
+      for (url <- resources.paths) addConfig(url)
+      if (!modules.isEmpty) info(s"Table name pattern: -> ${this.toString}")
     }
-  }
-
-  override def toString(): String = {
-    var maxlength = 0
-    for (pattern <- patterns) {
-      if (pattern.packageName.length() > maxlength) {
-        maxlength = pattern.packageName.length()
-      }
-    }
-    val sb = new StringBuilder()
-    for (i <- 0 until patterns.size) {
-      val pattern = patterns(i)
-      sb.append(Strings.rightPad(pattern.packageName, maxlength, ' ')).append(" : [")
-        .append(pattern.schema)
-      sb.append(" , ").append(pattern.prefix)
-      if (!pattern.abbreviations.isEmpty) {
-        sb.append(" , ").append(pattern.abbreviations)
-      }
-      sb.append(']')
-      if (i < patterns.size - 1) sb.append('\n')
-    }
-    sb.toString()
   }
 
   def classToTableName(clazzName: String): String = {
-    val className = if (clazzName.endsWith("Bean")) Strings.substringBeforeLast(clazzName, "Bean") else clazzName
-
+    val className = if (clazzName.endsWith("Bean")) substringBeforeLast(clazzName, "Bean") else clazzName
     var tableName = addUnderscores(unqualify(className))
     if (null != pluralizer) tableName = pluralizer.pluralize(tableName)
-
-    getPattern(className) foreach { p =>
-      tableName = p.prefix + tableName
-      if (tableName.length() > entityTableMaxLength) {
-        for ((k, v) <- p.abbreviations)
-          tableName = Strings.replace(tableName, k, v)
-      }
+    val clazz: Class[_] = try {
+      ClassLoaders.loadClass(className)
+    } catch {
+      case e: ClassNotFoundException => if (clazzName != className) ClassLoaders.loadClass(clazzName) else throw e
+      case e: Throwable => throw e
     }
+    tableName = getPrefix(clazz) + tableName
+    //      if (tableName.length() > entityTableMaxLength) {
+    //        for ((k, v) <- p.abbreviations)
+    //          tableName = replace(tableName, k, v)
+    //      }
     tableName
   }
 
   def collectionToTableName(className: String, tableName: String, collectionName: String): String = {
     var collectionTableName = tableName + "_" + addUnderscores(unqualify(collectionName))
-    getPattern(className) foreach { p =>
-      if ((collectionTableName.length() > relationTableMaxLength)) {
-        for ((k, v) <- p.abbreviations)
-          collectionTableName = Strings.replace(collectionTableName, k, v)
-      }
-    }
+    //    getModule(ClassLoaders.loadClass(className)) foreach { p =>
+    //      if ((collectionTableName.length() > relationTableMaxLength)) {
+    //        for ((k, v) <- p.abbreviations)
+    //          collectionTableName = replace(collectionTableName, k, v)
+    //      }
+    //    }
     collectionTableName
   }
 
@@ -205,26 +212,61 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     if (loc < 0) qualifiedName else qualifiedName.substring(loc + 1)
   }
 
-  protected def addUnderscores(name: String): String = Strings.unCamel(name.replace('.', '_'), '_')
-
-}
-
-/**
- * 表命名模式
- *
- * @author chaostone
- */
-class TableNamePattern(val packageName: String, var schema: String, var prefix: String) extends Ordered[TableNamePattern] {
-
-  var abbreviations: Map[String, String] = _
-
-  override def compare(other: TableNamePattern): Int = this.packageName.compareTo(other.packageName)
-
-  override def toString(): String = {
+  override def toString: String = {
+    if (modules.isEmpty) return ""
+    val maxlength = modules.map(m => m._1.length).max
     val sb = new StringBuilder()
-    sb.append("[package:").append(packageName).append(", schema:").append(schema)
-    sb.append(", prefix:").append(prefix).append(']')
-    sb.append(", abbreviations:").append(abbreviations).append(']')
+    modules foreach {
+      case (packageName, module) =>
+        sb.append(rightPad(packageName, maxlength, ' ')).append(" : [")
+          .append(module.schema.getOrElse(""))
+        sb.append(",").append(module.prefix)
+        //      if (!module.abbreviations.isEmpty()) {
+        //        sb.append(" , ").append(module.abbreviations)
+        //      }
+        sb.append(']').append(';')
+    }
+    if (sb.length > 0) sb.deleteCharAt(sb.length - 1)
     sb.toString()
   }
+  protected def addUnderscores(name: String): String = unCamel(name.replace('.', '_'), '_')
+
+  class TableModule {
+    var packageName: String = _
+    var pluralize: Boolean = _
+    var _schema: String = _
+    var _prefix: String = _
+    var parent: TableModule = _
+
+    def schema: Option[String] = {
+      if (isNotEmpty(_schema)) Some(_schema)
+      else if (null != parent) parent.schema
+      else None
+    }
+    def prefix: String = {
+      if (isNotEmpty(_prefix)) _prefix
+      else if (null != parent) parent.prefix
+      else ""
+    }
+    val _annotations = new collection.mutable.ListBuffer[AnnotationModule]
+
+    def annotations: collection.Seq[AnnotationModule] = {
+      if (_annotations.isEmpty && null != parent) parent._annotations
+      else _annotations
+    }
+
+    override def toString(): String = {
+      val sb = new StringBuilder()
+      sb.append("[package:").append(packageName).append(", schema:").append(_schema)
+      sb.append(", prefix:").append(_prefix).append(']')
+      sb.toString()
+    }
+  }
+
+  class AnnotationModule(val clazz: Class[_], val value: String) {
+    var schema: String = _
+    var prefix: String = _
+  }
 }
+
+

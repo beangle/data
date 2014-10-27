@@ -66,37 +66,29 @@ object Conditions extends Logging {
       }
     } catch {
       case e: Exception =>
-        logger.debug("error occur in extractConditions for  bean {} with attr named {}", entity, curr);
+        debug(s"error occur in extractConditions for  bean $entity with attr named $curr")
     }
     conditions.toList
   }
 
   /**
    * 获得条件的绑定参数映射
-   *
-   * @param conditions
    */
-  def getParamMap(conditions: List[Condition]): Map[String, Any] = {
+  def getParamMap(conditions: Seq[Condition]): Map[String, Any] = {
     val params = new collection.mutable.HashMap[String, Any]
-    for (con <- conditions) {
-      params ++= getParamMap(con)
-    }
+    for (con <- conditions) params ++= getParamMap(con)
     params.toMap
   }
 
   /**
    * 获得条件的绑定参数映射
-   *
-   * @param condition
    */
   def getParamMap(condition: Condition): Map[String, Any] = {
     val params = new collection.mutable.HashMap[String, Any]
     if (!Strings.contains(condition.content, "?")) {
       val paramNames = condition.paramNames
-      if (paramNames.size > condition.params.size) throw new RuntimeException(
-        "condition params not set [" + condition.content + "] with value:" + condition.params)
       var i = 0
-      while (i < paramNames.size) {
+      while (i < Math.min(paramNames.size, condition.params.size)) {
         params.put(paramNames(i), condition.params(i))
         i += 1
       }
@@ -106,11 +98,6 @@ object Conditions extends Logging {
 
   /**
    * 为extractConditions使用的私有方法<br>
-   *
-   * @param conditions
-   * @param name
-   * @param value
-   * @param mode
    */
   def addAttrCondition(conditions: collection.mutable.ListBuffer[Condition], name: String, value: Any) {
     if (value.isInstanceOf[String]) {
@@ -132,7 +119,7 @@ object Conditions extends Logging {
           conditions += Condition(content.toString(), property)
         }
       } catch {
-        case e: Exception => logger.warn("getProperty " + value + "error", e);
+        case e: Exception => warn(s"getProperty $value error", e);
       }
     } else {
       conditions += Condition(name + " = :" + name.replace('.', '_'), value)
@@ -152,8 +139,7 @@ object Conditions extends Logging {
           addAttrCondition(conditions, prefix + "." + attr, value)
       }
     } catch {
-      case e: Exception =>
-        logger.warn("error occur in extractComponent of component:" + component + "with attr named :" + curr)
+      case e: Exception => warn(s"error occur in extractComponent of component:$component with attr named :$curr")
     }
     conditions.toList
   }

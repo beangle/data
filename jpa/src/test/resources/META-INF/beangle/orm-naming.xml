@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modules>
+  <module package = "org.beangle.data.jpa" pluralize="true" schema="jpa">
+    <class annotation = "org.beangle.data.model.annotation.code" prefix="gb_" value="nation" />
+    <class annotation = "org.beangle.data.model.annotation.code" prefix="jb_" value="ministry" />
+    <class annotation = "org.beangle.data.model.annotation.code" prefix="xb_" value="school" />
+  
+    <module package = "mapping" plau="true" schema="mapping"/>
+  </module>
+  
+  <module package = "org.beangle.data.jpa.dao" pluralize="true" schema="dao"/>
+</modules>

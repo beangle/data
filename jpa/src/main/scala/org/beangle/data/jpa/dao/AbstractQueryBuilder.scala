@@ -9,7 +9,7 @@
  * (at your option) any later version.
  *
  * Beangle is distributed in the hope that it will be useful.
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
@@ -36,20 +36,16 @@ object AbstractQueryBuilder {
  */
 abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
 
-  /** query 查询语句 */
   protected var statement: String = _
 
-  /** 分页 */
   protected var limit: PageLimit = _
 
-  /** 参数 */
-  protected var paramMap: Map[String, Any] = _
+  val params = new collection.mutable.HashMap[String, Any]
 
   protected var select: String = _
 
   protected var from: String = _
 
-  /** 别名 */
   var alias: String = _
 
   protected var conditions: List[Condition] = Nil
@@ -60,25 +56,12 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
 
   protected var having: String = _
 
-  /** 缓存查询结果 */
   protected var cacheable = false
 
-  /**
-   * Returns params.
-   */
-  def params: Map[String, Any] = if (null == paramMap) Conditions.getParamMap(conditions) else paramMap
-
-  /**
-   * <p>
-   * build.
-   * </p>
-   *
-   * @return a {@link org.beangle.commons.dao.query.Query} object.
-   */
   def build(): Query[T] = {
-    val queryBean = new QueryBean[T]();
+    val queryBean = new QueryBean[T]()
     queryBean.statement = genStatement()
-    queryBean.params = params
+    queryBean.params = params.toMap
     queryBean.limit = limit
     queryBean.countStatement = genCountStatement()
     queryBean.cacheable = cacheable
@@ -87,48 +70,27 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
   }
 
   def lang: Query.Lang
-  /**
-   * <p>
-   * select.
-   * </p>
-   *
-   * @param what a {@link java.lang.String} object.
-   * @return a {@link org.beangle.commons.dao.query.builder.OqlBuilder} object.
-   */
+
   def select(what: String): this.type = {
-    if (null == what) {
-      this.select = null
+    this.select = if (null == what) {
+      null
     } else {
-      if (what.toLowerCase.trim().startsWith("select")) {
-        this.select = what
-      } else {
-        this.select = "select " + what
-      }
-    }
-    this
-  }
-  /**
-   * newFrom.
-   *
-   */
-  def newFrom(from: String): this.type = {
-    if (null == from) {
-      this.from = null
-    } else {
-      if (contains(from.toLowerCase(), "from")) {
-        this.from = from
-      } else {
-        this.from = "from " + from
-      }
+      if (what.toLowerCase.trim().startsWith("select")) what else "select " + what
     }
     this
   }
 
-  /**
-   * alias.
-   */
+  def newFrom(from: String): this.type = {
+    this.from = if (null == from) {
+      null
+    } else {
+      if (contains(from.toLowerCase(), "from")) from else "from " + from
+    }
+    this
+  }
+
   def alias(alias: String): this.type = {
-    this.alias = alias;
+    this.alias = alias
     this
   }
 
@@ -142,134 +104,66 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
     this
   }
 
-  def cache(): this.type = {
+  def cacheable(cacheable: Boolean = true): this.type = {
     this.cacheable = true
     this
   }
 
-  def cache(cacheable: Boolean): this.type = {
-    this.cacheable = cacheable
-    this
-  }
-  /**
-   * join
-   *
-   * @param path a {@link java.lang.String} object.
-   * @param alias a {@link java.lang.String} object.
-   * @return a {@link org.beangle.data.jpa.dao.OqlBuilder} object.
-   */
   def join(path: String, alias: String): this.type = {
     from = concat(from, " join ", path, " ", alias)
     this
   }
 
-  /**
-   * join
-   *
-   * @param joinMode a {@link java.lang.String} object.
-   * @param path a {@link java.lang.String} object.
-   * @param alias a {@link java.lang.String} object.
-   *
-   */
   def join(joinMode: String, path: String, alias: String): this.type = {
     from = concat(from, " ", joinMode, " join ", path, " ", alias)
     this
   }
 
   def params(newparams: collection.Map[String, Any]): this.type = {
-    this.paramMap = newparams.toMap
+    this.params ++= newparams
     this
   }
 
-  /**
-   * param.
-   *
-   * @param name a {@link java.lang.String} object.
-   * @param value a {@link java.lang.Object} object.
-   *
-   */
   def param(name: String, value: Any): this.type = {
-    paramMap = paramMap + (name -> value)
+    params += (name -> value)
     this
   }
 
-  /**
-   * where
-   *
-   * @param condition a {@link org.beangle.commons.dao.query.builder.Condition} object.
-   */
   def where(condition: Condition): this.type = {
-    if (isNotEmpty(statement)) {
-      throw new RuntimeException(
-        "cannot add condition to a exists statement")
-    }
+    if (isNotEmpty(statement))
+      throw new RuntimeException("cannot add condition to a exists statement")
     conditions = conditions :+ condition
-    this
+    params(Conditions.getParamMap(condition))
   }
 
-  /**
-   * 添加一组条件[br]
-   * query中不能添加条件集合作为一个条件,因此这里命名没有采用有区别性的addAll
-   *
-   * @param cons a {@link java.util.Collection} object.
-   * @return a {@link org.beangle.data.jpa.dao.OqlBuilder} object.
-   */
   def where(cons: Seq[Condition]): this.type = {
     conditions = conditions ++ cons
-    this
+    params(Conditions.getParamMap(cons))
   }
 
-  /**
-   * where.
-   *
-   * @param content a {@link java.lang.String} object.
-   */
   def where(content: String, params: Any*): this.type = where(new Condition(content, params: _*))
-  /**
-   * 声明排序字符串
-   *
-   * @param orderBy 排序字符串
-   * @return 查询构建器
-   */
+
   def orderBy(order: String): this.type = {
     orderBy(Order.parse(order))
     this
   }
 
-  /**
-   * 指定排序字符串的位置
-   *
-   * @param index 从0开始
-   * @param orderBy 排序字符串
-   * @return 查询构建器
-   */
   def orderBy(index: Int, order: String): this.type = {
     if (isNotEmpty(statement)) throw new RuntimeException("cannot add order by to a exists statement.")
     this.orders = this.orders.slice(0, index) ::: Order.parse(order) ::: this.orders.slice(index, this.orders.size)
     this
   }
 
-  /**
-   * orderBy.
-   */
   def orderBy(order: Order): this.type = {
     if (null != order) orderBy(List(order))
     this
   }
 
-  /**
-   * cleanOrders.
-   */
   def clearOrders(): this.type = {
     this.orders = Nil
     this
   }
 
-  /**
-   * orderBy.
-   *
-   * @param orders a {@link java.util.List} object.
-   */
   def orderBy(orders: List[Order]): this.type = {
     if (null != orders) {
       if (isNotEmpty(statement)) throw new RuntimeException("cannot add order by to a exists statement.")
@@ -277,55 +171,25 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
     }
     this
   }
-  /**
-   * groupBy.
-   *
-   * @param what a {@link java.lang.String} object.
-   */
+
   def groupBy(what: String): this.type = {
-    if (isNotEmpty(what)) {
-      groups = groups :+ what
-    }
+    if (isNotEmpty(what)) groups = groups :+ what
     this
   }
 
-  /**
-   * Having subclause.
-   *
-   * @param what having subclause
-   * @return this
-   */
   def having(what: String): this.type = {
     Assert.isTrue(!groups.isEmpty)
     if (isNotEmpty(what)) having = what
     this
   }
 
-  /**
-   * 生成查询语句（如果查询语句已经存在则不进行生成）
-   */
   protected def genStatement(): String = {
     if (isNotEmpty(statement)) statement
     else genQueryStatement(true)
   }
 
-  /**
-   * <p>
-   * genCountStatement.
-   * </p>
-   *
-   * @return a {@link java.lang.String} object.
-   */
   protected def genCountStatement(): String
 
-  /**
-   * <p>
-   * genQueryStatement.
-   * </p>
-   *
-   * @param hasOrder a boolean.
-   * @return a {@link java.lang.String} object.
-   */
   protected def genQueryStatement(hasOrder: Boolean): String = {
     if (null == from) statement
     val buf = new StringBuilder(50)

@@ -18,6 +18,7 @@
  */
 package org.beangle.data.model.meta
 
+import java.{ io => jo }
 import org.beangle.data.model.Entity
 import org.beangle.commons.lang.Assert
 import org.beangle.commons.bean.PropertyUtils
@@ -33,17 +34,23 @@ object EntityType {
  *
  * @author chaostone
  */
-class EntityType(val entityClass: Class[_], val entityName: String, val idName: String = "id", val propertyTypes: Map[String, Type]) extends AbstractType {
+class EntityType(val entityClass: Class[_], val entityName: String, val idName: String = "id") extends AbstractType {
   assert(null != idName && null != entityName && null != entityClass)
+
+  var propertyTypes: Map[String, Type] = Map.empty
 
   override def isEntityType = true
 
   /**
    * Get the type of a particular (named) property
    */
-  override def getPropertyType(property: String): Option[Type] = propertyTypes.get(property)
+  override def getPropertyType(property: String): Option[Type] = {
+    propertyTypes.get(property)
+  }
 
   override def name: String = entityName
 
   override def returnedClass = entityClass
+
+  def idType: Class[jo.Serializable] = propertyTypes(idName).returnedClass.asInstanceOf[Class[jo.Serializable]]
 }

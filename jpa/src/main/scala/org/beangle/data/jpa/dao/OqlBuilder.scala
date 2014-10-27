@@ -26,31 +26,19 @@ import org.beangle.data.model.dao.Query
 import org.beangle.data.jpa.util.Jpas
 object OqlBuilder {
   val Lang = Query.Lang("Oql")
-  /**
-   * hql.
-   *
-   * @param hql a {@link java.lang.String} object.
-   * @param [E] a E object.
-   * @return a {@link org.beangle.commons.dao.query.builder.OqlBuilder} object.
-   */
-  def hql[E](hql: String): OqlBuilder[E] = {
+
+  def oql[E](oql: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
-    query.statement = hql
+    query.statement = oql
     query
   }
 
-  /**
-   * from
-   */
   def from[E](from: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
     query.newFrom(from)
     query
   }
 
-  /**
-   * from
-   */
   def from[E](entityName: String, alias: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
     query.entityClass = ClassLoaders.loadClass(entityName).asInstanceOf[Class[E]]
@@ -60,27 +48,10 @@ object OqlBuilder {
     query
   }
 
-  /**
-   * from.
-   *
-   * @param entityClass a {@link java.lang.Class} object.
-   * @param [E] a E object.
-   * @return a {@link org.beangle.data.jpa.dao.OqlBuilder} object.
-   */
   def from[E](entityClass: Class[E]): OqlBuilder[E] = {
     from(entityClass, uncapitalize(substringAfterLast(Jpas.findEntityName(entityClass), ".")))
   }
 
-  /**
-   * [p]
-   * from.
-   * [/p]
-   *
-   * @param entityClass a {@link java.lang.Class} object.
-   * @param alias a {@link java.lang.String} object.
-   * @param [E] a E object.
-   * @return a {@link org.beangle.data.jpa.dao.OqlBuilder} object.
-   */
   def from[E](entityClass: Class[E], alias: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
     query.entityClass = entityClass
@@ -103,8 +74,6 @@ class OqlBuilder[T] private () extends AbstractQueryBuilder[T] {
 
   /**
    * 形成计数查询语句，如果不能形成，则返回""
-   *
-   * @return a {@link java.lang.String} object.
    */
   protected def genCountStatement(): String = {
     val countString = new StringBuilder("select count(*) ")
@@ -165,9 +134,6 @@ class OqlBuilder[T] private () extends AbstractQueryBuilder[T] {
     }
   }
 
-  /**
-   * forEntity.
-   */
   def forEntity(entityClass: Class[T]): this.type = {
     this.entityClass = entityClass
     this

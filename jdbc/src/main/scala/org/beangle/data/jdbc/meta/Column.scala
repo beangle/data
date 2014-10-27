@@ -36,14 +36,15 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.dialect.Dialect
 import java.sql.Types
+
+import org.beangle.data.jdbc.dialect.Dialect
 /**
  * DBC column metadata
  *
  * @author chaostone
  */
-class Column(var name: String, var typeCode: Int) extends Comparable[Column] with Cloneable {
+class Column(var name: String, var typeCode: Int) extends Ordered[Column] with Cloneable {
   var typeName: String = null
   // charactor length or numeric precision
   var size: Int = _
@@ -53,11 +54,7 @@ class Column(var name: String, var typeCode: Int) extends Comparable[Column] wit
   var unique: Boolean = _
   var comment: String = null
   var checkConstraint: String = null
-
   var position: Int = _
-
-  /*def this(rs: ResultSet) {
-  }*/
 
   override def clone = super.clone().asInstanceOf[Column]
 
@@ -67,9 +64,16 @@ class Column(var name: String, var typeCode: Int) extends Comparable[Column] wit
 
   def hasCheckConstraint = checkConstraint != null
 
-  def getSqlType(dialect: Dialect) = if (typeCode == Types.OTHER) typeName else dialect.typeNames.get(typeCode, size, size, scale)
+  def getSqlType(dialect: Dialect) = {
+    if (typeCode == Types.OTHER) typeName else
+      try {
+        dialect.typeNames.get(typeCode, size, size, scale)
+      } catch {
+        case e: Exception => println("Cannot find type code"+typeCode); typeName
+      }
+  }
 
   override def toString = "Column(" + name + ')'
 
-  override def compareTo(other: Column) = position - other.position
+  override def compare(other: Column) = position - other.position
 }

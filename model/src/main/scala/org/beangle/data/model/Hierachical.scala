@@ -24,11 +24,11 @@ package org.beangle.data.model
  *
  * @author chaostone
  */
-trait Hierarchical[T <: Entity[_]] {
+trait Hierarchical[T] {
 
-  def indexno: String;
+  def indexno: String
 
-  def parent: Option[T];
+  def parent: T
 
-  def children: collection.Seq[T];
+  def children: collection.Seq[T]
 }

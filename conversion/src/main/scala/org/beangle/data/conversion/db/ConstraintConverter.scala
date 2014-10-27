@@ -38,7 +38,7 @@ class ConstraintConverter(val source: DatabaseWrapper, val target: DatabaseWrapp
 
   def start() {
     val watch = new Stopwatch(true)
-    logger.info("Start constraint replication...")
+    info("Start constraint replication...")
     val targetSchema = target.database.schema
     for (contraint <- contraints.sorted) {
       if (contraint.isInstanceOf[ForeignKey]) {
@@ -46,13 +46,12 @@ class ConstraintConverter(val source: DatabaseWrapper, val target: DatabaseWrapp
         val sql = fk.getAlterSql(target.dialect)
         try {
           target.executor.update(sql)
-          logger.info("Apply constaint {}", fk.name)
+          info(s"Apply constaint ${fk.name}")
         } catch {
-          case e: Exception =>
-            logger.warn("Cannot execute {}", sql)
+          case e: Exception => warn(s"Cannot execute $sql")
         }
       }
     }
-    logger.info("End constraint replication,using {}", watch)
+    info(s"End constraint replication,using $watch")
   }
 }

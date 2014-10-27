@@ -82,9 +82,9 @@ class ConvertReactor(val config: Config) {
       converter.start()
   }
 
-  private def filterTables(source: Source, srcWrapper: DatabaseWrapper, targetWrapper: DatabaseWrapper): List[Pair[Table, Table]] = {
+  private def filterTables(source: Source, srcWrapper: DatabaseWrapper, targetWrapper: DatabaseWrapper): List[Tuple2[Table, Table]] = {
     val tablenames = source.filter(srcWrapper.database.tables.keySet)
-    val tables = new collection.mutable.ListBuffer[Pair[Table, Table]]
+    val tables = new collection.mutable.ListBuffer[Tuple2[Table, Table]]
     for (name <- tablenames) {
       var srcTable = srcWrapper.database.getTable(name).get
       var targetTable = srcTable.clone()
@@ -95,7 +95,7 @@ class ConvertReactor(val config: Config) {
     tables.toList
   }
 
-  private def filterConstraints(tables: List[Pair[Table, Table]]): List[Constraint] = {
+  private def filterConstraints(tables: List[Tuple2[Table, Table]]): List[Constraint] = {
     val contraints = new collection.mutable.ListBuffer[Constraint]
     for (table <- tables)
       contraints ++= table._2.foreignKeys

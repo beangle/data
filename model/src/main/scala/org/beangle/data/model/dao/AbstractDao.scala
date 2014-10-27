@@ -20,56 +20,56 @@ package org.beangle.data.model.dao
 
 import org.beangle.data.model.Entity
 
-abstract class AbstractDao[T <: Entity[ID], ID](val entityClass: Class[T], val generalDao: GeneralDao) extends Dao[T, ID] {
+abstract class AbstractDao[T <: Entity[ID], ID <: java.io.Serializable](val entityClass: Class[T], val entityDao: EntityDao) extends Dao[T, ID] {
 
   /**
    * get T by id.
    */
-  def get(id: ID): T = generalDao.get(entityClass, id)
+  def get(id: ID): T = entityDao.get(entityClass, id)
 
   /**
    * search T by id.
    */
-  def find(id: ID): Option[T] = generalDao.find(entityClass, id)
+  def find(id: ID): Option[T] = entityDao.find(entityClass, id)
 
   /**
    * search T by id.
    */
-  def find(first: ID, ids: ID*): Seq[T] = generalDao.find(entityClass, first, ids: _*)
+  def find(ids: Array[ID]): Seq[T] = entityDao.find(entityClass, ids)
 
   /**
    * save or update entities
    */
   def saveOrUpdate(first: T, entities: T*) {
-    generalDao.saveOrUpdate(first, entities)
+    entityDao.saveOrUpdate(first, entities)
   }
 
   /**
    * save or update entities
    */
   def saveOrUpdate(entities: Seq[T]) {
-    generalDao.saveOrUpdate(entities)
+    entityDao.saveOrUpdate(entities)
   }
 
   /**
    * remove entities.
    */
-  def remove(entities: Seq[T]) {
-    generalDao.saveOrUpdate(entities)
+  def remove(entities: Iterable[T]) {
+    entityDao.remove(entities)
   }
 
   /**
    * remove entities.
    */
   def remove(first: T, entities: T*) {
-    generalDao.remove(first, entities)
+    entityDao.remove(first, entities)
   }
 
   /**
    * remove entities by id
    */
   def remove(id: ID, ids: ID*) {
-    generalDao.remove(entityClass, id, ids)
+    entityDao.remove(entityClass, id, ids)
   }
 
 }

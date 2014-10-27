@@ -3,18 +3,19 @@
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>13</version>
+    <version>18</version>
   </parent>
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent</artifactId>
   <packaging>pom</packaging>
-  <version>4.0.4</version>
+  <version>4.1.0</version>
   <name>Beangle Data Parent</name>
   
   <modules>
     <module>jdbc</module>
     <module>model</module>
     <module>jpa</module>
+    <module>serializer</module>
     <module>report</module>
     <module>conversion</module>
     <module>lint</module>
@@ -40,7 +41,7 @@
 
   <properties>
     <javax.validation.version>1.1.0.Final</javax.validation.version>
-    <commons.version>4.0.4</commons.version>
+    <commons.version>4.1.2</commons.version>
   </properties>
 
   <dependencyManagement>

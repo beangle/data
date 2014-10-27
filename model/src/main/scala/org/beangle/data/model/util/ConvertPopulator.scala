@@ -53,33 +53,32 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
     var property: Any = null
     var objtype = t
 
-    var index = 0;
-    val attrs = Strings.split(attr, ".");
+    var index = 0
+    val attrs = Strings.split(attr, ".")
     while (index < attrs.length) {
       val nested = attrs(index)
       try {
-        property = getProperty(propObj, nested)
+        property = getProperty[Object](propObj, nested)
         objtype.getPropertyType(nested) match {
           case Some(t) => {
             if (null == property) {
-              property = t.newInstance();
-              setProperty(propObj.asInstanceOf[AnyRef], nested, property);
+              property = t.newInstance()
+              setProperty(propObj.asInstanceOf[AnyRef], nested, property)
             }
             objtype = t
           }
           case None => {
-            logger.error("Cannot find property type [{}] of {}", nested, propObj.getClass());
-            throw new RuntimeException("Cannot find property type " + nested + " of "
-              + propObj.getClass().getName());
+            error(s"Cannot find property type [$nested] of ${propObj.getClass}")
+            throw new RuntimeException("Cannot find property type " + nested + " of " + propObj.getClass().getName())
           }
         }
         index += 1
         propObj = property
       } catch {
-        case e: Exception => throw new RuntimeException(e);
+        case e: Exception => throw new RuntimeException(e)
       }
     }
-    return (property, objtype);
+    return (property, objtype)
   }
 
   /**
@@ -88,18 +87,17 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
   def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean = {
     try {
       if (attr.indexOf('.') > -1) {
-        val ot = init(target, entityType, Strings.substringBeforeLast(attr, "."));
-        val lastAttr = Strings.substringAfterLast(attr, ".");
-        setProperty(ot._1.asInstanceOf[AnyRef], lastAttr, convert(ot._2, lastAttr, value));
+        val ot = init(target, entityType, Strings.substringBeforeLast(attr, "."))
+        val lastAttr = Strings.substringAfterLast(attr, ".")
+        setProperty(ot._1.asInstanceOf[AnyRef], lastAttr, convert(ot._2, lastAttr, value))
       } else {
-        setProperty(target, attr, convert(entityType, attr, value));
+        setProperty(target, attr, convert(entityType, attr, value))
       }
-      return true;
+      return true
     } catch {
       case e: Exception =>
-        logger.warn("copy property failure:[class:" + entityType.entityName + " attr:" + attr + " value:"
-          + value + "]:", e);
-        return false;
+        warn(s"copy property failure:[class:${entityType.entityName} attr:${attr} value:${value}]:", e)
+        return false
     }
   }
 
@@ -119,46 +117,46 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
       }
       // 主键
       // if (type.isEntityType() && attr.equals(((EntityType) type).getIdName())) {
-      // setProperty(entity, attr, convert(type, attr, value));
-      // continue;
+      // setProperty(entity, attr, convert(type, attr, value))
+      // continue
       // }
       // 普通属性
       if (-1 == attr.indexOf('.')) {
-        copyValue(entity, attr, value);
+        copyValue(entity, attr, value)
       } else {
         val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf('.'))
         try {
-          val ot = init(entity, entityType, parentAttr);
+          val ot = init(entity, entityType, parentAttr)
           if (null == ot) {
-            logger.error("error attr:[" + attr + "] value:[" + value + "]")
+            error(s"error attr:[$attr] value:[$value]")
           } else {
             // 属性也是实体类对象
             if (ot._2.isEntityType) {
               val foreignKey = ot._2.asInstanceOf[EntityType].idName
               if (attr.endsWith("." + foreignKey)) {
                 if (null == value) {
-                  copyValue(entity, parentAttr, null);
+                  copyValue(entity, parentAttr, null)
                 } else {
-                  val oldValue = getProperty(entity, attr);
-                  val newValue = convert(ot._2, foreignKey, value);
+                  val oldValue = getProperty[Object](entity, attr)
+                  val newValue = convert(ot._2, foreignKey, value)
                   if (!Objects.equals(oldValue, newValue)) {
                     // 如果外键已经有值
                     if (null != oldValue) {
-                      copyValue(entity, parentAttr, null);
-                      init(entity, entityType, parentAttr);
+                      copyValue(entity, parentAttr, null)
+                      init(entity, entityType, parentAttr)
                     }
-                    setProperty(entity, attr, newValue);
+                    setProperty(entity, attr, newValue)
                   }
                 }
               } else {
-                copyValue(entity, attr, value);
+                copyValue(entity, attr, value)
               }
             } else {
-              copyValue(entity, attr, value);
+              copyValue(entity, attr, value)
             }
           }
         } catch {
-          case e: Exception => logger.error("error attr:[" + attr + "] value:[" + value + "]", e);
+          case e: Exception => error(s"error attr:[$attr] value:[$value]", e)
         }
       }
     }
@@ -175,11 +173,6 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
   }
 
   private def copyValue(target: AnyRef, attr: String, value: Any): Any = {
-    // try {
-    copyProperty(target, attr, value, conversion);
-    // } catch (Exception e) {
-    // logger.error("copy property failure:[class:" + target.getClass().getName() + " attr:" + attr
-    // + " value:" + value + "]:", e);
-    // }
+    copyProperty(target, attr, value, conversion)
   }
 }

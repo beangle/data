@@ -67,7 +67,7 @@ class Condition(val content: String, initParams: Any*) {
         index += 1
       }
       val paramName = content.substring(colonIndex + 1, index);
-      if (!names.contains(paramName)) params += paramName
+      if (!names.contains(paramName)) names += paramName
       colonIndex = content.indexOf(':', index)
     }
     names.toList
@@ -93,7 +93,7 @@ class Condition(val content: String, initParams: Any*) {
   /**
    * params.
    */
-  def params(values: List[Any]): this.type = {
+  def params(values: Seq[Any]): this.type = {
     params.clear()
     params ++= values
     this

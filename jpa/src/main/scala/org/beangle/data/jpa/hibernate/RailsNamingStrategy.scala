@@ -9,49 +9,39 @@
  * (at your option) any later version.
  *
  * Beangle is distributed in the hope that it will be useful.
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate;
-
-import java.io.Serializable
+package org.beangle.data.jpa.hibernate
 
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.mapping.NamingPolicy
 import org.hibernate.AssertionFailure
 import org.hibernate.cfg.NamingStrategy
 
-object RailsNamingStrategy {
-
-  var namingPolicy: NamingPolicy = _
-}
-
 /**
  * 类似Rails的数据库表名、列名命名策略
- *
- * @see DefaultNamingStrategy the default strategy
- * @author chaostone
  */
+@description("类似Rails的数据库表名、列名命名策略")
 @SerialVersionUID(-2656604564223895758L)
 class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with Logging with Serializable {
 
-  RailsNamingStrategy.namingPolicy = policy
+  NamingPolicy.Instance = policy
 
   /**
    * 根据实体名(entityName)命名表
-   *
-   * @param className
    */
   override def classToTableName(className: String): String = {
-    val tableName = policy.classToTableName(className);
-    if (tableName.length > NamingPolicy.defaultMaxLength) logger.warn("{}'s length greate than 30!", tableName);
-    logger.debug("Mapping entity[{}] to {}", className, tableName);
-    return tableName;
+    val tableName = policy.classToTableName(className)
+    if (tableName.length > NamingPolicy.DefaultMaxLength) warn(s"$tableName's length greate than 30!")
+    debug(s"Mapping entity[$className] to $tableName")
+    tableName
   }
 
   /**
@@ -85,10 +75,11 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
    * 将混合大小写，带有.分割的属性描述，转换成下划线分割的名称。
    * 属性名字包括：简单属性、集合属性、组合属性(component.name)
    * </pre>
-   *
-   * @param propertyName
    */
-  override def propertyToColumnName(propertyName: String): String = addUnderscores(unqualify(propertyName))
+  override def propertyToColumnName(propertyName: String): String = {
+    if (isManyToOne) addUnderscores(unqualify(propertyName)) + "_id"
+    else addUnderscores(unqualify(propertyName))
+  }
 
   /** Return the argument */
   override def joinKeyColumnName(joinedColumn: String, joinedTable: String): String = columnName(joinedColumn)
@@ -96,27 +87,27 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
   /** Return the property name or propertyTableName */
   override def foreignKeyColumnName(propertyName: String, propertyEntityName: String,
     propertyTableName: String, referencedColumnName: String): String = {
-    var header = if (null == propertyName) propertyTableName else unqualify(propertyName);
-    if (header == null) { throw new AssertionFailure("NamingStrategy not properly filled"); }
+    var header = if (null == propertyName) propertyTableName else unqualify(propertyName)
+    if (header == null) { throw new AssertionFailure("NamingStrategy not properly filled") }
     header = if (isManyToOne) addUnderscores(header) else addUnderscores(propertyTableName)
-    return header + "_" + referencedColumnName;
+    return header + "_" + referencedColumnName
 
   }
 
   /** Collection Table */
   override def collectionTableName(ownerEntity: String, ownerEntityTable: String, associatedEntity: String,
     associatedEntityTable: String, propertyName: String): String = {
-    var ownerTable: String = null;
+    var ownerTable: String = null
     // Just for annotation configuration,it's ownerEntity is classname(not entityName), and
     // ownerEntityTable is class shortname
     if (Character.isUpperCase(ownerEntityTable.charAt(0))) {
-      ownerTable = policy.classToTableName(ownerEntity);
+      ownerTable = policy.classToTableName(ownerEntity)
     } else {
-      ownerTable = tableName(ownerEntityTable);
+      ownerTable = tableName(ownerEntityTable)
     }
-    val tblName = policy.collectionToTableName(ownerEntity, ownerTable, propertyName);
-    if (tblName.length() > NamingPolicy.defaultMaxLength) logger.warn("{}'s length greate than 30!", tblName);
-    return tblName;
+    val tblName = policy.collectionToTableName(ownerEntity, ownerTable, propertyName)
+    if (tblName.length() > NamingPolicy.DefaultMaxLength) warn(s"$tblName's length greate than 30!")
+    tblName
   }
 
   /**
@@ -132,7 +123,7 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
       new StringBuilder(ownerEntityTable).append("_")
         .append(if (associatedEntityTable == null) unqualify(propertyName) else associatedEntityTable).toString()
     } else {
-      tableName;
+      tableName
     }
   }
 
@@ -155,11 +146,12 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
    */
   private def isManyToOne: Boolean = {
     val trace = Thread.currentThread().getStackTrace()
+    var matched = false
     if (trace.length >= 9) {
-      for (i <- 6 to 8) {
-        if (trace(i).getClassName().equals("org.hibernate.cfg.ToOneFkSecondPass")) return true;
+      matched = (2 to 8) exists { i =>
+        ("bindManyToOne" == trace(i).getMethodName() || trace(i).getClassName().equals("org.hibernate.cfg.ToOneFkSecondPass"))
       }
     }
-    return false;
+    matched
   }
 }
