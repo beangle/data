@@ -42,7 +42,7 @@ object DdlGenerator {
     }
     var dir = SystemInfo.tmpDir
     if (args.length > 1) dir = args(1)
-    var locale = Locale.getDefault()
+    var locale = Locale.getDefault
     if (args.length > 2) locale = Locales.toLocale(args(2))
     var pattern: String = null
     if (args.length > 3) pattern = args(3)
@@ -53,7 +53,7 @@ object DdlGenerator {
       if (!dialect.endsWith("Dialect")) dialect += "Dialect"
       dialect = "org.hibernate.dialect." + Strings.capitalize(dialect)
     }
-    new DdlGenerator(ClassLoaders.loadClass(dialect).newInstance().asInstanceOf[Dialect], locale).gen(dir, pattern)
+    new DdlGenerator(ClassLoaders.loadClass(dialect).newInstance.asInstanceOf[Dialect], locale).gen(dir, pattern)
   }
 }
 
@@ -86,82 +86,79 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
    * @throws Exception
    */
   def gen(dirName: String, packageName: String): Unit = {
-    configuration = DefaultConfigurationBuilder.build(new OverrideConfiguration())
-    mapping = configuration.buildMapping()
-    defaultCatalog = configuration.getProperties().getProperty(DEFAULT_CATALOG)
-    defaultSchema = configuration.getProperties().getProperty(DEFAULT_SCHEMA)
-    configuration.getProperties().put(DIALECT, dialect)
+    configuration = DefaultConfigurationBuilder.build(new OverrideConfiguration)
+    mapping = configuration.buildMapping
+    defaultCatalog = configuration.getProperties.getProperty(DEFAULT_CATALOG)
+    defaultSchema = configuration.getProperties.getProperty(DEFAULT_SCHEMA)
+    configuration.getProperties.put(DIALECT, dialect)
     // 1. first process class mapping
-    val iterpc = configuration.getClassMappings()
-    while (iterpc.hasNext()) {
-      val pc = iterpc.next() //PersistentClass
-      val clazz = pc.getMappedClass()
-      if (isBlank(packageName) || clazz.getPackage().getName().startsWith(packageName)) {
-        // add comment to table and column
-        pc.getTable().setComment(messages.get(clazz, clazz.getSimpleName()))
-        commentProperty(clazz, pc.getTable(), pc.getIdentifierProperty())
-        commentProperties(clazz, pc.getTable(), pc.getPropertyIterator)
-        // generator sequence sql
+    val iterpc = configuration.getClassMappings
+    while (iterpc.hasNext) {
+      val pc = iterpc.next
+      val clazz = pc.getMappedClass
+      pc.getTable.setComment(messages.get(clazz, clazz.getSimpleName))
+      commentProperty(clazz, pc.getTable, pc.getIdentifierProperty)
+      commentProperties(clazz, pc.getTable, pc.getPropertyIterator)
+
+      if (isBlank(packageName) || clazz.getPackage.getName.startsWith(packageName)) {
         if (pc.isInstanceOf[RootClass]) {
-          val ig = pc.getIdentifier().createIdentifierGenerator(
-            configuration.getIdentifierGeneratorFactory(), dialect, defaultCatalog, defaultSchema, pc.asInstanceOf[RootClass])
+          val ig = pc.getIdentifier.createIdentifierGenerator(
+            configuration.getIdentifierGeneratorFactory, dialect, defaultCatalog, defaultSchema, pc.asInstanceOf[RootClass])
           if (ig.isInstanceOf[PersistentIdentifierGenerator]) {
-            val lines = ig.asInstanceOf[PersistentIdentifierGenerator].sqlCreateStrings(dialect)
-            sequences ++= lines
+            sequences ++= ig.asInstanceOf[PersistentIdentifierGenerator].sqlCreateStrings(dialect)
           }
         }
-        // generater table sql
-        generateTableSql(pc.getTable())
+        generateTableSql(pc.getTable)
       }
     }
 
     // 2. process collection mapping
-    val itercm = configuration.getCollectionMappings()
-    while (itercm.hasNext()) {
-      val col = itercm.next().asInstanceOf[Collection]
+    val itercm = configuration.getCollectionMappings
+    while (itercm.hasNext) {
+      val col = itercm.next.asInstanceOf[Collection]
       if (isBlank(packageName) || col.getRole.startsWith(packageName)) {
         // collection sequences
         if (col.isIdentified) {
-          val ig = col.asInstanceOf[IdentifierCollection].getIdentifier().createIdentifierGenerator(
-            configuration.getIdentifierGeneratorFactory(), dialect, defaultCatalog, defaultSchema, null)
+          val ig = col.asInstanceOf[IdentifierCollection].getIdentifier.createIdentifierGenerator(
+            configuration.getIdentifierGeneratorFactory, dialect, defaultCatalog, defaultSchema, null)
 
           if (ig.isInstanceOf[PersistentIdentifierGenerator]) {
             sequences ++= ig.asInstanceOf[PersistentIdentifierGenerator].sqlCreateStrings(dialect)
           }
         }
         // collection table
-        if (!col.isOneToMany()) {
-          val table = col.getCollectionTable()
-          val owner = col.getTable().getComment()
-          var ownerClass = col.getOwner().getMappedClass()
+        if (!col.isOneToMany) {
+          val table = col.getCollectionTable
+          val owner = col.getTable.getComment
+          var ownerClass = col.getOwner.getMappedClass
           // resolved nested compoent name in collection's role
-          val colName = substringAfter(col.getRole(), col.getOwnerEntityName() + ".")
-          if (colName.contains(".")) ownerClass = getPropertyType(col.getOwner(), substringBeforeLast(colName, "."))
-          table.setComment(owner + "-" + messages.get(ownerClass, substringAfterLast(col.getRole(), ".")))
+          val colName = substringAfter(col.getRole, col.getOwnerEntityName + ".")
+          if (colName.contains(".")) ownerClass = getPropertyType(col.getOwner, substringBeforeLast(colName, "."))
+          table.setComment(owner + "-" + messages.get(ownerClass, substringAfterLast(col.getRole, ".")))
 
-          val keyColumn = table.getColumn(col.getKey().getColumnIterator().next().asInstanceOf[Column])
+          val keyColumn = table.getColumn(col.getKey.getColumnIterator.next.asInstanceOf[Column])
           if (null != keyColumn) keyColumn.setComment(owner + " ID")
 
           if (col.isInstanceOf[IndexedCollection]) {
             val idxCol = col.asInstanceOf[IndexedCollection]
-            val idx = idxCol.getIndex()
-            if (idx.isInstanceOf[ToOne]) commentToOne(idx.asInstanceOf[ToOne], idx.getColumnIterator().next().asInstanceOf[Column])
+            val idx = idxCol.getIndex
+            if (idx.isInstanceOf[ToOne]) commentToOne(idx.asInstanceOf[ToOne], idx.getColumnIterator.next.asInstanceOf[Column])
           }
 
-          col.getElement() match {
+          col.getElement match {
             case mto: ManyToOne =>
-              val valueColumn = col.getElement().getColumnIterator().next().asInstanceOf[Column]
+              val valueColumn = col.getElement.getColumnIterator.next.asInstanceOf[Column]
               commentToOne(mto, valueColumn)
             case cp: Component =>
-              commentProperties(cp.getComponentClass(), table, cp.getPropertyIterator)
+              commentProperties(cp.getComponentClass, table, cp.getPropertyIterator)
             case _ =>
           }
-          generateTableSql(col.getCollectionTable())
+          generateTableSql(col.getCollectionTable)
         }
       }
     }
     val newcomments = comments.toSet.toList
-    comments.clear()
+    comments.clear
     comments ++= newcomments
 
     // 3. export to files
@@ -170,8 +167,8 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
         println("writing " + dirName + "/" + key)
         val writer = new FileWriter(dirName + "/" + key, false)
         writes(writer, sqls)
-        writer.flush()
-        writer.close()
+        writer.flush
+        writer.close
     }
   }
 
@@ -196,60 +193,60 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
   }
 
   private def commentToOne(toOne: ToOne, column: Column): Unit = {
-    val entityName = toOne.getReferencedEntityName()
+    val entityName = toOne.getReferencedEntityName
     val referClass = configuration.getClassMapping(entityName)
     if (null != referClass) {
-      column.setComment(referClass.getTable().getComment() + " ID")
+      column.setComment(referClass.getTable.getComment + " ID")
     }
   }
 
   private def commentProperty(clazz: Class[_], table: Table, p: Property): Unit = {
     if (null == p) return
-    if (p.getColumnSpan() == 1) {
-      val column = p.getColumnIterator().next().asInstanceOf[Column]
+    if (p.getColumnSpan == 1) {
+      val column = p.getColumnIterator.next.asInstanceOf[Column]
       if (isForeignColumn(table, column)) {
         column.setComment(messages.get(clazz, p.getName) + " ID")
       } else {
         column.setComment(messages.get(clazz, p.getName))
       }
-    } else if (p.getColumnSpan() > 1) {
+    } else if (p.getColumnSpan > 1) {
       val pc = p.getValue.asInstanceOf[Component]
-      val columnOwnerClass = pc.getComponentClass()
+      val columnOwnerClass = pc.getComponentClass
       commentProperties(columnOwnerClass, table, pc.getPropertyIterator)
     }
   }
 
   private def commentProperties(clazz: Class[_], table: Table, ip: ju.Iterator[_]) {
-    while (ip.hasNext())
-      commentProperty(clazz, table, ip.next().asInstanceOf[Property])
+    while (ip.hasNext)
+      commentProperty(clazz, table, ip.next.asInstanceOf[Property])
   }
 
   private def generateTableSql(table: Table): Unit = {
-    if (!table.isPhysicalTable()) return
+    if (!table.isPhysicalTable) return
     val commentIter = table.sqlCommentStrings(dialect, defaultCatalog, defaultSchema)
-    while (commentIter.hasNext()) comments += commentIter.next.toString
+    while (commentIter.hasNext) comments += commentIter.next.toString
 
     if (processed.contains(table)) return
     processed.add(table)
     tables += table.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema)
 
-    val subIter = table.getUniqueKeyIterator()
-    while (subIter.hasNext()) {
-      val uk = subIter.next()
+    val subIter = table.getUniqueKeyIterator
+    while (subIter.hasNext) {
+      val uk = subIter.next
       val constraintString = uk.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema)
       if (constraintString != null) constraints += constraintString
     }
 
-    val idxIter = table.getIndexIterator()
-    while (idxIter.hasNext()) {
-      val index = idxIter.next()
+    val idxIter = table.getIndexIterator
+    while (idxIter.hasNext) {
+      val index = idxIter.next
       indexes += index.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema)
     }
 
-    if (dialect.hasAlterTable()) {
-      val fkIter = table.getForeignKeyIterator()
-      while (fkIter.hasNext()) {
-        val fk = fkIter.next().asInstanceOf[ForeignKey]
+    if (dialect.hasAlterTable) {
+      val fkIter = table.getForeignKeyIterator
+      while (fkIter.hasNext) {
+        val fk = fkIter.next.asInstanceOf[ForeignKey]
         if (fk.isPhysicalConstraint) {
           constraints += fk.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema)
         }
@@ -258,11 +255,11 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
   }
 
   private def isForeignColumn(table: Table, column: Column): Boolean = {
-    val fkIter = table.getForeignKeyIterator()
-    while (fkIter.hasNext()) {
-      val fk = fkIter.next().asInstanceOf[ForeignKey]
+    val fkIter = table.getForeignKeyIterator
+    while (fkIter.hasNext) {
+      val fk = fkIter.next.asInstanceOf[ForeignKey]
       if (fk.isPhysicalConstraint) {
-        if (fk.getColumns().contains(column)) return true
+        if (fk.getColumns.contains(column)) return true
       }
     }
     return false
