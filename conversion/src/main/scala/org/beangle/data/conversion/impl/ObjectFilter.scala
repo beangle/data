@@ -20,27 +20,22 @@ package org.beangle.data.conversion.impl
 
 import org.beangle.commons.lang.Strings
 
-class DefaultTableFilter extends TableFilter {
+class ObjectFilter extends Filter {
 
   val excludes = new collection.mutable.ListBuffer[String]
 
   val includes = new collection.mutable.ListBuffer[String]
 
   def filter(tables: Iterable[String]): List[String] = {
-    val newTables = new collection.mutable.ListBuffer[String]
+    val results = new collection.mutable.ListBuffer[String]
     for (tabame <- tables) {
-      val tableName = (if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame).toLowerCase();
-      var passed = includes.isEmpty
-      for (pattern <- includes) {
-        passed = if (pattern.equals("*")) true else tableName.startsWith(pattern)
-      }
-      if (passed) {
-        for (pattern <- excludes)
-          if (tableName.contains(pattern)) passed = false
-      }
-      if (passed) newTables += tabame
+      val tableName = (if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame).toLowerCase()
+
+      if (includes.isEmpty || 
+          (includes.exists(p => p == "*" || tableName.startsWith(p)) && !excludes.contains(tableName)))
+        results += tabame
     }
-    newTables.toList
+    results.toList
   }
 
   def exclude(table: String) {

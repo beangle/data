@@ -217,7 +217,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
             case TINYINT | SMALLINT | INTEGER =>
               stmt.setInt(index, value.asInstanceOf[Int])
             case BIGINT =>
-              stmt.setLong(index, value.asInstanceOf[Long])
+              stmt.setLong(index, value.asInstanceOf[Number].longValue)
 
             case FLOAT | DOUBLE =>
               if (value.isInstanceOf[BigDecimal]) {

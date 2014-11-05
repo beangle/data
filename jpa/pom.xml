@@ -70,11 +70,7 @@
       <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <optional>true</optional>
-    </dependency>
+    <!--FIXME what's that?-->
     <dependency>
       <groupId>jaxen</groupId>
       <artifactId>jaxen</artifactId>

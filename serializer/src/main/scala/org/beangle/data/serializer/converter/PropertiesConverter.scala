@@ -5,7 +5,7 @@ import org.beangle.data.serializer.converter.Type.Type
 import org.beangle.data.serializer.io.StreamWriter
 import org.beangle.data.serializer.mapper.Mapper
 import org.beangle.data.serializer.marshal.MarshallingContext
-import org.beangle.data.serializer.io.json.JsonObject
+import org.beangle.commons.collection.Properties
 
 class PropertiesConverter(val mapper: Mapper) extends Converter[ju.Properties] {
 
@@ -28,9 +28,9 @@ class PropertiesConverter(val mapper: Mapper) extends Converter[ju.Properties] {
 
 }
 
-class JsonObjectConverter(val mapper: Mapper) extends Converter[JsonObject] {
+class JsonObjectConverter(val mapper: Mapper) extends Converter[Properties] {
 
-  def marshal(source: JsonObject, writer: StreamWriter, context: MarshallingContext): Unit = {
+  def marshal(source: Properties, writer: StreamWriter, context: MarshallingContext): Unit = {
     val enum = source.keys.iterator
     while (enum.hasNext) {
       val key = enum.next()

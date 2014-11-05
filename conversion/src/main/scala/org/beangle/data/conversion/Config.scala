@@ -20,14 +20,15 @@ package org.beangle.data.conversion
 
 import org.beangle.commons.lang.Numbers
 import org.beangle.commons.lang.Strings
-import org.beangle.data.conversion.impl.DefaultTableFilter
 import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.data.jdbc.util.DbConfig
 import org.beangle.data.jdbc.util.PoolingDataSourceFactory
 import javax.sql.DataSource
-
 import Config._
 import org.beangle.data.conversion.db.DatabaseWrapper
+
+import Config._
+import org.beangle.data.conversion.impl.ObjectFilter
 
 object Config {
 
@@ -49,11 +50,19 @@ object Config {
     val source = new Source(dbconf.dialect, ds)
     source.schema = dbconf.schema
     source.catalog = dbconf.catalog
-    source.lowercase = "true" == (xml \\ "tables" \ "@lowercase").text
-    source.index = "false" != (xml \\ "tables" \ "@index").text
-    source.constraint = "false" != (xml \\ "tables" \ "@constraint").text
-    source.includes = Strings.split((xml \\ "source" \\ "includes").text.trim)
-    source.excludes = Strings.split((xml \\ "source" \\ "excludes").text.trim)
+    val tableConfig = new TableConfig
+    tableConfig.lowercase = "true" == (xml \\ "tables" \ "@lowercase").text
+    tableConfig.withIndex = "false" != (xml \\ "tables" \ "@index").text
+    tableConfig.withConstraint = "false" != (xml \\ "tables" \ "@constraint").text
+    tableConfig.includes = Strings.split((xml \\ "tables" \\ "includes").text.trim)
+    tableConfig.excludes = Strings.split((xml \\ "tables" \\ "excludes").text.trim)
+    source.table = tableConfig
+
+    val seqConfig = new SeqConfig
+    seqConfig.includes = Strings.split((xml \\ "sequences" \\ "includes").text.trim)
+    seqConfig.excludes = Strings.split((xml \\ "sequences" \\ "excludes").text.trim)
+    source.sequence = seqConfig
+
     source
   }
 
@@ -68,22 +77,15 @@ object Config {
     target
   }
 
-  final class Source(val dialect: Dialect, val dataSource: DataSource) {
-    var schema: String = _
-    var catalog: String = _
+  final class TableConfig {
     var includes: Seq[String] = _
     var excludes: Seq[String] = _
     var lowercase: Boolean = false
-    var index: Boolean = true
-    var constraint: Boolean = true
-
-    def buildWrapper(): DatabaseWrapper = {
-      if (null == schema) schema = dialect.defaultSchema
-      new DatabaseWrapper(dataSource, dialect, catalog, schema)
-    }
+    var withIndex: Boolean = true
+    var withConstraint: Boolean = true
 
     def filter(finalTables: collection.Set[String]): Seq[String] = {
-      val filter = new DefaultTableFilter()
+      val filter = new ObjectFilter()
       if (null != includes) {
         for (include <- includes)
           filter.include(include)
@@ -94,6 +96,38 @@ object Config {
       }
       return filter.filter(finalTables)
     }
+  }
+
+  final class SeqConfig {
+    var includes: Seq[String] = _
+    var excludes: Seq[String] = _
+    var lowercase: Boolean = false
+
+    def filter(sequences: collection.Set[String]): Seq[String] = {
+      val filter = new ObjectFilter()
+      if (null != includes) {
+        for (include <- includes)
+          filter.include(include)
+      }
+      if (null != excludes) {
+        for (exclude <- excludes)
+          filter.exclude(exclude)
+      }
+      return filter.filter(sequences)
+    }
+  }
+
+  final class Source(val dialect: Dialect, val dataSource: DataSource) {
+    var schema: String = _
+    var catalog: String = _
+    var table: TableConfig = _
+    var sequence: SeqConfig = _
+
+    def buildWrapper(): DatabaseWrapper = {
+      if (null == schema) schema = dialect.defaultSchema
+      new DatabaseWrapper(dataSource, dialect, catalog, schema)
+    }
+
   }
 
   final class Target(val dialect: Dialect, val dataSource: DataSource) {
@@ -107,7 +141,5 @@ object Config {
 
   }
 }
-
-import Config._
 class Config(val source: Source, val target: Target, val maxthreads: Int) {
 }

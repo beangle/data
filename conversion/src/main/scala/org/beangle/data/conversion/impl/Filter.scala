@@ -18,7 +18,7 @@
  */
 package org.beangle.data.conversion.impl
 
-trait TableFilter {
+trait Filter {
 
   def filter(tables: Iterable[String]): List[String]
 }

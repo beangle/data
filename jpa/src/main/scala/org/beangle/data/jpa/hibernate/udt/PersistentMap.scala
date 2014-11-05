@@ -21,8 +21,11 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
   type MHM = mutable.HashMap[Object, Object]
 
   private var loadingEntries = new mutable.ListBuffer[Array[Object]]
-  setInitialized();
-  setDirectlyAccessible(true);
+
+  if (null != map) {
+    setInitialized();
+    setDirectlyAccessible(true);
+  }
 
   override def getSnapshot(persister: CollectionPersister): jo.Serializable = {
     val cloned = new MHM
