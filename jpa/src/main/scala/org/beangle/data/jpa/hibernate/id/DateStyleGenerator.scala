@@ -18,7 +18,7 @@ class DateStyleGenerator extends IdentifierGenerator {
       year = obj.asInstanceOf[YearId].year
       val curYear = ju.Calendar.getInstance().get(ju.Calendar.YEAR)
       obj match {
-        case fastr: FasterId => if (year == curYear) LongDateId else LongYearId
+        case faster: FasterId => if (year == curYear) LongDateId else LongYearId
         case slow: SlowId => IntYearId
         case _ => if (year == curYear) LongSecondId else LongYearId
       }
@@ -48,7 +48,7 @@ abstract class IdFunc(val sequence: String) {
 }
 
 object LongSecondId extends IdFunc("seq_second4") {
-  val format = new SimpleDateFormat("YYYYMMDDHHmmss")
+  val format = new SimpleDateFormat("yyyyMMddHHmmss")
   override def gen(year: Int, seq: Number): Number = {
     val cal = ju.Calendar.getInstance
     java.lang.Long.valueOf(format.format(new ju.Date)) * 10000 + seq.intValue
@@ -56,7 +56,7 @@ object LongSecondId extends IdFunc("seq_second4") {
 }
 
 object LongDateId extends IdFunc("seq_day10") {
-  val format = new SimpleDateFormat("YYYYMMDD")
+  val format = new SimpleDateFormat("yyyyMMdd")
   val base = Math.pow(10, 10).asInstanceOf[Long]
   override def gen(year: Int, seq: Number): Number = {
     val cal = ju.Calendar.getInstance
