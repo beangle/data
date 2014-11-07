@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="org.beangle.data.jpa.model" default-access="org.beangle.data.jpa.hibernate.PropertyAccessor">
+
+    <class name="org.beangle.data.jpa.model.User" >
+        <id name="id" unsaved-value="0" type="long" >
+          <generator class="assigned"/>
+        </id>
+        <property name="name" length="50" unique="true"/>
+        <set name="roles" collection-type="set" table="users_roles">
+          <key column="user_id"/>
+          <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
+        </set>
+        <bag name="role2s" collection-type="seq" table="users_role2s">
+          <key column="user_id"/>
+          <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
+        </bag>
+        <property name="age" type="int?"/>
+        <!-- -->
+        <map name="properties" cascade="all" collection-type="map">
+           <key column="user_id"/>
+           <map-key column="name" type="string"/>
+           <element column="value" type="string"/>
+        </map>
+    </class>
+
+    <class name="org.beangle.data.jpa.model.Role" >
+        <id name="id" unsaved-value="0" type="integer">
+          <generator class="assigned"/>
+        </id>
+        <property name="name" length="50" unique="true"/>
+    </class>
+</hibernate-mapping>

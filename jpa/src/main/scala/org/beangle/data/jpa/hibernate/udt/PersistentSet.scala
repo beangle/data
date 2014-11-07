@@ -22,6 +22,7 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
     setInitialized()
     setDirectlyAccessible(true)
   }
+
   override def getSnapshot(persister: CollectionPersister): jo.Serializable = {
     val cloned = new mutable.HashMap[Object, Object]
     set foreach { ele =>
@@ -93,9 +94,13 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
 
   override def getElement(entry: Object): Object = entry
 
-  override def getSnapshotElement(entry: Object, i: Int): Object = throw new UnsupportedOperationException("Sets don't support updating by element")
+  override def getSnapshotElement(entry: Object, i: Int): Object = {
+    throw new UnsupportedOperationException("Sets don't support updating by element")
+  }
 
-  override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = throw new UnsupportedOperationException("Sets don't have indexes");
+  override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = {
+    throw new UnsupportedOperationException("Sets don't have indexes");
+  }
 
   override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
     // note that it might be better to iterate the snapshot but this is safe,
@@ -105,11 +110,17 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
 
   override def needsUpdating(entry: Object, i: Int, elemType: Type): Boolean = false
 
-  override def isCollectionEmpty: Boolean = set.isEmpty
+  override def isCollectionEmpty: Boolean = {
+    set.isEmpty
+  }
 
-  override def size: Int = if (readSize()) getCachedSize() else set.size
+  override def size: Int = {
+    if (readSize()) getCachedSize() else set.size
+  }
 
-  override def iterator: Iterator[Object] = { read(); set.iterator }
+  override def iterator: Iterator[Object] = {
+    read(); set.iterator
+  }
 
   override def +=(elem: Object): this.type = {
     val exists = if (isOperationQueueEnabled()) readElementExistence(elem) else null

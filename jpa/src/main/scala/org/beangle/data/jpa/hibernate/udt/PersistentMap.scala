@@ -20,11 +20,11 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
   type MM = mutable.Map[Object, Object]
   type MHM = mutable.HashMap[Object, Object]
 
-  private var loadingEntries = new mutable.ListBuffer[Array[Object]]
+  private var loadingEntries: mutable.ListBuffer[Array[Object]] = _
 
   if (null != map) {
-    setInitialized();
-    setDirectlyAccessible(true);
+    setInitialized()
+    setDirectlyAccessible(true)
   }
 
   override def getSnapshot(persister: CollectionPersister): jo.Serializable = {
@@ -33,6 +33,15 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
     cloned
   }
 
+  override def endRead(): Boolean = {
+    if (loadingEntries != null) {
+      loadingEntries.foreach { entry =>
+        map.put(entry(0), entry(1))
+      }
+      loadingEntries = null
+    }
+    super.endRead()
+  }
   override def getOrphans(snapshot: jo.Serializable, entityName: String): ju.Collection[_] = {
     SeqHelper.getOrphans(snapshot.asInstanceOf[MM].values, map.values, entityName, getSession())
   }
@@ -63,7 +72,8 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
   override def readFrom(rs: ResultSet, persister: CollectionPersister, descriptor: CollectionAliases, owner: Object): Object = {
     val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases(), getSession())
     if (null != element) {
-      val index = persister.readIndex(rs, descriptor.getSuffixedIndexAliases(), getSession());
+      val index = persister.readIndex(rs, descriptor.getSuffixedIndexAliases(), getSession())
+      if (loadingEntries == null) loadingEntries = new mutable.ListBuffer[Array[Object]]
       loadingEntries += Array[Object](index, element)
     }
     element
@@ -90,15 +100,23 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
     result
   }
 
-  override def entries(persister: CollectionPersister): ju.Iterator[_] = asJavaIterator(map.iterator)
+  override def entries(persister: CollectionPersister): ju.Iterator[_] = {
+    asJavaIterator(map.iterator)
+  }
 
-  override def entryExists(entry: Object, i: Int): Boolean = null != entry.asInstanceOf[(_, _)]._2
+  override def entryExists(entry: Object, i: Int): Boolean = {
+    null != entry.asInstanceOf[(_, _)]._2
+  }
 
   override def getElement(entry: Object): Object = entry.asInstanceOf[(_, Object)]._2
 
-  override def getSnapshotElement(entry: Object, i: Int): Object = getSnapshot().asInstanceOf[MM].get(entry.asInstanceOf[(_, Object)]._2).orNull
+  override def getSnapshotElement(entry: Object, i: Int): Object = {
+    getSnapshot().asInstanceOf[MM].get(entry.asInstanceOf[(_, Object)]._2).orNull
+  }
 
-  override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = entry.asInstanceOf[(Object, _)]._1
+  override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = {
+    entry.asInstanceOf[(Object, _)]._1
+  }
 
   override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
     val sn = getSnapshot().asInstanceOf[MM]
@@ -113,11 +131,18 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
     e._2 != null && snValue != null && elemType.isDirty(snValue, e._2, getSession())
   }
 
-  override def isCollectionEmpty: Boolean = map.isEmpty
+  override def isCollectionEmpty: Boolean = {
+    map.isEmpty
+  }
 
-  override def size: Int = if (readSize()) getCachedSize() else map.size
+  override def size: Int = {
+    if (readSize()) getCachedSize() else map.size
+  }
 
-  override def iterator: Iterator[(Object, Object)] = map.iterator
+  override def iterator: Iterator[(Object, Object)] = {
+    read()
+    map.iterator
+  }
 
   override def get(key: Object): Option[Object] = {
     val result = readElementByIndex(key)
@@ -126,7 +151,7 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
 
   override def -=(key: Object): this.type = {
     if (isPutQueueEnabled()) {
-      val old = readElementByIndex(key);
+      val old = readElementByIndex(key)
       if (old != UNKNOWN) queueOperation(new Remove(key, old))
     }
     initialize(true)
@@ -137,8 +162,8 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
 
   def +=(kv: (Object, Object)): this.type = {
     if (isPutQueueEnabled()) {
-      val old = readElementByIndex(kv._1);
-      if (old != UNKNOWN) queueOperation(new Put(kv, old));
+      val old = readElementByIndex(kv._1)
+      if (old != UNKNOWN) queueOperation(new Put(kv, old))
     }
     initialize(true)
     val old = map.put(kv._1, kv._2).orNull
@@ -148,7 +173,7 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
 
   override def clear() {
     if (isClearQueueEnabled()) {
-      queueOperation(new Clear());
+      queueOperation(new Clear())
     } else {
       initialize(true)
       if (!map.isEmpty) {
@@ -159,15 +184,18 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
   }
 
   override def toString(): String = {
-    read(); map.toString()
+    read()
+    map.toString()
   }
 
   override def equals(other: Any): Boolean = {
-    read(); map.equals(other)
+    read()
+    map.equals(other)
   }
 
   override def hashCode(): Int = {
-    read(); map.hashCode()
+    read()
+    map.hashCode()
   }
 
   final class Put(val value: (Object, Object)) extends DelayedOperation {

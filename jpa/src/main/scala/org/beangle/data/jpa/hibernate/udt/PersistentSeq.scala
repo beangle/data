@@ -123,19 +123,31 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     i < sn.size && sn(i) != null && list(i) != null && elemType.isDirty(list(i), sn(i), getSession())
   }
 
-  override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = Integer.valueOf(i)
+  override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = {
+    Integer.valueOf(i)
+  }
 
   override def getElement(entry: Object): Object = entry
 
-  override def getSnapshotElement(entry: Object, i: Int): Object = getSnapshot().asInstanceOf[ListBuffer[Object]](i)
+  override def getSnapshotElement(entry: Object, i: Int): Object = {
+    getSnapshot().asInstanceOf[ListBuffer[Object]](i)
+  }
 
-  override def entryExists(entry: Object, i: Int): Boolean = entry != null
+  override def entryExists(entry: Object, i: Int): Boolean = {
+    entry != null
+  }
 
-  override def length: Int = if (readSize()) getCachedSize() else list.size
+  override def length: Int = {
+    if (readSize()) getCachedSize() else list.size
+  }
 
-  override def isEmpty(): Boolean = if (readSize()) getCachedSize() == 0 else list.isEmpty
+  override def isEmpty(): Boolean = {
+    if (readSize()) getCachedSize() == 0 else list.isEmpty
+  }
 
-  override def iterator: Iterator[Object] = { read(); list.iterator }
+  override def iterator: Iterator[Object] = {
+    read(); list.iterator
+  }
 
   override def +=(ele: Object): this.type = {
     if (!isOperationQueueEnabled()) {
