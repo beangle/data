@@ -21,9 +21,10 @@ package org.beangle.data.jpa.hibernate.tool
 import java.io.{ FileWriter, Writer }
 import java.{ util => ju }
 import java.util.Locale
+
 import org.beangle.commons.lang.{ ClassLoaders, Locales }
+import org.beangle.commons.lang.{ Strings, SystemInfo }
 import org.beangle.commons.lang.Strings.{ isBlank, split, substringAfter, substringAfterLast, substringBeforeLast }
-import org.beangle.commons.lang.SystemInfo
 import org.beangle.data.jpa.hibernate.{ DefaultConfigurationBuilder, OverrideConfiguration }
 import org.beangle.data.model.comment.Messages
 import org.hibernate.cfg.AvailableSettings.{ DEFAULT_CATALOG, DEFAULT_SCHEMA, DIALECT }
@@ -31,13 +32,12 @@ import org.hibernate.cfg.Configuration
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.spi.Mapping
 import org.hibernate.id.PersistentIdentifierGenerator
-import org.hibernate.mapping.{ Collection, Column, Component, ForeignKey, IdentifierCollection, IndexedCollection, ManyToOne, PersistentClass, Property, RootClass, Table, ToOne }
-import org.beangle.commons.lang.Strings
+import org.hibernate.mapping.{ Collection, Column, Component, ForeignKey, IdentifierCollection, IndexedCollection, KeyValue, ManyToOne, PersistentClass, Property, RootClass, SimpleValue, Table, ToOne }
 
 object DdlGenerator {
   def main(args: Array[String]): Unit = {
     if (args.length < 3) {
-      System.out.println("Usage: DdlGenerator org.hibernate.dialect.Oracle10gDialect /tmp zh_CN")
+      System.out.println("Usage: DdlGenerator org.hibernate.dialect.PostgreSQL9Dialect /tmp zh_CN com.my.package")
       return
     }
     var dir = SystemInfo.tmpDir
@@ -97,7 +97,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
       val pc = iterpc.next
       val clazz = pc.getMappedClass
       pc.getTable.setComment(messages.get(clazz, clazz.getSimpleName))
-      commentProperty(clazz, pc.getTable, pc.getIdentifierProperty)
+      commentIdProperty(clazz, pc.getTable, pc.getIdentifierProperty, pc.getIdentifier)
       commentProperties(clazz, pc.getTable, pc.getPropertyIterator)
 
       if (isBlank(packageName) || clazz.getPackage.getName.startsWith(packageName)) {
@@ -200,6 +200,33 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     }
   }
 
+  private def commentIdProperty(clazz: Class[_], table: Table, p: Property, identifier: KeyValue): Unit = {
+    if (p.getColumnSpan == 1) {
+      val column = p.getColumnIterator.next.asInstanceOf[Column]
+      var comment = messages.get(clazz, p.getName)
+      identifier match {
+        case sv: SimpleValue => comment += (":" + sv.getIdentifierGeneratorStrategy + toString(sv.getIdentifierGeneratorProperties))
+        case _ =>
+      }
+      column.setComment(comment)
+    } else if (p.getColumnSpan > 1) {
+      val pc = p.getValue.asInstanceOf[Component]
+      val columnOwnerClass = pc.getComponentClass
+      commentProperties(columnOwnerClass, table, pc.getPropertyIterator)
+    }
+  }
+
+  private def toString(properties: ju.Properties): String = {
+    if (properties.isEmpty) return ""
+    val result = new collection.mutable.HashMap[String, String]
+    val iter = properties.propertyNames
+    while (iter.hasMoreElements) {
+      val p = iter.nextElement.asInstanceOf[String]
+      val value = properties.getProperty(p)
+      if (null != value) result.put(p, value)
+    }
+    if (result.isEmpty) "" else result.toString.replace("Map", "")
+  }
   private def commentProperty(clazz: Class[_], table: Table, p: Property): Unit = {
     if (null == p) return
     if (p.getColumnSpan == 1) {

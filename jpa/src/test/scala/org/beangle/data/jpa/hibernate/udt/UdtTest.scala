@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import org.scalatest.{ Finders, FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
+import org.beangle.data.jpa.model.Name
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
@@ -49,6 +50,9 @@ class UdtTest extends FunSpec with Matchers {
 
       val s = sf.openSession()
       val user = new User(1)
+      user.name = new Name
+      user.name.first = "Bill"
+      user.name.last = "Smith"
       val role = new Role(1)
       user.roles += role
       user.role2s.asInstanceOf[ListBuffer[Role]] += role

@@ -8,7 +8,10 @@
         <id name="id" unsaved-value="0" type="long" >
           <generator class="assigned"/>
         </id>
-        <property name="name" length="50" unique="true"/>
+        <component name="name" class="Name">
+          <property name="first" length="50" />
+          <property name="last" length="50" />
+        </component>
         <set name="roles" collection-type="set" table="users_roles">
           <key column="user_id"/>
           <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
