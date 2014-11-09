@@ -31,11 +31,6 @@
       <groupId>javax.validation</groupId>
       <artifactId>validation-api</artifactId>
     </dependency>
-	<dependency>
-      <groupId>org.beangle.commons</groupId>
-      <artifactId>beangle-commons-web</artifactId>
-      <optional>true</optional>
-    </dependency>
     <dependency>
       <groupId>org.hibernate.javax.persistence</groupId>
       <artifactId>hibernate-jpa-2.1-api</artifactId>
