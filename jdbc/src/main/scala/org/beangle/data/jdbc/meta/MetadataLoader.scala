@@ -93,7 +93,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
     //evict empty column tables
     val origTabCount = tables.size
     tables.retain((name, table) => !table.columns.isEmpty)
-    if (tables.size == origTabCount) info(s"Load $cols columns in sw")
+    if (tables.size == origTabCount) info(s"Load $cols columns in $sw")
     else info(s"Load $cols columns and evict empty ${origTabCount - tables.size} tables in $sw.")
 
     if (extras) {

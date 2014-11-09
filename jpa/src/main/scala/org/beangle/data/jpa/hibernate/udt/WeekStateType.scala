@@ -2,33 +2,33 @@ package org.beangle.data.jpa.hibernate.udt
 
 import java.sql.{ PreparedStatement, ResultSet, Types }
 
-import org.beangle.commons.lang.time.HourMinute
+import org.beangle.commons.lang.time.WeekState
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.usertype.UserType
 
-class HourMinuteType extends UserType {
+class WeekStateType extends UserType {
 
-  override def sqlTypes() = Array(Types.SMALLINT)
+  override def sqlTypes() = Array(Types.BIGINT)
 
-  override def returnedClass = classOf[HourMinute]
+  override def returnedClass = classOf[WeekState]
 
   override def equals(x: Object, y: Object) = {
-    x.asInstanceOf[HourMinute].value == y.asInstanceOf[HourMinute].value
+    x.asInstanceOf[WeekState].value == y.asInstanceOf[WeekState].value
   }
 
   override def hashCode(x: Object) = x.hashCode()
 
   override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SessionImplementor, owner: Object): Object = {
-    val value = resultSet.getShort(names(0))
+    val value = resultSet.getLong(names(0))
     if (resultSet.wasNull()) null
-    else HourMinute(value)
+    else new WeekState(value)
   }
 
   override def nullSafeSet(statement: PreparedStatement, value: Object, index: Int, session: SessionImplementor): Unit = {
     if (value == null) {
-      statement.setNull(index, Types.SMALLINT)
+      statement.setNull(index, Types.BIGINT)
     } else {
-      statement.setShort(index, value.asInstanceOf[HourMinute].value)
+      statement.setLong(index, value.asInstanceOf[WeekState].value)
     }
   }
 

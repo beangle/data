@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>18</version>
+    <version>19</version>
   </parent>
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent</artifactId>
   <packaging>pom</packaging>
-  <version>4.1.0</version>
+  <version>4.1.1</version>
   <name>Beangle Data Parent</name>
   
   <modules>
@@ -41,12 +41,11 @@
 
   <properties>
     <javax.validation.version>1.1.0.Final</javax.validation.version>
-    <commons.version>4.1.2</commons.version>
+    <commons.version>4.1.3</commons.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-      <!--beangle-->
       <dependency>
         <groupId>org.beangle.commons</groupId>
         <artifactId>beangle-commons-core</artifactId>
@@ -79,4 +78,15 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+  
+  <dependencies>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+    </dependency>
+ </dependencies>
 </project>

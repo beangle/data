@@ -48,7 +48,7 @@ class ConvertReactor(val config: Config) {
   var targetWrapper: DatabaseWrapper = config.target.buildWrapper()
 
   def start() = {
-    val loadextra = config.source.index || config.source.constraint
+    val loadextra = config.source.table.withIndex || config.source.table.withConstraint
     sourceWrapper.database.loadTables(loadextra)
     sourceWrapper.database.loadSequences()
     targetWrapper.database.loadTables(loadextra)
@@ -61,21 +61,23 @@ class ConvertReactor(val config: Config) {
     dataConverter.addAll(tables)
 
     converters += dataConverter
-    if (config.source.index) {
+    if (config.source.table.withIndex) {
       val indexConverter = new IndexConverter(sourceWrapper, targetWrapper)
       indexConverter.tables ++= tables.map(_._2)
       converters += indexConverter
     }
 
-    if (config.source.constraint) {
+    if (config.source.table.withConstraint) {
       val contraintConverter = new ConstraintConverter(sourceWrapper, targetWrapper)
       contraintConverter.addAll(filterConstraints(tables))
       converters += contraintConverter
     }
 
     val sequenceConverter = new SequenceConverter(sourceWrapper, targetWrapper)
-    sequenceConverter.addAll(sourceWrapper.database.sequences)
-
+    val sequences = sourceWrapper.database.sequences
+    val finalSequenceNames = config.source.sequence.filter(sequences.map(s => s.name)).toSet
+    val finalSequences = sequences.filter(s => finalSequenceNames.contains(s.name))
+    sequenceConverter.addAll(finalSequences)
     converters += sequenceConverter
 
     for (converter <- converters)
@@ -83,13 +85,13 @@ class ConvertReactor(val config: Config) {
   }
 
   private def filterTables(source: Source, srcWrapper: DatabaseWrapper, targetWrapper: DatabaseWrapper): List[Tuple2[Table, Table]] = {
-    val tablenames = source.filter(srcWrapper.database.tables.keySet)
+    val tablenames = source.table.filter(srcWrapper.database.tables.keySet)
     val tables = new collection.mutable.ListBuffer[Tuple2[Table, Table]]
     for (name <- tablenames) {
       var srcTable = srcWrapper.database.getTable(name).get
       var targetTable = srcTable.clone()
       targetTable.schema = targetWrapper.database.schema
-      if (source.lowercase) targetTable.lowerCase()
+      if (source.table.lowercase) targetTable.lowerCase()
       tables += (srcTable -> targetTable)
     }
     tables.toList

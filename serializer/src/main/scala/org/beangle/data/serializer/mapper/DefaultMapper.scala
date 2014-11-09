@@ -34,7 +34,9 @@ class DefaultMapper extends Mapper {
   }
 
   override def serializedClass(clazz: Class[_]): String = {
-    classAlias.getOrElse(clazz, Strings.unCamel(clazz.getSimpleName))
+    var simpleName = clazz.getSimpleName
+    if (simpleName.endsWith("Bean")) simpleName = simpleName.substring(0, simpleName.length() - 4)
+    classAlias.getOrElse(clazz, Strings.unCamel(simpleName))
   }
 
   override def aliasForSystemAttribute(name: String): String = {
