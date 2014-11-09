@@ -27,6 +27,7 @@
            <map-key column="name" type="string"/>
            <element column="value" type="string"/>
         </map>
+        <property name="occupy" type="weekstate"/>
     </class>
 
     <class name="org.beangle.data.jpa.model.Role" >

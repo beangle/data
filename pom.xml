@@ -41,12 +41,11 @@
 
   <properties>
     <javax.validation.version>1.1.0.Final</javax.validation.version>
-    <commons.version>4.1.3-SNAPSHOT</commons.version>
+    <commons.version>4.1.3</commons.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-      <!--beangle-->
       <dependency>
         <groupId>org.beangle.commons</groupId>
         <artifactId>beangle-commons-core</artifactId>

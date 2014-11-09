@@ -17,6 +17,7 @@ import org.scalatest.{ Finders, FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
 import org.beangle.data.jpa.model.Name
+import org.beangle.commons.lang.time.WeekState
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
@@ -59,6 +60,7 @@ class UdtTest extends FunSpec with Matchers {
       user.age = Some(20)
       user.properties = new collection.mutable.HashMap[String, String]
       user.properties.put("address", "some street")
+      user.occupy = new WeekState(2)
       s.save(role)
       s.save(user)
       s.flush()
