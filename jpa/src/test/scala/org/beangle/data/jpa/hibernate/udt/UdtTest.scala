@@ -54,19 +54,25 @@ class UdtTest extends FunSpec with Matchers {
       user.name = new Name
       user.name.first = "Bill"
       user.name.last = "Smith"
-      val role = new Role(1)
-      user.roles += role
-      user.role2s.asInstanceOf[ListBuffer[Role]] += role
+      val role1 = new Role(1)
+      val role2 = new Role(2)
+      user.roleSet += role1
+      user.roleSet += role2
+      user.roleList.asInstanceOf[ListBuffer[Role]] += role1
       user.age = Some(20)
       user.properties = new collection.mutable.HashMap[String, String]
       user.properties.put("address", "some street")
       user.occupy = new WeekState(2)
-      s.save(role)
+      s.save(role1)
+      s.save(role2)
       s.save(user)
       s.flush()
       s.clear()
       val saved = s.get(classOf[User], user.id).asInstanceOf[User]
       assert(saved.properties.size == 1)
+      saved.roleSet -= saved.roleSet.head
+      s.saveOrUpdate(saved);
+      s.flush()
       s.close()
     }
   }
