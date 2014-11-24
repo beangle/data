@@ -9,10 +9,11 @@ import org.hibernate.id.{ Configurable, IdentifierGenerator }
 import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, SCHEMA, TABLE }
 import org.hibernate.mapping.Table
 import org.hibernate.engine.jdbc.spi.JdbcCoordinator
+import java.sql.CallableStatement
 
 class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
   var identifierType: Type = _
-  val sql = "next_id(?)"
+  val sql = "{? = call next_id(?)}"
   var tableName: String = _
 
   override def configure(t: Type, params: ju.Properties, dialect: Dialect) {
@@ -23,19 +24,17 @@ class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
 
   def generate(session: SessionImplementor, obj: Object): java.io.Serializable = {
     val jdbc = session.getTransactionCoordinator.getJdbcCoordinator
-    val st = jdbc.getStatementPreparer().prepareStatement(sql, true)
+    val st = jdbc.getStatementPreparer().prepareStatement(sql, true).asInstanceOf[CallableStatement]
     try {
-      st.setString(1, tableName)
-      val rs = jdbc.getResultSetReturn().extract(st)
-      rs.next()
-      val id: Number =
-        identifierType match {
-          case lt: LongType    => new java.lang.Long(rs.getLong(1))
-          case it: IntegerType => new Integer(rs.getInt(1))
-          case st: ShortType   => new java.lang.Short(rs.getShort(1))
-        }
-      jdbc.release(rs, st)
-      id
+      st.registerOutParameter(1, java.sql.Types.BIGINT)
+      st.setString(2, tableName)
+      st.execute()
+      val id = st.getLong(1)
+      identifierType match {
+        case lt: LongType    => new java.lang.Long(id)
+        case it: IntegerType => new Integer(id.asInstanceOf[Int])
+        case sht: ShortType  => new java.lang.Short(st.getShort(1).asInstanceOf[Short])
+      }
     } finally {
       jdbc.release(st)
     }

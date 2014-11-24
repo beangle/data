@@ -17,8 +17,7 @@ class TransientTest extends FunSpec with Matchers {
       assert(mis.size == 1)
       val mi = mis.head
       val anns = mi.method.getAnnotations
-      assert(null != anns && anns.length == 1)
-      assert(mi.method.isAnnotationPresent(classOf[Transient]))
+      assert(null != anns && anns.length == 0)
     }
   }
 }

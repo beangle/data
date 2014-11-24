@@ -2,7 +2,6 @@ package org.beangle.data.jpa.hibernate.id
 
 import java.text.SimpleDateFormat
 import java.{ util => ju }
-
 import org.beangle.commons.lang.JLong
 import org.beangle.data.jpa.mapping.NamingPolicy
 import org.beangle.data.model.YearId
@@ -13,6 +12,7 @@ import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.id.{ Configurable, IdentifierGenerator }
 import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, SCHEMA, TABLE }
 import org.hibernate.mapping.Table
+import java.sql.CallableStatement
 
 /**
  * Id generator based on function or procedure
@@ -75,16 +75,16 @@ class LongIdFunctor(sql: String) extends IdFunctor {
 }
 
 class IntYearIdFunctor(tableName: String) extends IdFunctor {
-  val sql = "next_year_id(?,?)"
+  val sql = "{? = call next_year_id(?,?)}"
+
   def gen(jdbc: JdbcCoordinator, year: Int): Number = {
-    val st = jdbc.getStatementPreparer().prepareStatement(sql, true)
+    val st = jdbc.getStatementPreparer().prepareStatement(sql, true).asInstanceOf[CallableStatement]
     try {
-      st.setString(1, tableName)
-      st.setInt(2, year)
-      val rs = jdbc.getResultSetReturn().extract(st)
-      rs.next()
-      val id = Integer.valueOf(rs.getInt(1))
-      jdbc.release(rs, st)
+      st.registerOutParameter(1, java.sql.Types.BIGINT)
+      st.setString(2, tableName)
+      st.setInt(3, year)
+      st.execute()
+      val id = Integer.valueOf(st.getLong(1).asInstanceOf[Int])
       id
     } finally {
       jdbc.release(st)
