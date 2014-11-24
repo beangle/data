@@ -70,6 +70,8 @@ class UdtTest extends FunSpec with Matchers {
       s.clear()
       val saved = s.get(classOf[User], user.id).asInstanceOf[User]
       assert(saved.properties.size == 1)
+      assert(saved.roleSet.size == 2)
+      assert(saved.roleList.size == 1)
       saved.roleSet -= saved.roleSet.head
       s.saveOrUpdate(saved);
       s.flush()

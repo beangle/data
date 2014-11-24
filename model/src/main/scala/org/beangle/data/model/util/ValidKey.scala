@@ -26,11 +26,21 @@ import org.beangle.commons.lang.functor.Predicate;
  * 判断实体类中的主键是否是有效主键
  *
  * @author chaostone
+ *
  */
+@deprecated("Use Valid instead", "4.1.2")
 object ValidKey extends Predicate[Any] {
 
   def apply(value: Any): Boolean = {
-    if (value.isInstanceOf[AnyRef] && null == value) return false
+    if (null == value) return false
+    if (value.isInstanceOf[Number]) return NotZero(value.asInstanceOf[Number])
+    return NotEmpty.apply(value.toString)
+  }
+}
+
+object Valid extends Predicate[Any] {
+  def apply(value: Any): Boolean = {
+    if (null == value) return false
     if (value.isInstanceOf[Number]) return NotZero(value.asInstanceOf[Number])
     return NotEmpty.apply(value.toString)
   }

@@ -3,77 +3,91 @@ package org.beangle.data.jpa.hibernate.id
 import java.text.SimpleDateFormat
 import java.{ util => ju }
 
-import org.beangle.data.model.{ FasterId, SlowId, YearId }
+import org.beangle.commons.lang.JLong
+import org.beangle.data.jpa.mapping.NamingPolicy
+import org.beangle.data.model.YearId
+import org.hibernate.`type`.{ IntegerType, LongType, Type }
+import org.hibernate.dialect.Dialect
+import org.hibernate.engine.jdbc.spi.JdbcCoordinator
 import org.hibernate.engine.spi.SessionImplementor
-import org.hibernate.id.IdentifierGenerator
+import org.hibernate.id.{ Configurable, IdentifierGenerator }
+import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, SCHEMA, TABLE }
+import org.hibernate.mapping.Table
 
 /**
  * Id generator based on function or procedure
  */
-class DateStyleGenerator extends IdentifierGenerator {
+class DateStyleGenerator extends IdentifierGenerator with Configurable {
+
+  var func: IdFunctor = _
+
+  override def configure(t: Type, params: ju.Properties, dialect: Dialect) {
+    t match {
+      case longType: LongType =>
+        func = new LongIdFunctor(dialect.getSequenceNextValString("seq_minute6"))
+      case intType: IntegerType =>
+        val schema = NamingPolicy.Instance.getSchema(params.getProperty(IdentifierGenerator.ENTITY_NAME)).getOrElse(params.getProperty(SCHEMA))
+        val tableName = Table.qualify(dialect.quote(params.getProperty(CATALOG)), dialect.quote(schema), dialect.quote(params.getProperty(TABLE)))
+        func = new IntYearIdFunctor(tableName)
+    }
+  }
 
   def generate(session: SessionImplementor, obj: Object): java.io.Serializable = {
-    var year = 0
-    val func = if (obj.isInstanceOf[YearId]) {
-      year = obj.asInstanceOf[YearId].year
-      val curYear = ju.Calendar.getInstance().get(ju.Calendar.YEAR)
-      obj match {
-        case faster: FasterId => if (year == curYear) LongDateId else LongYearId
-        case slow: SlowId => IntYearId
-        case _ => if (year == curYear) LongSecondId else LongYearId
-      }
-    } else {
-      year = ju.Calendar.getInstance().get(ju.Calendar.YEAR)
-      obj match {
-        case faster: FasterId => LongDateId
-        case slow: SlowId => IntYearId
-        case _ => LongSecondId
-      }
+    val year = obj match {
+      case yearObj: YearId => yearObj.year
+      case _               => ju.Calendar.getInstance().get(ju.Calendar.YEAR)
     }
-    val jdbcCoordinator = session.getTransactionCoordinator().getJdbcCoordinator()
-    val st = jdbcCoordinator.getStatementPreparer().prepareStatement(session.getFactory().getDialect().getSequenceNextValString(func.sequence))
+    val jdbc = session.getTransactionCoordinator().getJdbcCoordinator()
+    func.gen(jdbc, year)
+  }
+}
+
+abstract class IdFunctor {
+  def gen(jdbc: JdbcCoordinator, year: Int): Number
+}
+
+class LongIdFunctor(sql: String) extends IdFunctor {
+  val minuteFormat = new SimpleDateFormat("yyyyMMddHHmm")
+  val dateFormat = new SimpleDateFormat("yyyyMMdd")
+
+  def gen(jdbc: JdbcCoordinator, year: Int): Number = {
+    val st = jdbc.getStatementPreparer().prepareStatement(sql)
     try {
-      val rs = jdbcCoordinator.getResultSetReturn().extract(st)
+      val rs = jdbc.getResultSetReturn().extract(st)
       rs.next()
-      val id = func.gen(year, rs.getLong(1))
-      jdbcCoordinator.release(rs, st)
+      val id = format(year, rs.getLong(1))
+      jdbc.release(rs, st)
       id
     } finally {
-      jdbcCoordinator.release(st)
+      jdbc.release(st)
+    }
+  }
+
+  def format(year: Int, seq: Long): Number = {
+    val cal = ju.Calendar.getInstance
+    val curYear = cal.get(ju.Calendar.YEAR)
+    if (year == curYear) {
+      new JLong(java.lang.Long.parseLong(minuteFormat.format(new ju.Date)) * 1000000 + seq)
+    } else {
+      new JLong(java.lang.Long.parseLong(String.valueOf(year) + dateFormat.format(new ju.Date)) * 1000000 + seq)
     }
   }
 }
-abstract class IdFunc(val sequence: String) {
-  def gen(year: Int = 0, seq: Number): Number
-}
 
-object LongSecondId extends IdFunc("seq_second4") {
-  val format = new SimpleDateFormat("yyyyMMddHHmmss")
-  override def gen(year: Int, seq: Number): Number = {
-    val cal = ju.Calendar.getInstance
-    java.lang.Long.valueOf(format.format(new ju.Date)) * 10000 + seq.intValue
+class IntYearIdFunctor(tableName: String) extends IdFunctor {
+  val sql = "next_year_id(?,?)"
+  def gen(jdbc: JdbcCoordinator, year: Int): Number = {
+    val st = jdbc.getStatementPreparer().prepareStatement(sql, true)
+    try {
+      st.setString(1, tableName)
+      st.setInt(2, year)
+      val rs = jdbc.getResultSetReturn().extract(st)
+      rs.next()
+      val id = Integer.valueOf(rs.getInt(1))
+      jdbc.release(rs, st)
+      id
+    } finally {
+      jdbc.release(st)
+    }
   }
 }
-
-object LongDateId extends IdFunc("seq_day10") {
-  val format = new SimpleDateFormat("yyyyMMdd")
-  val base = Math.pow(10, 10).asInstanceOf[Long]
-  override def gen(year: Int, seq: Number): Number = {
-    val cal = ju.Calendar.getInstance
-    java.lang.Long.valueOf(format.format(new ju.Date)) * base + seq.longValue
-  }
-}
-
-object LongYearId extends IdFunc("seq_year14") {
-  val base = Math.pow(10, 14).asInstanceOf[Long]
-  override def gen(year: Int, seq: Number): Number = {
-    year * base + seq.longValue
-  }
-}
-
-object IntYearId extends IdFunc("seq_year5") {
-  override def gen(year: Int, seq: Number): Number = {
-    year * 100000 + seq.intValue
-  }
-}
-

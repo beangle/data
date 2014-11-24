@@ -72,11 +72,10 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
   private var mapping: Mapping = _
   private val processed = new collection.mutable.HashSet[Table]
 
-  private val files = new collection.mutable.HashMap[String, List[collection.mutable.ListBuffer[String]]]
-
-  files.put("1-tables.sql", List(tables, constraints, indexes))
-  files.put("2-sequences.sql", List(sequences))
-  files.put("3-comments.sql", List(comments))
+  private val files = List(
+    "1-tables.sql" -> List(tables, constraints, indexes),
+    "2-sequences.sql" -> List(sequences),
+    "3-comments.sql" -> List(comments))
 
   /**
    * Generate sql scripts
@@ -206,7 +205,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
       var comment = messages.get(clazz, p.getName)
       identifier match {
         case sv: SimpleValue => comment += (":" + sv.getIdentifierGeneratorStrategy + toString(sv.getIdentifierGeneratorProperties))
-        case _ =>
+        case _               =>
       }
       column.setComment(comment)
     } else if (p.getColumnSpan > 1) {

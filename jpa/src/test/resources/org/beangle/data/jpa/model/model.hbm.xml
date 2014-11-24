@@ -16,10 +16,11 @@
           <key column="user_id"/>
           <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
         </set>
-        <bag name="roleList" collection-type="seq" table="users_role2s">
+        <list name="roleList" collection-type="seq" table="users_role2s">
           <key column="user_id"/>
+          <list-index column="idx"/>
           <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
-        </bag>
+        </list>
         <property name="age" type="int?"/>
         <!-- -->
         <map name="properties" cascade="all" collection-type="map">
