@@ -25,7 +25,7 @@ class GeneratorTest extends FunSpec with Matchers {
   configProperties.put(AvailableSettings.DIALECT, classOf[PostgreSQL9Dialect].getName)
   configProperties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
   configProperties.put("hibernate.hbm2ddl.auto", "create")
-  configProperties.put("hibernate.show_sql", "true")
+  configProperties.put("hibernate.show_sql", "false")
 
   for (resource <- ClassLoaders.getResources("META-INF/hibernate.cfg.xml", classOf[UdtTest]))
     configuration.configure(resource)
@@ -63,9 +63,10 @@ class GeneratorTest extends FunSpec with Matchers {
     it("generate id by date") {
       val s = sf.openSession()
       val lresource = new LongDateIdResource();
-      lresource.year = 2014
+      lresource.year = 2013
       s.saveOrUpdate(lresource)
-
+      assert(lresource.id != null)
+      assert(lresource.id.toString.startsWith("2013"))
       s.flush()
       s.close()
     }
