@@ -12,14 +12,15 @@
           <property name="first" length="50" />
           <property name="last" length="50" />
         </component>
-        <set name="roles" collection-type="set" table="users_roles">
+        <set name="roleSet" collection-type="set" table="users_roles">
           <key column="user_id"/>
           <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
         </set>
-        <bag name="role2s" collection-type="seq" table="users_role2s">
+        <list name="roleList" collection-type="seq" table="users_role2s">
           <key column="user_id"/>
+          <list-index column="idx"/>
           <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
-        </bag>
+        </list>
         <property name="age" type="int?"/>
         <!-- -->
         <map name="properties" cascade="all" collection-type="map">
@@ -34,6 +35,29 @@
         <id name="id" unsaved-value="0" type="integer">
           <generator class="assigned"/>
         </id>
+        <property name="name" length="50" unique="true"/>
+    </class>
+
+    <class name="org.beangle.data.jpa.model.LongIdResource" >
+        <id name="id" unsaved-value="0" type="long">
+          <generator class="auto_increment"/>
+        </id>
+        <property name="name" length="50" unique="true"/>
+    </class>
+
+    <class name="org.beangle.data.jpa.model.IntIdResource" >
+        <id name="id" unsaved-value="0" type="int">
+          <generator class="date"/>
+        </id>
+        <property name="year" not-null="true"/>
+        <property name="name" length="50" unique="true"/>
+    </class>
+    
+    <class name="org.beangle.data.jpa.model.LongDateIdResource" >
+        <id name="id" unsaved-value="0" type="long">
+          <generator class="date"/>
+        </id>
+        <property name="year" not-null="true"/>
         <property name="name" length="50" unique="true"/>
     </class>
 </hibernate-mapping>

@@ -81,7 +81,7 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
     val elementType = persister.getElementType()
     val sn = getSnapshot().asInstanceOf[mutable.HashMap[Object, Object]]
     val deletes = new mutable.ListBuffer[Object]()
-    deletes ++= sn.filterKeys { key => !set.contains(key) }
+    deletes ++= sn.filterKeys(!set.contains(_)).keys
     deletes ++= set.filter { ele => sn.contains(ele) && elementType.isDirty(ele, sn(ele), getSession()) }
     asJavaIterator(deletes.iterator)
   }

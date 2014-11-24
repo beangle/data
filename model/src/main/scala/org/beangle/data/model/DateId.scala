@@ -18,23 +18,9 @@
  */
 package org.beangle.data.model
 /**
- * Entity Id contains date infomation(year/[month]/[day]/[hour]/[minute]/[second]) decided by identifier growth speed 
+ * Entity Id contains date infomation(year/[month]/[day]/[hour]/[minute]) 
+ * Max 1000,000 record per minute
  */
 trait YearId extends {
   def year: Int
 }
-
-/**
- * 10 billion per day.
- */
-trait FasterId
-
-/**
- * 10,000 record per second
- */
-trait FastId
-
-/**
- * 100,000 record per year
- */
-trait SlowId

@@ -18,19 +18,18 @@
  */
 package org.beangle.data.jdbc.query
 
-import java.io.{ InputStream, StringReader, StringWriter }
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, StringReader, StringWriter }
 import java.lang.reflect.Method
 import java.math.{ BigDecimal, BigInteger }
-import java.sql.{ Blob, Clob, Connection, Date, PreparedStatement, ResultSet, SQLException, Time, Timestamp }
+import java.sql.{ BatchUpdateException, Blob, Clob, Connection, Date, PreparedStatement, ResultSet, SQLException, Time, Timestamp }
 import java.sql.Types.{ BIGINT, BINARY, BIT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, LONGVARBINARY, LONGVARCHAR, NULL, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARBINARY, VARCHAR }
 import java.{ util => ju }
+
+import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.logging.Logging
+
 import javax.sql.DataSource
-import java.io.Closeable
-import org.beangle.commons.io.IOs
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 
 object JdbcExecutor {
   var oracleTimestampMethod: Method = _
@@ -152,6 +151,10 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
       rows ++= stmt.executeBatch()
       conn.commit()
     } catch {
+      case be: BatchUpdateException => {
+        conn.rollback()
+        rethrow(be.getNextException, sql, curParam)
+      }
       case e: SQLException => {
         conn.rollback()
         rethrow(e, sql, curParam)
@@ -285,7 +288,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
               else stmt.setAsciiStream(index, value.asInstanceOf[Clob].getAsciiStream)
             }
             case BLOB => stmt.setBinaryStream(index, value.asInstanceOf[Blob].getBinaryStream)
-            case _ => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
+            case _    => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
           }
         } catch {
           case e: Exception => error("set value error", e);

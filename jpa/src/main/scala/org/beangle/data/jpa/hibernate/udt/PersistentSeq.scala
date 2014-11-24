@@ -83,7 +83,7 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     } else {
       val index = persister.readIndex(rs, descriptor.getSuffixedIndexAliases(), getSession()).asInstanceOf[Integer].intValue()
       //pad with nulls from the current last element up to the new index
-      Range(list.size, index + 1) foreach { i => list.insert(i, null) }
+      Range(list.size, index) foreach { i => list.insert(i, null) }
       list.insert(index, element)
     }
     element

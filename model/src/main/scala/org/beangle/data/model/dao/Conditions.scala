@@ -21,7 +21,7 @@ package org.beangle.data.model.dao
 import org.beangle.commons.bean.PropertyUtils
 import org.beangle.data.model.Component
 import org.beangle.data.model.Entity
-import org.beangle.data.model.util.ValidKey
+import org.beangle.data.model.util.Valid
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 
@@ -112,7 +112,7 @@ object Conditions extends Logging {
       try {
         val key = "id";
         val property = PropertyUtils.getProperty(value, key);
-        if (ValidKey(property)) {
+        if (Valid(property)) {
           val content = new StringBuilder(name);
           content.append('.').append(key).append(" = :").append(name.replace('.', '_')).append('_')
             .append(key);
