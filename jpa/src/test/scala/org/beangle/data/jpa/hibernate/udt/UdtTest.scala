@@ -6,8 +6,10 @@ import org.apache.commons.dbcp.{ ConnectionFactory, DriverManagerConnectionFacto
 import org.apache.commons.pool.impl.GenericObjectPool
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.jpa.hibernate.OverrideConfiguration
-import org.beangle.data.jpa.model.{ Role, User }
+import org.beangle.commons.lang.time.{ HourMinute, WeekDays, WeekState }
+import org.beangle.data.jpa.hibernate.{ OverrideConfiguration, RailsNamingStrategy }
+import org.beangle.data.jpa.mapping.RailsNamingPolicy
+import org.beangle.data.jpa.model.{ Name, Role, TimeBean, User }
 import org.hibernate.{ SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.AvailableSettings
@@ -16,39 +18,37 @@ import org.junit.runner.RunWith
 import org.scalatest.{ Finders, FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
-import org.beangle.data.jpa.model.Name
-import org.beangle.commons.lang.time.WeekState
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
+  val configuration = new OverrideConfiguration()
+  configuration.setNamingStrategy(new RailsNamingStrategy(new RailsNamingPolicy))
+  val configProperties = configuration.getProperties()
+  configProperties.put(AvailableSettings.DIALECT, classOf[Oracle10gDialect].getName)
+  configProperties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
+  configProperties.put("hibernate.hbm2ddl.auto", "create")
+  configProperties.put("hibernate.show_sql", "false")
+  configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/model.hbm.xml"))
+  configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/time.hbm.xml"))
+
+  val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
+  val ds: DataSource = new PoolingDataSourceFactory(properties("h2.driverClassName"),
+    properties("h2.url"), properties("h2.username"), properties("h2.password"), new java.util.Properties()).getObject
+  configProperties.put(AvailableSettings.DATASOURCE, ds)
+
+  // do session factory build.
+  val serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties).build()
+
+  configuration.setSessionFactoryObserver(new SessionFactoryObserver {
+    override def sessionFactoryCreated(factory: SessionFactory) {}
+    override def sessionFactoryClosed(factory: SessionFactory) {
+      StandardServiceRegistryBuilder.destroy(serviceRegistry)
+    }
+  })
+  val sf = configuration.buildSessionFactory(serviceRegistry)
 
   describe("Beangle UDT") {
     it("Should support int? and scala collection") {
-      val configuration = new OverrideConfiguration()
-      val configProperties = configuration.getProperties()
-      configProperties.put(AvailableSettings.DIALECT, classOf[Oracle10gDialect].getName)
-      configProperties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
-      configProperties.put("hibernate.hbm2ddl.auto", "create")
-      configProperties.put("hibernate.show_sql", "true")
-
-      for (resource <- ClassLoaders.getResources("META-INF/hibernate.cfg.xml", classOf[UdtTest]))
-        configuration.configure(resource)
-      val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
-      val ds: DataSource = new PoolingDataSourceFactory(properties("h2.driverClassName"),
-        properties("h2.url"), properties("h2.username"), properties("h2.password"), new java.util.Properties()).getObject
-      configProperties.put(AvailableSettings.DATASOURCE, ds)
-
-      // do session factory build.
-      val serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties).build()
-
-      configuration.setSessionFactoryObserver(new SessionFactoryObserver {
-        override def sessionFactoryCreated(factory: SessionFactory) {}
-        override def sessionFactoryClosed(factory: SessionFactory) {
-          StandardServiceRegistryBuilder.destroy(serviceRegistry)
-        }
-      })
-      val sf = configuration.buildSessionFactory(serviceRegistry)
-
       val s = sf.openSession()
       val user = new User(1)
       user.name = new Name
@@ -76,6 +76,23 @@ class UdtTest extends FunSpec with Matchers {
       s.saveOrUpdate(saved);
       s.flush()
       s.close()
+    }
+    it("Support user defined time ") {
+      val s = sf.openSession()
+      val id = 1
+      val timebean = new TimeBean()
+      timebean.time = HourMinute(1230.asInstanceOf[Short])
+      timebean.weekday = WeekDays.Sun
+      timebean.state = new WeekState(1)
+      timebean.id = id
+      s.save(timebean)
+      assert(null != timebean.id)
+      s.flush()
+      s.clear()
+      val saved = s.get(classOf[TimeBean], id).asInstanceOf[TimeBean]
+      assert(null != saved.time)
+      assert(null != saved.weekday)
+      assert(null != saved.state)
     }
   }
 }

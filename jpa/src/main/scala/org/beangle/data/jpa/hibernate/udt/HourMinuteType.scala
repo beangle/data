@@ -5,6 +5,7 @@ import java.sql.{ PreparedStatement, ResultSet, Types }
 import org.beangle.commons.lang.time.HourMinute
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.usertype.UserType
+import java.io.{ Serializable => JSerializable }
 
 class HourMinuteType extends UserType {
 
@@ -34,7 +35,9 @@ class HourMinuteType extends UserType {
 
   override def deepCopy(value: Object): Object = value
   override def isMutable() = false
-  override def disassemble(value: Object) = value.asInstanceOf[Serializable]
-  override def assemble(cached: java.io.Serializable, owner: Object): Object = cached.asInstanceOf[Object]
+  override def disassemble(value: Object): JSerializable = {
+    value.asInstanceOf[JSerializable]
+  }
+  override def assemble(cached: JSerializable, owner: Object): Object = cached.asInstanceOf[Object]
   override def replace(original: Object, target: Object, owner: Object) = original
 }

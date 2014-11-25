@@ -2,17 +2,16 @@ package org.beangle.data.jpa.hibernate.id
 
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.annotation.description
-import org.beangle.data.jpa.hibernate.{ OverrideConfiguration, RailsNamingStrategy }
-import org.beangle.data.jpa.hibernate.udt.{ PoolingDataSourceFactory, UdtTest }
+import org.beangle.data.jpa.hibernate.{OverrideConfiguration, RailsNamingStrategy}
+import org.beangle.data.jpa.hibernate.udt.{PoolingDataSourceFactory, UdtTest}
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
-import org.beangle.data.jpa.model.{ IntIdResource, LongDateIdResource, LongIdResource }
-import org.hibernate.{ SessionFactory, SessionFactoryObserver }
+import org.beangle.data.jpa.model.{IntIdResource, LongDateIdResource, LongIdResource}
+import org.hibernate.{SessionFactory, SessionFactoryObserver}
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.AvailableSettings
 import org.hibernate.dialect.PostgreSQL9Dialect
 import org.junit.runner.RunWith
-import org.scalatest.{ Finders, FunSpec, Matchers }
+import org.scalatest.{Finders, FunSpec, Matchers}
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
 
@@ -21,14 +20,13 @@ class GeneratorTest extends FunSpec with Matchers {
 
   val configuration = new OverrideConfiguration()
   configuration.setNamingStrategy(new RailsNamingStrategy(new RailsNamingPolicy))
+  configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/id.hbm.xml"))
   val configProperties = configuration.getProperties()
   configProperties.put(AvailableSettings.DIALECT, classOf[PostgreSQL9Dialect].getName)
   configProperties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
   configProperties.put("hibernate.hbm2ddl.auto", "create")
   configProperties.put("hibernate.show_sql", "false")
 
-  for (resource <- ClassLoaders.getResources("META-INF/hibernate.cfg.xml", classOf[UdtTest]))
-    configuration.configure(resource)
   val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
   val ds: DataSource = new PoolingDataSourceFactory(properties("pg.driverClassName"),
     properties("pg.url"), properties("pg.username"), properties("pg.password"), new java.util.Properties()).getObject
