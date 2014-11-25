@@ -18,7 +18,7 @@
  */
 package org.beangle.data.jpa.hibernate.udt
 
-import java.{ io => jo }
+import java.io.{ Serializable => JSerializable }
 import java.sql.ResultSet
 import java.{ util => ju }
 
@@ -41,13 +41,13 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     setDirectlyAccessible(true)
   }
 
-  override def getSnapshot(persister: CollectionPersister): jo.Serializable = {
+  override def getSnapshot(persister: CollectionPersister): JSerializable = {
     val clonedList = new ListBuffer[Object]
     list.foreach { ele => clonedList += persister.getElementType().deepCopy(ele, persister.getFactory) }
     clonedList
   }
 
-  override def getOrphans(snapshot: jo.Serializable, entityName: String): ju.Collection[_] = {
+  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[_] = {
     SeqHelper.getOrphans(snapshot.asInstanceOf[ListBuffer[_]], list, entityName, getSession())
   }
 
@@ -58,14 +58,14 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     (sn.size == list.size) && !sn.exists { ele => elementType.isDirty(itr.next(), ele, getSession()) }
   }
 
-  override def isSnapshotEmpty(snapshot: jo.Serializable): Boolean = (snapshot.asInstanceOf[Seq[_]]).isEmpty
+  override def isSnapshotEmpty(snapshot: JSerializable): Boolean = (snapshot.asInstanceOf[Seq[_]]).isEmpty
 
   override def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int) {
     this.list = new ListBuffer[Object]
   }
 
-  override def initializeFromCache(persister: CollectionPersister, disassembled: jo.Serializable, owner: Object) {
-    val array = disassembled.asInstanceOf[Array[jo.Serializable]]
+  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable, owner: Object) {
+    val array = disassembled.asInstanceOf[Array[JSerializable]]
     val size = array.length
     beforeInitialize(persister, size)
     array foreach { ele => list += persister.getElementType().assemble(ele, getSession(), owner) }
@@ -93,8 +93,8 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     asJavaIterator(list.iterator)
   }
 
-  override def disassemble(persister: CollectionPersister): jo.Serializable = {
-    list.map(ele => persister.getElementType().disassemble(ele, getSession(), null)).toArray.asInstanceOf[Array[jo.Serializable]]
+  override def disassemble(persister: CollectionPersister): JSerializable = {
+    list.map(ele => persister.getElementType().disassemble(ele, getSession(), null)).toArray.asInstanceOf[Array[JSerializable]]
   }
 
   override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {

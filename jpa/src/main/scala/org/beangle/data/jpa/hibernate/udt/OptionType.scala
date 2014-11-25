@@ -1,21 +1,23 @@
 package org.beangle.data.jpa.hibernate.udt
 
-import java.{ io => jo, lang => jl }
+import java.io.{ Serializable => JSerializable }
 import java.sql.{ PreparedStatement, ResultSet }
 
+import org.beangle.commons.lang.{ JDouble, JFloat, JLong, JByte, JChar, JInt, JBoolean }
 import org.hibernate.`type`.AbstractSingleColumnStandardBasicType
-import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, LONG }
+import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, LONG, BOOLEAN }
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.usertype.UserType
 
 object OptionBasicType {
   val java2HibernateTypes: Map[Class[_], AbstractSingleColumnStandardBasicType[_]] =
-    Map((classOf[jl.Character], CHARACTER),
-      (classOf[jl.Byte], BYTE),
-      (classOf[jl.Integer], INTEGER),
-      (classOf[jl.Long], LONG),
-      (classOf[jl.Float], FLOAT),
-      (classOf[jl.Double], DOUBLE))
+    Map((classOf[JChar], CHARACTER),
+      (classOf[JByte], BYTE),
+      (classOf[JBoolean], BOOLEAN),
+      (classOf[JInt], INTEGER),
+      (classOf[JLong], LONG),
+      (classOf[JFloat], FLOAT),
+      (classOf[JDouble], DOUBLE))
 }
 
 abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
@@ -46,22 +48,22 @@ abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
 
   def replace(original: Object, target: Object, owner: Object) = original
 
-  def disassemble(value: Object) = value.asInstanceOf[jo.Serializable]
+  def disassemble(value: Object) = value.asInstanceOf[JSerializable]
 
-  def assemble(cached: jo.Serializable, owner: Object): Object = cached.asInstanceOf[Object]
+  def assemble(cached: JSerializable, owner: Object): Object = cached.asInstanceOf[Object]
 }
 
-class OptionCharType extends OptionBasicType(classOf[jl.Character])
+class OptionCharType extends OptionBasicType(classOf[JChar])
 
-class OptionByteType extends OptionBasicType(classOf[jl.Byte])
+class OptionByteType extends OptionBasicType(classOf[JByte])
 
-class OptionIntType extends OptionBasicType(classOf[jl.Integer])
+class OptionIntType extends OptionBasicType(classOf[JInt])
 
-class OptionBooleanType extends OptionBasicType(classOf[jl.Boolean])
+class OptionBooleanType extends OptionBasicType(classOf[JBoolean])
 
-class OptionLongType extends OptionBasicType(classOf[jl.Long])
+class OptionLongType extends OptionBasicType(classOf[JLong])
 
-class OptionFloatType extends OptionBasicType(classOf[jl.Float])
+class OptionFloatType extends OptionBasicType(classOf[JFloat])
 
-class OptionDoubleType extends OptionBasicType(classOf[jl.Double])
+class OptionDoubleType extends OptionBasicType(classOf[JDouble])
 

@@ -1,5 +1,6 @@
 package org.beangle.data.jpa.hibernate.udt
 
+import java.io.{ Serializable => JSerializable }
 import java.sql.{ PreparedStatement, ResultSet, Types }
 import java.{ util => ju }
 
@@ -56,8 +57,15 @@ class EnumType extends UserType with ParameterizedType {
   }
 
   override def deepCopy(value: Object): Object = value
+
   override def isMutable() = false
-  override def disassemble(value: Object) = value.asInstanceOf[Serializable]
-  override def assemble(cached: java.io.Serializable, owner: Object): Object = cached.asInstanceOf[Object]
+
+  override def disassemble(value: Object): JSerializable = {
+    value.asInstanceOf[JSerializable]
+  }
+  override def assemble(cached: JSerializable, owner: Object): Object = {
+    cached.asInstanceOf[Object]
+  }
+
   override def replace(original: Object, target: Object, owner: Object) = original
 }

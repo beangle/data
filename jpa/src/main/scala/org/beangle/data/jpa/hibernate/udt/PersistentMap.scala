@@ -1,6 +1,6 @@
 package org.beangle.data.jpa.hibernate.udt
 
-import java.{ io => jo }
+import java.io.{ Serializable => JSerializable }
 import java.sql.ResultSet
 import java.{ util => ju }
 
@@ -27,7 +27,7 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
     setDirectlyAccessible(true)
   }
 
-  override def getSnapshot(persister: CollectionPersister): jo.Serializable = {
+  override def getSnapshot(persister: CollectionPersister): JSerializable = {
     val cloned = new MHM
     map foreach { e => cloned.put(e._1, persister.getElementType().deepCopy(e._2, persister.getFactory())) }
     cloned
@@ -42,7 +42,7 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
     }
     super.endRead()
   }
-  override def getOrphans(snapshot: jo.Serializable, entityName: String): ju.Collection[_] = {
+  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[_] = {
     SeqHelper.getOrphans(snapshot.asInstanceOf[MM].values, map.values, entityName, getSession())
   }
 
@@ -52,14 +52,14 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
     (sn.size == map.size) && !map.exists { e => elementType.isDirty(e._2, sn.get(e._1).orNull, getSession()) }
   }
 
-  override def isSnapshotEmpty(snapshot: jo.Serializable): Boolean = snapshot.asInstanceOf[MM].isEmpty
+  override def isSnapshotEmpty(snapshot: JSerializable): Boolean = snapshot.asInstanceOf[MM].isEmpty
 
   def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int) {
     this.map = persister.getCollectionType().instantiate(anticipatedSize).asInstanceOf[MM]
   }
 
-  override def initializeFromCache(persister: CollectionPersister, disassembled: jo.Serializable, owner: Object) {
-    val array = disassembled.asInstanceOf[Array[jo.Serializable]]
+  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable, owner: Object) {
+    val array = disassembled.asInstanceOf[Array[JSerializable]]
     val size = array.length
     beforeInitialize(persister, size)
     Range(0, size, 2) foreach { i =>
@@ -89,8 +89,8 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
     asJavaIterator(deletes.iterator)
   }
 
-  override def disassemble(persister: CollectionPersister): jo.Serializable = {
-    val result = new Array[jo.Serializable](map.size * 2)
+  override def disassemble(persister: CollectionPersister): JSerializable = {
+    val result = new Array[JSerializable](map.size * 2)
     var i = 0
     map foreach { e =>
       result(i) = persister.getIndexType().disassemble(e._1, getSession(), null)

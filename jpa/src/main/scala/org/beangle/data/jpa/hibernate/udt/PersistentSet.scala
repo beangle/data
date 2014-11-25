@@ -1,17 +1,19 @@
 package org.beangle.data.jpa.hibernate.udt
 
-import java.{ io => jo }
+import java.io.{ Serializable => JSerializable }
 import java.sql.ResultSet
 import java.{ util => ju }
+
 import scala.collection.JavaConversions.asJavaIterator
 import scala.collection.mutable
+import scala.collection.mutable.Buffer
+
 import org.hibernate.`type`.Type
 import org.hibernate.collection.internal.AbstractPersistentCollection
 import org.hibernate.collection.internal.AbstractPersistentCollection.DelayedOperation
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
-import scala.collection.mutable.Buffer
 
 class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = null)
   extends AbstractPersistentCollection(session) with collection.mutable.Set[Object] {
@@ -23,7 +25,7 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
     setDirectlyAccessible(true)
   }
 
-  override def getSnapshot(persister: CollectionPersister): jo.Serializable = {
+  override def getSnapshot(persister: CollectionPersister): JSerializable = {
     val cloned = new mutable.HashMap[Object, Object]
     set foreach { ele =>
       val copied = persister.getElementType().deepCopy(ele, persister.getFactory())
@@ -32,7 +34,7 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
     cloned
   }
 
-  override def getOrphans(snapshot: jo.Serializable, entityName: String): ju.Collection[_] = {
+  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[_] = {
     SeqHelper.getOrphans(snapshot.asInstanceOf[mutable.HashMap[Object, Object]].keys, set, entityName, getSession())
   }
 
@@ -42,14 +44,14 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
     (sn.size == set.size) && !set.exists { test => !sn.contains(test) || elementType.isDirty(sn(test), test, getSession()) }
   }
 
-  override def isSnapshotEmpty(snapshot: jo.Serializable): Boolean = snapshot.asInstanceOf[mutable.HashMap[_, _]].isEmpty
+  override def isSnapshotEmpty(snapshot: JSerializable): Boolean = snapshot.asInstanceOf[mutable.HashMap[_, _]].isEmpty
 
   def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int) {
     this.set = persister.getCollectionType().instantiate(anticipatedSize).asInstanceOf[mutable.HashSet[Object]]
   }
 
-  override def initializeFromCache(persister: CollectionPersister, disassembled: jo.Serializable, owner: Object) {
-    val array = disassembled.asInstanceOf[Array[jo.Serializable]]
+  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable, owner: Object) {
+    val array = disassembled.asInstanceOf[Array[JSerializable]]
     val size = array.length
     beforeInitialize(persister, size)
     array foreach { ele =>
@@ -85,8 +87,8 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
     deletes ++= set.filter { ele => sn.contains(ele) && elementType.isDirty(ele, sn(ele), getSession()) }
     asJavaIterator(deletes.iterator)
   }
-  override def disassemble(persister: CollectionPersister): jo.Serializable = {
-    set.map(ele => persister.getElementType().disassemble(ele, getSession(), null)).toArray.asInstanceOf[Array[jo.Serializable]]
+  override def disassemble(persister: CollectionPersister): JSerializable = {
+    set.map(ele => persister.getElementType().disassemble(ele, getSession(), null)).toArray.asInstanceOf[Array[JSerializable]]
   }
   override def entries(persister: CollectionPersister): ju.Iterator[_] = asJavaIterator(set.iterator)
 
