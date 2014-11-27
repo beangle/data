@@ -8,7 +8,7 @@
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent</artifactId>
   <packaging>pom</packaging>
-  <version>4.1.4-SNAPSHOT</version>
+  <version>4.1.4</version>
   <name>Beangle Data Parent</name>
   
   <modules>
