@@ -20,18 +20,20 @@ package org.beangle.data.report
 
 import java.io.{ File, FileInputStream }
 import java.util.Locale
-import org.beangle.commons.io.Files.{ /, forName, stringWriter }
+
+import org.beangle.commons.io.Files.{ / => /, forName, stringWriter }
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings.{ isEmpty, substringAfterLast, substringBefore, substringBeforeLast }
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.meta.{ Database, Table }
 import org.beangle.data.jdbc.util.PoolingDataSourceFactory
-import org.beangle.data.report.internal.ScalaObjectWrapper
 import org.beangle.data.report.model.{ Module, Report }
+import org.beangle.template.freemarker.BeangleObjectWrapper
+import org.umlgraph.doclet.UmlGraph
+
 import freemarker.cache.{ ClassTemplateLoader, FileTemplateLoader, MultiTemplateLoader }
 import freemarker.template.Configuration
 import javax.sql.DataSource
-import org.umlgraph.doclet.UmlGraph
 
 object Reporter extends Logging {
 
@@ -104,7 +106,7 @@ class Reporter(val report: Report, val dir: String) extends Logging {
     cfg.setTemplateLoader(new MultiTemplateLoader(Array(new FileTemplateLoader(overrideDir), new ClassTemplateLoader(getClass, "/template"))))
   } else
     cfg.setTemplateLoader(new ClassTemplateLoader(getClass, "/template"))
-  cfg.setObjectWrapper(new ScalaObjectWrapper())
+  cfg.setObjectWrapper(new BeangleObjectWrapper(true))
 
   def filterTables() {
     val lastTables = new collection.mutable.HashSet[Table]

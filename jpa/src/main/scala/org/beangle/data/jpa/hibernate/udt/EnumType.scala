@@ -16,7 +16,9 @@ class EnumType extends UserType with ParameterizedType {
     if (ordinal) Array(Types.INTEGER) else Array(Types.VARCHAR)
   }
 
-  override def returnedClass = enum.getClass()
+  override def returnedClass: Class[_] = {
+    enum.values.head.getClass
+  }
 
   override def equals(x: Object, y: Object) = x == y
 
