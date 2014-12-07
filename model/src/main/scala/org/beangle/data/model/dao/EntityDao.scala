@@ -76,9 +76,20 @@ trait EntityDao {
    */
   def remove[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], id: ID, ids: ID*)
 
-  def search[T <: Entity[_]](builder: QueryBuilder[T]): Seq[T]
+  /**
+   * Search by QueryBuilder
+   */
+  def search[T](builder: QueryBuilder[T]): Seq[T]
 
-  def search[T <: Entity[_]](query: Query[T]): Seq[T]
+  /**
+   * Search Query
+   */
+  def search[T](query: Query[T]): Seq[T]
+
+  /**
+   * Search Unique Result
+   */
+  def uniqueResult[T](builder: QueryBuilder[T]): T
 
   /**
    * 在同一个session保存、删除
