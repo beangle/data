@@ -344,7 +344,9 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
-  override def search[T](builder: QueryBuilder[T]): Seq[T] = search[T](builder.build())
+  override def search[T](builder: QueryBuilder[T]): Seq[T] = {
+    search[T](builder.build())
+  }
 
   def uniqueResult[T](builder: QueryBuilder[T]): T = {
     val list = search(builder.build())
