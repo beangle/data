@@ -51,10 +51,10 @@ class OverrideConfiguration extends Configuration with Logging {
     if (getNamingStrategy().isInstanceOf[RailsNamingStrategy])
       namingPolicy = getNamingStrategy().asInstanceOf[RailsNamingStrategy].policy
 
-    if (null == namingPolicy || !namingPolicy.hasSchema) return
+    if (null == namingPolicy || !namingPolicy.multiSchema) return
 
     for (clazz <- classes.values()) {
-      namingPolicy.getSchema(clazz.getEntityName) foreach { schema =>
+      namingPolicy.getSchema(clazz.getMappedClass) foreach { schema =>
         clazz.getTable().setSchema(schema)
       }
     }
@@ -62,7 +62,7 @@ class OverrideConfiguration extends Configuration with Logging {
     for (collection <- collections.values()) {
       val table = collection.getCollectionTable()
       if (null != table) {
-        namingPolicy.getSchema(collection.getRole()) foreach (schema => table.setSchema(schema))
+        namingPolicy.getSchema(collection.getOwner.getMappedClass) foreach (schema => table.setSchema(schema))
       }
     }
   }

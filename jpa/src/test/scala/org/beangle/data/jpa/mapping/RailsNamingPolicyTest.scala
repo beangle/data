@@ -17,13 +17,13 @@
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.beangle.data.jpa.mapping
-import org.scalatest.FunSpec
-import org.scalatest.Matchers
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-import org.beangle.commons.bean.PropertyUtils
+
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.jpa.dao.TestDaoBean
+import org.beangle.data.jpa.model.IdType
+import org.junit.runner.RunWith
+import org.scalatest.{ FunSpec, Matchers }
+import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class RailsNamingPolicyTest extends FunSpec with Matchers {
@@ -33,7 +33,7 @@ class RailsNamingPolicyTest extends FunSpec with Matchers {
       val policy = new RailsNamingPolicy
       for (resource <- ClassLoaders.getResources("META-INF/beangle/orm-naming.xml"))
         policy.addConfig(resource)
-      assert(policy.getSchema("org.beangle.data.jpa.sub").isDefined)
+      assert(policy.getSchema("org.beangle.data.jpa.model.LongIdResource").isDefined)
       val module = policy.getModule(classOf[TestBean])
       assert(module.isDefined)
       assert(module.get.schema == Some("mapping"))
@@ -42,6 +42,8 @@ class RailsNamingPolicyTest extends FunSpec with Matchers {
       val daoModule = policy.getModule(classOf[TestDaoBean])
       assert(daoModule.isDefined)
       assert(daoModule.get.parent.packageName == "org.beangle.data.jpa")
+
+      assert(policy.getSchema(classOf[IdType]) == Some("school"))
     }
   }
 }

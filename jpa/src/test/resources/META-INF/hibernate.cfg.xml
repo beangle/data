@@ -4,5 +4,6 @@
 <hibernate-configuration>
   <session-factory>
     <mapping resource="org/beangle/data/jpa/model/model.hbm.xml"/>
+    <mapping resource="org/beangle/data/jpa/model/IdType.hbm.xml"/>
   </session-factory>
 </hibernate-configuration>
