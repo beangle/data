@@ -51,15 +51,18 @@ trait NamingPolicy {
 
   /**
    * Return schema for package
-   *
-   * @param packageName
    */
-  def getSchema(packageName: String): Option[String]
+  def getSchema(clazz: Class[_]): Option[String]
+
+  /**
+   * Return schema for package
+   */
+  def getSchema(entityName: String): Option[String]
 
   /**
    * Mapped in multischema?
    *
    */
-  def hasSchema: Boolean
+  def multiSchema: Boolean
 
 }

@@ -20,13 +20,13 @@ package org.beangle.data.jpa.mapping
 
 import java.io.IOException
 import java.net.URL
-
 import org.beangle.commons.inject.Resources
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings.{ isNotEmpty, rightPad, substringBeforeLast, unCamel }
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.inflector.Pluralizer
 import org.beangle.commons.text.inflector.en.EnNounPluralizer
+import org.beangle.commons.lang.Strings
 
 /**
  * 根据报名动态设置schema,prefix名字
@@ -114,19 +114,36 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     (melem \ "module") foreach { child => parseModule(child, module) }
   }
 
-  def getSchema(packageName: String): Option[String] = {
-    var name = packageName
-    var matched: Option[TableModule] = None
-    while (isNotEmpty(name) && matched == None) {
-      if (modules.contains(name)) matched = Some(modules(name))
-      val len = name.length
-      name = substringBeforeLast(name, ".")
-      if (name.length() == len) name = ""
-    }
-    matched match {
+  def getSchema(clazz: Class[_]): Option[String] = {
+    getModule(clazz) match {
       case None => None
-      case Some(m) => m.schema
+      case Some(module) => {
+        var schema = module.schema
+        val anno = module.annotations find { ann =>
+          clazz.getAnnotations() exists { annon =>
+            if (ann.clazz.isAssignableFrom(annon.getClass())) {
+              if (Strings.isNotEmpty(ann.value)) {
+                try {
+                  val method = annon.getClass().getMethod("value")
+                  String.valueOf(method.invoke(annon)) == ann.value
+                } catch {
+                  case e: Throwable => {
+                    Console.err.print("Annotation value needed:", ann.value, annon.getClass)
+                    false
+                  }
+                }
+              } else true
+            } else false
+          }
+        }
+        anno foreach (an => if (Strings.isNotEmpty(an.schema)) schema = Some(an.schema))
+        schema
+      }
     }
+  }
+
+  def getSchema(className: String): Option[String] = {
+    getSchema(ClassLoaders.loadClass(className))
   }
 
   def getPrefix(clazz: Class[_]): String = {
@@ -137,19 +154,22 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
         val anno = module.annotations find { ann =>
           clazz.getAnnotations() exists { annon =>
             if (ann.clazz.isAssignableFrom(annon.getClass())) {
-              if (null != ann.value) {
+              if (Strings.isNotEmpty(ann.value)) {
                 try {
                   val method = annon.getClass().getMethod("value")
                   String.valueOf(method.invoke(annon)) == ann.value
                 } catch {
-                  case e: Exception => e.printStackTrace(); false
+                  case e: Exception => {
+                    Console.err.print("Annotation value needed:", ann.value, annon.getClass)
+                    false
+                  }
                 }
               } else true
             } else false
           }
         }
-        anno foreach (an => prefix = an.prefix)
-        prefix
+        anno foreach (an => if (Strings.isNotEmpty(an.prefix)) prefix = an.prefix)
+        if (Strings.isEmpty(prefix)) "" else prefix
       }
     }
   }
@@ -169,7 +189,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   /**
    * is Multiple schema for entity
    */
-  def hasSchema: Boolean = !schemas.isEmpty
+  def multiSchema: Boolean = !schemas.isEmpty
 
   def setResources(resources: Resources) {
     if (null != resources) {
