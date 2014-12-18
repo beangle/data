@@ -1,11 +1,12 @@
 package org.beangle.data.serialize.marshal
 
+import scala.collection.mutable
+import scala.language.existentials
+
 import org.beangle.commons.collection.IdentityCache
+import org.beangle.commons.lang.reflect.BeanManifest
 import org.beangle.data.serialize.StreamSerializer
 import org.beangle.data.serialize.io.{ Path, StreamWriter }
-import org.beangle.data.serialize.model.Person
-import org.beangle.commons.lang.reflect.BeanManifest
-import collection.mutable
 
 class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWriter, val registry: MarshallerRegistry, properties: Map[Class[_], List[String]]) {
 

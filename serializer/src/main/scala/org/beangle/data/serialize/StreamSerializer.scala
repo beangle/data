@@ -7,7 +7,7 @@ import org.beangle.commons.io.Serializer
 
 trait StreamSerializer extends Serializer {
 
-  def serialize(obj: Object, writer: StreamWriter, properties: Tuple2[Class[_], List[String]]*)
+  def serialize(obj: Object, writer: StreamWriter, params: Map[String, Any])
 
   def marshal(item: Object, marshaller: Marshaller[Object], context: MarshallingContext): Unit
 }

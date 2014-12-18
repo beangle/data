@@ -17,23 +17,6 @@ abstract class AbstractSerializer extends StreamSerializer {
   def mapper: Mapper
   def registry: MarshallerRegistry
 
-  //  override def marshal(item: Object, writer: StreamWriter, marshaller: Marshaller[Object], context: MarshallingContext): Unit = {
-  //    if (marshaller.targetType.scalar) {
-  //      marshaller.marshal(item, writer, context)
-  //    } else {
-  //      val references = context.references
-  //      if (references.contains(item)) {
-  //        val e = new SerializeException("Recursive reference to parent object")
-  //        e.add("item-type", item.getClass().getName())
-  //        e.add("converter-type", marshaller.getClass().getName())
-  //        throw e
-  //      }
-  //      references.put(item, null)
-  //      marshaller.marshal(item, writer, context)
-  //      references.remove(item)
-  //    }
-  //  }
-
   def alias(alias: String, clazz: Class[_]): Unit = {
     mapper.alias(alias, clazz)
   }
@@ -42,31 +25,37 @@ abstract class AbstractSerializer extends StreamSerializer {
     mapper.alias(alias, className)
   }
 
-  override def serialize(obj: AnyRef, out: OutputStream, properties: Tuple2[Class[_], List[String]]*): Unit = {
+  override def serialize(obj: AnyRef, out: OutputStream, params: Map[String, Any]): Unit = {
     val writer = driver.createWriter(out)
     try {
-      serialize(obj, writer, properties: _*)
+      serialize(obj, writer, params)
     } finally {
       writer.flush()
     }
   }
-
-  def serialize(obj: Object, properties: Tuple2[Class[_], List[String]]*): String = {
+  def serialize(obj: Object): String = {
     val writer = new StringWriter()
-    serialize(obj, writer, properties: _*)
+    serialize(obj, writer, Map.empty[String,Any])
     writer.toString()
   }
 
-  def serialize(obj: Object, out: Writer, properties: Tuple2[Class[_], List[String]]*) {
+  def serialize(obj: Object, params: Map[String, Any]): String = {
+    val writer = new StringWriter()
+    serialize(obj, writer, params)
+    writer.toString()
+  }
+
+  def serialize(obj: Object, out: Writer, params: Map[String, Any]) {
     val writer = driver.createWriter(out)
     try {
-      serialize(obj, writer, properties: _*)
+      serialize(obj, writer, params)
     } finally {
       writer.flush()
     }
   }
 
-  override def serialize(item: Object, writer: StreamWriter, properties: Tuple2[Class[_], List[String]]*): Unit = {
+  override def serialize(item: Object, writer: StreamWriter, params: Map[String, Any]): Unit = {
+    val properties = params.get("properties").getOrElse(List.empty).asInstanceOf[Seq[Tuple2[Class[_], List[String]]]]
     val context = new MarshallingContext(this, writer, registry, properties.toMap)
     if (!properties.isEmpty) context.beanType = properties.head._1
     writer.start(context)
