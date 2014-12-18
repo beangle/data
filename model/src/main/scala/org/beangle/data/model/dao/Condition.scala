@@ -61,7 +61,7 @@ class Condition(val content: String, initParams: Any*) {
     val names = new collection.mutable.ListBuffer[String]
     var index = 0;
     var colonIndex = content.indexOf(':', index)
-    while (index < content.length && colonIndex > 0) {
+    while (index < content.length && colonIndex > -1) {
       index = colonIndex + 1;
       while (index < content.length && isValidIdentifierStarter(content.charAt(index))) {
         index += 1

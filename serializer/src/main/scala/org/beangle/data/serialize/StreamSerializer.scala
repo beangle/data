@@ -1,0 +1,13 @@
+package org.beangle.data.serialize
+
+import org.beangle.data.serialize.io.StreamWriter
+import org.beangle.data.serialize.marshal.MarshallingContext
+import org.beangle.data.serialize.marshal.Marshaller
+import org.beangle.commons.io.Serializer
+
+trait StreamSerializer extends Serializer {
+
+  def serialize(obj: Object, writer: StreamWriter, properties: Tuple2[Class[_], List[String]]*)
+
+  def marshal(item: Object, marshaller: Marshaller[Object], context: MarshallingContext): Unit
+}
