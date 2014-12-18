@@ -33,9 +33,10 @@ abstract class AbstractSerializer extends StreamSerializer {
       writer.flush()
     }
   }
+
   def serialize(obj: Object): String = {
     val writer = new StringWriter()
-    serialize(obj, writer, Map.empty[String,Any])
+    serialize(obj, writer, Map.empty[String, Any])
     writer.toString()
   }
 
@@ -55,9 +56,7 @@ abstract class AbstractSerializer extends StreamSerializer {
   }
 
   override def serialize(item: Object, writer: StreamWriter, params: Map[String, Any]): Unit = {
-    val properties = params.get("properties").getOrElse(List.empty).asInstanceOf[Seq[Tuple2[Class[_], List[String]]]]
-    val context = new MarshallingContext(this, writer, registry, properties.toMap)
-    if (!properties.isEmpty) context.beanType = properties.head._1
+    val context = new MarshallingContext(this, writer, registry, params)
     writer.start(context)
     if (item == null) {
       writer.startNode(mapper.serializedClass(classOf[Null]), classOf[Null])

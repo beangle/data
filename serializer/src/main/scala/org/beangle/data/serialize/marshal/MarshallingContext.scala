@@ -8,13 +8,21 @@ import org.beangle.commons.lang.reflect.BeanManifest
 import org.beangle.data.serialize.StreamSerializer
 import org.beangle.data.serialize.io.{ Path, StreamWriter }
 
-class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWriter, val registry: MarshallerRegistry, properties: Map[Class[_], List[String]]) {
+class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWriter, val registry: MarshallerRegistry, val params: Map[String, Any]) {
 
   val references = new IdentityCache[AnyRef, Id]
 
   var beanType: Class[_] = _
 
-  val propertyMap = new collection.mutable.HashMap[Class[_], List[String]] ++ properties
+  val propertyMap = new collection.mutable.HashMap[Class[_], List[String]]
+
+  init()
+
+  def init(): Unit = {
+    val properties = params.get("properties").getOrElse(List.empty).asInstanceOf[Seq[Tuple2[Class[_], List[String]]]]
+    propertyMap ++= properties
+    if (!properties.isEmpty) beanType = properties.head._1
+  }
 
   def getProperties(clazz: Class[_]): Option[List[String]] = {
     propertyMap.get(clazz) match {
