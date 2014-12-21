@@ -94,20 +94,24 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
           var curr = 0
           var pageNo = 0
           while (curr < count) {
-            val limit = new PageLimit(pageNo + 1, 1000)
+            val limit = new PageLimit(pageNo + 1, 5000)
             val data = if (source.supportLimit) source.get(srcTable, limit) else source.get(srcTable)
+            var breakable = false
             if (data.isEmpty) {
               error(s"Failure in fetching ${srcTable.name} data ${limit.pageNo}(${limit.pageSize})")
+              if (limit.pageNo * limit.pageSize >= count) breakable = true
             }
-            val successed = target.save(targetTable, data)
-            curr += data.size
-            pageNo += 1
-            if (successed == count) {
-              info(s"Insert $targetTable($successed)")
-            } else if (successed == data.size) {
-              info(s"Insert $targetTable($curr/$count)")
-            } else {
-              warn(s"Insert $targetTable($successed/${data.size})")
+            if (!breakable) {
+              val successed = target.save(targetTable, data)
+              curr += data.size
+              pageNo += 1
+              if (successed == count) {
+                info(s"Insert $targetTable($successed)")
+              } else if (successed == data.size) {
+                info(s"Insert $targetTable($curr/$count)")
+              } else {
+                warn(s"Insert $targetTable($successed/${data.size})")
+              }
             }
           }
         }
