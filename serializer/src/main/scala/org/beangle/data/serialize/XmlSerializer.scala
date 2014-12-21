@@ -8,17 +8,25 @@ import org.beangle.data.serialize.marshal.{ DefaultMarshallerRegistry, Marshalle
 import javax.activation.MimeType
 
 object XmlSerializer {
-
   def apply(): XmlSerializer = {
     val driver = new DomDriver
     val mapper = new DefaultMapper
     val registry = new DefaultMarshallerRegistry(mapper)
     driver.registry = registry
-    new XmlSerializer(driver, mapper, registry, true, true)
+    new XmlSerializer(driver, mapper, registry)
   }
 }
 
-class XmlSerializer(val driver: XmlDriver, val mapper: Mapper, val registry: MarshallerRegistry, absolutePath: Boolean, singleNode: Boolean)
+class XmlSerializer(val driver: XmlDriver, val mapper: Mapper, val registry: MarshallerRegistry)
+  extends AbstractSerializer {
+
+  override def supportMediaTypes: Seq[MimeType] = {
+    List(MimeTypes.ApplicationXml)
+  }
+
+}
+
+class XmlXPathSerializer(val driver: XmlDriver, val mapper: Mapper, val registry: MarshallerRegistry, absolutePath: Boolean, singleNode: Boolean)
   extends ReferenceByXPathSerializer(absolutePath, singleNode) {
 
   override def supportMediaTypes: Seq[MimeType] = {

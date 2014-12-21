@@ -55,7 +55,7 @@ class DefaultCsvWriter(out: Writer) extends AbstractWriter {
       val manifest = BeanManifest.get(context.beanType)
       val processed = new collection.mutable.HashSet[Class[_]]
       processed += context.beanType
-      for (name <- context.getProperties(context.beanType).get) {
+      for (name <- context.getProperties(context.beanType)) {
         addAttribute("", name, manifest.getGetter(name).get.returnType, propertyNames, context, processed)
       }
     }
@@ -66,17 +66,17 @@ class DefaultCsvWriter(out: Writer) extends AbstractWriter {
     context: MarshallingContext, processed: collection.mutable.HashSet[Class[_]]): Unit = {
     if (processed.contains(clazz)) {
       names += (prefix + name)
-      return ;
+      return
     }
-    context.getProperties(clazz) match {
-      case Some(properties) =>
-        val manifest = BeanManifest.get(clazz)
-        processed += clazz
-        properties foreach { n =>
-          addAttribute(prefix + name + ".", n, manifest.getGetter(n).get.returnType, names, context, processed)
-        }
-      case None =>
-        names += (prefix + name)
+    val properties = context.getProperties(clazz)
+    if (properties.isEmpty) {
+      names += (prefix + name)
+    } else {
+      val manifest = BeanManifest.get(clazz)
+      processed += clazz
+      properties foreach { n =>
+        addAttribute(prefix + name + ".", n, manifest.getGetter(n).get.returnType, names, context, processed)
+      }
     }
   }
   override def end(context: MarshallingContext): Unit = {

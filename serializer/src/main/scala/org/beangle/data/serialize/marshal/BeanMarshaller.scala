@@ -12,17 +12,19 @@ class BeanMarshaller(val mapper: Mapper) extends Marshaller[Object] {
 
   def marshal(source: Object, writer: StreamWriter, context: MarshallingContext): Unit = {
     val sourceType = source.getClass
-    val properties = context.getProperties(sourceType).getOrElse(List())
+    val properties = context.getProperties(sourceType)
     if (!properties.isEmpty) {
       val getters = BeanManifest.get(sourceType).getters
       properties foreach { name =>
         val getter = getters(name)
-        if (!getter.method.isAnnotationPresent(classOf[Transient])) {
+        if (!getter.isTransient) {
           val value = extractOption(getter.method.invoke(source))
           if (null != value) {
             writer.startNode(mapper.serializedMember(source.getClass, name), value.getClass)
             context.marshal(value)
             writer.endNode()
+          }else{
+            context.marshalNull(source,name)
           }
         }
       }

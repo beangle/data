@@ -12,6 +12,8 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
 
   val references = new IdentityCache[AnyRef, Id]
 
+  val currents = new collection.mutable.HashSet[Any]
+
   var beanType: Class[_] = _
 
   val propertyMap = new collection.mutable.HashMap[Class[_], List[String]]
@@ -24,21 +26,21 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
     if (!properties.isEmpty) beanType = properties.head._1
   }
 
-  def getProperties(clazz: Class[_]): Option[List[String]] = {
+  def getProperties(clazz: Class[_]): List[String] = {
     propertyMap.get(clazz) match {
-      case Some(p) => Some(p)
+      case Some(p) => p
       case None => {
-        val p = searchProperties(clazz)
-        if (null == p) {
-          if (registry.lookup(clazz).targetType == Type.Object) {
-            val np = BeanManifest.get(clazz).getters.keySet.toList
-            propertyMap.put(clazz, np)
-            Some(np)
+        if (registry.lookup(clazz).targetType == Type.Object) {
+          val p = searchProperties(clazz)
+          if (null == p) {
+            val bp = BeanManifest.get(clazz).getters.keySet.toList
+            propertyMap.put(clazz, bp)
+            bp
           } else {
-            None
+            p
           }
         } else {
-          Some(p)
+          List()
         }
       }
     }
@@ -76,6 +78,10 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
     } else {
       serializer.marshal(item, marshaller, this)
     }
+  }
+
+  def marshalNull(item: Object, property: String): Unit = {
+    serializer.marshalNull(item, property, this)
   }
 
   def lookupReference(item: Object): Id = {

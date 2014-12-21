@@ -23,11 +23,11 @@ class DefaultCsvWriterTest extends FunSpec with Matchers {
       val context = new MarshallingContext(serializer, writer, serializer.registry, params)
 
       val personProperties = context.getProperties(classOf[Person])
-      assert(personProperties.isDefined)
-      assert(personProperties.get.size == 8)
-      assert(context.getProperties(classOf[java.util.Date]) == None)
-      assert(context.getProperties(classOf[Address]).isDefined)
-      assert(context.getProperties(classOf[Address]).get.size == 3)
+      assert(personProperties != null)
+      assert(personProperties.size == 8)
+      assert(context.getProperties(classOf[java.util.Date]) == List())
+      assert(context.getProperties(classOf[Address]) != null)
+      assert(context.getProperties(classOf[Address]).size == 3)
 
       var csvProperties = writer.getProperties(context)
       assert(csvProperties.length == 10)

@@ -9,5 +9,7 @@ trait StreamSerializer extends Serializer {
 
   def serialize(obj: Object, writer: StreamWriter, params: Map[String, Any])
 
+  def marshalNull(obj: Object, property: String, context: MarshallingContext)
+
   def marshal(item: Object, marshaller: Marshaller[Object], context: MarshallingContext): Unit
 }

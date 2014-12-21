@@ -18,7 +18,7 @@ class CsvSerializerTest extends FunSpec with Matchers {
       val params = Map("properties" -> List(
         classOf[Person] -> List("code", "address", "sidekick", "skills"),
         classOf[Address] -> List("street", "name")))
-      println(csv.serialize(List(new Person("002", "admin2"), new Person("001", "admin")), params))
+      //println(csv.serialize(List(new Person("002", "admin2"), new Person("001", "admin")), params))
     }
   }
 }

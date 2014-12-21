@@ -10,6 +10,8 @@ import java.io.StringWriter
 import java.io.Writer
 import java.io.OutputStream
 import scala.collection.immutable.TreeMap
+import org.beangle.data.serialize.marshal.Id
+import org.beangle.commons.lang.Strings
 
 abstract class AbstractSerializer extends StreamSerializer {
 
@@ -66,5 +68,27 @@ abstract class AbstractSerializer extends StreamSerializer {
     }
     writer.endNode()
     writer.end(context)
+  }
+
+  override def marshal(item: Object, marshaller: Marshaller[Object], context: MarshallingContext): Unit = {
+    val writer = context.writer
+    if (marshaller.targetType.scalar) {
+      // strings, ints, dates, etc... don't bother using references.
+      marshaller.marshal(item, writer, context)
+    } else {
+      if (context.currents.contains(item)) {
+        val key = Strings.unCamel(item.getClass().getSimpleName) + "_" + System.identityHashCode(item)
+        val attributeName = mapper.aliasForSystemAttribute("id")
+        if (attributeName != null) context.writer.addAttribute(attributeName, key.toString())
+      } else {
+        context.currents += item
+        marshaller.marshal(item, writer, context)
+        context.currents -= item
+      }
+    }
+  }
+
+  override def marshalNull(obj: Object, property: String, context: MarshallingContext): Unit = {
+
   }
 }
