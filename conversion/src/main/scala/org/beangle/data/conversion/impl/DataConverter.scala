@@ -18,17 +18,15 @@
  */
 package org.beangle.data.conversion.impl
 
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.Buffer
+import java.util.concurrent.LinkedBlockingQueue
+
 import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.SynchronizedBuffer
 
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.lang.ThreadTasks
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
-import org.beangle.data.conversion.Converter
-import org.beangle.data.conversion.DataWrapper
+import org.beangle.data.conversion.{ Converter, DataWrapper }
 import org.beangle.data.jdbc.meta.Table
 
 class DataConverter(val source: DataWrapper, val target: DataWrapper, val threads: Int = 5) extends Converter with Logging {
@@ -49,19 +47,20 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
   def start() {
     val watch = new Stopwatch(true)
     val tableCount = tables.length
-    val buffer = new ArrayBuffer[Tuple2[Table, Table]] with SynchronizedBuffer[Tuple2[Table, Table]]
-    buffer ++= tables.sortWith(_._1.name > _._1.name)
+    val buffer = new LinkedBlockingQueue[Tuple2[Table, Table]]
+    buffer.addAll(collection.JavaConversions.asJavaCollection(tables.sortWith(_._1.name > _._1.name)))
     info(s"Start $tableCount tables data replication in $threads threads...")
     ThreadTasks.start(new ConvertTask(source, target, buffer), threads)
     info(s"End $tableCount tables data replication,using $watch")
   }
 
-  class ConvertTask(val source: DataWrapper, val target: DataWrapper, val buffer: Buffer[Tuple2[Table, Table]]) extends Runnable {
+  class ConvertTask(val source: DataWrapper, val target: DataWrapper, val buffer: LinkedBlockingQueue[Tuple2[Table, Table]]) extends Runnable {
 
     def run() {
       while (!buffer.isEmpty) {
         try {
-          convert(buffer.remove(0))
+          val p = buffer.poll()
+          if (null != p) convert(p)
         } catch {
           case e: IndexOutOfBoundsException =>
           case e: Exception => error("Error in convertion ", e)
@@ -92,19 +91,19 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
           info(s"Insert $targetTable(0)")
         } else {
           var curr = 0
-          var pageNo = 0
+          var pageIndex = 0
           while (curr < count) {
-            val limit = new PageLimit(pageNo + 1, 5000)
+            val limit = new PageLimit(pageIndex + 1, 5000)
             val data = if (source.supportLimit) source.get(srcTable, limit) else source.get(srcTable)
             var breakable = false
             if (data.isEmpty) {
-              error(s"Failure in fetching ${srcTable.name} data ${limit.pageNo}(${limit.pageSize})")
-              if (limit.pageNo * limit.pageSize >= count) breakable = true
+              error(s"Failure in fetching ${srcTable.name} data ${limit.pageIndex}(${limit.pageSize})")
+              if (limit.pageIndex * limit.pageSize >= count) breakable = true
             }
             if (!breakable) {
               val successed = target.save(targetTable, data)
               curr += data.size
-              pageNo += 1
+              pageIndex += 1
               if (successed == count) {
                 info(s"Insert $targetTable($successed)")
               } else if (successed == data.size) {

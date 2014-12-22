@@ -52,6 +52,7 @@ class DefaultMarshallerRegistry(mapper: Mapper) extends MarshallerRegistry {
     register(new ArrayMarshaller(mapper))
     register(new TupleConvertor(mapper))
     register(new PropertiesMarshaller(mapper))
+    register(new PageMarshaller(mapper))
     register(new JsonObjectMarshaller(mapper))
     register(new NumberMarshaller)
     register(new BooleanMarshaller)
