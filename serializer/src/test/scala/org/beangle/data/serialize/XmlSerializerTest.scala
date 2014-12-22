@@ -6,6 +6,7 @@ import org.beangle.data.serialize.model.{ Address, Person }
 import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
+import org.beangle.commons.collection.page.SinglePage
 
 @RunWith(classOf[JUnitRunner])
 class XmlSerializerTest extends FunSpec with Matchers {
@@ -18,6 +19,7 @@ class XmlSerializerTest extends FunSpec with Matchers {
       serializer.alias("list", classOf[::[_]])
       //println(serializer.serialize(List(Some(new Person("002", "admin2")), new Person("001", "admin"))))
       //println(serializer.serialize("3"))
+      //println(serializer.serialize(new SinglePage(1, 2, 200, List(new Person("002", "admin2"), new Person("001", "admin")))))
     }
   }
 }

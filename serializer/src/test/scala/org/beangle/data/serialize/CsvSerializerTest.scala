@@ -1,13 +1,9 @@
 package org.beangle.data.serialize
 
-import java.io.File
-import org.beangle.data.serialize.io.xml.DomDriver
 import org.beangle.data.serialize.model.{ Address, Person }
 import org.junit.runner.RunWith
-import org.scalatest.{ FunSpec, Matchers }
+import org.scalatest.{ Finders, FunSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
-import org.beangle.data.serialize.io.json.JsonDriver
-import org.beangle.data.serialize.model.Member
 
 @RunWith(classOf[JUnitRunner])
 class CsvSerializerTest extends FunSpec with Matchers {

@@ -33,7 +33,7 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
         if (registry.lookup(clazz).targetType == Type.Object) {
           val p = searchProperties(clazz)
           if (null == p) {
-            val bp = BeanManifest.get(clazz).getters.keySet.toList
+            val bp = BeanManifest.get(clazz).getters.filter(!_._2.isTransient).keySet.toList
             propertyMap.put(clazz, bp)
             bp
           } else {
