@@ -32,8 +32,8 @@ class QueryPage[T <: Entity[_]](query: LimitQuery[T], val entityDao: EntityDao) 
 
   next()
 
-  def moveTo(pageNo: Int): Page[T] = {
-    query.limit(PageLimit(pageNo, query.limit.pageSize))
+  def moveTo(pageIndex: Int): Page[T] = {
+    query.limit(PageLimit(pageIndex, query.limit.pageSize))
     updatePage(entityDao.search(query).asInstanceOf[SinglePage[T]])
     this
   }

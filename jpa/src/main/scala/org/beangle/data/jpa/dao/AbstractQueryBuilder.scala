@@ -99,8 +99,8 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
     this
   }
 
-  def limit(pageNo: Int, pageSize: Int): this.type = {
-    this.limit = PageLimit(pageNo, pageSize)
+  def limit(pageIndex: Int, pageSize: Int): this.type = {
+    this.limit = PageLimit(pageIndex, pageSize)
     this
   }
 
