@@ -12,4 +12,6 @@ trait StreamSerializer extends Serializer {
   def marshalNull(obj: Object, property: String, context: MarshallingContext)
 
   def marshal(item: Object, marshaller: Marshaller[Object], context: MarshallingContext): Unit
+
+  def hierarchical: Boolean
 }

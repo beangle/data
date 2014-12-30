@@ -45,6 +45,7 @@ object Reporter extends Logging {
     }
     true
   }
+
   def main(args: Array[String]) {
     if (!checkJdkTools()) {
       info("Report need tools.jar which contains com.sun.tools.javadoc utility.")

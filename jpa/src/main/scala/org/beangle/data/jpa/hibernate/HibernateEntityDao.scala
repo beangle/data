@@ -72,7 +72,7 @@ protected[hibernate] object QuerySupport {
         val hibernateQuery = buildHibernateQuery(limitQuery, session)
         if (null != limitQuery.limit) {
           val limit = limitQuery.limit
-          hibernateQuery.setFirstResult((limit.pageNo - 1) * limit.pageSize).setMaxResults(limit.pageSize)
+          hibernateQuery.setFirstResult((limit.pageIndex - 1) * limit.pageSize).setMaxResults(limit.pageSize)
         }
         hibernateQuery
       case _ => buildHibernateQuery(query, session)
@@ -336,7 +336,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
       if (null == limitQuery.limit) {
         return doFind(limitQuery, currentSession)
       } else {
-        new SinglePage[T](limitQuery.limit.pageNo, limitQuery.limit.pageSize,
+        new SinglePage[T](limitQuery.limit.pageIndex, limitQuery.limit.pageSize,
           doCount(limitQuery, currentSession), doFind(query, currentSession))
       }
     } else {
@@ -372,7 +372,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
 
   private def paginateQuery[T](query: Query, params: Map[String, Any], limit: PageLimit): Page[T] = {
     setParameters(query, params)
-    query.setFirstResult((limit.pageNo - 1) * limit.pageSize).setMaxResults(limit.pageSize)
+    query.setFirstResult((limit.pageIndex - 1) * limit.pageSize).setMaxResults(limit.pageSize)
     val targetList = query.list().asInstanceOf[java.util.List[T]]
     val queryStr = buildCountQueryStr(query)
     var countQuery: Query = null
@@ -383,7 +383,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
     setParameters(countQuery, params)
     // 返回结果
-    new SinglePage[T](limit.pageNo, limit.pageSize, countQuery.uniqueResult().asInstanceOf[Number].intValue, asScalaBuffer(targetList))
+    new SinglePage[T](limit.pageIndex, limit.pageSize, countQuery.uniqueResult().asInstanceOf[Number].intValue, asScalaBuffer(targetList))
   }
 
   override def evict(entity: AnyRef) {

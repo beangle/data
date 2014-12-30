@@ -31,9 +31,9 @@ abstract class AbstractQueryPage[T](val query: LimitQuery[T]) extends Page[T] {
 
   var page: Page[T] = _
 
-  var pageNo = if (null != query.limit) query.limit.pageNo - 1 else 0
+  var pageIndex = if (null != query.limit) query.limit.pageIndex - 1 else 0
 
-  var maxPageNo = 0
+  var totalPages = 0
 
   if (null == query.limit) query.limit(PageLimit(Page.DefaultPageNo, Page.DefaultPageSize))
 
@@ -44,21 +44,21 @@ abstract class AbstractQueryPage[T](val query: LimitQuery[T]) extends Page[T] {
    */
   protected def updatePage(page: SinglePage[T]) {
     this.page = page
-    this.pageNo = page.pageNo
-    this.maxPageNo = page.maxPageNo
+    this.pageIndex = page.pageIndex
+    this.totalPages = page.totalPages
   }
 
-  def next(): Page[T] = moveTo(pageNo + 1)
+  def next(): Page[T] = moveTo(pageIndex + 1)
 
-  def previous(): Page[T] = moveTo(pageNo - 1)
+  def previous(): Page[T] = moveTo(pageIndex - 1)
 
-  def hasNext: Boolean = maxPageNo > pageNo
+  def hasNext: Boolean = totalPages > pageIndex
 
-  def hasPrevious: Boolean = pageNo > 1
+  def hasPrevious: Boolean = pageIndex > 1
 
   def pageSize: Int = query.limit.pageSize
 
-  def total: Int = page.total
+  def totalItems: Int = page.totalItems
 
   def items = page.items
 

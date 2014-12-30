@@ -31,7 +31,9 @@ class ${table.name?lower_case}{
 [#else]
 	[#assign tableid=table.name]
 [/#if]
+ * [#if (database.getTable(tableid)?exists)]
  * @note ${database.getTable(tableid).comment!}
+ * [/#if]
  */
 class ${table.name?lower_case}{}
 [/#list]

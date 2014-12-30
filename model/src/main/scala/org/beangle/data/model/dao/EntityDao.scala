@@ -80,7 +80,6 @@ trait EntityDao {
    * Search by QueryBuilder
    */
   def search[T](builder: QueryBuilder[T]): Seq[T]
-
   /**
    * Search Query
    */

@@ -24,13 +24,13 @@ class DefaultCsvWriterTest extends FunSpec with Matchers {
 
       val personProperties = context.getProperties(classOf[Person])
       assert(personProperties != null)
-      assert(personProperties.size == 8)
+      assert(personProperties.size == 6)
       assert(context.getProperties(classOf[java.util.Date]) == List())
       assert(context.getProperties(classOf[Address]) != null)
       assert(context.getProperties(classOf[Address]).size == 3)
 
       var csvProperties = writer.getProperties(context)
-      assert(csvProperties.length == 10)
+      assert(csvProperties.length == 8)
     }
   }
 }

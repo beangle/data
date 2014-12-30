@@ -36,6 +36,7 @@ import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.data.jdbc.dialect.SequenceGrammar
 import org.beangle.data.jdbc.query.JdbcExecutor
 import org.beangle.data.jdbc.dialect.MetadataGrammar
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends Logging {
   val dialect: Dialect = initDialect
@@ -99,8 +100,8 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
     if (extras) {
       if (null == dialect.metadataGrammar) {
         info("Loading primary key,foreign key and index.")
-        val tableNames = new mutable.ArrayBuffer[String] with mutable.SynchronizedBuffer[String]
-        tableNames ++= tables.keySet.toList.sortWith(_ < _)
+        val tableNames = new ConcurrentLinkedQueue[String]
+        tableNames.addAll(collection.JavaConversions.asJavaCollection(tables.keySet.toList.sortWith(_ < _)))
         ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
       } else {
         batchLoadExtra(schema, dialect.metadataGrammar)
@@ -175,12 +176,13 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
     info(s"Load contraint and index in $sw.")
   }
 
-  class MetaLoadTask(val buffer: mutable.Buffer[String], val tables: mutable.HashMap[String, Table]) extends Runnable {
+  class MetaLoadTask(val buffer: ConcurrentLinkedQueue[String], val tables: mutable.HashMap[String, Table]) extends Runnable {
     def run() {
-      var completed = 0;
-      while (!buffer.isEmpty) {
+      var completed = 0
+      var nextTableName = buffer.poll()
+      while (null != nextTableName) {
         try {
-          val table = tables(buffer.remove(0))
+          val table = tables(nextTableName)
           info(s"Loading $table.")
           // load primary key
           var rs: ResultSet = null
@@ -235,8 +237,9 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           case e: IndexOutOfBoundsException =>
           case e: Exception => error("Error in convertion ", e)
         }
+        nextTableName = buffer.poll()
       }
-      debug(s"${Thread.currentThread().getName()} load table $completed")
+      info(s"${Thread.currentThread().getName()} loaded $completed tables ")
     }
   }
 

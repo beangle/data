@@ -22,7 +22,22 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
 
   def init(): Unit = {
     val properties = params.get("properties").getOrElse(List.empty).asInstanceOf[Seq[Tuple2[Class[_], List[String]]]]
-    propertyMap ++= properties
+    if (serializer.hierarchical) {
+      propertyMap ++= properties
+    } else {
+      properties foreach { tuple =>
+        val getters = BeanManifest.get(tuple._1).getters
+        val filted = new collection.mutable.ListBuffer[String]
+        tuple._2 foreach { p =>
+          getters.get(p) match {
+            case Some(getter) => if (!isCollectionType(getter.returnType)) filted += p
+            case None => throw new RuntimeException("cannot find property $p of class ${tuple2._1.getName}")
+          }
+        }
+        propertyMap.put(tuple._1, filted.toList)
+      }
+    }
+
     if (!properties.isEmpty) beanType = properties.head._1
   }
 
@@ -33,7 +48,12 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
         if (registry.lookup(clazz).targetType == Type.Object) {
           val p = searchProperties(clazz)
           if (null == p) {
-            val bp = BeanManifest.get(clazz).getters.keySet.toList
+            val bp =
+              if (serializer.hierarchical) {
+                BeanManifest.get(clazz).getters.filter(!_._2.isTransient).keySet.toList
+              } else {
+                BeanManifest.get(clazz).getters.filter { g => !g._2.isTransient && !isCollectionType(g._2.returnType) }.keySet.toList
+              }
             propertyMap.put(clazz, bp)
             bp
           } else {
@@ -87,6 +107,11 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
   def lookupReference(item: Object): Id = {
     references.get(item)
   }
+
+  private def isCollectionType(clazz: Class[_]): Boolean = {
+    clazz.isArray() || classOf[java.util.Collection[_]].isAssignableFrom(clazz) || classOf[Iterable[_]].isAssignableFrom(clazz)
+  }
+
 }
 
 class Id(val key: AnyRef, val path: Path) {
