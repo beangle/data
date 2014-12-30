@@ -91,4 +91,8 @@ abstract class AbstractSerializer extends StreamSerializer {
   override def marshalNull(obj: Object, property: String, context: MarshallingContext): Unit = {
 
   }
+
+  override def hierarchical: Boolean = {
+    true
+  }
 }

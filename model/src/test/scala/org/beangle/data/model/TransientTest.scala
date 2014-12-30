@@ -12,12 +12,14 @@ class TransientTest extends FunSpec with Matchers {
 
   describe("Entity") {
     it("transient persisted property") {
-      assert(None == BeanManifest.load(classOf[NumIdBean]).getGetter("persisted"))
+      val m = BeanManifest.load(classOf[NumIdBean]).getGetter("persisted")
+      assert(None != m)
+      assert(m.get.isTransient)
       val mis = ClassInfo.get(classOf[NumIdBean]).getMethods("persisted")
       assert(mis.size == 1)
       val mi = mis.head
       val anns = mi.method.getAnnotations
-      assert(null != anns && anns.length == 0)
+      assert(null != anns && anns.length == 1)
     }
   }
 }

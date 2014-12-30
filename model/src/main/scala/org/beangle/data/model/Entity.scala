@@ -18,6 +18,8 @@
  */
 package org.beangle.data.model
 
+import java.beans.Transient
+
 import org.beangle.data.model.util.Valid
 
 trait Entity[ID] extends Serializable {
@@ -30,6 +32,7 @@ trait Entity[ID] extends Serializable {
   /**
    * Return true if persisted
    */
+  @Transient
   def persisted: Boolean = Valid(id)
 
   /**
@@ -48,7 +51,7 @@ trait Entity[ID] extends Serializable {
    */
   override def equals(other: Any): Boolean = other match {
     case that: Entity[_] => (this eq that) || (null != id && null != that.id && id == that.id)
-    case _               => false
+    case _ => false
   }
 }
 
