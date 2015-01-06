@@ -51,11 +51,11 @@ class DefaultCsvWriter(out: Writer) extends AbstractWriter {
 
   def getProperties(context: MarshallingContext): Array[String] = {
     val propertyNames = new ListBuffer[String]
-    if (null != context.beanType) {
-      val manifest = BeanManifest.get(context.beanType)
+    if (null != context.elementType) {
+      val manifest = BeanManifest.get(context.elementType)
       val processed = new collection.mutable.HashSet[Class[_]]
-      processed += context.beanType
-      for (name <- context.getProperties(context.beanType)) {
+      processed += context.elementType
+      for (name <- context.getProperties(context.elementType)) {
         addAttribute("", name, manifest.getGetter(name).get.returnType, propertyNames, context, processed)
       }
     }
