@@ -14,7 +14,8 @@ class WeekStateType extends UserType {
   override def returnedClass = classOf[WeekState]
 
   override def equals(x: Object, y: Object) = {
-    x.asInstanceOf[WeekState].value == y.asInstanceOf[WeekState].value
+    (null == x && null == y) ||
+      (null != x && null != y && x.asInstanceOf[WeekState].value == y.asInstanceOf[WeekState].value)
   }
 
   override def hashCode(x: Object) = x.hashCode()
