@@ -136,6 +136,8 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
         } else if (etype.isCollectionType) {
           propertyTypes.put(pName,
             buildCollectionType(factory, defaultCollectionClass(etype), entityName + "." + propertyName + "." + pName))
+        }else {
+          propertyTypes.put(pName, new IdentifierType(etype.getReturnedClass))
         }
         j += 1
       }
