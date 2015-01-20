@@ -201,10 +201,9 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
       for (groupBy <- groups) buf.append(groupBy).append(',')
       buf.deleteCharAt(buf.length() - 1)
     }
-    if (hasOrder && !orders.isEmpty) buf.append(' ').append(Order.toSortString(orders))
-
     if (null != having) buf.append(" having ").append(having)
-    buf.toString()
+    if (hasOrder && !orders.isEmpty) buf.append(' ').append(Order.toSortString(orders))
+    buf.mkString
   }
 
 }
