@@ -29,13 +29,14 @@ class RailsNamingPolicyTest extends FunSpec with Matchers {
 
   describe("RailsNamingPolicy") {
     it("Get Module") {
+      System.setProperty("jpa_prefix", "j_")
       val policy = new RailsNamingPolicy
       for (resource <- ClassLoaders.getResources("META-INF/beangle/orm-naming.xml"))
         policy.addConfig(resource)
       assert(policy.getSchema("org.beangle.data.jpa.model.LongIdResource").isDefined)
       val module = policy.getModule(classOf[NationBean])
       assert(module.isDefined)
-      assert(module.get.schema == Some("mapping"))
+      assert(module.get.schema == Some("j_mapping"))
       assert(policy.getPrefix(classOf[NationBean]) == "gb_")
 
       val daoModule = policy.getModule(classOf[SchoolBean])
