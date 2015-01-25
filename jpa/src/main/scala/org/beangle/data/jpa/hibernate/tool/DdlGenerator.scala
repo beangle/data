@@ -22,11 +22,11 @@ import java.io.{ FileWriter, Writer }
 import java.{ util => ju }
 import java.util.Locale
 
-import org.beangle.commons.lang.{ ClassLoaders, Locales }
-import org.beangle.commons.lang.{ Strings, SystemInfo }
+import org.beangle.commons.lang.{ ClassLoaders, Locales, Strings }
 import org.beangle.commons.lang.Strings.{ isBlank, split, substringAfter, substringAfterLast, substringBeforeLast }
+import org.beangle.commons.lang.SystemInfo
+import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.jpa.hibernate.{ DefaultConfigurationBuilder, OverrideConfiguration }
-import org.beangle.data.model.comment.Messages
 import org.hibernate.cfg.AvailableSettings.{ DEFAULT_CATALOG, DEFAULT_SCHEMA, DIALECT }
 import org.hibernate.cfg.Configuration
 import org.hibernate.dialect.Dialect
@@ -64,7 +64,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
   private val comments = new collection.mutable.ListBuffer[String]
   private val constraints = new collection.mutable.ListBuffer[String]
   private val indexes = new collection.mutable.ListBuffer[String]
-  private var messages = Messages.build(locale)
+  private var messages = Messages(locale)
 
   private var defaultCatalog: String = _
   private var defaultSchema: String = _
@@ -205,7 +205,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
       var comment = messages.get(clazz, p.getName)
       identifier match {
         case sv: SimpleValue => comment += (":" + sv.getIdentifierGeneratorStrategy + toString(sv.getIdentifierGeneratorProperties))
-        case _               =>
+        case _ =>
       }
       column.setComment(comment)
     } else if (p.getColumnSpan > 1) {
