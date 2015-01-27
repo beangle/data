@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<datasources>
+ <datasource name="tigre">
+  <dialect>org.beangle.data.jdbc.dialect.OracleDialect</dialect>
+  <url>jdbc:oracle:thin:@//localhost:1521/public</url>
+  <driver>oracle.jdbc.driver.OracleDriver</driver>
+  <user>tigre</user>
+  <password>tigre</password>
+  <schema>tigre</schema>
+ </datasource>
+ <datasource name="test">
+  <dialect>org.beangle.data.jdbc.dialect.PostgreSQLDialect</dialect>
+  <url>jdbc:postgresql://localhost:5432/test</url>
+  <driver>org.postgresql.Driver</driver>
+  <user>test</user>
+  <password>test</password>
+  <schema>tmp</schema>
+ </datasource>
+</datasources>
