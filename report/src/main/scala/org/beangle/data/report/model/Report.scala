@@ -77,6 +77,12 @@ class Report(val dbconf: DatasourceConfig) extends Initializing {
 
   var tables: Iterable[Table] = _
 
+  def findModule(table: Table): Option[Module] = {
+    modules.find { m => m.tables.contains(table) } match {
+      case Some(m) => Some(m)
+      case None => None
+    }
+  }
   def images: List[Image] = {
     val buf = new collection.mutable.ListBuffer[Image]
     for (module <- modules) buf ++= module.allImages
