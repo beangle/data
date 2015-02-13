@@ -20,7 +20,7 @@ package org.beangle.data.lint.seq
 
 import java.io.FileInputStream
 
-import org.beangle.data.jdbc.util.DbConfig
+import org.beangle.data.jdbc.util.DatasourceConfig
 import org.beangle.data.jdbc.util.PoolingDataSourceFactory
 import org.beangle.commons.logging.Logging
 import org.beangle.data.lint.seq.impl.DefaultSequenceNamePattern
@@ -98,7 +98,7 @@ object SequenceChecker extends Logging {
   }
 
   private def getDataSource(xml: scala.xml.Node): DataSource = {
-    val dbconf = DbConfig.build(xml)
+    val dbconf = DatasourceConfig.build(xml)
     new PoolingDataSourceFactory(dbconf.driver,
       dbconf.url, dbconf.user, dbconf.password, dbconf.props).getObject
   }

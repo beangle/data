@@ -14,7 +14,7 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
 
   val currents = new collection.mutable.HashSet[Any]
 
-  var beanType: Class[_] = _
+  var elementType: Class[_] = _
 
   val propertyMap = new collection.mutable.HashMap[Class[_], List[String]]
 
@@ -37,22 +37,32 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
         propertyMap.put(tuple._1, filted.toList)
       }
     }
-
-    if (!properties.isEmpty) beanType = properties.head._1
+    params.get("elementType") match {
+      case Some(cls) =>
+        elementType = cls.asInstanceOf[Class[_]]
+        //search bean type (clazz maybe interface,so cache it first,ready for concret class)
+        getProperties(elementType)
+      case None =>
+    }
+    if (!properties.isEmpty && null == elementType) elementType = properties.head._1
   }
 
   def getProperties(clazz: Class[_]): List[String] = {
-    propertyMap.get(clazz) match {
+    val result = propertyMap.get(clazz) match {
       case Some(p) => p
       case None => {
         if (registry.lookup(clazz).targetType == Type.Object) {
           val p = searchProperties(clazz)
           if (null == p) {
             val bp =
-              if (serializer.hierarchical) {
-                BeanManifest.get(clazz).getters.filter(!_._2.isTransient).keySet.toList
+              if (BeanManifest.get(clazz).getters.contains("id") && null != elementType && elementType != clazz) {
+                List("id")
               } else {
-                BeanManifest.get(clazz).getters.filter { g => !g._2.isTransient && !isCollectionType(g._2.returnType) }.keySet.toList
+                if (serializer.hierarchical) {
+                  BeanManifest.get(clazz).getters.filter(!_._2.isTransient).keySet.toList
+                } else {
+                  BeanManifest.get(clazz).getters.filter { g => !g._2.isTransient && !isCollectionType(g._2.returnType) }.keySet.toList
+                }
               }
             propertyMap.put(clazz, bp)
             bp
@@ -64,6 +74,8 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
         }
       }
     }
+    if (elementType == null && !isCollectionType(clazz)) elementType = clazz
+    result
   }
 
   private def searchProperties(targetType: Class[_]): List[String] = {

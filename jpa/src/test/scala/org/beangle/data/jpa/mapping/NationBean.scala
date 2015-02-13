@@ -21,6 +21,7 @@ package org.beangle.data.jpa.mapping
 import org.beangle.data.model.annotation.code
 
 @code("nation")
-class TestBean {
+class NationBean {
 
+  var name: String = _
 }

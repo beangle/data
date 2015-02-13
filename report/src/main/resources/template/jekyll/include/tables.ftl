@@ -17,11 +17,11 @@
   <tr>
   	[#assign table= sortedTables[i-1] /]
     <td>${i}</td>
-    <td>${table.name?lower_case}<br>${table.comment!}</td>
+    <td><a href="${report.findModule(table).path!"error"}.html#${table.name?lower_case?replace('_','')}">${table.name?lower_case}</a> ${table.comment!}</td>
     [#if tables[i-1+tabcnt]??]
     [#assign table= sortedTables[i-1+tabcnt] /]
     <td>${i+tabcnt}</td>
-    <td>${table.name?lower_case}<br>${table.comment!}</td>
+    <td><a href="${report.findModule(table).path!"error"}.html#${table.name?lower_case?replace('_','')}">${table.name?lower_case}</a> ${table.comment!}</td>
     [#else]
     <td></td>
     <td></td>

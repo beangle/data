@@ -34,12 +34,52 @@ import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, Persis
 import org.beangle.data.jpa.hibernate.udt.EnumType
 import org.beangle.data.jpa.hibernate.udt.HourMinuteType
 import org.beangle.data.jpa.hibernate.udt.WeekStateType
+import org.hibernate.mapping.SimpleValue
 
+/**
+ * Override Configuration
+ */
 class OverrideConfiguration extends Configuration with Logging {
 
   var minColumnEnableDynaUpdate = 7
 
-  override def createMappings(): Mappings = new OverrideMappings()
+  override def createMappings(): Mappings = {
+    val mappings = new OverrideMappings("true" == getProperty("hibernate.global_assigned"))
+    // 注册缺省的sequence生成器
+    addGenerator(mappings, "table_sequence", classOf[TableSeqGenerator])
+    addGenerator(mappings, "auto_increment", classOf[AutoIncrementGenerator])
+    addGenerator(mappings, "date", classOf[DateStyleGenerator])
+    addGenerator(mappings, "code", classOf[CodeStyleGenerator])
+    // 注册CustomTypes
+    addCustomTypes(mappings)
+    mappings
+  }
+
+  private def addCustomTypes(mappings: MappingsImpl) {
+    Map(("seq", classOf[SeqType]), ("set", classOf[SetType]),
+      ("map", classOf[MapType]), ("byte?", classOf[OptionByteType]),
+      ("char?", classOf[OptionCharType]), ("int?", classOf[OptionIntType]),
+      ("bool?", classOf[OptionBooleanType]), ("long?", classOf[OptionLongType]),
+      ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType])) foreach {
+        case (name, clazz) => mappings.addTypeDef(name, clazz.getName, new ju.Properties)
+      }
+    val p = new ju.Properties
+    p.put("enumClass", "org.beangle.commons.lang.time.WeekDays")
+    mappings.addTypeDef("weekday", classOf[EnumType].getName, p)
+    mappings.addTypeDef("hourminute", classOf[HourMinuteType].getName, new ju.Properties)
+    mappings.addTypeDef("weekstate", classOf[WeekStateType].getName, new ju.Properties)
+  }
+
+  /**
+   * Add default generator for annotation and xml parsing
+   */
+  private def addGenerator(mappings: MappingsImpl, name: String, clazz: Class[_]): Unit = {
+    val idGen = new IdGenerator()
+    idGen.setName(name)
+    idGen.setIdentifierGeneratorStrategy(clazz.getName)
+    mappings.addDefaultGenerator(idGen)
+    mappings.getIdentifierGeneratorFactory().register(name, clazz)
+  }
 
   /**
    * Config table's schema by TableNamingStrategy.<br>
@@ -82,43 +122,11 @@ class OverrideConfiguration extends Configuration with Logging {
       classes.remove(entityName)
   }
 
-  protected class OverrideMappings extends MappingsImpl {
+  /**
+   * Custom MappingsImpl supports class overriding
+   */
+  protected class OverrideMappings(val globalAssinged: Boolean) extends MappingsImpl {
     private val tmpColls = new mutable.HashMap[String, mutable.ListBuffer[Collection]]
-
-    /**
-     * 注册缺省的sequence生成器
-     */
-    addGenerator("table_sequence", classOf[TableSeqGenerator])
-    addGenerator("auto_increment", classOf[AutoIncrementGenerator])
-    addGenerator("date", classOf[DateStyleGenerator])
-    addGenerator("code", classOf[CodeStyleGenerator])
-
-    addCustomTypes()
-
-    private def addCustomTypes() {
-      Map(("seq", classOf[SeqType]), ("set", classOf[SetType]),
-        ("map", classOf[MapType]), ("byte?", classOf[OptionByteType]),
-        ("char?", classOf[OptionCharType]), ("int?", classOf[OptionIntType]),
-        ("bool?", classOf[OptionBooleanType]), ("long?", classOf[OptionLongType]),
-        ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType])) foreach {
-          case (name, clazz) => addTypeDef(name, clazz.getName, new ju.Properties)
-        }
-      val p = new ju.Properties
-      p.put("enumClass", "org.beangle.commons.lang.time.WeekDays")
-      addTypeDef("weekday", classOf[EnumType].getName, p)
-      addTypeDef("hourminute", classOf[HourMinuteType].getName, new ju.Properties)
-      addTypeDef("weekstate", classOf[WeekStateType].getName, new ju.Properties)
-    }
-    /**
-     * Add default generator for annotation and xml parsing
-     */
-    private def addGenerator(name: String, clazz: Class[_]): Unit = {
-      val idGen = new IdGenerator()
-      idGen.setName(name)
-      idGen.setIdentifierGeneratorStrategy(clazz.getName)
-      addDefaultGenerator(idGen)
-      getIdentifierGeneratorFactory().register(name, clazz)
-    }
     /**
      * <ul>
      * <li>First change jpaName to entityName</li>
@@ -139,6 +147,19 @@ class OverrideConfiguration extends Configuration with Logging {
         entityName = jpaEntityName
         pClass.setEntityName(entityName)
         entityNameChanged = true
+      }
+
+      if (globalAssinged) {
+        pClass match {
+          case rc: RootClass =>
+            rc.getIdentifier() match {
+              case sv: SimpleValue =>
+                sv.setIdentifierGeneratorStrategy("assigned")
+                sv.setIdentifierGeneratorProperties(new ju.Properties)
+              case _ =>
+            }
+          case _ =>
+        }
       }
       // register class
       val old = classes.get(entityName).asInstanceOf[PersistentClass]

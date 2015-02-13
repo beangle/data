@@ -27,6 +27,7 @@ import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.inflector.Pluralizer
 import org.beangle.commons.text.inflector.en.EnNounPluralizer
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.SystemInfo
 
 /**
  * 根据报名动态设置schema,prefix名字
@@ -98,13 +99,13 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       module._annotations += annModule
 
       if (!(anElem \ "@schema").isEmpty) {
-        annModule.schema = (anElem \ "@schema").text
+        annModule.schema = parseSchema((anElem \ "@schema").text)
         schemas += annModule.schema
       }
       if (!(anElem \ "@prefix").isEmpty) annModule.prefix = (anElem \ "@prefix").text
     }
     if (!(melem \ "@schema").isEmpty) {
-      module._schema = (melem \ "@schema").text
+      module._schema = parseSchema((melem \ "@schema").text)
       schemas += module._schema
     }
     if (!(melem \ "@prefix").isEmpty) module._prefix = (melem \ "@prefix").text
@@ -230,6 +231,14 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   protected def unqualify(qualifiedName: String): String = {
     val loc = qualifiedName.lastIndexOf('.')
     if (loc < 0) qualifiedName else qualifiedName.substring(loc + 1)
+  }
+
+  private def parseSchema(name: String): String = {
+    if (Strings.isEmpty(name) || (-1 == name.indexOf('{'))) return name
+    var newName = Strings.replace(name, "$", "")
+    val propertyName = Strings.substringBetween(newName, "{", "}")
+    val value = SystemInfo.properties.get(propertyName).getOrElse("")
+    Strings.replace(newName, "{" + propertyName + "}", value)
   }
 
   override def toString: String = {

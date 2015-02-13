@@ -54,22 +54,22 @@ trait EntityDao {
   /**
    * save or update entities
    */
-  def saveOrUpdate[T](first: T, entities: T*)
+  def saveOrUpdate[E](first: E, entities: E*)
 
   /**
    * save or update entities
    */
-  def saveOrUpdate[T](entities: Iterable[T])
+  def saveOrUpdate[E](entities: Iterable[E])
 
   /**
    * remove entities.
    */
-  def remove[T](entities: Iterable[T])
+  def remove[E](entities: Iterable[E])
 
   /**
    * remove entities.
    */
-  def remove[T](first: T, entities: T*)
+  def remove[E](first: E, entities: E*)
 
   /**
    * remove entities by id
@@ -107,9 +107,6 @@ trait EntityDao {
 
   /**
    * Initialize entity whenever session close or open
-   *
-   * @param <T>
-   * @param entity
    */
   def initialize[T](entity: T): T
 

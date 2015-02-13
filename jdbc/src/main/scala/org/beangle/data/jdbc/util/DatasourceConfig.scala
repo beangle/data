@@ -24,11 +24,12 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.ClassLoaders
 import java.util.Properties
 
-object DbConfig {
+object DatasourceConfig {
 
-  def build(xml: scala.xml.Node): DbConfig = {
-    val dbconf = new DbConfig(ClassLoaders.loadClass((xml \\ "dialect").text.trim).newInstance().asInstanceOf[Dialect])
+  def build(xml: scala.xml.Node): DatasourceConfig = {
+    val dbconf = new DatasourceConfig(ClassLoaders.loadClass((xml \\ "dialect").text.trim).newInstance().asInstanceOf[Dialect])
     dbconf.url = (xml \\ "url").text.trim
+    if (!(xml \ "@name").isEmpty) dbconf.name = (xml \ "@name").text.trim
     dbconf.user = (xml \\ "user").text.trim
     dbconf.driver = (xml \\ "driver").text.trim
     dbconf.password = (xml \\ "password").text.trim
@@ -43,7 +44,8 @@ object DbConfig {
   }
 }
 
-class DbConfig(val dialect: Dialect) extends Initializing {
+class DatasourceConfig(val dialect: Dialect) extends Initializing {
+  var name: String = _
   var url: String = _
   var user: String = _
   var password: String = _

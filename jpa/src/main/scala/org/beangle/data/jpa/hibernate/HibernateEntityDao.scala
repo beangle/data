@@ -35,6 +35,7 @@ import org.beangle.data.model.meta.EntityMetadata
 import org.hibernate.{ Hibernate, Query, SQLQuery, Session, SessionFactory }
 import org.hibernate.collection.spi.PersistentCollection
 import org.hibernate.engine.jdbc.StreamUtils
+import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.proxy.HibernateProxy
 
 protected[hibernate] object QuerySupport {
@@ -386,7 +387,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     new SinglePage[T](limit.pageIndex, limit.pageSize, countQuery.uniqueResult().asInstanceOf[Number].intValue, asScalaBuffer(targetList))
   }
 
-  override def evict(entity: AnyRef) {
+  override def evict(entity: AnyRef): Unit = {
     currentSession.evict(entity)
   }
 
@@ -410,7 +411,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     rs
   }
 
-  override def remove[T](entities: Iterable[T]) {
+  override def remove[E](entities: Iterable[E]): Unit = {
     if (null == entities || entities.isEmpty) return
     val session = currentSession
     for (entity <- entities; if (null != entity))
@@ -422,11 +423,11 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
       }
   }
 
-  override def remove[T](first: T, entities: T*) {
+  override def remove[E](first: E, entities: E*): Unit = {
     remove(first :: entities.toList)
   }
 
-  override def remove[T, ID](clazz: Class[T], id: ID, ids: ID*) {
+  override def remove[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], id: ID, ids: ID*): Unit = {
     removeBy(clazz, "id", id :: ids.toList)
   }
 
@@ -475,7 +476,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     updates.toList
   }
 
-  override def execute(opts: Operation*) {
+  override def execute(opts: Operation*): Unit = {
     for (operation <- opts) {
       operation.t match {
         case Operation.SaveUpdate =>
@@ -486,7 +487,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
-  override def execute(builder: Operation.Builder) {
+  override def execute(builder: Operation.Builder): Unit = {
     for (operation <- builder.build()) {
       operation.t match {
         case Operation.SaveUpdate =>
@@ -497,11 +498,11 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
-  override def saveOrUpdate[T](first: T, entities: T*) {
+  override def saveOrUpdate[E](first: E, entities: E*): Unit = {
     saveOrUpdate(first :: entities.toList)
   }
 
-  override def saveOrUpdate[T](entities: Iterable[T]) {
+  override def saveOrUpdate[E](entities: Iterable[E]): Unit = {
     if (!entities.isEmpty) {
       for (entity <- entities)
         entity match {
@@ -511,26 +512,40 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
-  private def persistEntity(entity: Any, entityName: String) {
+  /**
+   * Persist entity using save or update,UPDATE entity should load in session first.
+   */
+  private def persistEntity(entity: Any, entityName: String): Unit = {
     if (null == entity) return
-    if (null != entityName) {
-      currentSession.saveOrUpdate(entityName, entity)
-    } else {
-      entity match {
-        case hp: HibernateProxy => currentSession.saveOrUpdate(hp)
-        case _ => currentSession.saveOrUpdate(this.entityName(entity.getClass), entity)
-      }
+    val session = currentSession
+    entity match {
+      case hp: HibernateProxy => session.update(hp)
+      case e: Entity[_] =>
+        val en = if (null == entityName) this.entityName(entity.getClass) else entityName
+        if (null == e.id) {
+          session.save(en, entity)
+        } else {
+          val si = session.asInstanceOf[SessionImplementor]
+          if (si.getContextEntityIdentifier(entity) == null) {
+            session.save(en, entity)
+          } else {
+            session.update(en, entity)
+          }
+        }
+      case _ =>
+        val en = if (null == entityName) this.entityName(entity.getClass) else entityName
+        session.saveOrUpdate(en, entity)
     }
   }
 
-  def saveOrUpdate[T](entityName: String, entities: Seq[T]) {
+  def saveOrUpdate[T <: Entity[_]](entityName: String, entities: Seq[T]): Unit = {
     if (!entities.isEmpty()) {
       for (entity <- entities)
         persistEntity(entity, entityName)
     }
   }
 
-  def saveOrUpdate[T](entityName: String, first: T, entities: T*) {
+  def saveOrUpdate[T <: Entity[_]](entityName: String, first: T, entities: T*): Unit = {
     saveOrUpdate(entityName, first :: entities.toList)
   }
 
@@ -560,7 +575,9 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     executeUpdate(hql.toString(), newParams)
   }
 
-  def createBlob(inputStream: InputStream, length: Int): Blob = Hibernate.getLobCreator(currentSession).createBlob(inputStream, length)
+  def createBlob(inputStream: InputStream, length: Int): Blob = {
+    Hibernate.getLobCreator(currentSession).createBlob(inputStream, length)
+  }
 
   def createBlob(inputStream: InputStream): Blob = {
     val buffer = new ByteArrayOutputStream(inputStream.available())
@@ -568,11 +585,17 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     Hibernate.getLobCreator(currentSession).createBlob(buffer.toByteArray())
   }
 
-  def createClob(str: String): Clob = Hibernate.getLobCreator(currentSession).createClob(str)
+  def createClob(str: String): Clob = {
+    Hibernate.getLobCreator(currentSession).createClob(str)
+  }
 
-  protected def entityName(clazz: Class[_]): String = metadata.getType(clazz).get.entityName
+  protected def entityName(clazz: Class[_]): String = {
+    metadata.getType(clazz).get.entityName
+  }
 
-  def isCollectionType(clazz: Class[_]): Boolean = clazz.isArray || clazz.isInstanceOf[java.util.Collection[_]] || clazz.isInstanceOf[scala.collection.Iterable[_]]
+  def isCollectionType(clazz: Class[_]): Boolean = {
+    clazz.isArray || clazz.isInstanceOf[java.util.Collection[_]] || clazz.isInstanceOf[scala.collection.Iterable[_]]
+  }
 
   /**
    * Support "@named-query" or "from object" styles query

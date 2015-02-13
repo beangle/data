@@ -18,6 +18,10 @@ import org.junit.runner.RunWith
 import org.scalatest.{ Finders, FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
+import org.beangle.data.jpa.hibernate.HibernateEntityDao
+import org.hibernate.context.spi.AbstractCurrentSessionContext
+import org.hibernate.engine.spi.SessionFactoryImplementor
+import org.hibernate.Session
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
@@ -27,10 +31,10 @@ class UdtTest extends FunSpec with Matchers {
   configProperties.put(AvailableSettings.DIALECT, classOf[Oracle10gDialect].getName)
   configProperties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
   configProperties.put("hibernate.hbm2ddl.auto", "create")
-  configProperties.put("hibernate.show_sql", "false")
+  configProperties.put("hibernate.show_sql", "true")
   configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/model.hbm.xml"))
   configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/time.hbm.xml"))
-
+  configProperties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[SimpleCurrentSessionContext].getName())
   val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
   val ds: DataSource = new PoolingDataSourceFactory(properties("h2.driverClassName"),
     properties("h2.url"), properties("h2.username"), properties("h2.password"), new java.util.Properties()).getObject
@@ -46,10 +50,11 @@ class UdtTest extends FunSpec with Matchers {
     }
   })
   val sf = configuration.buildSessionFactory(serviceRegistry)
+  val entityDao = new HibernateEntityDao(sf)
 
   describe("Beangle UDT") {
     it("Should support int? and scala collection") {
-      val s = sf.openSession()
+      //      val s = sf.openSession().asInstanceOf[SessionImpl]
       val user = new User(1)
       user.name = new Name
       user.name.first = "Bill"
@@ -63,19 +68,18 @@ class UdtTest extends FunSpec with Matchers {
       user.properties = new collection.mutable.HashMap[String, String]
       user.properties.put("address", "some street")
       user.occupy = new WeekState(2)
-      s.save(role1)
-      s.save(role2)
-      s.save(user)
-      s.flush()
-      s.clear()
-      val saved = s.get(classOf[User], user.id).asInstanceOf[User]
+      entityDao.saveOrUpdate(role1,role2,user)
+      sf.getCurrentSession.flush()
+      sf.getCurrentSession.clear()
+
+      val saved = entityDao.get(classOf[User], user.id).asInstanceOf[User]
       assert(saved.properties.size == 1)
       assert(saved.roleSet.size == 2)
       assert(saved.roleList.size == 1)
       saved.roleSet -= saved.roleSet.head
-      s.saveOrUpdate(saved);
-      s.flush()
-      s.close()
+      entityDao.saveOrUpdate(saved);
+      sf.getCurrentSession.flush()
+      sf.getCurrentSession.close()
     }
     it("Support user defined time ") {
       val s = sf.openSession()
@@ -132,4 +136,14 @@ class PoolingDataSourceFactory(url: String, username: String, password: String, 
 
   def singleton = true
 
+}
+
+class SimpleCurrentSessionContext(factory: SessionFactoryImplementor) extends AbstractCurrentSessionContext(factory) {
+  var session: Session = _
+  def currentSession(): Session = {
+    if (null == session || !session.isOpen()) {
+      session = factory.openSession()
+    }
+    session
+  }
 }

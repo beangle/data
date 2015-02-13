@@ -18,15 +18,15 @@
  */
 package org.beangle.data.report.model
 
-import org.beangle.data.jdbc.util.DbConfig
-import org.beangle.commons.lang.Strings
 import org.beangle.commons.bean.Initializing
+import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.meta.Table
+import org.beangle.data.jdbc.util.DatasourceConfig
 
 object Report {
 
   def apply(xml: scala.xml.Elem): Report = {
-    val report = new Report(DbConfig.build(xml))
+    val report = new Report(DatasourceConfig.build(xml))
     report.title = (xml \ "@title").text
     report.system.name = (xml \ "system" \ "@name").text
     report.system.version = (xml \ "system" \ "@version").text
@@ -59,7 +59,7 @@ object Report {
   }
 }
 
-class Report(val dbconf: DbConfig) extends Initializing {
+class Report(val dbconf: DatasourceConfig) extends Initializing {
 
   var title: String = _
 
@@ -77,6 +77,12 @@ class Report(val dbconf: DbConfig) extends Initializing {
 
   var tables: Iterable[Table] = _
 
+  def findModule(table: Table): Option[Module] = {
+    modules.find { m => m.tables.contains(table) } match {
+      case Some(m) => Some(m)
+      case None => None
+    }
+  }
   def images: List[Image] = {
     val buf = new collection.mutable.ListBuffer[Image]
     for (module <- modules) buf ++= module.allImages
