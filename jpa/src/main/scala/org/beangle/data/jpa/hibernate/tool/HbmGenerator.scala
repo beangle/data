@@ -61,7 +61,7 @@ class HbmGenerator {
           }
         }
       }
-      if (!pc.getClassName().contains(".example.")) pcs.add(pc)
+      pcs.add(pc)
     }
     val data = new ju.HashMap[String, Object]
     data.put("classes", pcs)
