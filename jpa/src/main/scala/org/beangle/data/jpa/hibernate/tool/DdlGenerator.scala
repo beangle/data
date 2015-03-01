@@ -34,6 +34,9 @@ import org.hibernate.engine.spi.Mapping
 import org.hibernate.id.PersistentIdentifierGenerator
 import org.hibernate.mapping.{ Collection, Column, Component, ForeignKey, IdentifierCollection, IndexedCollection, KeyValue, ManyToOne, PersistentClass, Property, RootClass, SimpleValue, Table, ToOne }
 
+/**
+ * Generate DDL and Sequences and Comments
+ */
 object DdlGenerator {
   def main(args: Array[String]): Unit = {
     if (args.length < 3) {
@@ -163,11 +166,13 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     // 3. export to files
     files foreach {
       case (key, sqls) =>
-        println("writing " + dirName + "/" + key)
-        val writer = new FileWriter(dirName + "/" + key, false)
-        writes(writer, sqls)
-        writer.flush
-        writer.close
+        if (!sqls.isEmpty) {
+          println("writing " + dirName + "/" + key)
+          val writer = new FileWriter(dirName + "/" + key, false)
+          writes(writer, sqls)
+          writer.flush
+          writer.close
+        }
     }
   }
 
