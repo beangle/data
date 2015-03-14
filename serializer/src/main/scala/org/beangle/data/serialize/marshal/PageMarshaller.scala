@@ -1,6 +1,7 @@
 package org.beangle.data.serialize.marshal
 
 import org.beangle.commons.collection.page.Page
+import org.beangle.commons.lang.Primitives
 import org.beangle.commons.lang.reflect.BeanManifest
 import org.beangle.data.serialize.io.StreamWriter
 import org.beangle.data.serialize.mapper.Mapper
@@ -13,7 +14,8 @@ class PageMarshaller(val mapper: Mapper) extends Marshaller[Page[Object]] {
     val properties = context.getProperties(sourceType)
     val getters = BeanManifest.get(sourceType).getters
     properties foreach { property =>
-      writer.startNode(mapper.serializedMember(source.getClass, property), classOf[Int])
+      val itemType = Primitives.wrap(getters(property).returnType)
+      writer.startNode(mapper.serializedMember(source.getClass, property), itemType)
       property match {
         case "pageIndex" =>
           context.marshal(Integer.valueOf(source.pageIndex))
@@ -24,9 +26,7 @@ class PageMarshaller(val mapper: Mapper) extends Marshaller[Page[Object]] {
         case "totalItems" =>
           context.marshal(Integer.valueOf(source.totalItems))
         case "items" =>
-          source.items.foreach { item =>
-            writeItem(item, writer, context)
-          }
+          context.marshal(source.items)
         case other: String => context.marshal(getters(other).method.invoke(source))
       }
       writer.endNode()

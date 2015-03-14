@@ -3,16 +3,16 @@ package org.beangle.data.serialize.marshal
 import scala.collection.mutable
 import scala.language.existentials
 
-import org.beangle.commons.collection.IdentityCache
+import org.beangle.commons.collection.{ IdentityMap, IdentitySet }
 import org.beangle.commons.lang.reflect.BeanManifest
 import org.beangle.data.serialize.StreamSerializer
 import org.beangle.data.serialize.io.{ Path, StreamWriter }
 
 class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWriter, val registry: MarshallerRegistry, val params: Map[String, Any]) {
 
-  val references = new IdentityCache[AnyRef, Id]
+  val references = new IdentityMap[AnyRef, Id]
 
-  val currents = new collection.mutable.HashSet[Any]
+  val currents = new IdentitySet[AnyRef]
 
   var elementType: Class[_] = _
 
