@@ -18,7 +18,7 @@
  */
 package org.beangle.data.model.meta
 
-import org.beangle.commons.bean.PropertyUtils
+import org.beangle.commons.bean.Properties
 
 /**
  * <p>

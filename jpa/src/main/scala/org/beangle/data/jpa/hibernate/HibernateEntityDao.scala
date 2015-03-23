@@ -38,7 +38,7 @@ import org.hibernate.engine.jdbc.StreamUtils
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.proxy.HibernateProxy
 
-protected[hibernate] object QuerySupport {
+object QuerySupport {
 
   def list[T](query: Query): Seq[T] = asScalaBuffer(query.list().asInstanceOf[java.util.List[T]])
 

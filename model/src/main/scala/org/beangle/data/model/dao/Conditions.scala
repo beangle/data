@@ -18,7 +18,7 @@
  */
 package org.beangle.data.model.dao
 
-import org.beangle.commons.bean.PropertyUtils
+import org.beangle.commons.bean.Properties
 import org.beangle.data.model.Component
 import org.beangle.data.model.Entity
 import org.beangle.data.model.util.Valid
@@ -57,10 +57,10 @@ object Conditions extends Logging {
     val prefix = if (null != alias && alias.length > 0 && !alias.endsWith(".")) alias + "." else ""
     var curr = "";
     try {
-      val props = PropertyUtils.getWritableProperties(entity.getClass)
+      val props = Properties.writables(entity.getClass)
       for (attr <- props) {
         curr = attr
-        val value = PropertyUtils.getProperty(entity, attr);
+        val value = Properties.get(entity, attr);
         if (null != value && !value.isInstanceOf[Seq[_]] && !value.isInstanceOf[java.util.Collection[_]])
           addAttrCondition(conditions, prefix + attr, value)
       }
@@ -111,7 +111,7 @@ object Conditions extends Logging {
     } else if (value.isInstanceOf[Entity[_]]) {
       try {
         val key = "id";
-        val property = PropertyUtils.getProperty(value, key);
+        val property = Properties.get(value, key);
         if (Valid(property)) {
           val content = new StringBuilder(name);
           content.append('.').append(key).append(" = :").append(name.replace('.', '_')).append('_')
@@ -131,10 +131,10 @@ object Conditions extends Logging {
     val conditions = new collection.mutable.ListBuffer[Condition]
     var curr = ""
     try {
-      val props = PropertyUtils.getWritableProperties(component.getClass)
+      val props = Properties.writables(component.getClass)
       for (attr <- props) {
         curr = attr
-        val value = PropertyUtils.getProperty(component, attr)
+        val value = Properties.get(component, attr)
         if (null != value && !value.isInstanceOf[Seq[_]] && !value.isInstanceOf[java.util.Collection[_]])
           addAttrCondition(conditions, prefix + "." + attr, value)
       }
