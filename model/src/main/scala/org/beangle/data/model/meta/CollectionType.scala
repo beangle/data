@@ -38,7 +38,13 @@ class CollectionType(val collectionClass: Class[_], val elementType: Type) exten
 
   override def isCollectionType = true
 
-  override def getPropertyType(property: String): Option[Type] = Some(elementType)
+  override def getPropertyType(property: String): Option[Type] = {
+    Some(elementType)
+  }
+
+  override def apply(property: String): Type = {
+    elementType
+  }
 
   def returnedClass = collectionClass
 

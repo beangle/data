@@ -19,6 +19,7 @@
 package org.beangle.data.model.dao
 
 import org.beangle.data.model.Entity
+import org.beangle.commons.collection.page.PageLimit
 
 /**
  * dao 查询辅助类
@@ -85,6 +86,12 @@ trait EntityDao {
    */
   def search[T](query: Query[T]): Seq[T]
 
+  def search[T](query: String, params: Any*): Seq[T]
+
+  def search[T](queryString: String, params: Map[String, Any]): Seq[T]
+
+  def search[T](queryString: String, params: Map[String, Any], limit: PageLimit, cacheable: Boolean): Seq[T]
+
   /**
    * Search Unique Result
    */
@@ -101,6 +108,12 @@ trait EntityDao {
    * @param builder
    */
   def execute(builder: Operation.Builder)
+
+  def executeUpdate(queryString: String, parameterMap: collection.Map[String, Any]): Int
+
+  def executeUpdate(queryString: String, arguments: Any*): Int
+
+  def executeUpdateRepeatly(queryString: String, arguments: Seq[Seq[Any]]): List[Int]
 
   // 容器相关
   def evict(entity: AnyRef)

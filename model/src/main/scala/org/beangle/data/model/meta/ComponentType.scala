@@ -38,5 +38,14 @@ class ComponentType(val componentClass: Class[_], val propertyTypes: Map[String,
   /**
    * Get the type of a particular (named) property
    */
-  override def getPropertyType(propertyName: String): Option[Type] = propertyTypes.get(propertyName)
+  override def getPropertyType(propertyName: String): Option[Type] = {
+    propertyTypes.get(propertyName)
+  }
+
+  /**
+   * Find the type of a particular (named) property
+   */
+  override def apply(propertyName: String): Type = {
+    propertyTypes(propertyName)
+  }
 }

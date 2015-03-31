@@ -349,7 +349,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     search[T](builder.build())
   }
 
-  def uniqueResult[T](builder: QueryBuilder[T]): T = {
+  override def uniqueResult[T](builder: QueryBuilder[T]): T = {
     val list = search(builder.build())
     if (list.isEmpty) {
       null.asInstanceOf[T]
@@ -360,11 +360,15 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
-  def search[T](query: String, params: Any*): Seq[T] = list[T](setParameters(getNamedOrCreateQuery(query), params))
+  override def search[T](query: String, params: Any*): Seq[T] = {
+    list[T](setParameters(getNamedOrCreateQuery(query), params))
+  }
 
-  def search[T](queryString: String, params: Map[String, Any]): Seq[T] = list[T](setParameters(getNamedOrCreateQuery(queryString), params))
+  override def search[T](queryString: String, params: Map[String, Any]): Seq[T] = {
+    list[T](setParameters(getNamedOrCreateQuery(queryString), params))
+  }
 
-  def search[T](queryString: String, params: Map[String, Any], limit: PageLimit, cacheable: Boolean): Seq[T] = {
+  override def search[T](queryString: String, params: Map[String, Any], limit: PageLimit, cacheable: Boolean): Seq[T] = {
     val query = getNamedOrCreateQuery(queryString)
     query.setCacheable(cacheable)
     if (null == limit) list(setParameters(query, params))
@@ -458,15 +462,15 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     executeUpdate(hql.toString(), params) > 0
   }
 
-  def executeUpdate(queryString: String, parameterMap: scala.collection.Map[String, Any]): Int = {
+  override def executeUpdate(queryString: String, parameterMap: scala.collection.Map[String, Any]): Int = {
     setParameters(getNamedOrCreateQuery(queryString), parameterMap).executeUpdate()
   }
 
-  def executeUpdate(queryString: String, arguments: Any*): Int = {
+  override def executeUpdate(queryString: String, arguments: Any*): Int = {
     setParameters(getNamedOrCreateQuery(queryString), arguments).executeUpdate()
   }
 
-  def executeUpdateRepeatly(queryString: String, arguments: Seq[Seq[Any]]): List[Int] = {
+  override def executeUpdateRepeatly(queryString: String, arguments: Seq[Seq[Any]]): List[Int] = {
     val query = getNamedOrCreateQuery(queryString)
     val updates = new mutable.ListBuffer[Int]
     var i = 0

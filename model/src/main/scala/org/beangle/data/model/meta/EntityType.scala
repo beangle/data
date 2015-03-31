@@ -48,6 +48,10 @@ class EntityType(val entityClass: Class[_], val entityName: String, val idName: 
     propertyTypes.get(property)
   }
 
+  override def apply(property: String): Type = {
+    propertyTypes(property)
+  }
+
   override def name: String = entityName
 
   override def returnedClass = entityClass
