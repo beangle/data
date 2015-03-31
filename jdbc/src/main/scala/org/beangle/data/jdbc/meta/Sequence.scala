@@ -19,8 +19,11 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.data.jdbc.dialect._
+import org.beangle.commons.lang.Strings
 
 class Sequence(var name: String) extends Comparable[Sequence] {
+
+  var schema: String = _
 
   var current: Long = 0
 
@@ -28,10 +31,13 @@ class Sequence(var name: String) extends Comparable[Sequence] {
 
   var cache: Int = 32
 
+  def identifier: String = {
+    if (Strings.isEmpty(schema)) name else schema + "." + name
+  }
   def createSql(dialect: Dialect): String = {
     if (null == dialect.sequenceGrammar) return null
-    var sql: String = dialect.sequenceGrammar.createSql;
-    sql = sql.replace(":name", name)
+    var sql: String = dialect.sequenceGrammar.createSql
+    sql = sql.replace(":name", identifier)
     sql = sql.replace(":start", String.valueOf(current + 1))
     sql = sql.replace(":increment", String.valueOf(increment))
     sql = sql.replace(":cache", String.valueOf(cache))
@@ -41,7 +47,7 @@ class Sequence(var name: String) extends Comparable[Sequence] {
   def dropSql(dialect: Dialect): String = {
     if (null == dialect.sequenceGrammar) return null
     var sql: String = dialect.sequenceGrammar.dropSql;
-    sql = sql.replace(":name", name)
+    sql = sql.replace(":name", identifier)
     return sql
   }
 

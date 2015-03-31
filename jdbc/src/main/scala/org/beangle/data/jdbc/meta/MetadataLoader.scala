@@ -261,6 +261,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         }
         while (rs.next()) {
           val sequence = new Sequence(rs.getString("sequence_name").toLowerCase().trim())
+          sequence.schema = schema
           if (columnNames.contains("current_value")) {
             sequence.current = java.lang.Long.valueOf(rs.getString("current_value")).longValue
           } else if (columnNames.contains("next_value")) {

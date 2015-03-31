@@ -77,6 +77,7 @@ class ConvertReactor(val config: Config) {
     val sequences = sourceWrapper.database.sequences
     val finalSequenceNames = config.source.sequence.filter(sequences.map(s => s.name)).toSet
     val finalSequences = sequences.filter(s => finalSequenceNames.contains(s.name))
+    finalSequences foreach { n => n.schema = config.target.schema }
     sequenceConverter.addAll(finalSequences)
     converters += sequenceConverter
 

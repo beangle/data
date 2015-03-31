@@ -34,10 +34,10 @@ class SequenceConverter(val source: DatabaseWrapper, val target: DatabaseWrapper
   private def reCreate(sequence: Sequence): Boolean = {
     if (target.drop(sequence)) {
       if (target.create(sequence)) {
-        info(s"Recreate sequence ${sequence.name}")
+        info(s"Recreate sequence ${sequence.identifier}")
         return true
       } else {
-        error(s"Recreate sequence {sequence.name} failure.")
+        error(s"Recreate sequence {sequence.identifier} failure.")
       }
     }
     return false
