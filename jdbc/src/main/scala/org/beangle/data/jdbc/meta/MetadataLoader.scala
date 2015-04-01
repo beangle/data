@@ -267,11 +267,15 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           } else if (columnNames.contains("next_value")) {
             sequence.current = java.lang.Long.valueOf(rs.getString("next_value")).longValue - 1
           }
-          if (columnNames.contains("increment")) {
-            sequence.increment = (java.lang.Integer.valueOf(rs.getString("increment")).intValue).intValue
+          if (columnNames.contains("increment_by")) {
+            sequence.increment = (java.lang.Integer.valueOf(rs.getString("increment_by")).intValue).intValue
           }
-          if (columnNames.contains("cache")) {
-            sequence.cache = (java.lang.Integer.valueOf(rs.getString("cache"))).intValue
+          if (columnNames.contains("cache_size")) {
+            sequence.cache = (java.lang.Integer.valueOf(rs.getString("cache_size"))).intValue
+          }
+          if (columnNames.contains("cycle_flag")) {
+            val flag = rs.getString("cycle_flag").toLowerCase()
+            sequence.cycle = (flag == "y" || flag == "yes" || flag == "on")
           }
           sequences += sequence
         }

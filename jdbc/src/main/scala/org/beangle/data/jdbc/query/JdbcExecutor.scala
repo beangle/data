@@ -293,7 +293,13 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
                 stmt.setAsciiStream(index, clb.getAsciiStream, out.size())
               }
             }
-            case BLOB => stmt.setBinaryStream(index, value.asInstanceOf[Blob].getBinaryStream)
+            case BLOB => {
+              //FIXME workround Method org.postgresql.jdbc4.Jdbc4PreparedStatement.setAsciiStream(int, InputStream) is not yet implemented. 
+              val in = value.asInstanceOf[Blob].getBinaryStream
+              val out = new ByteArrayOutputStream()
+              IOs.copy(in, out)
+              stmt.setBinaryStream(index, in, out.size)
+            }
             case _ => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
           }
         } catch {

@@ -100,7 +100,7 @@ class LimitGrammarBean(pattern: String, offsetPattern: String, val bindInReverse
  */
 class SequenceGrammar {
 
-  var createSql: String = "create sequence :name start with :start increment by :increment"
+  var createSql: String = "create sequence :name start with :start increment by :increment :cycle"
   var dropSql: String = "drop sequence :name"
   var nextValSql: String = null
   var selectNextValSql: String = null

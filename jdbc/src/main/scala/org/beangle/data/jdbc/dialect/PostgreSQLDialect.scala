@@ -57,7 +57,8 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
 
   override def sequenceGrammar = {
     val ss = new SequenceGrammar()
-    ss.querySequenceSql = "select c.relname as sequence_name from pg_class c,pg_namespace n where c.relkind='S' and c.relnamespace=n.oid and n.nspname=':schema'"
+    ss.querySequenceSql = "select sequence_name,start_value,increment increment_by,cycle_option cycle_flag" +
+      " from information_schema.sequences where sequence_schema=':schema'"
     ss.nextValSql = "select nextval (':name')"
     ss.selectNextValSql = "nextval (':name')"
     ss

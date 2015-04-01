@@ -31,6 +31,8 @@ class Sequence(var name: String) extends Comparable[Sequence] {
 
   var cache: Int = 32
 
+  var cycle: Boolean = _
+
   def identifier: String = {
     if (Strings.isEmpty(schema)) name else schema + "." + name
   }
@@ -41,6 +43,7 @@ class Sequence(var name: String) extends Comparable[Sequence] {
     sql = sql.replace(":start", String.valueOf(current + 1))
     sql = sql.replace(":increment", String.valueOf(increment))
     sql = sql.replace(":cache", String.valueOf(cache))
+    sql = sql.replace(":cycle", if (cycle) "cycle" else "")
     return sql
   }
 

@@ -92,8 +92,9 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
 
   override def sequenceGrammar = {
     val ss = new SequenceGrammar();
-    ss.querySequenceSql = "select sequence_name,last_number,increment_by,cache_size from all_sequences where sequence_owner=':schema'"
-    ss.createSql = "create sequence :name increment by :increment start with :start cache :cache"
+    ss.querySequenceSql = "select sequence_name,last_number as next_value,increment_by,cache_size,cycle_flag " +
+      "from all_sequences where sequence_owner=':schema'"
+    ss.createSql = "create sequence :name increment by :increment start with :start cache :cache :cycle"
     ss.nextValSql = "select :name.nextval from dual"
     ss.selectNextValSql = ":name.nextval"
     ss
