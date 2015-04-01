@@ -24,12 +24,7 @@ import org.beangle.data.model.Enabled
  *
  * @author chaostone
  */
+@deprecated("Using Enabled directly","4.1.11")
 trait EnabledBean extends Enabled {
 
-  /**
-   * 查询是否启用
-   *
-   * @return 是否启用
-   */
-  var enabled: Boolean = _ 
 }

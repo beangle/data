@@ -39,9 +39,7 @@ package org.beangle.data.model
 import java.util.Date
 
 /**
- * <p>
  * Contain create and update time interface.
- * </p>
  *
  * @author chaostone
  */
@@ -50,6 +48,6 @@ trait Updated {
   /**
    * Updated At
    */
-  def updatedAt: Date
+  var updatedAt: Date = _
 
 }

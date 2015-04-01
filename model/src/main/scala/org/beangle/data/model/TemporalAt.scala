@@ -31,12 +31,12 @@ import java.util.Date
 trait TemporalAt {
 
   /**
-   * 起始日期
+   * 获得生效时间
    */
-  def beginAt: Date
+  var beginAt: Date = _
 
   /**
-   * 结束日期
+   * 获得失效时间
    */
-  def endAt: Date
+  var endAt: Date = _
 }

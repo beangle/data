@@ -27,18 +27,8 @@ import org.beangle.commons.lang.Strings
  *
  * @author chaostone
  */
+@deprecated("Using Hierarchical directly","4.1.11")
 trait HierarchicalBean[T <: Entity[_]] extends Hierarchical[T] {
 
-  /** index no */
-  var indexno: String = _
-
-  /** 父级菜单 */
-  var parent: T = _
-
-  var children: mutable.Seq[T] = new mutable.ListBuffer[T]
-
-  def depth: Int = {
-    Strings.count(indexno, ".") + 1
-  }
 
 }

@@ -33,10 +33,11 @@ trait TemporalOn {
   /**
    * 起始日期
    */
-  def beginOn: Date
+  var beginOn: Date = _
 
   /**
    * 结束日期
    */
-  def endOn: Date
+  var endOn: Date = _
+
 }

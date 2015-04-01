@@ -2,5 +2,5 @@ package org.beangle.data.model
 
 trait Named {
 
-    def name: String;
+  var name: String = _
 }

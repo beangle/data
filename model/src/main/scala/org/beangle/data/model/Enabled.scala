@@ -30,6 +30,6 @@ trait Enabled {
    *
    * @return 是否启用
    */
-  def enabled: Boolean;
+  var enabled: Boolean = _
 
 }

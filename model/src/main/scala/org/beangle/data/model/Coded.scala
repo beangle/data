@@ -27,5 +27,5 @@ package org.beangle.data.model
  */
 trait Coded {
 
-  def code: String
+  var code: String = _ 
 }

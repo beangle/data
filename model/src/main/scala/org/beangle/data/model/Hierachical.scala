@@ -17,6 +17,9 @@
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.beangle.data.model
+
+import org.beangle.commons.lang.Strings
+import org.beangle.commons.collection.Collections
 /**
  * <p>
  * Hierarchical interface.
@@ -26,9 +29,15 @@ package org.beangle.data.model
  */
 trait Hierarchical[T] {
 
-  def indexno: String
+  /** index no */
+  var indexno: String = _
 
-  def parent: T
+  /** 父级菜单 */
+  var parent: T = _
 
-  def children: collection.Seq[T]
+  var children = Collections.newBuffer[T]
+
+  def depth: Int = {
+    Strings.count(indexno, ".") + 1
+  }
 }
