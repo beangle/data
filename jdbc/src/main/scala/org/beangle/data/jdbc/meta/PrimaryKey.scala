@@ -18,9 +18,13 @@
  */
 package org.beangle.data.jdbc.meta
 
+import org.beangle.data.jdbc.dialect.Dialect
+
 class PrimaryKey(name: String, column: Column) extends Constraint(name) {
 
-  override def clone: this.type = return super.clone()
+  override def clone(dialect: Dialect): PrimaryKey = {
+    super.clone(dialect).asInstanceOf[PrimaryKey]
+  }
 
   addColumn(column)
 

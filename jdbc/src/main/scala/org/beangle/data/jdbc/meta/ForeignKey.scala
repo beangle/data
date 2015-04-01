@@ -65,16 +65,16 @@ class ForeignKey(name: String, column: Column) extends Constraint(name) {
     if (cascadeDelete && dialect.supportsCascadeDelete) result + " on delete cascade" else result
   }
 
-  override def clone: this.type = {
-    val cloned = super.clone()
+  override def clone(dialect: Dialect): ForeignKey = {
+    val cloned = super.clone().asInstanceOf[ForeignKey]
     cloned.cascadeDelete = this.cascadeDelete
     cloned.referencedTable = this.referencedTable
     val newColumns = new ListBuffer[Column]
     for (column <- referencedColumns)
-      newColumns += column.clone()
+      newColumns += column.clone(dialect)
 
     cloned.referencedColumns = newColumns
-    return cloned
+    cloned
   }
 
   def addReferencedColumn(column: Column) = referencedColumns += column

@@ -21,7 +21,10 @@ package org.beangle.data.jdbc.dialect
 import java.sql.Types
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class PostgreSQLDialectTest extends FlatSpec with Matchers {
 
   "big number (size >=65535) in postgresql " should " trip to less 1000 size" in {
@@ -30,5 +33,6 @@ class PostgreSQLDialectTest extends FlatSpec with Matchers {
     val precision = 65535;
     val size = 65535;
     dialect.typeNames.get(Types.NUMERIC, size, precision, scale) equals "numeric(1000, 0)" should be(true)
+    dialect.typeNames.get(Types.DECIMAL, 1, 1, 0) equals "boolean" should be(true)
   }
 }

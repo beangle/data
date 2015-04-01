@@ -19,6 +19,7 @@
 package org.beangle.data.jdbc.dialect
 
 import org.beangle.commons.lang.Strings
+import java.sql.Types
 
 abstract class AbstractDialect(versions: String) extends Dialect {
   val typeNames: TypeNames = new TypeNames()
@@ -67,6 +68,17 @@ abstract class AbstractDialect(versions: String) extends Dialect {
   }
 
   protected def registerType(code: Int, name: String) = typeNames.put(code, name)
+
+  override def translate(typeCode: Int, size: Int, scale: Int): Tuple2[Int, String] = {
+    if (typeCode == Types.OTHER) (typeCode, null) else
+      try {
+        (typeCode, typeNames.get(typeCode, size, size, scale))
+      } catch {
+        case e: Exception =>
+          println("Cannot find type code" + typeCode);
+          (typeCode, null)
+      }
+  }
 
   def metadataGrammar: MetadataGrammar = null
 }

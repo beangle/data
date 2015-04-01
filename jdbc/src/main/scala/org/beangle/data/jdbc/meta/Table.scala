@@ -41,7 +41,9 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
     this.schema = schema
   }
 
-  def columnNames: List[String] = columns.result.map(_.name)
+  def columnNames: List[String] = {
+    columns.result.map(_.name)
+  }
 
   def identifier = Table.qualify(schema, name)
 
@@ -83,7 +85,7 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
     while (iter.hasNext) {
       val col: Column = iter.next()
       buf.append(col.name).append(' ')
-      buf.append(col.getSqlType(dialect))
+      buf.append(col.typeName)
 
       val defaultValue: String = col.defaultValue
       if (defaultValue != null) buf.append(" default ").append(defaultValue)
@@ -132,25 +134,23 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
     sb.toString()
   }
 
-  override def clone(): Table = {
+  def clone(dialect: Dialect): Table = {
     val tb: Table = new Table(schema, name)
     tb.comment = comment
     for (col <- columns)
-      tb.addColumn(col.clone())
+      tb.addColumn(col.clone(dialect))
     if (null != primaryKey) {
-      tb.primaryKey = primaryKey.clone()
+      tb.primaryKey = primaryKey.clone(dialect)
       tb.primaryKey.table = tb
     }
 
-    for (fk <- foreignKeys)
-      tb.addForeignKey(fk.clone())
+    for (fk <- foreignKeys) tb.addForeignKey(fk.clone(dialect))
 
-    for (uk <- uniqueKeys)
-      tb.addUniqueKey(uk.clone())
+    for (uk <- uniqueKeys) tb.addUniqueKey(uk.clone(dialect))
 
-    for (idx <- indexes)
-      tb.addIndex(idx.clone())
-    return tb
+    for (idx <- indexes) tb.addIndex(idx.clone(dialect))
+
+    tb
   }
 
   def lowerCase() {
@@ -200,7 +200,7 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
 
   def addColumn(column: Column): Boolean = {
     if (!columns.exists(_.name == column.name)) {
-      columns += column.clone();
+      columns += column
       true
     } else false
   }

@@ -37,6 +37,7 @@
 package org.beangle.data.jdbc.meta
 
 import scala.collection.mutable.ListBuffer
+
 import org.beangle.data.jdbc.dialect.Dialect
 /**
  * JDBC index metadata
@@ -45,27 +46,33 @@ import org.beangle.data.jdbc.dialect.Dialect
  */
 class Index(var name: String, var table: Table) extends Cloneable {
 
-  val columns = new ListBuffer[Column];
+  val columns = new ListBuffer[Column]
 
   var unique: Boolean = false
 
   var ascOrDesc: Option[Boolean] = None
 
-  def lowerCase() = this.name = name.toLowerCase()
+  def lowerCase(): Unit = {
+    this.name = name.toLowerCase()
+  }
 
-  def addColumn(column: Column) = if (column != null) columns += column
+  def addColumn(column: Column): Unit = {
+    if (column != null) columns += column
+  }
 
-  override def toString = "IndexMatadata(" + name + ')'
+  override def toString: String = {
+    "IndexMatadata(" + name + ')'
+  }
 
-  override def clone: Index = {
+  def clone(dialect: Dialect): Index = {
     val cloned: Index = super.clone().asInstanceOf[Index]
     val newColumns = new ListBuffer[Column]
     for (column <- columns) {
-      newColumns += column.clone()
+      newColumns += column.clone(dialect)
     }
     cloned.columns.clear()
     cloned.columns ++= newColumns
-    return cloned
+    cloned
   }
 
   def createSql(dialect: Dialect): String = {
@@ -79,12 +86,14 @@ class Index(var name: String, var table: Table) extends Cloneable {
     val iter = columns.iterator
     while (iter.hasNext) {
       buf.append(iter.next.name);
-      if (iter.hasNext) buf.append(", ");
+      if (iter.hasNext) buf.append(", ")
     }
-    buf.append(")");
+    buf.append(")")
     buf.toString()
   }
 
-  def dropSql(dialect: Dialect): String = "drop index " + table.identifier + "." + name;
+  def dropSql(dialect: Dialect): String = {
+    "drop index " + table.identifier + "." + name
+  }
 
 }

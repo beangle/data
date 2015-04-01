@@ -90,7 +90,7 @@ class ConvertReactor(val config: Config) {
     val tables = new collection.mutable.ListBuffer[Tuple2[Table, Table]]
     for (name <- tablenames) {
       var srcTable = srcWrapper.database.getTable(name).get
-      var targetTable = srcTable.clone()
+      var targetTable = srcTable.clone(targetWrapper.dialect)
       targetTable.schema = targetWrapper.database.schema
       if (source.table.lowercase) targetTable.lowerCase()
       tables += (srcTable -> targetTable)

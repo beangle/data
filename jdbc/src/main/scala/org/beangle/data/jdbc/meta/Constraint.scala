@@ -18,14 +18,16 @@
  */
 package org.beangle.data.jdbc.meta
 
-import collection.mutable.ListBuffer
+import scala.collection.mutable.ListBuffer
+
+import org.beangle.data.jdbc.dialect.Dialect
 
 /**
  * Table Constraint Metadata
  *
  * @author chaostone
  */
-class Constraint(var name: String) extends Comparable[Constraint] with Cloneable {
+class Constraint(var name: String) extends Ordered[Constraint] with Cloneable {
 
   val columns = new ListBuffer[Column]
 
@@ -33,20 +35,26 @@ class Constraint(var name: String) extends Comparable[Constraint] with Cloneable
 
   var table: Table = null
 
-  def lowerCase() { if (null != name) this.name = name.toLowerCase }
+  def lowerCase(): Unit = {
+    if (null != name) this.name = name.toLowerCase
+  }
 
-  def addColumn(column: Column) { if (column != null) columns += column }
+  def addColumn(column: Column): Unit = {
+    if (column != null) columns += column
+  }
 
-  override def compareTo(o: Constraint) = { if (null == name) 0 else name.compareTo(o.name) }
+  override def compare(o: Constraint): Int = {
+    if (null == name) 0 else name.compareTo(o.name)
+  }
 
-  override def clone(): this.type = {
+  def clone(dialect: Dialect): Constraint = {
     var cloned: this.type = null
     cloned = super.clone().asInstanceOf[this.type]
-    var newColumns = new ListBuffer[Column];
+    var newColumns = new ListBuffer[Column]
     for (column <- columns) {
-      newColumns += column.clone();
+      newColumns += column.clone(dialect)
     }
-    cloned.columns.clear();
+    cloned.columns.clear()
     cloned.columns ++= newColumns
     return cloned;
   }

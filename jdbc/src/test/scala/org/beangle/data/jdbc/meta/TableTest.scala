@@ -20,28 +20,35 @@ package org.beangle.data.jdbc.meta
 
 import java.sql.Types
 import org.beangle.data.jdbc.dialect.H2Dialect
+import org.beangle.data.jdbc.dialect.PostgreSQLDialect
+import org.junit.runner.RunWith
+import org.scalatest.Finders
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class TableTest extends FlatSpec with Matchers {
 
+  val dialect= new PostgreSQLDialect()
+  
   "create sql" should "like this" in {
     val table = new Table("test", "user")
     val column = new Column("name", Types.VARCHAR)
     column.comment = "login name"
+    column.size=30
     table.addColumn(column)
     val pkColumn = new Column("id", Types.BIGINT)
     val pk = new PrimaryKey("pk", pkColumn)
     table.addColumn(pkColumn)
     table.primaryKey = pk
-    val createSql = table.createSql(new H2Dialect())
+    val createSql = table.clone(new H2Dialect).createSql(new H2Dialect())
     println(createSql)
   }
 
   "lowercase " should "corrent" in {
     val table = new Table("PUBLIC", "USER")
-    val cloned = table.clone()
+    val cloned = table.clone(dialect)
     (cloned == table) should be(false)
     cloned.lowerCase
     "USER".equals(table.name) should be(true)

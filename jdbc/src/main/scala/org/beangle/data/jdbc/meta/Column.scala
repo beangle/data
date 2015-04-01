@@ -36,8 +36,6 @@
  */
 package org.beangle.data.jdbc.meta
 
-import java.sql.Types
-
 import org.beangle.data.jdbc.dialect.Dialect
 /**
  * DBC column metadata
@@ -46,7 +44,10 @@ import org.beangle.data.jdbc.dialect.Dialect
  */
 class Column(var name: String, var typeCode: Int) extends Ordered[Column] with Cloneable {
   var typeName: String = null
-  // charactor length or numeric precision
+  /**
+   *  Charactor length or numeric precision
+   *  The number 123.45 has a precision of 5 and a scale of 2
+   */
   var size: Int = _
   var scale: Short = _
   var nullable: Boolean = _
@@ -56,22 +57,19 @@ class Column(var name: String, var typeCode: Int) extends Ordered[Column] with C
   var checkConstraint: String = null
   var position: Int = _
 
-  override def clone = super.clone().asInstanceOf[Column]
+  def clone(dialect: Dialect): Column = {
+    val col = super.clone().asInstanceOf[Column]
+    val tu = dialect.translate(typeCode, size, scale)
+    col.typeCode = tu._1
+    if (null != tu._2) col.typeName = tu._2
+    col
+  }
 
   def lowerCase() {
     this.name = name.toLowerCase
   }
 
   def hasCheckConstraint = checkConstraint != null
-
-  def getSqlType(dialect: Dialect) = {
-    if (typeCode == Types.OTHER) typeName else
-      try {
-        dialect.typeNames.get(typeCode, size, size, scale)
-      } catch {
-        case e: Exception => println("Cannot find type code"+typeCode); typeName
-      }
-  }
 
   override def toString = "Column(" + name + ')'
 

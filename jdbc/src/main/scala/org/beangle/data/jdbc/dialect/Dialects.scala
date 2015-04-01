@@ -96,6 +96,8 @@ abstract class Dialect {
 
   def typeNames: TypeNames
 
+  def translate(typeCode: Int, size: Int, scale: Int):Tuple2[Int,String]
+
   def keywords: Set[String]
 
   def supportsCascadeDelete: Boolean
