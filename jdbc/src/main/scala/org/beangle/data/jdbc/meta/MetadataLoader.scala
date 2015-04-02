@@ -54,7 +54,6 @@ object MetadataColumns {
   val PKName = "PK_NAME"
 
   val Remarks = "REMARKS"
-
 }
 
 class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends Logging {
@@ -87,7 +86,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       }
     }
     rs.close()
-    info(s"Load ${tables.size} tables in ${sw.toString}")
+    logger.info(s"Load ${tables.size} tables in ${sw.toString}")
 
     // Loading columns
     sw.reset().start();
@@ -115,12 +114,12 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
     //evict empty column tables
     val origTabCount = tables.size
     tables.retain((name, table) => !table.columns.isEmpty)
-    if (tables.size == origTabCount) info(s"Load $cols columns in $sw")
-    else info(s"Load $cols columns and evict empty ${origTabCount - tables.size} tables in $sw.")
+    if (tables.size == origTabCount) logger.info(s"Load $cols columns in $sw")
+    else logger.info(s"Load $cols columns and evict empty ${origTabCount - tables.size} tables in $sw.")
 
     if (extras) {
       if (null == dialect.metadataGrammar) {
-        info("Loading primary key,foreign key and index.")
+        logger.info("Loading primary key,foreign key and index.")
         val tableNames = new ConcurrentLinkedQueue[String]
         tableNames.addAll(collection.JavaConversions.asJavaCollection(tables.keySet.toList.sortWith(_ < _)))
         ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
@@ -182,7 +181,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       }
     }
     rs.close()
-    info(s"Load contraint and index in $sw.")
+    logger.info(s"Load contraint and i logger.info(n $sw.")
   }
 
   class MetaLoadTask(val buffer: ConcurrentLinkedQueue[String], val tables: mutable.HashMap[String, Table]) extends Runnable {
@@ -192,7 +191,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       while (null != nextTableName) {
         try {
           val table = tables(nextTableName)
-          info(s"Loading $table.")
+          logger.info(s"Loading $table.")
           // load primary key
           var rs: ResultSet = null
           rs = meta.getPrimaryKeys(null, table.schema, table.name)
@@ -233,11 +232,11 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           completed += 1
         } catch {
           case e: IndexOutOfBoundsException =>
-          case e: Exception => error("Error in convertion ", e)
+          case e: Exception => logger.error("Error in convertion ", e)
         }
         nextTableName = buffer.poll()
       }
-      info(s"${Thread.currentThread().getName()} loaded $completed tables ")
+      logger.info(s"${Thread.currentThread().getName} loaded $completed tables ")
     }
   }
 

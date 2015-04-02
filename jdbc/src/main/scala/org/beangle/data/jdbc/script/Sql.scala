@@ -52,7 +52,7 @@ object Sql extends Logging {
       return
     }
     if (datasources.isEmpty) {
-      info("Cannot find datasource")
+      logger.info("Cannot find datasource")
       return
     }
 
@@ -171,7 +171,7 @@ object Sql extends Logging {
     assert(null != workdir)
     val target = new File(workdir + / + "datasources.xml")
     if (target.exists) {
-      info(s"Read config file ${target.getName}")
+      logger.info(s"Read config file ${target.getName}")
       (scala.xml.XML.load(new FileInputStream(target)) \\ "datasource") foreach { elem =>
         datasources += DatasourceConfig.build(elem)
       }

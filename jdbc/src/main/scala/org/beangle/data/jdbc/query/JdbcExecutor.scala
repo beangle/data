@@ -306,7 +306,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
             case _ => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
           }
         } catch {
-          case e: Exception => error("set value error", e);
+          case e: Exception => logger.error("set value error", e);
         }
       }
       i += 1

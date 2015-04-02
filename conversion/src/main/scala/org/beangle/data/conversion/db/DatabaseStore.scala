@@ -46,7 +46,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
       }
     } catch {
       case e: Exception =>
-        error(s"Drop table ${table.name} failed", e)
+        logger.error(s"Drop table ${table.name} failed", e)
         return false
     }
     return true
@@ -58,7 +58,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
         executor.update(table.createSql(database.dialect))
       } catch {
         case e: Exception =>
-          error(s"Cannot create table ${table.name}", e)
+          logger.error(s"Cannot create table ${table.name}", e)
           return false
       }
     }
@@ -74,7 +74,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
         if (null != dropSql) executor.update(dropSql)
       } catch {
         case e: Exception =>
-          error(s"Drop sequence ${sequence.name} failed", e)
+          logger.error(s"Drop sequence ${sequence.name} failed", e)
           return false
       }
     }
@@ -87,7 +87,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
       if (null != createSql) executor.update(createSql)
     } catch {
       case e: Exception =>
-        error(s"cannot create sequence ${sequence.name}", e)
+        logger.error(s"cannot create sequence ${sequence.name}", e)
         return false
     }
     return true

@@ -34,10 +34,10 @@ class SequenceConverter(val source: DatabaseWrapper, val target: DatabaseWrapper
   private def reCreate(sequence: Sequence): Boolean = {
     if (target.drop(sequence)) {
       if (target.create(sequence)) {
-        info(s"Recreate sequence ${sequence.identifier}")
+        logger.info(s"Recreate sequence ${sequence.identifier}")
         return true
       } else {
-        error(s"Recreate sequence {sequence.identifier} failure.")
+        logger.error(s"Recreate sequence {sequence.identifier} failure.")
       }
     }
     return false
@@ -46,15 +46,15 @@ class SequenceConverter(val source: DatabaseWrapper, val target: DatabaseWrapper
   def start() {
     val targetDialect = target.database.dialect
     if (null == targetDialect.sequenceGrammar) {
-      info(s"Target database ${targetDialect.getClass().getSimpleName()} dosen't support sequence,replication ommited.")
+      logger.info(s"Target database ${targetDialect.getClass().getSimpleName()} dosen't support sequence,replication ommited.")
       return
     }
     val watch = new Stopwatch(true)
-    info("Start sequence replication...")
+    logger.info("Start sequence replication...")
     for (sequence <- sequences.sorted) {
       reCreate(sequence)
     }
-    info(s"End ${sequences.length} sequence replication,using $watch")
+    logger.info(s"End ${sequences.length} sequence replication,using $watch")
   }
 
   def addAll(newSequences: collection.Iterable[Sequence]) {

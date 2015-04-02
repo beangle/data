@@ -2,16 +2,16 @@ package org.beangle.data.jpa.hibernate.id
 
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.jpa.hibernate.{OverrideConfiguration, RailsNamingStrategy}
-import org.beangle.data.jpa.hibernate.udt.{PoolingDataSourceFactory, UdtTest}
+import org.beangle.data.jpa.hibernate.{ OverrideConfiguration, RailsNamingStrategy }
+import org.beangle.data.jpa.hibernate.udt.{ PoolingDataSourceFactory, UdtTest }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
-import org.beangle.data.jpa.model.{IntIdResource, LongDateIdResource, LongIdResource}
-import org.hibernate.{SessionFactory, SessionFactoryObserver}
+import org.beangle.data.jpa.model.{ IntIdResource, LongDateIdResource, LongIdResource }
+import org.hibernate.{ SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.AvailableSettings
 import org.hibernate.dialect.PostgreSQL9Dialect
 import org.junit.runner.RunWith
-import org.scalatest.{Finders, FunSpec, Matchers}
+import org.scalatest.{ Finders, FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
 
@@ -42,31 +42,39 @@ class GeneratorTest extends FunSpec with Matchers {
       StandardServiceRegistryBuilder.destroy(serviceRegistry)
     }
   })
-  val sf = configuration.buildSessionFactory(serviceRegistry)
+  var pgReady = true
+  try {
+    ds.getConnection
+  } catch {
+    case e: Throwable => pgReady = false
+  }
+  if (pgReady) {
+    val sf = configuration.buildSessionFactory(serviceRegistry)
 
-  describe("Generator") {
-    it("generate id auto increment") {
-      val s = sf.openSession()
-      val lresource = new LongIdResource();
-      s.saveOrUpdate(lresource)
+    describe("Generator") {
+      it("generate id auto increment") {
+        val s = sf.openSession()
+        val lresource = new LongIdResource();
+        s.saveOrUpdate(lresource)
 
-      val iresource = new IntIdResource();
-      iresource.year = 2014
-      s.saveOrUpdate(iresource)
+        val iresource = new IntIdResource();
+        iresource.year = 2014
+        s.saveOrUpdate(iresource)
 
-      s.flush()
-      s.close()
-    }
+        s.flush()
+        s.close()
+      }
 
-    it("generate id by date") {
-      val s = sf.openSession()
-      val lresource = new LongDateIdResource();
-      lresource.year = 2013
-      s.saveOrUpdate(lresource)
-      assert(lresource.id != null)
-      assert(lresource.id.toString.startsWith("2013"))
-      s.flush()
-      s.close()
+      it("generate id by date") {
+        val s = sf.openSession()
+        val lresource = new LongDateIdResource();
+        lresource.year = 2013
+        s.saveOrUpdate(lresource)
+        assert(lresource.id != null)
+        assert(lresource.id.toString.startsWith("2013"))
+        s.flush()
+        s.close()
+      }
     }
   }
 }

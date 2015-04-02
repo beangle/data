@@ -68,7 +68,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
             objtype = t
           }
           case None => {
-            error(s"Cannot find property type [$nested] of ${propObj.getClass}")
+            logger.error(s"Cannot find property type [$nested] of ${propObj.getClass}")
             throw new RuntimeException("Cannot find property type " + nested + " of " + propObj.getClass().getName())
           }
         }
@@ -96,7 +96,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
       return true
     } catch {
       case e: Exception =>
-        warn(s"copy property failure:[class:${entityType.entityName} attr:${attr} value:${value}]:", e)
+        logger.warn(s"copy property failure:[class:${entityType.entityName} attr:${attr} value:${value}]:", e)
         return false
     }
   }
@@ -128,7 +128,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
         try {
           val ot = init(entity, entityType, parentAttr)
           if (null == ot) {
-            error(s"error attr:[$attr] value:[$value]")
+            logger.error(s"error attr:[$attr] value:[$value]")
           } else {
             // 属性也是实体类对象
             if (ot._2.isEntityType) {
@@ -156,7 +156,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
             }
           }
         } catch {
-          case e: Exception => error(s"error attr:[$attr] value:[$value]", e)
+          case e: Exception => logger.error(s"error attr:[$attr] value:[$value]", e)
         }
       }
     }

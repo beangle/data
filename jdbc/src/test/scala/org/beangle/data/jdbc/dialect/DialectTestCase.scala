@@ -35,12 +35,12 @@ class DialectTestCase extends FlatSpec with Matchers with Logging {
   protected def listTableAndSequences = {
     val tables: Map[String, Table] = database.tables
     for (name <- tables.keySet()) {
-      info(s"table $name")
+      logger.info(s"table $name")
     }
 
     val seqs = database.sequences
     for (obj <- seqs) {
-      info(s"sequence $obj")
+      logger.info(s"sequence $obj")
     }
   }
 }

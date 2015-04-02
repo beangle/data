@@ -49,9 +49,9 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
     val tableCount = tables.length
     val buffer = new LinkedBlockingQueue[Tuple2[Table, Table]]
     buffer.addAll(collection.JavaConversions.asJavaCollection(tables.sortWith(_._1.name > _._1.name)))
-    info(s"Start $tableCount tables data replication in $threads threads...")
+    logger.info(s"Start $tableCount tables data replication in $threads threads...")
     ThreadTasks.start(new ConvertTask(source, target, buffer), threads)
-    info(s"End $tableCount tables data replication,using $watch")
+    logger.info(s"End $tableCount tables data replication,using $watch")
   }
 
   class ConvertTask(val source: DataWrapper, val target: DataWrapper, val buffer: LinkedBlockingQueue[Tuple2[Table, Table]]) extends Runnable {
@@ -63,7 +63,7 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
           if (null != p) convert(p)
         } catch {
           case e: IndexOutOfBoundsException =>
-          case e: Exception => error("Error in convertion ", e)
+          case e: Exception => logger.error("Error in convertion ", e)
         }
       }
     }
@@ -71,10 +71,10 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
     private def createOrReplaceTable(table: Table): Boolean = {
       if (target.drop(table)) {
         if (target.create(table)) {
-          info(s"Create table ${table.name}")
+          logger.info(s"Create table ${table.name}")
           return true
         } else {
-          error(s"Create table ${table.name} failure.")
+          logger.error(s"Create table ${table.name} failure.")
         }
       }
       false
@@ -88,7 +88,7 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
         var count = source.count(srcTable)
         if (count == 0) {
           target.save(targetTable, List.empty)
-          info(s"Insert $targetTable(0)")
+          logger.info(s"Insert $targetTable(0)")
         } else {
           var curr = 0
           var pageIndex = 0
@@ -97,7 +97,7 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
             val data = if (source.supportLimit) source.get(srcTable, limit) else source.get(srcTable)
             var breakable = false
             if (data.isEmpty) {
-              error(s"Failure in fetching ${srcTable.name} data ${limit.pageIndex}(${limit.pageSize})")
+              logger.error(s"Failure in fetching ${srcTable.name} data ${limit.pageIndex}(${limit.pageSize})")
               if (limit.pageIndex * limit.pageSize >= count) breakable = true
             }
             if (!breakable) {
@@ -105,17 +105,17 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
               curr += data.size
               pageIndex += 1
               if (successed == count) {
-                info(s"Insert $targetTable($successed)")
+                logger.info(s"Insert $targetTable($successed)")
               } else if (successed == data.size) {
-                info(s"Insert $targetTable($curr/$count)")
+                logger.info(s"Insert $targetTable($curr/$count)")
               } else {
-                warn(s"Insert $targetTable($successed/${data.size})")
+                logger.warn(s"Insert $targetTable($successed/${data.size})")
               }
             }
           }
         }
       } catch {
-        case e: Exception => error(s"Insert error ${srcTable.identifier}", e)
+        case e: Exception => logger.error(s"Insert error ${srcTable.identifier}", e)
       }
     }
   }

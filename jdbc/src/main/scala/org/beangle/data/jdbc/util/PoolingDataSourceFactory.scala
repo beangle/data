@@ -47,7 +47,7 @@ class PoolingDataSourceFactory(url: String, username: String, password: String, 
         throw new IllegalStateException(
           "Could not load JDBC driver class [" + driverClassNameToUse + "]", ex)
     }
-    debug(s"Loaded JDBC driver: $driverClassNameToUse")
+    logger.debug(s"Loaded JDBC driver: $driverClassNameToUse")
   }
 
   def getObject: DataSource = {

@@ -54,7 +54,7 @@ class OracleTableSequenceDao extends TableSequenceDao with Logging {
           try {
             tableLMaxId = jdbcExecutor.queryForLong("select max(id) from  " + tableName)
           } catch {
-            case e: Exception => warn(s"cannot find table $tableName")
+            case e: Exception => logger.warn(s"cannot find table $tableName")
           }
           if (seqLast_number < tableLMaxId) {
             val seq = new TableSequence()
