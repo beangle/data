@@ -218,10 +218,10 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
             case BOOLEAN | BIT =>
               value match {
                 case b: Boolean => stmt.setBoolean(index, b)
-                case i: Number => stmt.setBoolean(index, i.intValue() > 0)
+                case i: Number => stmt.setBoolean(index, i.intValue > 0)
               }
             case TINYINT | SMALLINT | INTEGER =>
-              stmt.setInt(index, value.asInstanceOf[Int])
+              stmt.setInt(index, value.asInstanceOf[Number].intValue)
             case BIGINT =>
               stmt.setLong(index, value.asInstanceOf[Number].longValue)
 
