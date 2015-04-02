@@ -175,11 +175,10 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         if (null != ascOrDesc) idx.ascOrDesc = Some("A" == ascOrDesc)
         val columnName = rs.getString(ColumnName)
         //for oracle m_row$$ column
-        val column = table.getColumn(columnName) match {
-          case Some(column) => column
-          case None => new Column(columnName, 0)
+        table.getColumn(columnName) match {
+          case Some(column) => idx.addColumn(column.name)
+          case None => idx.addColumn(columnName)
         }
-        idx.addColumn(column.name)
       }
     }
     rs.close()

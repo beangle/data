@@ -37,8 +37,8 @@
 package org.beangle.data.jdbc.meta
 
 import scala.collection.mutable.ListBuffer
-
 import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.commons.collection.Collections
 /**
  * JDBC index metadata
  *
@@ -46,7 +46,7 @@ import org.beangle.data.jdbc.dialect.Dialect
  */
 class Index(var name: String, var table: Table) extends Cloneable {
 
-  val columns = new ListBuffer[String]
+  var columns = Collections.newBuffer[String]
 
   var unique: Boolean = false
 
@@ -69,8 +69,9 @@ class Index(var name: String, var table: Table) extends Cloneable {
 
   override def clone(): this.type = {
     val cloned = super.clone().asInstanceOf[this.type]
-    cloned.columns.clear()
-    cloned.columns ++= columns
+    val newColumns = Collections.newBuffer[String]
+    newColumns ++= columns
+    cloned.columns = newColumns
     cloned
   }
 

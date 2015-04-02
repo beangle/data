@@ -39,7 +39,8 @@ class TableTest extends FlatSpec with Matchers {
     column.comment = "login name"
     column.size = 30
     table.add(column)
-    val pkColumn = new Column("id", Types.BIGINT)
+    val pkColumn = new Column("id", Types.DECIMAL)
+    pkColumn.size = 19
     val pk = new PrimaryKey("pk", "id")
     table.add(pkColumn)
     table.primaryKey = pk
@@ -47,8 +48,13 @@ class TableTest extends FlatSpec with Matchers {
     boolCol.size = 1
     table.add(boolCol)
 
+    val ageCol = new Column("enabled", Types.DECIMAL)
+    ageCol.size = 10
+    table.add(ageCol)
+
     println(table.createSql(new H2Dialect()))
     println(table.createSql(dialect))
+    table.attach(dialect)
     println(table.createSql(new OracleDialect))
   }
 

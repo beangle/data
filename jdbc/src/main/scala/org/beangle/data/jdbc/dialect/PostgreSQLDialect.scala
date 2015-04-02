@@ -40,6 +40,8 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
 
     registerType(DECIMAL, "numeric($p, $s)")
     registerType(DECIMAL, 1, "boolean")
+    registerType(DECIMAL, 10, "integer")
+    registerType(DECIMAL, 19, "bigint")
     registerType(NUMERIC, 1000, "numeric($p, $s)")
     registerType(NUMERIC, Int.MaxValue, "numeric(1000, $s)")
     registerType(NUMERIC, "numeric($p, $s)")
@@ -76,7 +78,15 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
   override def defaultSchema = "public"
 
   override def translate(typeCode: Int, size: Int, scale: Int): Tuple2[Int, String] = {
-    if (typeCode == DECIMAL && size == 1) (BOOLEAN, "boolean")
-    else super.translate(typeCode, size, scale)
+    if (typeCode == DECIMAL) {
+      size match {
+        case 1 => (BOOLEAN, "boolean")
+        case 5 => (SMALLINT, "int2")
+        case 10 => (INTEGER, "int4")
+        case 19 => (BIGINT, "int8")
+        case _ => super.translate(typeCode, size, scale)
+      }
+
+    } else super.translate(typeCode, size, scale)
   }
 }
