@@ -57,12 +57,12 @@ class Column(var name: String, var typeCode: Int) extends Ordered[Column] with C
   var checkConstraint: String = null
   var position: Int = _
 
-  def clone(dialect: Dialect): Column = {
-    val col = super.clone().asInstanceOf[Column]
-    val tu = dialect.translate(typeCode, size, scale)
-    col.typeCode = tu._1
-    if (null != tu._2) col.typeName = tu._2
-    col
+  override def clone(): Column = {
+    super.clone().asInstanceOf[Column]
+//    val tu = dialect.translate(typeCode, size, scale)
+//    col.typeCode = tu._1
+//    if (null != tu._2) col.typeName = tu._2
+//    col
   }
 
   def lowerCase() {

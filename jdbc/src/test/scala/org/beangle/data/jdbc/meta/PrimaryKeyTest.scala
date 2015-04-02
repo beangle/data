@@ -18,10 +18,14 @@
  */
 package org.beangle.data.jdbc.meta
 
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
 class PrimaryKeyTest {
 
   def testSqlConstraintString = {
-    val pk = new PrimaryKey("pk_sometable", new Column("id", 4))
+    val pk = new PrimaryKey("pk_sometable", "id")
     assert(pk.sqlConstraintString == "primary key (id)")
   }
 }

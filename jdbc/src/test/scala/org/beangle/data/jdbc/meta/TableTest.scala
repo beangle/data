@@ -26,24 +26,30 @@ import org.scalatest.Finders
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
+import org.beangle.data.jdbc.dialect.OracleDialect
 
 @RunWith(classOf[JUnitRunner])
 class TableTest extends FlatSpec with Matchers {
 
-  val dialect= new PostgreSQLDialect()
-  
+  val dialect = new PostgreSQLDialect()
+
   "create sql" should "like this" in {
     val table = new Table("test", "user")
     val column = new Column("name", Types.VARCHAR)
     column.comment = "login name"
-    column.size=30
-    table.addColumn(column)
+    column.size = 30
+    table.add(column)
     val pkColumn = new Column("id", Types.BIGINT)
-    val pk = new PrimaryKey("pk", pkColumn)
-    table.addColumn(pkColumn)
+    val pk = new PrimaryKey("pk", "id")
+    table.add(pkColumn)
     table.primaryKey = pk
-    val createSql = table.clone(new H2Dialect).createSql(new H2Dialect())
-    println(createSql)
+    val boolCol = new Column("enabled", Types.DECIMAL)
+    boolCol.size = 1
+    table.add(boolCol)
+
+    println(table.createSql(new H2Dialect()))
+    println(table.createSql(dialect))
+    println(table.createSql(new OracleDialect))
   }
 
   "lowercase " should "corrent" in {

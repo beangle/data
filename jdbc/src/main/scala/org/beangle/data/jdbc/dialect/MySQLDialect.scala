@@ -66,8 +66,8 @@ class MySQLDialect extends AbstractDialect("[5.0,)") {
 
   override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ?, ?", false, false, false)
 
-  override def getAddForeignKeyConstraintString(constraintName: String, foreignKey: Array[String],
-    referencedTable: String, primaryKey: Array[String], referencesPrimaryKey: Boolean) = {
+  override def getAddForeignKeyConstraintString(constraintName: String, foreignKey: Iterable[String],
+    referencedTable: String, primaryKey: Iterable[String]) = {
     val cols = Strings.join(foreignKey, ", ")
     new StringBuffer(30).append(" add index ").append(constraintName).append(" (").append(cols)
       .append("), add constraInt ").append(constraintName).append(" foreign key (").append(cols)

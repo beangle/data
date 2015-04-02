@@ -36,7 +36,7 @@ class IndexConverter(val source: DatabaseWrapper, val target: DatabaseWrapper) e
     for (table <- tables) {
       for (index <- table.indexes) {
         try {
-          if (null == table.primaryKey || !(index.columns.map(_.name) == table.primaryKey.columns.map(_.name))) {
+          if (null == table.primaryKey || index.columns != table.primaryKey.columns) {
             indexCount += 1
             target.executor.update(index.createSql(target.dialect))
           }

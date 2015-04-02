@@ -26,70 +26,53 @@ import scala.collection.mutable.ListBuffer
  *
  * @author chaostone
  */
-class ForeignKey(name: String, column: Column) extends Constraint(name) {
+class ForeignKey(name: String, column: String) extends Constraint(name) {
 
-  var referencedTable: Table = null
   var cascadeDelete: Boolean = false
-  var referencedColumns = new ListBuffer[Column]
+  var referencedColumns = new ListBuffer[String]
+  var referencedTable: TableRef = _
 
   addColumn(column)
 
   def this(name: String) = this(name, null)
 
+  override def lowerCase(): Unit = {
+    super.lowerCase()
+    val lowers = referencedColumns.map { col => col.toLowerCase() }
+    columns.clear()
+    referencedColumns ++= lowers
+  }
+
   def getAlterSql(dialect: Dialect): String = {
     require(null != name && null != table && null != referencedTable)
-    require(!isReferenceToPrimaryKey || null != referencedTable.primaryKey,
-      " reference columns is empty  so the table must has a primary key.")
+    require(!referencedColumns.isEmpty, " reference columns is empty.")
     require(!columns.isEmpty, "column's size should greate than 0")
 
-    val cols: Array[String] = new Array[String](columns.size)
-    val refcols: Array[String] = new Array[String](columns.size)
-    var i: Int = 0
-    var refiter: Iterator[Column] = null
-    if (isReferenceToPrimaryKey) {
-      refiter = referencedTable.primaryKey.columns.iterator
-    } else {
-      refiter = referencedColumns.iterator
-    }
-
-    val iter: Iterator[Column] = columns.iterator
-    while (iter.hasNext) {
-      cols(i) = iter.next().name
-      refcols(i) = refiter.next().name
-      i += 1
-    }
-
-    val result = "alter table " + table.identifier + dialect.getAddForeignKeyConstraintString(name, cols,
-      referencedTable.identifier(table.schema), refcols, isReferenceToPrimaryKey)
+    val result = "alter table " + table.identifier + dialect.getAddForeignKeyConstraintString(name, columns,
+      referencedTable.identifier(table.schema), referencedColumns)
 
     if (cascadeDelete && dialect.supportsCascadeDelete) result + " on delete cascade" else result
   }
 
-  override def clone(dialect: Dialect): ForeignKey = {
-    val cloned = super.clone().asInstanceOf[ForeignKey]
+  override def clone(): this.type = {
+    val cloned = super.clone().asInstanceOf[this.type]
     cloned.cascadeDelete = this.cascadeDelete
     cloned.referencedTable = this.referencedTable
-    val newColumns = new ListBuffer[Column]
-    for (column <- referencedColumns)
-      newColumns += column.clone(dialect)
-
+    var newColumns = new ListBuffer[String]
+    newColumns ++= referencedColumns
     cloned.referencedColumns = newColumns
     cloned
   }
 
-  def addReferencedColumn(column: Column) = referencedColumns += column
+  def refer(table: Table, cols: String*): Unit = {
+    this.referencedTable = TableRef(table.name, table.schema)
+    if (!cols.isEmpty) referencedColumns ++= cols
+  }
 
-  def getReferencedColumns: List[Column] = referencedColumns.toList
-
-  def isReferenceToPrimaryKey: Boolean = referencedColumns.isEmpty
-
-  def getReferencedTable = referencedTable
-
-  def setReferencedTable(referencedTable: Table) = this.referencedTable = referencedTable
-
-  def isCascadeDelete = cascadeDelete
-
-  def setCascadeDelete(cascadeDelete: Boolean) = this.cascadeDelete = cascadeDelete
+  def refer(table: TableRef, cols: String*): Unit = {
+    this.referencedTable = table
+    if (!cols.isEmpty) referencedColumns ++= cols
+  }
 
   override def toString = "Foreign key(" + name + ')'
 }

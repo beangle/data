@@ -31,12 +31,12 @@ abstract class AbstractDialect(versions: String) extends Dialect {
 
   def keywords = _keywords.toSet
 
-  def getAddForeignKeyConstraintString(constraintName: String, foreignKey: Array[String],
-    referencedTable: String, primaryKey: Array[String], referencesPrimaryKey: Boolean) = {
+  def getAddForeignKeyConstraintString(constraintName: String, foreignKey: Iterable[String],
+    referencedTable: String, primaryKey: Iterable[String]) = {
     val res: StringBuffer = new StringBuffer(30)
     res.append(" add constraInt ").append(constraintName).append(" foreign key (")
       .append(Strings.join(foreignKey, ", ")).append(") references ").append(referencedTable)
-    if (!referencesPrimaryKey) {
+    if (!primaryKey.isEmpty) {
       res.append(" (").append(Strings.join(primaryKey, ", ")).append(')')
     }
     res.toString()

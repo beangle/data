@@ -20,14 +20,15 @@ package org.beangle.data.jdbc.meta
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
-
 import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.commons.lang.Strings
 /**
  * JDBC table metadata
  *
  * @author chaostone
  */
 class Table(var name: String) extends Comparable[Table] with Cloneable {
+  var dialect: Dialect = _
   var schema: String = null
   var primaryKey: PrimaryKey = null
   var comment: String = null
@@ -53,13 +54,14 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
   }
 
   def getOrCreateUniqueKey(keyName: String) = {
-    var uk: UniqueKey = uniqueKeys.find(f => f.name.equals(keyName)).orNull
-    if (uk == null) {
-      uk = new UniqueKey(keyName)
-      uk.table = this
-      uniqueKeys += uk
+    uniqueKeys.find(f => f.name == keyName) match {
+      case Some(uk) => uk
+      case None =>
+        val uk = new UniqueKey(keyName)
+        uk.table = this
+        uniqueKeys += uk
+        uk
     }
-    uk
   }
 
   def insertSql: String = {
@@ -85,7 +87,11 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
     while (iter.hasNext) {
       val col: Column = iter.next()
       buf.append(col.name).append(' ')
-      buf.append(col.typeName)
+      var typeName = col.typeName
+      if (Strings.isEmpty(typeName) || this.dialect != dialect) {
+        typeName = dialect.translate(col.typeCode, col.size, col.scale)._2
+      }
+      buf.append(typeName)
 
       val defaultValue: String = col.defaultValue
       if (defaultValue != null) buf.append(" default ").append(defaultValue)
@@ -100,8 +106,7 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
         if (grammar.supportsUnique) {
           buf.append(" unique")
         } else {
-          val uk: UniqueKey = getOrCreateUniqueKey(col.name + '_')
-          uk.addColumn(col)
+          getOrCreateUniqueKey(col.name + '_').addColumn(col.name)
         }
       }
 
@@ -134,44 +139,48 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
     sb.toString()
   }
 
+  def attach(dialect: Dialect): this.type = {
+    this.dialect = dialect
+    columns foreach { col =>
+      val rs = dialect.translate(col.typeCode, col.size, col.scale)
+      col.typeCode = rs._1
+      col.typeName = rs._2
+    }
+    this
+  }
+
   def clone(dialect: Dialect): Table = {
+    this.clone().attach(dialect)
+  }
+
+  override def clone(): Table = {
     val tb: Table = new Table(schema, name)
     tb.comment = comment
     for (col <- columns)
-      tb.addColumn(col.clone(dialect))
+      tb.add(col.clone())
     if (null != primaryKey) {
-      tb.primaryKey = primaryKey.clone(dialect)
+      tb.primaryKey = primaryKey.clone()
       tb.primaryKey.table = tb
     }
-
-    for (fk <- foreignKeys) tb.addForeignKey(fk.clone(dialect))
-
-    for (uk <- uniqueKeys) tb.addUniqueKey(uk.clone(dialect))
-
-    for (idx <- indexes) tb.addIndex(idx.clone(dialect))
-
+    for (fk <- foreignKeys) tb.add(fk.clone())
+    for (uk <- uniqueKeys) tb.add(uk.clone())
+    for (idx <- indexes) tb.add(idx.clone())
     tb
   }
 
-  def lowerCase() {
+  def lowerCase(): Unit = {
     this.schema = schema.toLowerCase()
     this.name = name.toLowerCase()
-    for (col <- columns)
-      col.lowerCase
-
+    for (col <- columns) col.lowerCase
     if (null != primaryKey) primaryKey.lowerCase
-
-    for (fk <- foreignKeys)
-      fk.lowerCase;
-
-    for (uk <- uniqueKeys)
-      uk.lowerCase;
-
-    for (idx <- indexes)
-      idx.lowerCase;
+    for (fk <- foreignKeys) fk.lowerCase;
+    for (uk <- uniqueKeys) uk.lowerCase;
+    for (idx <- indexes) idx.lowerCase;
   }
 
-  def compareTo(o: Table): Int = this.identifier.compareTo(o.identifier)
+  def compareTo(o: Table): Int = {
+    this.identifier.compareTo(o.identifier)
+  }
 
   private def hasPrimaryKey = null != primaryKey
 
@@ -188,29 +197,30 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
     foreignKeys.find(f => f.name.equals(keyName))
   }
 
-  def addForeignKey(key: ForeignKey) {
+  def add(key: ForeignKey): ForeignKey = {
     key.table = this
     foreignKeys += key
+    key
   }
 
-  def addUniqueKey(key: UniqueKey) {
+  def add(key: UniqueKey): UniqueKey = {
     key.table = this
     this.uniqueKeys += key
+    key
   }
 
-  def addColumn(column: Column): Boolean = {
+  def add(column: Column): Boolean = {
     if (!columns.exists(_.name == column.name)) {
       columns += column
       true
     } else false
   }
 
-  def addIndex(index: Index) {
+  def add(index: Index): Index = {
     index.table = this
     indexes += index
+    index
   }
-
-  def getIndexes = indexes
 
   def getIndex(indexName: String): Option[Index] = {
     indexes.find(f => f.name.equals(indexName))
@@ -225,4 +235,16 @@ object Table {
     qualifiedName.append(name).toString()
   }
   def apply(schema: String, name: String): String = qualify(schema, name)
+}
+object TableRef {
+  def apply(name: String, schema: String): TableRef = {
+    new TableRef(name, schema)
+  }
+}
+class TableRef(var name: String, var schema: String) extends Cloneable {
+  def identifier = Table.qualify(schema, name)
+  def identifier(givenSchema: String) = {
+    if (null == givenSchema || givenSchema.isEmpty()) name
+    else Table.qualify(givenSchema, name)
+  }
 }

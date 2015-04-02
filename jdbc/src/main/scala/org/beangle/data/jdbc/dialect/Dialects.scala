@@ -104,8 +104,8 @@ abstract class Dialect {
 
   def isCaseSensitive: Boolean
 
-  def getAddForeignKeyConstraintString(constraintName: String, foreignKey: Array[String],
-    referencedTable: String, primaryKey: Array[String], referencesPrimaryKey: Boolean): String
+  def getAddForeignKeyConstraintString(constraintName: String, foreignKey: Iterable[String],
+    referencedTable: String, primaryKey: Iterable[String]): String
 
   def metadataGrammar: MetadataGrammar
 

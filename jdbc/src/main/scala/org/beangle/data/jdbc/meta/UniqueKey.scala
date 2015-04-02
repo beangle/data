@@ -27,7 +27,7 @@ import org.beangle.data.jdbc.dialect.Dialect
  */
 class UniqueKey(name: String) extends Constraint(name) {
 
-  override def clone(dialect: Dialect): UniqueKey = {
-    super.clone(dialect).asInstanceOf[UniqueKey]
+  override def clone(): this.type = {
+    super.clone()
   }
 }

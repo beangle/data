@@ -100,7 +100,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
 
     if (null != table.primaryKey && table.primaryKey.columns.length > 0) {
       orderBy.append(" order by ")
-      orderBy.append(table.primaryKey.columns.foldLeft("")(_ + "," + _.name).substring(1))
+      orderBy.append(table.primaryKey.columns.foldLeft("")(_ + "," + _).substring(1))
     }
 
     val sql = table.querySql + orderBy.toString

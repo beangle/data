@@ -20,22 +20,24 @@ package org.beangle.data.jdbc.meta
 
 import org.beangle.data.jdbc.dialect.Dialect
 
-class PrimaryKey(name: String, column: Column) extends Constraint(name) {
+class PrimaryKey(name: String, column: String) extends Constraint(name) {
 
-  override def clone(dialect: Dialect): PrimaryKey = {
-    super.clone(dialect).asInstanceOf[PrimaryKey]
+  override def clone(): this.type = {
+    super.clone()
   }
 
   addColumn(column)
 
-  override def addColumn(column: Column) {
-    if (column != null) columns += column
-    if (column.nullable) enabled = false;
+  def addColumn(column: Column) {
+    if (column != null) {
+      addColumn(column.name)
+      if (column.nullable) enabled = false
+    }
   }
 
   def sqlConstraintString = {
     val buf = new StringBuilder("primary key (")
-    columns.foreach(col => (buf.append(col.name).append(", ")))
+    columns.foreach(col => (buf.append(col).append(", ")))
     if (!columns.isEmpty) buf.delete(buf.size - 2, buf.size);
     buf.append(')').result
   }

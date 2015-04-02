@@ -19,23 +19,24 @@
 package org.beangle.data.jdbc.meta
 
 import java.sql.Types
-
 import org.beangle.data.jdbc.dialect.OracleDialect
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
+import org.junit.runner.RunWith
 
+@RunWith(classOf[JUnitRunner])
 class ForeignKeyTest extends FlatSpec with Matchers {
 
   "alter closuse " should "corret" in {
     val table = new Table("sys_table")
-    val pk = new PrimaryKey("pk", new Column("id", Types.BIGINT))
+    val pk = new PrimaryKey("pk", "id")
     table.primaryKey = pk
 
     val tableA = new Table("sys_tableA")
-    val fk = new ForeignKey("fkxyz", new Column("fkid", Types.BIGINT))
-    tableA.addForeignKey(fk)
-    fk.setReferencedTable(table)
+    val fk = new ForeignKey("fkxyz", "fkid")
+    tableA.add(fk)
+    fk.refer(table, "id")
     println(fk.getAlterSql(new OracleDialect()))
   }
 

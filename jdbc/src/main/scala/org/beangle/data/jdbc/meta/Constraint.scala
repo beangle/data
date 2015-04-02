@@ -29,7 +29,7 @@ import org.beangle.data.jdbc.dialect.Dialect
  */
 class Constraint(var name: String) extends Ordered[Constraint] with Cloneable {
 
-  val columns = new ListBuffer[Column]
+  var columns = new ListBuffer[String]
 
   var enabled: Boolean = true
 
@@ -37,9 +37,12 @@ class Constraint(var name: String) extends Ordered[Constraint] with Cloneable {
 
   def lowerCase(): Unit = {
     if (null != name) this.name = name.toLowerCase
+    val lowers = columns.map { col => col.toLowerCase() }
+    columns.clear()
+    columns ++= lowers
   }
 
-  def addColumn(column: Column): Unit = {
+  def addColumn(column: String): Unit = {
     if (column != null) columns += column
   }
 
@@ -47,16 +50,12 @@ class Constraint(var name: String) extends Ordered[Constraint] with Cloneable {
     if (null == name) 0 else name.compareTo(o.name)
   }
 
-  def clone(dialect: Dialect): Constraint = {
-    var cloned: this.type = null
-    cloned = super.clone().asInstanceOf[this.type]
-    var newColumns = new ListBuffer[Column]
-    for (column <- columns) {
-      newColumns += column.clone(dialect)
-    }
-    cloned.columns.clear()
-    cloned.columns ++= newColumns
-    return cloned;
+  override def clone(): this.type = {
+    val cloned = super.clone().asInstanceOf[this.type]
+    var newColumns = new ListBuffer[String]
+    newColumns ++= columns
+    cloned.columns = newColumns
+    cloned
   }
 
 }

@@ -46,7 +46,7 @@ import org.beangle.data.jdbc.dialect.Dialect
  */
 class Index(var name: String, var table: Table) extends Cloneable {
 
-  val columns = new ListBuffer[Column]
+  val columns = new ListBuffer[String]
 
   var unique: Boolean = false
 
@@ -54,9 +54,12 @@ class Index(var name: String, var table: Table) extends Cloneable {
 
   def lowerCase(): Unit = {
     this.name = name.toLowerCase()
+    val lowers = columns.map { col => col.toLowerCase() }
+    columns.clear()
+    columns ++= lowers
   }
 
-  def addColumn(column: Column): Unit = {
+  def addColumn(column: String): Unit = {
     if (column != null) columns += column
   }
 
@@ -64,14 +67,10 @@ class Index(var name: String, var table: Table) extends Cloneable {
     "IndexMatadata(" + name + ')'
   }
 
-  def clone(dialect: Dialect): Index = {
-    val cloned: Index = super.clone().asInstanceOf[Index]
-    val newColumns = new ListBuffer[Column]
-    for (column <- columns) {
-      newColumns += column.clone(dialect)
-    }
+  override def clone(): this.type = {
+    val cloned = super.clone().asInstanceOf[this.type]
     cloned.columns.clear()
-    cloned.columns ++= newColumns
+    cloned.columns ++= columns
     cloned
   }
 
@@ -85,7 +84,7 @@ class Index(var name: String, var table: Table) extends Cloneable {
       .append(" (");
     val iter = columns.iterator
     while (iter.hasNext) {
-      buf.append(iter.next.name);
+      buf.append(iter.next)
       if (iter.hasNext) buf.append(", ")
     }
     buf.append(")")
