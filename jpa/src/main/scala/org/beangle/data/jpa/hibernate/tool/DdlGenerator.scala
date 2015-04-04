@@ -164,16 +164,21 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     comments ++= newcomments
 
     // 3. export to files
+    var total = 0
     files foreach {
       case (key, sqls) =>
-        if (!sqls.isEmpty) {
-          println("writing " + dirName + "/" + key)
+        val sqlCount = sqls.foldLeft(0)((sum, l) => sum + l.size)
+        total += sqlCount
+        if (sqlCount > 0) {
+          println(s"writing $sqlCount sqls to " + dirName + "/" + key)
           val writer = new FileWriter(dirName + "/" + key, false)
           writes(writer, sqls)
           writer.flush
           writer.close
         }
     }
+    if (total == 0)
+      println("Cannot find hibernate mapping files or classes,DDL generation aborted.")
   }
 
   /**
