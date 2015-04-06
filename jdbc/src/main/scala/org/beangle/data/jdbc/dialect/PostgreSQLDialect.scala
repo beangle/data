@@ -89,4 +89,8 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
 
     } else super.translate(typeCode, size, scale)
   }
+
+  override def storeCase: StoreCase.Value = {
+    StoreCase.Lower
+  }
 }

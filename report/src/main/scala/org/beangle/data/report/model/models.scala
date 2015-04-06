@@ -45,7 +45,7 @@ class Image(val name: String, val title: String, tableseq: String, val descripti
 
   def select(alltables: collection.Iterable[Table]) {
     for (table <- alltables) {
-      if (matches(table.name)) addTable(table)
+      if (matches(table.name.name)) addTable(table)
     }
   }
 }
@@ -90,7 +90,7 @@ class Module(val name: String, val title: String, tableseq: String) extends Tabl
 
   def filter(alltables: collection.mutable.Set[Table]) {
     for (module <- children) module.filter(alltables)
-    for (table <- alltables) if (matches(table.name)) addTable(table)
+    for (table <- alltables) if (matches(table.name.name)) addTable(table)
     alltables --= tables
   }
 }

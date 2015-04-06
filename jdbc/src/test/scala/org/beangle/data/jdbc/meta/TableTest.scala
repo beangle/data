@@ -41,7 +41,7 @@ class TableTest extends FlatSpec with Matchers {
     table.add(column)
     val pkColumn = new Column("id", Types.DECIMAL)
     pkColumn.size = 19
-    val pk = new PrimaryKey("pk", "id")
+    val pk = new PrimaryKey(table, "pk", "id")
     table.add(pkColumn)
     table.primaryKey = pk
     val boolCol = new Column("enabled", Types.DECIMAL)
@@ -52,18 +52,20 @@ class TableTest extends FlatSpec with Matchers {
     ageCol.size = 10
     table.add(ageCol)
 
-    println(table.createSql(new H2Dialect()))
-    println(table.createSql(dialect))
-    table.attach(dialect)
-    println(table.createSql(new OracleDialect))
+    table.dialect = new H2Dialect()
+    println(table.createSql)
+    table.dialect = dialect
+    println(table.createSql)
+    table.dialect = new OracleDialect
+    println(table.createSql)
   }
 
   "lowercase " should "corrent" in {
     val table = new Table("PUBLIC", "USER")
     val cloned = table.clone(dialect)
     (cloned == table) should be(false)
-    cloned.lowerCase
-    "USER".equals(table.name) should be(true)
-    "user".equals(cloned.name) should be(true)
+    cloned.toLowerCase()
+    table.name.value should equal("USER")
+    cloned.name.value should equal("user")
   }
 }

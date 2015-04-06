@@ -18,23 +18,22 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.dialect.Dialect
 import scala.collection.mutable.ListBuffer
+import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.data.jdbc.dialect.Name
 
 /**
  * JDBC foreign key metadata
  *
  * @author chaostone
  */
-class ForeignKey(name: String, column: String) extends Constraint(name) {
+class ForeignKey(table: Table, name: Name, column: Name = null) extends Constraint(table, name) {
 
   var cascadeDelete: Boolean = false
-  var referencedColumns = new ListBuffer[String]
+  var referencedColumns = new ListBuffer[Name]
   var referencedTable: TableRef = _
 
   addColumn(column)
-
-  def this(name: String) = this(name, null)
 
   override def lowerCase(): Unit = {
     super.lowerCase()
@@ -43,13 +42,22 @@ class ForeignKey(name: String, column: String) extends Constraint(name) {
     referencedColumns ++= lowers
   }
 
-  def getAlterSql(dialect: Dialect): String = {
+  override def attach(dialect: Dialect): Unit = {
+    super.attach(dialect)
+    val changed = referencedColumns.map { col => col.attach(dialect) }
+    referencedColumns.clear()
+    referencedColumns ++= changed
+  }
+
+  def alterSql: String = {
     require(null != name && null != table && null != referencedTable)
     require(!referencedColumns.isEmpty, " reference columns is empty.")
     require(!columns.isEmpty, "column's size should greate than 0")
 
-    val result = "alter table " + table.identifier + dialect.getAddForeignKeyConstraintString(name, columns,
-      referencedTable.identifier(table.schema), referencedColumns)
+    val dialect = table.dialect
+    val referencedColumnNames = referencedColumns.map(x => x.qualified(table.dialect)).toList
+    val result = "alter table " + table.qualifiedName + dialect.foreignKeySql(qualifiedName, columnNames,
+      referencedTable.qualifiedName, referencedColumnNames)
 
     if (cascadeDelete && dialect.supportsCascadeDelete) result + " on delete cascade" else result
   }
@@ -58,18 +66,18 @@ class ForeignKey(name: String, column: String) extends Constraint(name) {
     val cloned = super.clone().asInstanceOf[this.type]
     cloned.cascadeDelete = this.cascadeDelete
     cloned.referencedTable = this.referencedTable
-    var newColumns = new ListBuffer[String]
+    var newColumns = new ListBuffer[Name]
     newColumns ++= referencedColumns
     cloned.referencedColumns = newColumns
     cloned
   }
 
-  def refer(table: Table, cols: String*): Unit = {
-    this.referencedTable = TableRef(table.name, table.schema)
+  def refer(table: Table, cols: Name*): Unit = {
+    this.referencedTable = TableRef(table.dialect, table.name, table.schema)
     if (!cols.isEmpty) referencedColumns ++= cols
   }
 
-  def refer(table: TableRef, cols: String*): Unit = {
+  def refer(table: TableRef, cols: Name*): Unit = {
     this.referencedTable = table
     if (!cols.isEmpty) referencedColumns ++= cols
   }

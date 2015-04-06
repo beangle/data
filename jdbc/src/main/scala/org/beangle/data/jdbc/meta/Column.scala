@@ -37,12 +37,14 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.data.jdbc.dialect.Name
 /**
  * DBC column metadata
  *
  * @author chaostone
  */
-class Column(var name: String, var typeCode: Int) extends Ordered[Column] with Cloneable {
+class Column(var name: Name, var typeCode: Int) extends Ordered[Column] with Cloneable {
+
   var typeName: String = null
   /**
    *  Charactor length or numeric precision
@@ -57,16 +59,23 @@ class Column(var name: String, var typeCode: Int) extends Ordered[Column] with C
   var checkConstraint: String = null
   var position: Int = _
 
+  def this(name: String, typeCode: Int) {
+    this(Name(name), typeCode)
+  }
   override def clone(): Column = {
     super.clone().asInstanceOf[Column]
-//    val tu = dialect.translate(typeCode, size, scale)
-//    col.typeCode = tu._1
-//    if (null != tu._2) col.typeName = tu._2
-//    col
+    //    val tu = dialect.translate(typeCode, size, scale)
+    //    col.typeCode = tu._1
+    //    if (null != tu._2) col.typeName = tu._2
+    //    col
   }
 
   def lowerCase() {
     this.name = name.toLowerCase
+  }
+
+  def qualifiedName(dialect: Dialect): String = {
+    name.qualified(dialect)
   }
 
   def hasCheckConstraint = checkConstraint != null

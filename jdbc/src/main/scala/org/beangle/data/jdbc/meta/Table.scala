@@ -22,14 +22,14 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.dialect.Name
 /**
  * JDBC table metadata
  *
  * @author chaostone
  */
-class Table(var name: String) extends Comparable[Table] with Cloneable {
+class Table(var schema: Name, var name: Name) extends Ordered[Table] with Cloneable {
   var dialect: Dialect = _
-  var schema: String = null
   var primaryKey: PrimaryKey = null
   var comment: String = null
   val columns = new ListBuffer[Column]
@@ -38,26 +38,28 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
   val indexes = new ListBuffer[Index]
 
   def this(schema: String, name: String) {
-    this(name)
-    this.schema = schema
+    this(Name(schema), Name(name))
   }
 
   def columnNames: List[String] = {
-    columns.result.map(_.name)
+    columns.result.map(_.name.qualified(dialect))
   }
 
-  def identifier = Table.qualify(schema, name)
-
-  def identifier(givenSchema: String) = {
-    if (null == givenSchema || givenSchema.isEmpty()) name
-    else Table.qualify(givenSchema, name)
+  def id: String = {
+    val qualifiedName: StringBuilder = new StringBuilder()
+    if (null != schema) qualifiedName.append(schema).append('.')
+    qualifiedName.append(name).toString()
   }
 
-  def getOrCreateUniqueKey(keyName: String) = {
-    uniqueKeys.find(f => f.name == keyName) match {
+  def qualifiedName: String = {
+    Table.qualify(dialect, schema, name)
+  }
+
+  def getOrCreateUniqueKey(keyName: String): UniqueKey = {
+    uniqueKeys.find(f => f.name.value == keyName) match {
       case Some(uk) => uk
       case None =>
-        val uk = new UniqueKey(keyName)
+        val uk = new UniqueKey(this, Name(keyName))
         uk.table = this
         uniqueKeys += uk
         uk
@@ -66,7 +68,7 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
 
   def insertSql: String = {
     val sb = new StringBuilder("insert into ")
-    sb ++= identifier(schema)
+    sb ++= qualifiedName
     sb += '('
     sb ++= columnNames.mkString(",")
     sb ++= ") values("
@@ -76,12 +78,11 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
   }
 
   /**
-   * @param dialect
-   * @return
+   * Table creation sql
    */
-  def createSql(dialect: Dialect): String = {
+  def createSql: String = {
     val grammar = dialect.tableGrammar
-    val buf = new StringBuilder(grammar.createString).append(' ').append(identifier(schema)).append(" (")
+    val buf = new StringBuilder(grammar.createString).append(' ').append(qualifiedName).append(" (")
     val iter: Iterator[Column] = columns.iterator
     val l = columns.toList
     while (iter.hasNext) {
@@ -106,7 +107,7 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
         if (grammar.supportsUnique) {
           buf.append(" unique")
         } else {
-          getOrCreateUniqueKey(col.name + '_').addColumn(col.name)
+          getOrCreateUniqueKey(col.qualifiedName(dialect) + '_').addColumn(col.name)
         }
       }
 
@@ -120,7 +121,7 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
 
     }
     if (hasPrimaryKey && primaryKey.enabled) {
-      buf.append(", ").append(primaryKey.sqlConstraintString)
+      buf.append(", ").append(primaryKey.constraintSql)
     }
     buf.append(')')
     if (null != comment && !comment.isEmpty()) buf.append(grammar.getComment(comment))
@@ -135,7 +136,7 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
       sb.append(columnName).append(',')
     }
     sb.deleteCharAt(sb.length() - 1)
-    sb.append(" from ").append(identifier(schema))
+    sb.append(" from ").append(qualifiedName)
     sb.toString()
   }
 
@@ -145,7 +146,13 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
       val rs = dialect.translate(col.typeCode, col.size, col.scale)
       col.typeCode = rs._1
       col.typeName = rs._2
+      col.name = col.name.attach(dialect)
     }
+    this.name = this.name.attach(dialect)
+    this.schema = this.schema.attach(dialect)
+    for (fk <- foreignKeys) fk.attach(dialect)
+    for (uk <- uniqueKeys) uk.attach(dialect)
+    for (idx <- indexes) idx.attach(dialect)
     this
   }
 
@@ -168,7 +175,7 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
     tb
   }
 
-  def lowerCase(): Unit = {
+  def toLowerCase(): Unit = {
     this.schema = schema.toLowerCase()
     this.name = name.toLowerCase()
     for (col <- columns) col.lowerCase
@@ -178,13 +185,17 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
     for (idx <- indexes) idx.lowerCase;
   }
 
-  def compareTo(o: Table): Int = {
-    this.identifier.compareTo(o.identifier)
+  override def compare(o: Table): Int = {
+    this.qualifiedName.compareTo(o.qualifiedName)
   }
 
-  private def hasPrimaryKey = null != primaryKey
+  private def hasPrimaryKey: Boolean = {
+    null != primaryKey
+  }
 
-  override def toString = Table.qualify(schema, name)
+  override def toString = {
+    Table.qualify(dialect, schema, name)
+  }
 
   def column(columnName: String): Column = {
     columns.find(f => f.name.equals(columnName)).get
@@ -228,23 +239,26 @@ class Table(var name: String) extends Comparable[Table] with Cloneable {
 }
 
 object Table {
+  def qualify(dialect: Dialect, schema: Name, name: Name): String = {
+    val qualifiedName: StringBuilder = new StringBuilder()
+    if (null != schema) qualifiedName.append(schema.qualified(dialect)).append('.')
+    qualifiedName.append(name.qualified(dialect)).toString()
+  }
+
   def qualify(schema: String, name: String): String = {
     val qualifiedName: StringBuilder = new StringBuilder()
-    if (null != schema)
-      qualifiedName.append(schema).append('.')
-    qualifiedName.append(name).toString()
+    if (null != schema) qualifiedName.append(schema).append('.')
+    qualifiedName.append(name).toString
   }
-  def apply(schema: String, name: String): String = qualify(schema, name)
-}
-object TableRef {
-  def apply(name: String, schema: String): TableRef = {
-    new TableRef(name, schema)
+
+  def apply(dialect: Dialect, schema: Name, name: Name): String = {
+    qualify(dialect, schema, name)
   }
 }
-class TableRef(var name: String, var schema: String) extends Cloneable {
-  def identifier = Table.qualify(schema, name)
-  def identifier(givenSchema: String) = {
-    if (null == givenSchema || givenSchema.isEmpty()) name
-    else Table.qualify(givenSchema, name)
+
+case class TableRef(var dialect: Dialect, var name: Name, var schema: Name) extends Cloneable {
+
+  def qualifiedName: String = {
+    Table.qualify(dialect, schema, name)
   }
 }

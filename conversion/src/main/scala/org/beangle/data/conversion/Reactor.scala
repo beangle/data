@@ -19,7 +19,6 @@
 package org.beangle.data.conversion
 
 import java.io.FileInputStream
-
 import org.beangle.commons.logging.Logging
 import org.beangle.data.conversion.db.ConstraintConverter
 import org.beangle.data.conversion.db.DatabaseWrapper
@@ -28,7 +27,6 @@ import org.beangle.data.conversion.db.SequenceConverter
 import org.beangle.data.conversion.impl.DataConverter
 import org.beangle.data.jdbc.meta.Constraint
 import org.beangle.data.jdbc.meta.Table
-
 import Config.Source
 
 object ConvertReactor extends Logging {
@@ -74,11 +72,15 @@ class ConvertReactor(val config: Config) {
     }
 
     val sequenceConverter = new SequenceConverter(sourceWrapper, targetWrapper)
-    val sequences = sourceWrapper.database.sequences
-    val finalSequenceNames = config.source.sequence.filter(sequences.map(s => s.name)).toSet
-    val finalSequences = sequences.filter(s => finalSequenceNames.contains(s.name))
-    finalSequences foreach { n => n.schema = config.target.schema }
-    sequenceConverter.addAll(finalSequences)
+    val sequences = sourceWrapper.database.filterSequences(config.source.sequence.includes, config.source.sequence.excludes)
+    //    val finalSequenceNames = config.source.sequence.filter(sequences.map(s => s.name)).toSet
+    //    val finalSequences = sequences.filter(s => finalSequenceNames.contains(s.name))
+    sequences foreach { n =>
+      n.schema = config.target.schema
+      if (config.source.sequence.lowercase) n.toLowerCase()
+      n.attach(config.target.dialect)
+    }
+    sequenceConverter.addAll(sequences)
     converters += sequenceConverter
 
     for (converter <- converters)
@@ -86,16 +88,16 @@ class ConvertReactor(val config: Config) {
   }
 
   private def filterTables(source: Source, srcWrapper: DatabaseWrapper, targetWrapper: DatabaseWrapper): List[Tuple2[Table, Table]] = {
-    val tablenames = source.table.filter(srcWrapper.database.tables.keySet)
-    val tables = new collection.mutable.ListBuffer[Tuple2[Table, Table]]
-    for (name <- tablenames) {
-      var srcTable = srcWrapper.database.getTable(name).get
-      var targetTable = srcTable.clone(targetWrapper.dialect)
+    val tables = sourceWrapper.database.filterTables(config.source.table.includes, config.source.table.excludes)
+    val tablePairs = new collection.mutable.ListBuffer[Tuple2[Table, Table]]
+    for (srcTable <- tables) {
+      var targetTable = srcTable.clone()
       targetTable.schema = targetWrapper.database.schema
-      if (source.table.lowercase) targetTable.lowerCase()
-      tables += (srcTable -> targetTable)
+      if (source.table.lowercase) targetTable.toLowerCase()
+      targetTable.attach(targetWrapper.dialect)
+      tablePairs += (srcTable -> targetTable)
     }
-    tables.toList
+    tablePairs.toList
   }
 
   private def filterConstraints(tables: List[Tuple2[Table, Table]]): List[Constraint] = {

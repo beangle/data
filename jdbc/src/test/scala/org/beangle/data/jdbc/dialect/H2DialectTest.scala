@@ -31,10 +31,11 @@ class H2DialectTest extends DialectTestCase {
 
   val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties"))
 
+  println(ClassLoaders.getResource("db.properties"))
   "h2 " should "load tables and sequences" in {
     val ds: DataSource = new PoolingDataSourceFactory(properties("h2.driverClassName"),
       properties("h2.url"), properties("h2.username"), properties("h2.password"), new java.util.Properties()).getObject
-    database = new Database(ds.getConnection().getMetaData(), new H2Dialect(), null, "PUBLIC")
+    database = new Database(ds.getConnection().getMetaData(), new H2Dialect(), null, Name("PUBLIC"))
     database.loadTables(false)
     database.loadSequences()
     listTableAndSequences

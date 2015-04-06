@@ -130,4 +130,7 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
         " order by idx.table_name,col.column_position")
   }
 
+  override def storeCase: StoreCase.Value = {
+    StoreCase.Upper
+  }
 }

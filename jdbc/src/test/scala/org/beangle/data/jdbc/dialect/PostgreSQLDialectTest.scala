@@ -28,7 +28,7 @@ import org.scalatest.junit.JUnitRunner
 class PostgreSQLDialectTest extends FlatSpec with Matchers {
 
   "big number (size >=65535) in postgresql " should " trip to less 1000 size" in {
-    val dialect = new PostgreSQLDialect();
+    val dialect = new PostgreSQLDialect()
     val scale = 0;
     val precision = 65535;
     val size = 65535;

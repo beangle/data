@@ -22,4 +22,3 @@ trait Filter {
 
   def filter(tables: Iterable[String]): List[String]
 }
-

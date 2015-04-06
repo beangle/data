@@ -39,14 +39,15 @@ package org.beangle.data.jdbc.meta
 import scala.collection.mutable.ListBuffer
 import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.commons.collection.Collections
+import org.beangle.data.jdbc.dialect.Name
 /**
  * JDBC index metadata
  *
  * @author chaostone
  */
-class Index(var name: String, var table: Table) extends Cloneable {
+class Index(var name: Name, var table: Table) extends Cloneable {
 
-  var columns = Collections.newBuffer[String]
+  var columns = Collections.newBuffer[Name]
 
   var unique: Boolean = false
 
@@ -59,29 +60,36 @@ class Index(var name: String, var table: Table) extends Cloneable {
     columns ++= lowers
   }
 
-  def addColumn(column: String): Unit = {
+  def attach(dialect: Dialect): Unit = {
+    name = name.attach(dialect)
+    val changed = columns.map { col => col.attach(dialect) }
+    columns.clear()
+    columns ++= changed
+  }
+
+  def addColumn(column: Name): Unit = {
     if (column != null) columns += column
   }
 
   override def toString: String = {
-    "IndexMatadata(" + name + ')'
+    "IndexMatadata(" + qualifiedName + ')'
   }
 
   override def clone(): this.type = {
     val cloned = super.clone().asInstanceOf[this.type]
-    val newColumns = Collections.newBuffer[String]
+    val newColumns = Collections.newBuffer[Name]
     newColumns ++= columns
     cloned.columns = newColumns
     cloned
   }
 
-  def createSql(dialect: Dialect): String = {
+  def createSql: String = {
     val buf = new StringBuilder("create")
       .append(if (unique) " unique" else "")
       .append(" index ")
-      .append(name)
+      .append(qualifiedName)
       .append(" on ")
-      .append(table.identifier)
+      .append(table.qualifiedName)
       .append(" (");
     val iter = columns.iterator
     while (iter.hasNext) {
@@ -92,8 +100,11 @@ class Index(var name: String, var table: Table) extends Cloneable {
     buf.toString()
   }
 
-  def dropSql(dialect: Dialect): String = {
-    "drop index " + table.identifier + "." + name
+  def qualifiedName: String = {
+    name.qualified(table.dialect)
+  }
+  def dropSql: String = {
+    "drop index " + table.qualifiedName + "." + qualifiedName
   }
 
 }

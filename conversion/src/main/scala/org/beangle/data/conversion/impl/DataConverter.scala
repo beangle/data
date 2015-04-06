@@ -115,7 +115,7 @@ class DataConverter(val source: DataWrapper, val target: DataWrapper, val thread
           }
         }
       } catch {
-        case e: Exception => logger.error(s"Insert error ${srcTable.identifier}", e)
+        case e: Exception => logger.error(s"Insert error ${srcTable.qualifiedName}", e)
       }
     }
   }

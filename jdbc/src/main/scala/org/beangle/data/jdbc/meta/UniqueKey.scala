@@ -18,14 +18,14 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.data.jdbc.dialect.Name
 
 /**
  * Unique Key
  *
  * @author chaostone
  */
-class UniqueKey(name: String) extends Constraint(name) {
+class UniqueKey(table: Table, name: Name) extends Constraint(table, name) {
 
   override def clone(): this.type = {
     super.clone()

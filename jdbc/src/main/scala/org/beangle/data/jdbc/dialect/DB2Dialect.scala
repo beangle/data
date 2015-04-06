@@ -113,4 +113,9 @@ class DB2Dialect extends AbstractDialect("[8.0]") {
   }
 
   override def defaultSchema: String = null
+
+  override def storeCase: StoreCase.Value = {
+    StoreCase.Mixed
+  }
+
 }

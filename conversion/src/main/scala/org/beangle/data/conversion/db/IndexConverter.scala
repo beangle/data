@@ -38,7 +38,7 @@ class IndexConverter(val source: DatabaseWrapper, val target: DatabaseWrapper) e
         try {
           if (null == table.primaryKey || index.columns != table.primaryKey.columns) {
             indexCount += 1
-            target.executor.update(index.createSql(target.dialect))
+            target.executor.update(index.createSql)
           }
         } catch {
           case e: Exception =>

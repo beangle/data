@@ -24,7 +24,6 @@ import org.beangle.commons.lang.Strings
 class MySQLDialect extends AbstractDialect("[5.0,)") {
 
   registerKeywords(List("index", "explain"))
-  caseSensitive = true;
 
   protected override def registerType() = {
     registerType(CHAR, "char($l)")
@@ -66,7 +65,7 @@ class MySQLDialect extends AbstractDialect("[5.0,)") {
 
   override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ?, ?", false, false, false)
 
-  override def getAddForeignKeyConstraintString(constraintName: String, foreignKey: Iterable[String],
+  override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
     referencedTable: String, primaryKey: Iterable[String]) = {
     val cols = Strings.join(foreignKey, ", ")
     new StringBuffer(30).append(" add index ").append(constraintName).append(" (").append(cols)
@@ -83,4 +82,15 @@ class MySQLDialect extends AbstractDialect("[5.0,)") {
   }
 
   override def sequenceGrammar = null
+
+  override def openQuote: Char = {
+    '`'
+  }
+
+  override def closeQuote: Char = {
+    '`'
+  }
+  override def storeCase: StoreCase.Value = {
+    StoreCase.Mixed
+  }
 }

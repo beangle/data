@@ -23,42 +23,43 @@ import org.beangle.commons.bean.Initializing
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.ClassLoaders
 import java.util.Properties
+import org.beangle.data.jdbc.dialect.Name
 
 object DatasourceConfig {
 
   def build(xml: scala.xml.Node): DatasourceConfig = {
-    val dbconf = new DatasourceConfig(ClassLoaders.loadClass((xml \\ "dialect").text.trim).newInstance().asInstanceOf[Dialect])
+    val dialect = ClassLoaders.loadClass((xml \\ "dialect").text.trim).newInstance().asInstanceOf[Dialect]
+    val dbconf = new DatasourceConfig(dialect)
     dbconf.url = (xml \\ "url").text.trim
     if (!(xml \ "@name").isEmpty) dbconf.name = (xml \ "@name").text.trim
     dbconf.user = (xml \\ "user").text.trim
     dbconf.driver = (xml \\ "driver").text.trim
     dbconf.password = (xml \\ "password").text.trim
-    dbconf.schema = (xml \\ "schema").text.trim
-    dbconf.catalog = (xml \\ "catalog").text.trim
-    if (Strings.isEmpty(dbconf.catalog)) dbconf.catalog = null
+    var schemaName = (xml \\ "schema").text.trim
+
+    dbconf.catalog = dialect.parse((xml \\ "catalog").text.trim)
+
     (xml \\ "db" \\ "props" \\ "prop").foreach { ele =>
       dbconf.props.put((ele \ "@name").text, (ele \ "@value").text);
     }
-    dbconf.init()
+
+    if (Strings.isEmpty(schemaName)) {
+      schemaName = dialect.defaultSchema
+      if (schemaName == "$user") schemaName = dbconf.user
+    }
+    dbconf.schema = dialect.parse(schemaName)
     dbconf
   }
+
 }
 
-class DatasourceConfig(val dialect: Dialect) extends Initializing {
+class DatasourceConfig(val dialect: Dialect) {
   var name: String = _
   var url: String = _
   var user: String = _
   var password: String = _
   var driver: String = _
   var props: Properties = new Properties
-  var schema: String = _
-  var catalog: String = _
-
-  def init() {
-    if (Strings.isEmpty(schema)) {
-      schema = dialect.defaultSchema
-      if (schema == "$user") schema = user
-    }
-    if (driver.endsWith("OracleDriver")) schema = schema.toUpperCase()
-  }
+  var schema: Name = _
+  var catalog: Name = _
 }

@@ -21,15 +21,17 @@ package org.beangle.data.jdbc.meta
 import scala.collection.mutable
 import java.sql.{ SQLException, DatabaseMetaData }
 import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.dialect.Name
 
 /**
  * JDBC database metadata
  *
  * @author chaostone
  */
-class Database(val meta: DatabaseMetaData, val dialect: Dialect, val catalog: String, val schema: String) {
+class Database(val meta: DatabaseMetaData, val dialect: Dialect, val catalog: Name, val schema: Name) {
 
-  val tables = if (meta.storesMixedCaseIdentifiers) new mutable.HashMap[String, Table] else new CaseInsensitiveMap[Table]
+  val tables = new mutable.HashMap[String, Table]
 
   val sequences = new mutable.HashSet[Sequence]
 
@@ -37,7 +39,8 @@ class Database(val meta: DatabaseMetaData, val dialect: Dialect, val catalog: St
     val loader = new MetadataLoader(dialect, meta)
     val loadTables: Set[Table] = loader.loadTables(catalog, schema, extras)
     for (table <- loadTables) {
-      tables.put(table.identifier, table)
+      table.dialect = dialect
+      tables.put(table.id, table)
     }
     tables
   }
@@ -47,15 +50,70 @@ class Database(val meta: DatabaseMetaData, val dialect: Dialect, val catalog: St
     sequences
   }
 
-  def getTable(name: String) = tables.get(name)
+  /**
+   * Using table literal (with or without schema) search table
+   */
+  def getTable(name: String): Option[Table] = {
+    val nschema = if (null == schema) null else schema.qualified(dialect)
+    if (name.contains(".")) {
+      if (nschema != dialect.parse(Strings.substringBefore(name, ".")).value) None
+      else tables.get(Table.qualify(nschema, dialect.parse(Strings.substringAfter(name, ".")).value))
+    } else {
+      tables.get(Table.qualify(nschema, dialect.parse(name).value))
+    }
+  }
 
-  override def toString = "Database" + tables.keySet.toString() + sequences.toString()
+  override def toString = "Database" + tables.keySet.toString + sequences.toString
+
+  def filterTables(includes: Seq[String], excludes: Seq[String]): Seq[Table] = {
+    val filter = new NameFilter()
+    if (null != includes) {
+      for (include <- includes) filter.include(dialect.parse(include).value)
+    }
+    if (null != excludes) {
+      for (exclude <- excludes) filter.exclude(dialect.parse(exclude).value)
+    }
+
+    filter.filter(tables.keySet).map { t => tables(t) }
+  }
+
+  def filterSequences(includes: Seq[String], excludes: Seq[String]): Seq[Sequence] = {
+    val filter = new NameFilter()
+    if (null != includes) {
+      for (include <- includes) filter.include(dialect.parse(include).value)
+    }
+    if (null != excludes) {
+      for (exclude <- excludes) filter.exclude(dialect.parse(exclude).value)
+    }
+    val seqMap = sequences.map(f => (f.qualifiedName, f)).toMap
+    filter.filter(seqMap.keys).map { s => seqMap(s) }
+  }
+
 }
 
-class CaseInsensitiveMap[V] extends mutable.HashMap[String, V] {
-  override def put(key: String, value: V) = super.put(key.toLowerCase, value)
+class NameFilter {
 
-  override def get(key: String): Option[V] = return super.get(key.toString.toLowerCase)
+  val excludes = new collection.mutable.ListBuffer[String]
 
-  override def remove(key: String): Option[V] = { return super.remove(key.toString().toLowerCase) }
+  val includes = new collection.mutable.ListBuffer[String]
+
+  def filter(tables: Iterable[String]): List[String] = {
+    val results = new collection.mutable.ListBuffer[String]
+    for (tabame <- tables) {
+      val tableName = (if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame).toLowerCase()
+
+      if (includes.isEmpty ||
+        (includes.exists(p => p == "*" || tableName.startsWith(p)) && !excludes.contains(tableName)))
+        results += tabame
+    }
+    results.toList
+  }
+
+  def exclude(table: String) {
+    excludes += table.toLowerCase()
+  }
+
+  def include(table: String) {
+    includes += table.toLowerCase()
+  }
 }

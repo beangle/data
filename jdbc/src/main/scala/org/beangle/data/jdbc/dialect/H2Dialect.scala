@@ -68,4 +68,8 @@ class H2Dialect extends AbstractDialect("[1.3,)") {
   }
 
   override def defaultSchema = "PUBLIC"
+
+  override def storeCase: StoreCase.Value = {
+    StoreCase.Upper
+  }
 }

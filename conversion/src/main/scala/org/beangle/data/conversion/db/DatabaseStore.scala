@@ -21,15 +21,13 @@ package org.beangle.data.conversion.db
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.logging.Logging
 import org.beangle.data.conversion.DataWrapper
-import org.beangle.data.jdbc.dialect.Dialect
-import org.beangle.data.jdbc.meta.Database
-import org.beangle.data.jdbc.meta.Sequence
-import org.beangle.data.jdbc.meta.Table
+import org.beangle.data.jdbc.dialect.{ Dialect, Name }
+import org.beangle.data.jdbc.meta.{ Database, Sequence, Table }
 import org.beangle.data.jdbc.query.JdbcExecutor
 
 import javax.sql.DataSource
 
-class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val catalog: String, val schema: String)
+class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val catalog: Name, val schema: Name)
   extends DataWrapper with Logging {
 
   val database = new Database(dataSource.getConnection().getMetaData(), dialect, catalog, schema)
@@ -38,11 +36,9 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
 
   def drop(table: Table): Boolean = {
     try {
-      val tablename = Table.qualify(database.schema, table.name)
-      val existed = database.tables.get(tablename)
-      if (existed.isDefined) {
-        database.tables.remove(tablename)
-        executor.update(database.dialect.tableGrammar.dropCascade(tablename))
+      database.tables.get(table.id) foreach { table =>
+        database.tables.remove(table.id)
+        executor.update(database.dialect.tableGrammar.dropCascade(table.qualifiedName))
       }
     } catch {
       case e: Exception =>
@@ -53,9 +49,9 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
   }
 
   def create(table: Table): Boolean = {
-    if (database.getTable(table.identifier).isEmpty) {
+    if (database.tables.get(table.id).isEmpty) {
       try {
-        executor.update(table.createSql(database.dialect))
+        executor.update(table.createSql)
       } catch {
         case e: Exception =>
           logger.error(s"Cannot create table ${table.name}", e)
@@ -70,7 +66,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
     if (exists) {
       database.sequences.remove(sequence)
       try {
-        val dropSql = sequence.dropSql(dialect)
+        val dropSql = sequence.dropSql
         if (null != dropSql) executor.update(dropSql)
       } catch {
         case e: Exception =>
@@ -83,7 +79,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
 
   def create(sequence: Sequence): Boolean = {
     try {
-      val createSql = sequence.createSql(dialect)
+      val createSql = sequence.createSql
       if (null != createSql) executor.update(createSql)
     } catch {
       case e: Exception =>
@@ -100,7 +96,7 @@ class DatabaseWrapper(val dataSource: DataSource, val dialect: Dialect, val cata
 
     if (null != table.primaryKey && table.primaryKey.columns.length > 0) {
       orderBy.append(" order by ")
-      orderBy.append(table.primaryKey.columns.foldLeft("")(_ + "," + _).substring(1))
+      orderBy.append(table.primaryKey.columnNames.foldLeft("")(_ + "," + _).substring(1))
     }
 
     val sql = table.querySql + orderBy.toString

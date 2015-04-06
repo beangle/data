@@ -43,7 +43,7 @@ class ConstraintConverter(val source: DatabaseWrapper, val target: DatabaseWrapp
     for (contraint <- contraints.sorted) {
       if (contraint.isInstanceOf[ForeignKey]) {
         val fk = contraint.asInstanceOf[ForeignKey]
-        val sql = fk.getAlterSql(target.dialect)
+        val sql = fk.alterSql
         try {
           target.executor.update(sql)
           logger.info(s"Apply constaint ${fk.name}")
