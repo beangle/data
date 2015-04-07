@@ -25,7 +25,7 @@ import org.beangle.commons.io.Files.{ / => /, forName, stringWriter }
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings.{ isEmpty, substringAfterLast, substringBefore, substringBeforeLast }
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.meta.{ Database, Table }
+import org.beangle.data.jdbc.meta.{ Schema, Table }
 import org.beangle.data.jdbc.util.PoolingDataSourceFactory
 import org.beangle.data.report.model.{ Module, Report }
 import org.beangle.template.freemarker.BeangleObjectWrapper
@@ -94,10 +94,11 @@ class Reporter(val report: Report, val dir: String) extends Logging {
   val dbconf = report.dbconf
   val ds: DataSource = new PoolingDataSourceFactory(dbconf.driver,
     dbconf.url, dbconf.user, dbconf.password, dbconf.props).getObject
-  val database = new Database(ds.getConnection().getMetaData(), report.dbconf.dialect, null, dbconf.schema)
+  val database = new Schema(report.dbconf.dialect, null, dbconf.schema)
 
-  database.loadTables(true)
-  database.loadSequences()
+  val meta = ds.getConnection().getMetaData()
+  database.loadTables(meta, true)
+  database.loadSequences(meta)
 
   val cfg = new Configuration()
   cfg.setEncoding(Locale.getDefault, "UTF-8")

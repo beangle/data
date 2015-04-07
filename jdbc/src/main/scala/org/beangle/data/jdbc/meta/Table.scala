@@ -41,14 +41,8 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
     this(Name(schema), Name(name))
   }
 
-  def columnNames: List[String] = {
+  def qualifiedColumnNames: List[String] = {
     columns.result.map(_.name.qualified(dialect))
-  }
-
-  def id: String = {
-    val qualifiedName: StringBuilder = new StringBuilder()
-    if (null != schema) qualifiedName.append(schema).append('.')
-    qualifiedName.append(name).toString()
   }
 
   def qualifiedName: String = {
@@ -70,7 +64,7 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
     val sb = new StringBuilder("insert into ")
     sb ++= qualifiedName
     sb += '('
-    sb ++= columnNames.mkString(",")
+    sb ++= qualifiedColumnNames.mkString(",")
     sb ++= ") values("
     sb ++= ("?," * columns.size)
     sb.setCharAt(sb.length() - 1, ')')
@@ -87,7 +81,7 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
     val l = columns.toList
     while (iter.hasNext) {
       val col: Column = iter.next()
-      buf.append(col.name).append(' ')
+      buf.append(col.qualifiedName(dialect)).append(' ')
       var typeName = col.typeName
       if (Strings.isEmpty(typeName) || this.dialect != dialect) {
         typeName = dialect.translate(col.typeCode, col.size, col.scale)._2
@@ -132,7 +126,7 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
   def querySql: String = {
     val sb: StringBuilder = new StringBuilder()
     sb.append("select ")
-    for (columnName <- this.columnNames) {
+    for (columnName <- this.qualifiedColumnNames) {
       sb.append(columnName).append(',')
     }
     sb.deleteCharAt(sb.length() - 1)
@@ -150,6 +144,7 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
     }
     this.name = this.name.attach(dialect)
     this.schema = this.schema.attach(dialect)
+    if (null != primaryKey) primaryKey.attach(dialect)
     for (fk <- foreignKeys) fk.attach(dialect)
     for (uk <- uniqueKeys) uk.attach(dialect)
     for (idx <- indexes) idx.attach(dialect)
@@ -163,8 +158,7 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
   override def clone(): Table = {
     val tb: Table = new Table(schema, name)
     tb.comment = comment
-    for (col <- columns)
-      tb.add(col.clone())
+    for (col <- columns) tb.add(col.clone())
     if (null != primaryKey) {
       tb.primaryKey = primaryKey.clone()
       tb.primaryKey.table = tb
@@ -178,11 +172,11 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
   def toLowerCase(): Unit = {
     this.schema = schema.toLowerCase()
     this.name = name.toLowerCase()
-    for (col <- columns) col.lowerCase
-    if (null != primaryKey) primaryKey.lowerCase
-    for (fk <- foreignKeys) fk.lowerCase;
-    for (uk <- uniqueKeys) uk.lowerCase;
-    for (idx <- indexes) idx.lowerCase;
+    for (col <- columns) col.toLowerCase()
+    if (null != primaryKey) primaryKey.toLowerCase()
+    for (fk <- foreignKeys) fk.toLowerCase()
+    for (uk <- uniqueKeys) uk.toLowerCase()
+    for (idx <- indexes) idx.toLowerCase()
   }
 
   override def compare(o: Table): Int = {
@@ -198,14 +192,15 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
   }
 
   def column(columnName: String): Column = {
-    columns.find(f => f.name.equals(columnName)).get
+    columns.find(f => f.name.value == columnName).get
   }
+
   def getColumn(columnName: String): Option[Column] = {
-    columns.find(f => f.name.equals(columnName))
+    columns.find(f => f.name.value == columnName)
   }
 
   def getForeignKey(keyName: String): Option[ForeignKey] = {
-    foreignKeys.find(f => f.name.equals(keyName))
+    foreignKeys.find(f => f.name.value == keyName)
   }
 
   def add(key: ForeignKey): ForeignKey = {
@@ -234,7 +229,17 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
   }
 
   def getIndex(indexName: String): Option[Index] = {
-    indexes.find(f => f.name.equals(indexName))
+    indexes.find(f => f.name.value == indexName)
+  }
+
+  def updateSchema(newSchema: Name) {
+    val oldSchema = this.schema
+    this.schema = newSchema
+    this.foreignKeys foreach { fk =>
+      if (null != fk.referencedTable) {
+        if (fk.referencedTable.schema == oldSchema) fk.referencedTable.schema = newSchema
+      }
+    }
   }
 }
 
@@ -256,9 +261,14 @@ object Table {
   }
 }
 
-case class TableRef(var dialect: Dialect, var name: Name, var schema: Name) extends Cloneable {
+case class TableRef(var dialect: Dialect, var schema: Name, var name: Name) extends Cloneable {
 
   def qualifiedName: String = {
     Table.qualify(dialect, schema, name)
+  }
+
+  def toLowerCase(): Unit = {
+    this.name = this.name.toLowerCase()
+    this.schema = this.schema.toLowerCase()
   }
 }

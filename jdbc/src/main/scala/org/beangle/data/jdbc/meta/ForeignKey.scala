@@ -27,7 +27,7 @@ import org.beangle.data.jdbc.dialect.Name
  *
  * @author chaostone
  */
-class ForeignKey(table: Table, name: Name, column: Name = null) extends Constraint(table, name) {
+class ForeignKey(t: Table, n: Name, column: Name = null) extends Constraint(t, n) {
 
   var cascadeDelete: Boolean = false
   var referencedColumns = new ListBuffer[Name]
@@ -35,11 +35,15 @@ class ForeignKey(table: Table, name: Name, column: Name = null) extends Constrai
 
   addColumn(column)
 
-  override def lowerCase(): Unit = {
-    super.lowerCase()
+  override def toLowerCase(): Unit = {
+    super.toLowerCase()
     val lowers = referencedColumns.map { col => col.toLowerCase() }
-    columns.clear()
+    referencedColumns.clear()
     referencedColumns ++= lowers
+
+    if (this.table.schema.value == referencedTable.schema.value.toLowerCase()) {
+      referencedTable.toLowerCase()
+    }
   }
 
   override def attach(dialect: Dialect): Unit = {
@@ -47,16 +51,20 @@ class ForeignKey(table: Table, name: Name, column: Name = null) extends Constrai
     val changed = referencedColumns.map { col => col.attach(dialect) }
     referencedColumns.clear()
     referencedColumns ++= changed
+
+    if (this.table.schema == referencedTable.schema) {
+      referencedTable.name = referencedTable.name.attach(dialect)
+    }
   }
 
   def alterSql: String = {
-    require(null != name && null != table && null != referencedTable)
+    require(null != this.name && null != table && null != referencedTable)
     require(!referencedColumns.isEmpty, " reference columns is empty.")
-    require(!columns.isEmpty, "column's size should greate than 0")
+    require(!columns.isEmpty, s"${this.name} column's size should greate than 0")
 
     val dialect = table.dialect
     val referencedColumnNames = referencedColumns.map(x => x.qualified(table.dialect)).toList
-    val result = "alter table " + table.qualifiedName + dialect.foreignKeySql(qualifiedName, columnNames,
+    val result = "alter table " + this.table.qualifiedName + dialect.foreignKeySql(qualifiedName, columnNames,
       referencedTable.qualifiedName, referencedColumnNames)
 
     if (cascadeDelete && dialect.supportsCascadeDelete) result + " on delete cascade" else result
@@ -73,7 +81,7 @@ class ForeignKey(table: Table, name: Name, column: Name = null) extends Constrai
   }
 
   def refer(table: Table, cols: Name*): Unit = {
-    this.referencedTable = TableRef(table.dialect, table.name, table.schema)
+    this.referencedTable = TableRef(table.dialect, table.schema, table.name)
     if (!cols.isEmpty) referencedColumns ++= cols
   }
 

@@ -19,8 +19,8 @@
 package org.beangle.data.jdbc.dialect
 
 import java.sql.Types
-
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.Chars
 
 trait Dialect {
 
@@ -149,7 +149,13 @@ abstract class AbstractDialect(versions: String) extends Dialect {
   }
 
   override def needQuoted(name: String): Boolean = {
-    (name.indexOf(' ') > -1) || keywords.contains(name.toLowerCase)
+    val rs = (name.indexOf(' ') > -1) || keywords.contains(name.toLowerCase)
+    if (rs) return true
+    storeCase match {
+      case StoreCase.Lower => name.exists { c => Character.isUpperCase(c) }
+      case StoreCase.Upper => name.exists { c => Character.isLowerCase(c) }
+      case StoreCase.Mixed => false
+    }
   }
 
   override def quote(name: String): String = {

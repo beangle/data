@@ -7,11 +7,22 @@ case class Name(value: String, quoted: Boolean = false) extends Ordered[Name] {
   }
 
   override def toString: String = {
-    value
+    if (quoted) "`" + value + "`"
+    else value
   }
 
   override def compare(other: Name): Int = {
     value.compareTo(other.value)
+  }
+
+  override def equals(other: Any): Boolean = {
+    other match {
+      case n: Name => n.value == this.value
+      case _ => false
+    }
+  }
+  override def hashCode: Int = {
+    value.hashCode()
   }
 
   def attach(dialect: Dialect): Name = {

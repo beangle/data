@@ -39,9 +39,9 @@ class MetadataLoaderTest extends FlatSpec with Matchers {
       "jdbc:postgresql://localhost:5432/urp", "postgres", "", new java.util.Properties()).getObject
     val dialect = new PostgreSQLDialect
     try {
-      val database = new Database(datasource.getConnection().getMetaData(), dialect, null, Name("public"))
-      database.loadTables(true)
-      val tables = database.tables
+      val schema = new Schema(dialect, null, Name("public"))
+      schema.loadTables(datasource.getConnection().getMetaData(), true)
+      val tables = schema.tables
       //(tables.size > 0) should be(true)
       for (table <- tables.values()) {
         val createSql = table.createSql

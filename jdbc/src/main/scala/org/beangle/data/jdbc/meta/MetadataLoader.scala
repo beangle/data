@@ -75,7 +75,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         val table = new Table(rs.getString(TableSchema), rs.getString(TableName))
         table.dialect = dialect
         table.comment = rs.getString(Remarks)
-        tables.put(table.id, table)
+        tables.put(Table.qualify(table.schema.value, table.name.value), table)
       }
     }
     rs.close()
@@ -98,9 +98,9 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           col.typeName = new StringTokenizer(rs.getString(TypeName), "() ").nextToken()
           col.comment = rs.getString(Remarks)
           table.add(col)
+          cols += 1
         }
       }
-      cols += 1
     }
     rs.close()
 
@@ -132,8 +132,11 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
         val colname = rs.getString(ColumnName)
         val pkName = getName(rs, PKName)
-        if (null == table.primaryKey) table.primaryKey = new PrimaryKey(table, pkName, table.column(colname).name)
-        else table.primaryKey.addColumn(table.column(colname))
+        if (null == table.primaryKey) {
+          table.primaryKey = new PrimaryKey(table, pkName, table.column(colname).name)
+        } else {
+          table.primaryKey.addColumn(table.column(colname))
+        }
       }
     }
     rs.close()
@@ -173,7 +176,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       }
     }
     rs.close()
-    logger.info(s"Load contraint and i logger.info(n $sw.")
+    logger.info(s"Load contraint and index in $sw.")
   }
 
   class MetaLoadTask(val buffer: ConcurrentLinkedQueue[String], val tables: mutable.HashMap[String, Table]) extends Runnable {

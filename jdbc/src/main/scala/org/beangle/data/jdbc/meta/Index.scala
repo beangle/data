@@ -53,7 +53,7 @@ class Index(var name: Name, var table: Table) extends Cloneable {
 
   var ascOrDesc: Option[Boolean] = None
 
-  def lowerCase(): Unit = {
+  def toLowerCase(): Unit = {
     this.name = name.toLowerCase()
     val lowers = columns.map { col => col.toLowerCase() }
     columns.clear()

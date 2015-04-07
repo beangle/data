@@ -20,7 +20,7 @@ package org.beangle.data.jdbc.dialect
 
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.jdbc.meta.Database
+import org.beangle.data.jdbc.meta.Schema
 import org.beangle.data.jdbc.util.PoolingDataSourceFactory
 import org.junit.runner.RunWith
 import javax.sql.DataSource
@@ -35,9 +35,11 @@ class H2DialectTest extends DialectTestCase {
   "h2 " should "load tables and sequences" in {
     val ds: DataSource = new PoolingDataSourceFactory(properties("h2.driverClassName"),
       properties("h2.url"), properties("h2.username"), properties("h2.password"), new java.util.Properties()).getObject
-    database = new Database(ds.getConnection().getMetaData(), new H2Dialect(), null, Name("PUBLIC"))
-    database.loadTables(false)
-    database.loadSequences()
+
+    val meta = ds.getConnection().getMetaData()
+    schema = new Schema(new H2Dialect(), null, Name("PUBLIC"))
+    schema.loadTables(meta, false)
+    schema.loadSequences(meta)
     listTableAndSequences
 
   }
