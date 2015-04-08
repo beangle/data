@@ -42,7 +42,7 @@ class GeneratorTest extends FunSpec with Matchers {
       StandardServiceRegistryBuilder.destroy(serviceRegistry)
     }
   })
-  var pgReady = true
+  var pgReady = false
   try {
     ds.getConnection
   } catch {
