@@ -83,29 +83,3 @@ object Dialects {
     }
   }
 }
-
-abstract class Dialect {
-
-  def tableGrammar: TableGrammar
-
-  def limitGrammar: LimitGrammar
-
-  def sequenceGrammar: SequenceGrammar
-
-  def defaultSchema: String
-
-  def typeNames: TypeNames
-
-  def keywords: Set[String]
-
-  def supportsCascadeDelete: Boolean
-
-  def isCaseSensitive: Boolean
-
-  def getAddForeignKeyConstraintString(constraintName: String, foreignKey: Array[String],
-    referencedTable: String, primaryKey: Array[String], referencesPrimaryKey: Boolean): String
-
-  def metadataGrammar: MetadataGrammar
-
-  def support(version: String): Boolean
-}

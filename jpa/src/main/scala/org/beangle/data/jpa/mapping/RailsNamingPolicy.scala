@@ -60,7 +60,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
           var parentName = substringBeforeLast(key, ".")
           while (isNotEmpty(parentName) && null == module.parent) {
             if (modules.contains(parentName) && module.packageName != parentName) {
-              debug(s"set ${module.packageName}'s parent is $parentName")
+              logger.debug(s"set ${module.packageName}'s parent is $parentName")
               module.parent = modules(parentName)
             }
             val len = parentName.length
@@ -73,7 +73,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
 
   def addConfig(url: URL): Unit = {
     try {
-      debug(s"loading $url")
+      logger.debug(s"loading $url")
       val is = url.openStream()
       if (null != is) {
         configLocations.add(url)
@@ -82,7 +82,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       }
       autoWire()
     } catch {
-      case e: IOException => error("property load error", e)
+      case e: IOException => logger.error("property load error", e)
     }
   }
 
@@ -195,7 +195,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   def setResources(resources: Resources) {
     if (null != resources) {
       for (url <- resources.paths) addConfig(url)
-      if (!modules.isEmpty) info(s"Table name pattern: -> ${this.toString}")
+      if (!modules.isEmpty) logger.info(s"Table name pattern: -> ${this.toString}")
     }
   }
 

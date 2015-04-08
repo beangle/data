@@ -75,7 +75,7 @@ class HbmSessionFactoryBuilder(val dataSource: DataSource, val configuration: Co
       }
     })
     val sessionFactory = configuration.buildSessionFactory(serviceRegistry)
-    info(s"Building Hibernate SessionFactory in $watch")
+    logger.info(s"Building Hibernate SessionFactory in $watch")
     sessionFactory
   }
 
@@ -116,7 +116,7 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
         val value = sysProps.getProperty(key)
         val overrided = properties.containsKey(key)
         properties.put(key, value)
-        if (overrided) info(s"Override hibernate property $key=$value")
+        if (overrided) logger.info(s"Override hibernate property $key=$value")
       }
     }
     import org.hibernate.cfg.AvailableSettings._
@@ -149,7 +149,7 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
 
           val module = props.remove("module")
           if (null == module) {
-            warn(s"Cannot find module in $resource")
+            logger.warn(s"Cannot find module in $resource")
           } else {
             val persistModule = Reflections.newInstance(ClassLoaders.loadClass(module.toString)).asInstanceOf[AbstractPersistModule]
             addPersistInfo(persistModule.getConfig)
@@ -179,7 +179,7 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
       }
     })
     val sessionFactory = configuration.buildSessionFactory(serviceRegistry)
-    info(s"Building Hibernate SessionFactory in $watch")
+    logger.info(s"Building Hibernate SessionFactory in $watch")
     sessionFactory
   }
 
@@ -189,7 +189,7 @@ class DefaultSessionFactoryBuilder(val dataSource: DataSource, val configuration
   private def addPersistInfo(epconfig: EntityPersistConfig) {
     for (definition <- epconfig.entities) {
       configuration.addAnnotatedClass(definition.clazz)
-      debug(s"Add annotation ${definition.clazz}")
+      logger.debug(s"Add annotation ${definition.clazz}")
       if (null != definition.cacheUsage) {
         val region = if (null == definition.cacheRegion) definition.entityName else definition.cacheRegion
         configuration.setCacheConcurrencyStrategy(definition.entityName, definition.cacheUsage, region, true)

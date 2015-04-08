@@ -18,78 +18,77 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.dialect.Dialect
 import scala.collection.mutable.ListBuffer
+import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.data.jdbc.dialect.Name
 
 /**
  * JDBC foreign key metadata
  *
  * @author chaostone
  */
-class ForeignKey(name: String, column: Column) extends Constraint(name) {
+class ForeignKey(t: Table, n: Name, column: Name = null) extends Constraint(t, n) {
 
-  var referencedTable: Table = null
   var cascadeDelete: Boolean = false
-  var referencedColumns = new ListBuffer[Column]
+  var referencedColumns = new ListBuffer[Name]
+  var referencedTable: TableRef = _
 
   addColumn(column)
 
-  def this(name: String) = this(name, null)
+  override def toLowerCase(): Unit = {
+    super.toLowerCase()
+    val lowers = referencedColumns.map { col => col.toLowerCase() }
+    referencedColumns.clear()
+    referencedColumns ++= lowers
 
-  def getAlterSql(dialect: Dialect): String = {
-    require(null != name && null != table && null != referencedTable)
-    require(!isReferenceToPrimaryKey || null != referencedTable.primaryKey,
-      " reference columns is empty  so the table must has a primary key.")
-    require(!columns.isEmpty, "column's size should greate than 0")
-
-    val cols: Array[String] = new Array[String](columns.size)
-    val refcols: Array[String] = new Array[String](columns.size)
-    var i: Int = 0
-    var refiter: Iterator[Column] = null
-    if (isReferenceToPrimaryKey) {
-      refiter = referencedTable.primaryKey.columns.iterator
-    } else {
-      refiter = referencedColumns.iterator
+    if (this.table.schema.value == referencedTable.schema.value.toLowerCase()) {
+      referencedTable.toLowerCase()
     }
+  }
 
-    val iter: Iterator[Column] = columns.iterator
-    while (iter.hasNext) {
-      cols(i) = iter.next().name
-      refcols(i) = refiter.next().name
-      i += 1
+  override def attach(dialect: Dialect): Unit = {
+    super.attach(dialect)
+    val changed = referencedColumns.map { col => col.attach(dialect) }
+    referencedColumns.clear()
+    referencedColumns ++= changed
+
+    if (this.table.schema == referencedTable.schema) {
+      referencedTable.name = referencedTable.name.attach(dialect)
     }
+  }
 
-    val result = "alter table " + table.identifier + dialect.getAddForeignKeyConstraintString(name, cols,
-      referencedTable.identifier(table.schema), refcols, isReferenceToPrimaryKey)
+  def alterSql: String = {
+    require(null != this.name && null != table && null != referencedTable)
+    require(!referencedColumns.isEmpty, " reference columns is empty.")
+    require(!columns.isEmpty, s"${this.name} column's size should greate than 0")
+
+    val dialect = table.dialect
+    val referencedColumnNames = referencedColumns.map(x => x.qualified(table.dialect)).toList
+    val result = "alter table " + this.table.qualifiedName + dialect.foreignKeySql(qualifiedName, columnNames,
+      referencedTable.qualifiedName, referencedColumnNames)
 
     if (cascadeDelete && dialect.supportsCascadeDelete) result + " on delete cascade" else result
   }
 
-  override def clone: this.type = {
-    val cloned = super.clone()
+  override def clone(): this.type = {
+    val cloned = super.clone().asInstanceOf[this.type]
     cloned.cascadeDelete = this.cascadeDelete
     cloned.referencedTable = this.referencedTable
-    val newColumns = new ListBuffer[Column]
-    for (column <- referencedColumns)
-      newColumns += column.clone()
-
+    var newColumns = new ListBuffer[Name]
+    newColumns ++= referencedColumns
     cloned.referencedColumns = newColumns
-    return cloned
+    cloned
   }
 
-  def addReferencedColumn(column: Column) = referencedColumns += column
+  def refer(table: Table, cols: Name*): Unit = {
+    this.referencedTable = TableRef(table.dialect, table.schema, table.name)
+    if (!cols.isEmpty) referencedColumns ++= cols
+  }
 
-  def getReferencedColumns: List[Column] = referencedColumns.toList
-
-  def isReferenceToPrimaryKey: Boolean = referencedColumns.isEmpty
-
-  def getReferencedTable = referencedTable
-
-  def setReferencedTable(referencedTable: Table) = this.referencedTable = referencedTable
-
-  def isCascadeDelete = cascadeDelete
-
-  def setCascadeDelete(cascadeDelete: Boolean) = this.cascadeDelete = cascadeDelete
+  def refer(table: TableRef, cols: Name*): Unit = {
+    this.referencedTable = table
+    if (!cols.isEmpty) referencedColumns ++= cols
+  }
 
   override def toString = "Foreign key(" + name + ')'
 }

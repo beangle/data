@@ -41,6 +41,13 @@ abstract class AbstractType extends Type {
 
   override def getPropertyType(property: String): Option[Type] = None
 
+  /**
+   * find property
+   */
+  override def apply(property: String): Type = {
+    throw new NoSuchMethodException(property)
+  }
+
   override def equals(obj: Any) = obj match {
     case other: Type => name.equals(other.name)
     case _ => false

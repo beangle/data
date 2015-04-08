@@ -20,21 +20,20 @@ package org.beangle.data.jpa.hibernate
 
 import java.lang.reflect.Field
 import java.{ util => ju }
+
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
+
 import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, TableSeqGenerator }
-import org.beangle.data.jpa.hibernate.udt.{ MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType }
+import org.beangle.data.jpa.hibernate.udt.{ EnumType, HourMinuteType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, WeekStateType }
 import org.beangle.data.jpa.mapping.NamingPolicy
 import org.hibernate.DuplicateMappingException
 import org.hibernate.DuplicateMappingException.Type
 import org.hibernate.cfg.{ Configuration, Mappings }
-import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass }
-import org.beangle.data.jpa.hibernate.udt.EnumType
-import org.beangle.data.jpa.hibernate.udt.HourMinuteType
-import org.beangle.data.jpa.hibernate.udt.WeekStateType
-import org.hibernate.mapping.SimpleValue
+import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass, SimpleValue }
 
 /**
  * Override Configuration
@@ -237,7 +236,7 @@ private[hibernate] object PersistentClassMerger extends Logging {
       field.setAccessible(true)
       field
     } catch {
-      case e: Exception => error(s"Cannot access PersistentClass $name field ,Override Mapping will be disabled", e)
+      case e: Exception => logger.error(s"Cannot access PersistentClass $name field ,Override Mapping will be disabled", e)
     }
     null
   }
@@ -278,6 +277,6 @@ private[hibernate] object PersistentClassMerger extends Logging {
     } catch {
       case e: Exception =>
     }
-    info(s"${sub.getClassName()} replace ${parent.getClassName()}.")
+    logger.info(s"${sub.getClassName()} replace ${parent.getClassName()}.")
   }
 }

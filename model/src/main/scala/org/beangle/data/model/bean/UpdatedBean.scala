@@ -26,10 +26,7 @@ import org.beangle.data.model.Updated
  *
  * @author chaostone
  */
+@deprecated("Using Updated directly","4.1.11")
 trait UpdatedBean extends Updated {
 
-  /**
-   * Updated At
-   */
-  var updatedAt: Date = _
 }

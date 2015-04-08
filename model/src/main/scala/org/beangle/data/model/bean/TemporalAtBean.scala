@@ -28,15 +28,8 @@ import org.beangle.data.model.TemporalAt
  *
  * @author chaostone
  */
+@deprecated("Using TemporalAt directly","4.1.11")
 trait TemporalAtBean extends TemporalAt {
 
-  /**
-   * 获得生效时间
-   */
-  var beginAt: Date = _
 
-  /**
-   * 获得失效时间
-   */
-  var endAt: Date = _
 }

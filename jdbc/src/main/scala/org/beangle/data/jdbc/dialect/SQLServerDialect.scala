@@ -43,4 +43,17 @@ class SQLServerDialect(version: String) extends AbstractTransactSQLDialect(versi
 
   override def limitGrammar: LimitGrammar = null
   override def sequenceGrammar: SequenceGrammar = null
+
+  override def openQuote: Char = {
+    '['
+  }
+
+  override def closeQuote: Char = {
+    ']'
+  }
+
+  //FIXME 
+  override def storeCase: StoreCase.Value = {
+    StoreCase.Mixed
+  }
 }

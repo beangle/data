@@ -26,15 +26,7 @@ import org.beangle.data.model.TemporalOn
  * @author chaostone
  * @since 3.1.0
  */
+@deprecated("Using TemporalOn directly","4.1.11")
 trait TemporalOnBean extends TemporalOn {
-  /**
-   * 起始日期
-   */
-  var beginOn: Date = _
-
-  /**
-   * 结束日期
-   */
-  var endOn: Date = _
 
 }

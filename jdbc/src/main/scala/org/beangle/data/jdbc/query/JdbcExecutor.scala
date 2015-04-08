@@ -216,9 +216,12 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
               stmt.setCharacterStream(index, new StringReader(value.asInstanceOf[String]))
 
             case BOOLEAN | BIT =>
-              stmt.setBoolean(index, value.asInstanceOf[Boolean])
+              value match {
+                case b: Boolean => stmt.setBoolean(index, b)
+                case i: Number => stmt.setBoolean(index, i.intValue > 0)
+              }
             case TINYINT | SMALLINT | INTEGER =>
-              stmt.setInt(index, value.asInstanceOf[Int])
+              stmt.setInt(index, value.asInstanceOf[Number].intValue)
             case BIGINT =>
               stmt.setLong(index, value.asInstanceOf[Number].longValue)
 
@@ -285,13 +288,25 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
             }
             case CLOB => {
               if (isStringType(value.getClass)) stmt.setString(index, value.toString())
-              else stmt.setAsciiStream(index, value.asInstanceOf[Clob].getAsciiStream)
+              else {
+                //FIXME workround Method org.postgresql.jdbc4.Jdbc4PreparedStatement.setAsciiStream(int, InputStream) is not yet implemented.
+                val clb = value.asInstanceOf[Clob]
+                val out = new ByteArrayOutputStream()
+                IOs.copy(clb.getAsciiStream, out)
+                stmt.setAsciiStream(index, clb.getAsciiStream, out.size())
+              }
             }
-            case BLOB => stmt.setBinaryStream(index, value.asInstanceOf[Blob].getBinaryStream)
-            case _    => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
+            case BLOB => {
+              //FIXME workround Method org.postgresql.jdbc4.Jdbc4PreparedStatement.setAsciiStream(int, InputStream) is not yet implemented. 
+              val in = value.asInstanceOf[Blob].getBinaryStream
+              val out = new ByteArrayOutputStream()
+              IOs.copy(in, out)
+              stmt.setBinaryStream(index, in, out.size)
+            }
+            case _ => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
           }
         } catch {
-          case e: Exception => error("set value error", e);
+          case e: Exception => logger.error("set value error", e);
         }
       }
       i += 1

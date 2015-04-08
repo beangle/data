@@ -28,8 +28,6 @@ package org.beangle.data.model.meta
 trait Type {
   /**
    * Is this type a collection type.
-   *
-   * @return a boolean.
    */
   def isCollectionType: Boolean
 
@@ -37,52 +35,35 @@ trait Type {
    * Is this type a component type. If so, the implementation must be castable
    * to <tt>AbstractComponentType</tt>. A component type may own collections
    * or associations and hence must provide certain extra functionality.
-   *
-   * @return boolean
    */
   def isComponentType: Boolean
 
   /**
    * Is this type an entity type?
-   *
-   * @return boolean
    */
   def isEntityType: Boolean
 
   /**
-   * <p>
    * getPropertyType.
-   * </p>
-   *
-   * @param property a {@link java.lang.String} object.
-   * @return a {@link org.beangle.data.model.metadata.Type} object.
    */
   def getPropertyType(property: String): Option[Type]
 
   /**
-   * <p>
-   * getName.
-   * </p>
-   *
-   * @return a {@link java.lang.String} object.
+   * return property type or throw NoSuchElementException
+   */
+  def apply(property: String): Type
+  /**
+   *  getName.
    */
   def name: String
 
   /**
-   * <p>
    * getReturnedClass.
-   * </p>
-   *
-   * @return a {@link java.lang.Class} object.
    */
   def returnedClass: Class[_]
 
   /**
-   * <p>
    * newInstance.
-   * </p>
-   *
-   * @return a {@link java.lang.Object} object.
    */
   def newInstance(): AnyRef
 }

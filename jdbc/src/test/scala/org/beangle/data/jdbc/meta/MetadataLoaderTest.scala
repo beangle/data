@@ -25,23 +25,33 @@ import org.beangle.data.jdbc.dialect.H2Dialect
 import org.beangle.data.jdbc.util.PoolingDataSourceFactory
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.beangle.data.jdbc.dialect.PostgreSQLDialect
+import org.beangle.data.jdbc.dialect.Name
+import java.sql.SQLException
 
+@RunWith(classOf[JUnitRunner])
 class MetadataLoaderTest extends FlatSpec with Matchers {
 
   "test h2 metadata loader " should "ok" in {
-    val datasource: DataSource = new PoolingDataSourceFactory("org.h2.Driver",
-      "jdbc:h2:/tmp/beangle;AUTO_SERVER=TRUE", "sa", new java.util.Properties()).getObject
-    val dialect = new H2Dialect
-    val database = new Database(datasource.getConnection().getMetaData(), dialect, null, "PUBLIC")
-    database.loadTables(true)
-    val tables = database.tables
-    //(tables.size > 0) should be(true)
-    for (table <- tables.values()) {
-      val createSql = table.createSql(dialect)
-      (null != createSql) should be(true)
-      for (fk1 <- table.foreignKeys) {
-        (null != fk1.getAlterSql(dialect)) should be(true)
+    val datasource: DataSource = new PoolingDataSourceFactory("org.postgresql.Driver",
+      "jdbc:postgresql://localhost:5432/urp", "postgres", "", new java.util.Properties()).getObject
+    val dialect = new PostgreSQLDialect
+    try {
+      val schema = new Schema(dialect, null, Name("public"))
+      schema.loadTables(datasource.getConnection().getMetaData(), true)
+      val tables = schema.tables
+      //(tables.size > 0) should be(true)
+      for (table <- tables.values()) {
+        val createSql = table.createSql
+        (null != createSql) should be(true)
+        for (fk1 <- table.foreignKeys) {
+          (null != fk1.alterSql) should be(true)
+        }
       }
+    } catch {
+      case e: SQLException => e.printStackTrace()
     }
   }
 }

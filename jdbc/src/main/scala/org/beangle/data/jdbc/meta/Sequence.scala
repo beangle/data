@@ -19,8 +19,11 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.data.jdbc.dialect._
+import org.beangle.commons.lang.Strings
 
-class Sequence(var name: String) extends Comparable[Sequence] {
+class Sequence(var name: Name, var schema: Name) extends Ordered[Sequence] {
+
+  var dialect: Dialect = _
 
   var current: Long = 0
 
@@ -28,31 +31,53 @@ class Sequence(var name: String) extends Comparable[Sequence] {
 
   var cache: Int = 32
 
-  def createSql(dialect: Dialect): String = {
+  var cycle: Boolean = _
+
+  def qualifiedName: String = {
+    if (null == schema) name.qualified(dialect)
+    else schema.qualified(dialect) + "." + name.qualified(dialect)
+  }
+
+  def toLowerCase(): Unit = {
+    this.schema = schema.toLowerCase()
+    this.name = name.toLowerCase()
+  }
+
+  def attach(dialect: Dialect): this.type = {
+    this.name = name.attach(dialect)
+    this.schema = schema.attach(dialect)
+    this.dialect=dialect
+    this
+  }
+
+  def createSql: String = {
     if (null == dialect.sequenceGrammar) return null
-    var sql: String = dialect.sequenceGrammar.createSql;
-    sql = sql.replace(":name", name)
+    var sql: String = dialect.sequenceGrammar.createSql
+    sql = sql.replace(":name", qualifiedName)
     sql = sql.replace(":start", String.valueOf(current + 1))
     sql = sql.replace(":increment", String.valueOf(increment))
     sql = sql.replace(":cache", String.valueOf(cache))
+    sql = sql.replace(":cycle", if (cycle) "cycle" else "")
     return sql
   }
 
-  def dropSql(dialect: Dialect): String = {
+  def dropSql: String = {
     if (null == dialect.sequenceGrammar) return null
     var sql: String = dialect.sequenceGrammar.dropSql;
-    sql = sql.replace(":name", name)
+    sql = sql.replace(":name", qualifiedName)
     return sql
   }
 
-  override def toString = name
+  override def toString = name.toString
 
-  override def compareTo(o: Sequence) = name.compareTo(o.name)
+  override def compare(o: Sequence): Int = {
+    name.compareTo(o.name)
+  }
 
   override def hashCode = name.hashCode()
 
   /**
    * 比较name
    */
-  override def equals(rhs: Any) = name.equals(rhs.asInstanceOf[Sequence].name)
+  override def equals(rhs: Any) = name.value.equals(rhs.asInstanceOf[Sequence].name.value)
 }

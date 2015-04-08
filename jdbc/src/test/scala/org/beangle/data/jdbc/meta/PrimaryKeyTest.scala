@@ -18,10 +18,16 @@
  */
 package org.beangle.data.jdbc.meta
 
-class PrimaryKeyTest {
+import org.junit.runner.RunWith
+import org.scalatest.{ FlatSpec, Matchers }
+import org.scalatest.junit.JUnitRunner
+import org.beangle.data.jdbc.dialect.Name
+
+@RunWith(classOf[JUnitRunner])
+class PrimaryKeyTest extends FlatSpec with Matchers {
 
   def testSqlConstraintString = {
-    val pk = new PrimaryKey("pk_sometable", new Column("id", 4))
-    assert(pk.sqlConstraintString == "primary key (id)")
+    val pk = new PrimaryKey(null, Name("pk_sometable"), Name("id"))
+    assert(pk.constraintSql == "primary key (id)")
   }
 }

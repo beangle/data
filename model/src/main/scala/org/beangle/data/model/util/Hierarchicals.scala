@@ -2,7 +2,7 @@ package org.beangle.data.model.util
 
 import scala.collection.mutable
 
-import org.beangle.commons.bean.PropertyUtils
+import org.beangle.commons.bean.Properties
 import org.beangle.commons.lang.Objects
 import org.beangle.data.model.Hierarchical
 object Hierarchicals {
@@ -73,7 +73,7 @@ object Hierarchicals {
   def tag[T <: Hierarchical[T]](datas: Seq[T], property: String): Map[T, String] = {
     val sortedMap = new mutable.HashMap[T, String]
     for (de <- datas) {
-      var myId = String.valueOf(PropertyUtils.getProperty[Any](de, property)) + "_"
+      var myId = String.valueOf(Properties.get[Any](de, property)) + "_"
       if (null != de.parent && sortedMap.contains(de.parent)) {
         myId = String.valueOf(sortedMap.get(de.parent) + myId)
         if (!myId.endsWith("_")) myId += "_"

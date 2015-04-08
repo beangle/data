@@ -38,53 +38,73 @@ package org.beangle.data.jdbc.meta
 
 import scala.collection.mutable.ListBuffer
 import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.commons.collection.Collections
+import org.beangle.data.jdbc.dialect.Name
 /**
  * JDBC index metadata
  *
  * @author chaostone
  */
-class Index(var name: String, var table: Table) extends Cloneable {
+class Index(var name: Name, var table: Table) extends Cloneable {
 
-  val columns = new ListBuffer[Column];
+  var columns = Collections.newBuffer[Name]
 
   var unique: Boolean = false
 
   var ascOrDesc: Option[Boolean] = None
 
-  def lowerCase() = this.name = name.toLowerCase()
-
-  def addColumn(column: Column) = if (column != null) columns += column
-
-  override def toString = "IndexMatadata(" + name + ')'
-
-  override def clone: Index = {
-    val cloned: Index = super.clone().asInstanceOf[Index]
-    val newColumns = new ListBuffer[Column]
-    for (column <- columns) {
-      newColumns += column.clone()
-    }
-    cloned.columns.clear()
-    cloned.columns ++= newColumns
-    return cloned
+  def toLowerCase(): Unit = {
+    this.name = name.toLowerCase()
+    val lowers = columns.map { col => col.toLowerCase() }
+    columns.clear()
+    columns ++= lowers
   }
 
-  def createSql(dialect: Dialect): String = {
+  def attach(dialect: Dialect): Unit = {
+    name = name.attach(dialect)
+    val changed = columns.map { col => col.attach(dialect) }
+    columns.clear()
+    columns ++= changed
+  }
+
+  def addColumn(column: Name): Unit = {
+    if (column != null) columns += column
+  }
+
+  override def toString: String = {
+    "IndexMatadata(" + qualifiedName + ')'
+  }
+
+  override def clone(): this.type = {
+    val cloned = super.clone().asInstanceOf[this.type]
+    val newColumns = Collections.newBuffer[Name]
+    newColumns ++= columns
+    cloned.columns = newColumns
+    cloned
+  }
+
+  def createSql: String = {
     val buf = new StringBuilder("create")
       .append(if (unique) " unique" else "")
       .append(" index ")
-      .append(name)
+      .append(qualifiedName)
       .append(" on ")
-      .append(table.identifier)
+      .append(table.qualifiedName)
       .append(" (");
     val iter = columns.iterator
     while (iter.hasNext) {
-      buf.append(iter.next.name);
-      if (iter.hasNext) buf.append(", ");
+      buf.append(iter.next)
+      if (iter.hasNext) buf.append(", ")
     }
-    buf.append(")");
+    buf.append(")")
     buf.toString()
   }
 
-  def dropSql(dialect: Dialect): String = "drop index " + table.identifier + "." + name;
+  def qualifiedName: String = {
+    name.qualified(table.dialect)
+  }
+  def dropSql: String = {
+    "drop index " + table.qualifiedName + "." + qualifiedName
+  }
 
 }

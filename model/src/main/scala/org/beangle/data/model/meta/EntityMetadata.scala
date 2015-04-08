@@ -19,7 +19,7 @@
 package org.beangle.data.model.meta
 
 import org.beangle.data.model.Entity
-import org.beangle.commons.bean.PropertyUtils
+import org.beangle.commons.bean.Properties
 /**
  * <p>
  * MetadataFactory interface.
@@ -49,7 +49,7 @@ trait EntityMetadata {
     getType(entityClass) match {
       case Some(t) => {
         val obj = t.newInstance()
-        PropertyUtils.setProperty(obj, t.idName, id)
+        Properties.set(obj, t.idName, id)
         Some(obj.asInstanceOf[T])
       }
       case _ => None

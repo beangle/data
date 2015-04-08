@@ -18,29 +18,28 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import scala.collection.JavaConversions._
 import java.util.Map
-
-import org.beangle.data.jdbc.meta.Database
-import org.beangle.data.jdbc.meta.Table
+import scala.collection.JavaConversions.{ asScalaSet, mutableMapAsJavaMap }
 import org.beangle.commons.logging.Logging
+import org.beangle.data.jdbc.meta.{ Schema, Table }
+import org.junit.runner.RunWith
+import org.scalatest.{ FlatSpec, Matchers }
+import org.scalatest.junit.JUnitRunner
 
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-
+@RunWith(classOf[JUnitRunner])
 class DialectTestCase extends FlatSpec with Matchers with Logging {
   protected var dialect: Dialect = _
-  protected var database: Database = _
+  protected var schema: Schema = _
 
   protected def listTableAndSequences = {
-    val tables: Map[String, Table] = database.tables
+    val tables: Map[String, Table] = schema.tables
     for (name <- tables.keySet()) {
-      info(s"table $name")
+      logger.info(s"table $name")
     }
 
-    val seqs = database.sequences
+    val seqs = schema.sequences
     for (obj <- seqs) {
-      info(s"sequence $obj")
+      logger.info(s"sequence $obj")
     }
   }
 }

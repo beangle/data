@@ -19,7 +19,9 @@
 package org.beangle.data.jdbc.dialect
 
 import java.sql.Types._
-
+/**
+ * For SqlServer and similar products
+ */
 abstract class AbstractTransactSQLDialect(version: String) extends AbstractDialect(version) {
 
   val SELECT: String = "select"

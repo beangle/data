@@ -59,7 +59,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
         buildEntityType(factory, entry.getValue.getEntityName)
 
       collectionTypes.clear()
-      debug(s"Find ${entityTypes.size - entityCount} entities,${collectionTypes.size - collectionCount} collections from hibernate in ${watch}")
+      logger.debug(s"Find ${entityTypes.size - entityCount} entities,${collectionTypes.size - collectionCount} collections from hibernate in ${watch}")
     }
     new DefaultEntityMetadata(entityTypes.values)
   }
@@ -72,7 +72,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
     if (null == entityType) {
       val cm = factory.getClassMetadata(entityName)
       if (null == cm) {
-        error(s"Cannot find classMetadata for $entityName")
+        logger.error(s"Cannot find classMetadata for $entityName")
         return null
       }
       entityType = new EntityType(cm.getMappedClass, cm.getEntityName, cm.getIdentifierPropertyName)

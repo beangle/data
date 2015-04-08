@@ -29,7 +29,7 @@ import org.beangle.commons.logging.Logging
 import org.beangle.commons.conversion.Conversion
 import org.beangle.commons.conversion.impl.DefaultConversion
 import org.beangle.commons.lang.reflect.Reflections
-import org.beangle.commons.bean.PropertyUtils.{ getProperty, setProperty, copyProperty }
+import org.beangle.commons.bean.Properties.{ get, set, copy }
 
 object ConvertPopulator extends Logging {
   val TrimStr = true
@@ -58,17 +58,17 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
     while (index < attrs.length) {
       val nested = attrs(index)
       try {
-        property = getProperty[Object](propObj, nested)
+        property = get[Object](propObj, nested)
         objtype.getPropertyType(nested) match {
           case Some(t) => {
             if (null == property) {
               property = t.newInstance()
-              setProperty(propObj.asInstanceOf[AnyRef], nested, property)
+              set(propObj.asInstanceOf[AnyRef], nested, property)
             }
             objtype = t
           }
           case None => {
-            error(s"Cannot find property type [$nested] of ${propObj.getClass}")
+            logger.error(s"Cannot find property type [$nested] of ${propObj.getClass}")
             throw new RuntimeException("Cannot find property type " + nested + " of " + propObj.getClass().getName())
           }
         }
@@ -89,14 +89,14 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
       if (attr.indexOf('.') > -1) {
         val ot = init(target, entityType, Strings.substringBeforeLast(attr, "."))
         val lastAttr = Strings.substringAfterLast(attr, ".")
-        setProperty(ot._1.asInstanceOf[AnyRef], lastAttr, convert(ot._2, lastAttr, value))
+        set(ot._1.asInstanceOf[AnyRef], lastAttr, convert(ot._2, lastAttr, value))
       } else {
-        setProperty(target, attr, convert(entityType, attr, value))
+        set(target, attr, convert(entityType, attr, value))
       }
       return true
     } catch {
       case e: Exception =>
-        warn(s"copy property failure:[class:${entityType.entityName} attr:${attr} value:${value}]:", e)
+        logger.warn(s"copy property failure:[class:${entityType.entityName} attr:${attr} value:${value}]:", e)
         return false
     }
   }
@@ -117,7 +117,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
       }
       // 主键
       // if (type.isEntityType() && attr.equals(((EntityType) type).getIdName())) {
-      // setProperty(entity, attr, convert(type, attr, value))
+      // set(entity, attr, convert(type, attr, value))
       // continue
       // }
       // 普通属性
@@ -128,7 +128,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
         try {
           val ot = init(entity, entityType, parentAttr)
           if (null == ot) {
-            error(s"error attr:[$attr] value:[$value]")
+            logger.error(s"error attr:[$attr] value:[$value]")
           } else {
             // 属性也是实体类对象
             if (ot._2.isEntityType) {
@@ -137,7 +137,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
                 if (null == value) {
                   copyValue(entity, parentAttr, null)
                 } else {
-                  val oldValue = getProperty[Object](entity, attr)
+                  val oldValue = get[Object](entity, attr)
                   val newValue = convert(ot._2, foreignKey, value)
                   if (!Objects.equals(oldValue, newValue)) {
                     // 如果外键已经有值
@@ -145,7 +145,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
                       copyValue(entity, parentAttr, null)
                       init(entity, entityType, parentAttr)
                     }
-                    setProperty(entity, attr, newValue)
+                    set(entity, attr, newValue)
                   }
                 }
               } else {
@@ -156,7 +156,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
             }
           }
         } catch {
-          case e: Exception => error(s"error attr:[$attr] value:[$value]", e)
+          case e: Exception => logger.error(s"error attr:[$attr] value:[$value]", e)
         }
       }
     }
@@ -173,6 +173,6 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
   }
 
   private def copyValue(target: AnyRef, attr: String, value: Any): Any = {
-    copyProperty(target, attr, value, conversion)
+    copy(target, attr, value, conversion)
   }
 }

@@ -43,7 +43,7 @@ class TableSeqGenerator extends SequenceStyleGenerator with Logging {
         seqName = Table.qualify(dialect.quote(params.getProperty(CATALOG)), dialect.quote(schema), dialect.quote(seqName))
       }
     }
-    if (Strings.substringAfterLast(seqName, ".").length > NamingPolicy.DefaultMaxLength) warn(s"$seqName's length >=30, wouldn't be supported in oracle!")
+    if (Strings.substringAfterLast(seqName, ".").length > NamingPolicy.DefaultMaxLength) logger.warn(s"$seqName's length >=30, wouldn't be supported in oracle!")
     seqName
   }
 }

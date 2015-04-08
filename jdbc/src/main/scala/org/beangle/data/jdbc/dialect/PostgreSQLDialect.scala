@@ -39,6 +39,9 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
     registerType(DOUBLE, "float8")
 
     registerType(DECIMAL, "numeric($p, $s)")
+    registerType(DECIMAL, 1, "boolean")
+    registerType(DECIMAL, 10, "integer")
+    registerType(DECIMAL, 19, "bigint")
     registerType(NUMERIC, 1000, "numeric($p, $s)")
     registerType(NUMERIC, Int.MaxValue, "numeric(1000, $s)")
     registerType(NUMERIC, "numeric($p, $s)")
@@ -57,7 +60,8 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
 
   override def sequenceGrammar = {
     val ss = new SequenceGrammar()
-    ss.querySequenceSql = "select c.relname as sequence_name from pg_class c,pg_roles r where c.relkind='S' and c.relowner=r.oid and r.rolname=':schema'"
+    ss.querySequenceSql = "select sequence_name,start_value,increment increment_by,cycle_option cycle_flag" +
+      " from information_schema.sequences where sequence_schema=':schema'"
     ss.nextValSql = "select nextval (':name')"
     ss.selectNextValSql = "nextval (':name')"
     ss
@@ -73,4 +77,20 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
 
   override def defaultSchema = "public"
 
+  override def translate(typeCode: Int, size: Int, scale: Int): Tuple2[Int, String] = {
+    if (typeCode == DECIMAL) {
+      size match {
+        case 1 => (BOOLEAN, "boolean")
+        case 5 => (SMALLINT, "int2")
+        case 10 => (INTEGER, "int4")
+        case 19 => (BIGINT, "int8")
+        case _ => super.translate(typeCode, size, scale)
+      }
+
+    } else super.translate(typeCode, size, scale)
+  }
+
+  override def storeCase: StoreCase.Value = {
+    StoreCase.Lower
+  }
 }

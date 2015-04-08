@@ -21,11 +21,11 @@ package org.beangle.data.model.meta
 import java.{ io => jo }
 import org.beangle.data.model.Entity
 import org.beangle.commons.lang.Assert
-import org.beangle.commons.bean.PropertyUtils
+import org.beangle.commons.bean.Properties
 
 object EntityType {
   def extractIdType(entityClass: Class[_], idName: String): Type = {
-    val clazz = PropertyUtils.getPropertyType(entityClass, idName)
+    val clazz = Properties.getType(entityClass, idName)
     if (null != clazz) new IdentifierType(clazz) else null
   }
 }
@@ -46,6 +46,10 @@ class EntityType(val entityClass: Class[_], val entityName: String, val idName: 
    */
   override def getPropertyType(property: String): Option[Type] = {
     propertyTypes.get(property)
+  }
+
+  override def apply(property: String): Type = {
+    propertyTypes(property)
   }
 
   override def name: String = entityName

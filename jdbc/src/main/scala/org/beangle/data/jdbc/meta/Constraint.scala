@@ -18,37 +18,57 @@
  */
 package org.beangle.data.jdbc.meta
 
-import collection.mutable.ListBuffer
+import scala.collection.mutable.ListBuffer
+import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.data.jdbc.dialect.Name
 
 /**
  * Table Constraint Metadata
  *
  * @author chaostone
  */
-class Constraint(var name: String) extends Comparable[Constraint] with Cloneable {
+class Constraint(var table: Table, var name: Name) extends Ordered[Constraint] with Cloneable {
 
-  val columns = new ListBuffer[Column]
+  var columns = new ListBuffer[Name]
 
   var enabled: Boolean = true
 
-  var table: Table = null
+  def qualifiedName: String = {
+    name.qualified(table.dialect)
+  }
 
-  def lowerCase() { if (null != name) this.name = name.toLowerCase }
+  def attach(dialect: Dialect): Unit = {
+    name = name.attach(dialect)
+    val changed = columns.map { col => col.attach(dialect) }
+    columns.clear()
+    columns ++= changed
+  }
 
-  def addColumn(column: Column) { if (column != null) columns += column }
+  def toLowerCase(): Unit = {
+    if (null != name) this.name = name.toLowerCase
+    val lowers = columns.map { col => col.toLowerCase() }
+    columns.clear()
+    columns ++= lowers
+  }
 
-  override def compareTo(o: Constraint) = { if (null == name) 0 else name.compareTo(o.name) }
+  def columnNames: List[String] = {
+    columns.map(x => x.qualified(table.dialect)).toList
+  }
+
+  def addColumn(column: Name): Unit = {
+    if (column != null) columns += column
+  }
+
+  override def compare(o: Constraint): Int = {
+    if (null == name) 0 else name.compare(o.name)
+  }
 
   override def clone(): this.type = {
-    var cloned: this.type = null
-    cloned = super.clone().asInstanceOf[this.type]
-    var newColumns = new ListBuffer[Column];
-    for (column <- columns) {
-      newColumns += column.clone();
-    }
-    cloned.columns.clear();
-    cloned.columns ++= newColumns
-    return cloned;
+    val cloned = super.clone().asInstanceOf[this.type]
+    var newColumns = new ListBuffer[Name]
+    newColumns ++= columns
+    cloned.columns = newColumns
+    cloned
   }
 
 }

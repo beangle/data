@@ -72,4 +72,7 @@ class HSQL2Dialect extends AbstractDialect("[2.0.0,)") {
 
   override def defaultSchema = "PUBLIC"
 
+  override def storeCase: StoreCase.Value = {
+    StoreCase.Upper
+  }
 }
