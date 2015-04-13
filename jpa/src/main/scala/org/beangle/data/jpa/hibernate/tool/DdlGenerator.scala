@@ -82,10 +82,6 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
 
   /**
    * Generate sql scripts
-   *
-   * @param dirName
-   * @param packageName
-   * @throws Exception
    */
   def gen(dirName: String, packageName: String): Unit = {
     configuration = DefaultConfigurationBuilder.build(new OverrideConfiguration)
@@ -139,7 +135,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
           table.setComment(owner + "-" + messages.get(ownerClass, substringAfterLast(col.getRole, ".")))
 
           val keyColumn = table.getColumn(col.getKey.getColumnIterator.next.asInstanceOf[Column])
-          if (null != keyColumn) keyColumn.setComment(owner + " ID")
+          if (null != keyColumn) keyColumn.setComment(owner + "ID")
 
           if (col.isInstanceOf[IndexedCollection]) {
             val idxCol = col.asInstanceOf[IndexedCollection]
@@ -183,10 +179,6 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
 
   /**
    * get component class by component property string
-   *
-   * @param pc
-   * @param propertyString
-   * @return
    */
   private def getPropertyType(pc: PersistentClass, propertyString: String): Class[_] = {
     val properties = split(propertyString, '.')
@@ -205,7 +197,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     val entityName = toOne.getReferencedEntityName
     val referClass = configuration.getClassMapping(entityName)
     if (null != referClass) {
-      column.setComment(referClass.getTable.getComment + " ID")
+      column.setComment(referClass.getTable.getComment + "ID")
     }
   }
 
@@ -241,7 +233,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     if (p.getColumnSpan == 1) {
       val column = p.getColumnIterator.next.asInstanceOf[Column]
       if (isForeignColumn(table, column)) {
-        column.setComment(messages.get(clazz, p.getName) + " ID")
+        column.setComment(messages.get(clazz, p.getName) + "ID")
       } else {
         column.setComment(messages.get(clazz, p.getName))
       }
