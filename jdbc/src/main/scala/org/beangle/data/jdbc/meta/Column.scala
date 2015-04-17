@@ -70,8 +70,8 @@ class Column(var name: Name, var typeCode: Int) extends Ordered[Column] with Clo
     //    col
   }
 
-  def toLowerCase(): Unit = {
-    this.name = name.toLowerCase
+  def toCase(lower: Boolean): Unit = {
+    this.name = name.toCase(lower)
   }
 
   def qualifiedName(dialect: Dialect): String = {

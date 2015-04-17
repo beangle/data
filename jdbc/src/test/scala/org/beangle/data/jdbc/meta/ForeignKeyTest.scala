@@ -49,7 +49,7 @@ class ForeignKeyTest extends FlatSpec with Matchers {
   "toLowerCase " should "correct" in {
     val tableA = buildTable
     val pgdialect = new PostgreSQLDialect()
-    tableA.toLowerCase()
+    tableA.toCase(true)
     assert(tableA.foreignKeys.size == 1)
     val head = tableA.foreignKeys.head
     assert(head.name.value == "fkxyz")

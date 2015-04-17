@@ -38,15 +38,15 @@ class Sequence(var name: Name, var schema: Name) extends Ordered[Sequence] {
     else schema.qualified(dialect) + "." + name.qualified(dialect)
   }
 
-  def toLowerCase(): Unit = {
-    this.schema = schema.toLowerCase()
-    this.name = name.toLowerCase()
+  def toCase(lower: Boolean): Unit = {
+    this.schema = schema.toCase(lower)
+    this.name = name.toCase(lower)
   }
 
   def attach(dialect: Dialect): this.type = {
     this.name = name.attach(dialect)
     this.schema = schema.attach(dialect)
-    this.dialect=dialect
+    this.dialect = dialect
     this
   }
 

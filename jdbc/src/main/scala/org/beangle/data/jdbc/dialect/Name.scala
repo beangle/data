@@ -20,8 +20,8 @@ package org.beangle.data.jdbc.dialect
 
 case class Name(value: String, quoted: Boolean = false) extends Ordered[Name] {
 
-  def toLowerCase(): Name = {
-    new Name(value.toLowerCase(), quoted)
+  def toCase(lower: Boolean): Name = {
+    new Name(if (lower) value.toLowerCase() else value.toUpperCase(), quoted)
   }
 
   override def toString: String = {

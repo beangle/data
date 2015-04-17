@@ -169,14 +169,14 @@ class Table(var schema: Name, var name: Name) extends Ordered[Table] with Clonea
     tb
   }
 
-  def toLowerCase(): Unit = {
-    this.schema = schema.toLowerCase()
-    this.name = name.toLowerCase()
-    for (col <- columns) col.toLowerCase()
-    if (null != primaryKey) primaryKey.toLowerCase()
-    for (fk <- foreignKeys) fk.toLowerCase()
-    for (uk <- uniqueKeys) uk.toLowerCase()
-    for (idx <- indexes) idx.toLowerCase()
+  def toCase(lower: Boolean): Unit = {
+    this.schema = schema.toCase(lower)
+    this.name = name.toCase(lower)
+    for (col <- columns) col.toCase(lower)
+    if (null != primaryKey) primaryKey.toCase(lower)
+    for (fk <- foreignKeys) fk.toCase(lower)
+    for (uk <- uniqueKeys) uk.toCase(lower)
+    for (idx <- indexes) idx.toCase(lower)
   }
 
   override def compare(o: Table): Int = {
@@ -267,8 +267,8 @@ case class TableRef(var dialect: Dialect, var schema: Name, var name: Name) exte
     Table.qualify(dialect, schema, name)
   }
 
-  def toLowerCase(): Unit = {
-    this.name = this.name.toLowerCase()
-    this.schema = this.schema.toLowerCase()
+  def toCase(lower: Boolean): Unit = {
+    this.name = this.name.toCase(lower)
+    this.schema = this.schema.toCase(lower)
   }
 }

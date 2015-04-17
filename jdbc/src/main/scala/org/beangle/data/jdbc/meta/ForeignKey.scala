@@ -19,6 +19,7 @@
 package org.beangle.data.jdbc.meta
 
 import scala.collection.mutable.ListBuffer
+
 import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.data.jdbc.dialect.Name
 
@@ -35,14 +36,14 @@ class ForeignKey(t: Table, n: Name, column: Name = null) extends Constraint(t, n
 
   addColumn(column)
 
-  override def toLowerCase(): Unit = {
-    super.toLowerCase()
-    val lowers = referencedColumns.map { col => col.toLowerCase() }
+  override def toCase(lower: Boolean): Unit = {
+    super.toCase(lower)
+    val lowers = referencedColumns.map { col => col.toCase(lower) }
     referencedColumns.clear()
     referencedColumns ++= lowers
 
-    if (this.table.schema.value == referencedTable.schema.value.toLowerCase()) {
-      referencedTable.toLowerCase()
+    if (this.table.schema.value.toLowerCase() == referencedTable.schema.value.toLowerCase()) {
+      referencedTable.toCase(lower)
     }
   }
 

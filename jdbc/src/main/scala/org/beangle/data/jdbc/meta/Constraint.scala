@@ -44,9 +44,9 @@ class Constraint(var table: Table, var name: Name) extends Ordered[Constraint] w
     columns ++= changed
   }
 
-  def toLowerCase(): Unit = {
-    if (null != name) this.name = name.toLowerCase
-    val lowers = columns.map { col => col.toLowerCase() }
+  def toCase(lower: Boolean): Unit = {
+    if (null != name) this.name = name.toCase(lower)
+    val lowers = columns.map { col => col.toCase(lower) }
     columns.clear()
     columns ++= lowers
   }

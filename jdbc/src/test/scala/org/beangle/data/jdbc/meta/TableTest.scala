@@ -61,7 +61,7 @@ class TableTest extends FlatSpec with Matchers {
     val table = new Table("PUBLIC", "USER")
     val cloned = table.clone(new PostgreSQLDialect())
     (cloned == table) should be(false)
-    cloned.toLowerCase()
+    cloned.toCase(true)
     table.name.value should equal("USER")
     cloned.name.value should equal("user")
   }
