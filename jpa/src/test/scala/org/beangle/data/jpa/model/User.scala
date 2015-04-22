@@ -29,6 +29,7 @@ class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
   var age: Option[Int] = None
   var properties: collection.mutable.Map[String, String] = _
   var occupy: WeekState = _
+  var createdOn: java.sql.Date = _
 }
 
 class Name {

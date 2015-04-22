@@ -29,6 +29,7 @@
            <element column="value" type="string"/>
         </map>
         <property name="occupy" type="weekstate"/>
+        <property name="createdOn"/>
     </class>
 
     <class name="org.beangle.data.jpa.model.Role" >
