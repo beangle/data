@@ -100,7 +100,7 @@ class OverrideConfiguration extends Configuration with Logging {
 
     for (collection <- collections.values()) {
       val table = collection.getCollectionTable()
-      if (null != table) {
+      if (null != table && !collection.isOneToMany) {
         namingPolicy.getSchema(collection.getOwner.getMappedClass) foreach (schema => table.setSchema(schema))
       }
     }
