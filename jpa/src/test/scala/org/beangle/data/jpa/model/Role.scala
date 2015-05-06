@@ -24,3 +24,8 @@ class Role(var id: java.lang.Integer) extends Entity[java.lang.Integer] {
   def this() = this(0)
   var name: String = _
 }
+
+class ExtendRole(id: Integer) extends Role(id) {
+  var enName: String = _
+  def this() = this(0)
+}

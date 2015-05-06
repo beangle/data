@@ -24,8 +24,8 @@ import java.{ util => ju }
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
 
+import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, TableSeqGenerator }
 import org.beangle.data.jpa.hibernate.udt.{ EnumType, HourMinuteType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, WeekStateType }
@@ -236,13 +236,25 @@ private[hibernate] object PersistentClassMerger extends Logging {
       field.setAccessible(true)
       field
     } catch {
-      case e: Exception => logger.error(s"Cannot access PersistentClass $name field ,Override Mapping will be disabled", e)
+      case e: Exception => {
+        logger.error(s"Cannot access PersistentClass $name field ,Override Mapping will be disabled", e)
+        null
+      }
     }
-    null
   }
 
-  def merge(sub: PersistentClass, parent: PersistentClass) {
+  /**
+   * Merge sub property into parent
+   *
+   * Make parent persistent class as TARGET.
+   *
+   * 1. Modify parent className using sub's className
+   * 2. Clear any sub/super/polymorphic/discriminator value
+   * 3. Put all properties into parent
+   */
+  def merge(sub: PersistentClass, parent: PersistentClass): Unit = {
     if (!mergeSupport) throw new RuntimeException("Merge not supported!")
+    if (sub.getMappedClass == parent.getMappedClass) return ;
 
     val className = sub.getClassName()
     // 1. convert old to mappedsuperclass
@@ -271,8 +283,14 @@ private[hibernate] object PersistentClassMerger extends Logging {
     // 3. add property to old
     try {
       val pIter = sub.getPropertyIterator()
+      val ppIter = parent.getPropertyIterator;
+      val pps = Collections.newSet[String]
+      while (ppIter.hasNext()) {
+        pps += ppIter.next().asInstanceOf[Property].getName
+      }
       while (pIter.hasNext()) {
-        parent.addProperty(pIter.next().asInstanceOf[Property])
+        val property = pIter.next().asInstanceOf[Property]
+        if (!pps.contains(property.getName)) parent.addProperty(property)
       }
     } catch {
       case e: Exception =>

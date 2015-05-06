@@ -25,21 +25,19 @@ import org.apache.commons.pool.impl.GenericObjectPool
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.time.{ HourMinute, WeekDays, WeekState }
-import org.beangle.data.jpa.hibernate.{ OverrideConfiguration, RailsNamingStrategy }
+import org.beangle.data.jpa.hibernate.{ HibernateEntityDao, OverrideConfiguration, RailsNamingStrategy }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
-import org.beangle.data.jpa.model.{ Name, Role, TimeBean, User }
-import org.hibernate.{ SessionFactory, SessionFactoryObserver }
+import org.beangle.data.jpa.model.{ ExtendRole, Name, Role, TimeBean, User }
+import org.hibernate.{ Session, SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.AvailableSettings
+import org.hibernate.context.spi.AbstractCurrentSessionContext
 import org.hibernate.dialect.Oracle10gDialect
+import org.hibernate.engine.spi.SessionFactoryImplementor
 import org.junit.runner.RunWith
-import org.scalatest.{ Finders, FunSpec, Matchers }
+import org.scalatest.{ FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
-import org.beangle.data.jpa.hibernate.HibernateEntityDao
-import org.hibernate.context.spi.AbstractCurrentSessionContext
-import org.hibernate.engine.spi.SessionFactoryImplementor
-import org.hibernate.Session
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
@@ -77,8 +75,8 @@ class UdtTest extends FunSpec with Matchers {
       user.name = new Name
       user.name.first = "Bill"
       user.name.last = "Smith"
-      val role1 = new Role(1)
-      val role2 = new Role(2)
+      val role1 = new ExtendRole(1)
+      val role2 = new ExtendRole(2)
       user.roleSet += role1
       user.roleSet += role2
       user.roleList.asInstanceOf[ListBuffer[Role]] += role1
@@ -86,7 +84,7 @@ class UdtTest extends FunSpec with Matchers {
       user.properties = new collection.mutable.HashMap[String, String]
       user.properties.put("address", "some street")
       user.occupy = new WeekState(2)
-      entityDao.saveOrUpdate(role1,role2,user)
+      entityDao.saveOrUpdate(role1, role2, user)
       sf.getCurrentSession.flush()
       sf.getCurrentSession.clear()
 

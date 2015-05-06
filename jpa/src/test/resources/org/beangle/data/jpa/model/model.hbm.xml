@@ -38,4 +38,15 @@
         </id>
         <property name="name" length="50" unique="true"/>
     </class>
+
+    <class name="org.beangle.data.jpa.model.ExtendRole" entity-name="org.beangle.data.jpa.model.Role">
+        <id name="id" unsaved-value="0" type="integer">
+          <generator class="assigned"/>
+        </id>
+        <!--
+            这一行可以省略，这些属性如果不进行修改，只是继承，则可以不用重复
+            <property name="name" length="50" unique="true"/>
+         -->
+        <property name="enName" length="50" unique="true"/>
+    </class>
 </hibernate-mapping>
