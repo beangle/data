@@ -38,6 +38,7 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
     registerType(BIGINT, "number(19,0)");
 
     registerType(FLOAT, "float");
+    registerType(REAL, "float");
     registerType(DOUBLE, "double precision");
 
     registerType(DECIMAL, "number($p,$s)");
