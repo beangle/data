@@ -18,12 +18,12 @@
  */
 package org.beangle.data.jpa.model
 
-import org.beangle.data.model.bean.IntIdBean
+import org.beangle.data.model.IntId
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.commons.lang.time.HourMinute
 import org.beangle.commons.lang.time.WeekDays
 
-class TimeBean extends IntIdBean {
+class TimeBean extends IntId {
 
   var time: HourMinute = _
 

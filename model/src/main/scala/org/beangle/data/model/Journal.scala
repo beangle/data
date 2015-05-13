@@ -16,11 +16,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.model.bean
+package org.beangle.data.model
 
-import org.beangle.data.model.Named
+import scala.collection.mutable.ListBuffer
 
-@deprecated("Using Named directly","4.1.11")
-trait NamedBean extends Named {
+trait Journal[T <: TemporalOn] extends Component {
 
+  var head: T = _
+
+  var journals: Seq[T] = new ListBuffer[T]
 }

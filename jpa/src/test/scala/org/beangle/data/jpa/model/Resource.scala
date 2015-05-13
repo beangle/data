@@ -19,18 +19,18 @@
 package org.beangle.data.jpa.model
 
 import org.beangle.data.model.{ Named, YearId }
-import org.beangle.data.model.bean.{ IntIdBean, LongIdBean }
+import org.beangle.data.model.{ IntId, LongId }
 
-class LongIdResource extends LongIdBean with Named {
+class LongIdResource extends LongId with Named {
 
 }
 
-class LongDateIdResource extends LongIdBean with Named with YearId {
+class LongDateIdResource extends LongId with Named with YearId {
 
   var year: Int = _
 }
 
-class IntIdResource extends IntIdBean with Named with YearId {
+class IntIdResource extends IntId with Named with YearId {
 
   var year: Int = _
 }

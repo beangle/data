@@ -20,9 +20,9 @@ package org.beangle.data.jpa.model
 
 import org.beangle.data.model.{ Coded, Named }
 import org.beangle.data.model.annotation.code
-import org.beangle.data.model.bean.IntIdBean
+import org.beangle.data.model.IntId
 
 @code("school")
-class IdType extends IntIdBean with Coded with Named {
+class IdType extends IntId with Coded with Named {
 
 }
