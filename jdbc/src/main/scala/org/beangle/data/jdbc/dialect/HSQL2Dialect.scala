@@ -62,7 +62,7 @@ class HSQL2Dialect extends AbstractDialect("[2.0.0,)") {
     ss
   }
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{}  offset ? limit ?", false, false, false)
+  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} offset ? limit ?", false)
 
   override def tableGrammar = {
     val bean = new TableGrammarBean()

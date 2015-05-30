@@ -67,7 +67,7 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
     ss
   }
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true, false, false)
+  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
 
   override def tableGrammar = {
     val bean = new TableGrammarBean()

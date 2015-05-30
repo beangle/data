@@ -76,37 +76,16 @@ class DB2Dialect extends AbstractDialect("[8.0]") {
   private def hasDistinct(sql: String) = sql.toLowerCase().indexOf("select distinct") >= 0
 
   override def limitGrammar = {
-    class DB2LimitGrammar extends LimitGrammarBean(null, null, false, false, true) {
-      override def limit(sql: String, hasOffset: Boolean) = {
-        val startOfSelect = sql.toLowerCase().indexOf("select")
-        val pagingSelect: StringBuilder = new StringBuilder(sql.length() + 100)
-          .append(sql.substring(0, startOfSelect)) // add the comment
-          .append("select * from ( select ") // nest the main query in an
-          // outer select
-          .append(getRowNumber(sql)) // add the rownnumber bit into the
-        // outer query select list
-
-        if (hasDistinct(sql)) {
-          // add another (inner) nested select
-          pagingSelect.append(" row_.* from ( ")
-            // add the main query
-            .append(sql.substring(startOfSelect))
-            // close off the inner nested select
-            .append(" ) as row_")
+    class DB2LimitGrammar extends LimitGrammar {
+      override def limit(sql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
+        if (offset == 0) {
+          (sql + " fetch first " + limit + " rows only", List.empty)
         } else {
-          // add the main query
-          pagingSelect.append(sql.substring(startOfSelect + 6))
+          //nest the main query in an outer select
+          ("select * from ( select inner2_.*, rownumber() over(order by order of inner2_) as rownumber_ from ( "
+            + sql + " fetch first " + limit + " rows only ) as inner2_ ) as inner1_ where rownumber_ > "
+            + offset + " order by rownumber_", List.empty)
         }
-
-        pagingSelect.append(" ) as temp_ where rownumber_ ")
-
-        // add the restriction to the outer select
-        if (hasOffset) {
-          pagingSelect.append("between ?+1 and ?")
-        } else {
-          pagingSelect.append("<= ?")
-        }
-        pagingSelect.toString()
       }
     }
     new DB2LimitGrammar
