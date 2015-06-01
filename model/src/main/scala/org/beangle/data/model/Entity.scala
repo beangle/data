@@ -51,20 +51,19 @@ trait Entity[ID] extends Serializable {
    */
   override def equals(other: Any): Boolean = other match {
     case that: Entity[_] => (this eq that) || (null != id && null != that.id && id == that.id)
-    case _ => false
+    case _               => false
   }
 }
 
-trait NumId[ID] extends Entity[ID] {
-
+abstract class NumId[ID] extends Entity[ID] {
   var id: ID = _
 }
 
-trait LongId extends NumId[java.lang.Long]
+abstract class LongId extends NumId[java.lang.Long]
 
-trait IntId extends NumId[java.lang.Integer]
+abstract class IntId extends NumId[java.lang.Integer]
 
-trait StringId extends Entity[String] {
+abstract class StringId extends Entity[String] {
 
   var id: String = _
 }
