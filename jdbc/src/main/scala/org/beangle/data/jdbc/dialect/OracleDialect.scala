@@ -102,7 +102,9 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
     ss
   }
 
-  override def defaultSchema = "$user"
+  override def defaultSchema: String = {
+    "$user"
+  }
 
   override def metadataGrammar: MetadataGrammar = {
     new MetadataGrammar(

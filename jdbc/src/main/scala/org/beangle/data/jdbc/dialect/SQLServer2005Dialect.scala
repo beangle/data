@@ -39,6 +39,10 @@ class SQLServer2005Dialect(version: String) extends SQLServerDialect(version) {
     registerType(CLOB, "varchar(MAX)")
   }
 
+  override def defaultSchema: String = {
+    "dbo"
+  }
+
   override def limitGrammar: LimitGrammar = {
     class SqlServerLimitGrammar extends LimitGrammar {
       override def limit(querySql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {

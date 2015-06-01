@@ -75,16 +75,18 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
     bean
   }
 
-  override def defaultSchema = "public"
+  override def defaultSchema: String = {
+    "public"
+  }
 
   override def translate(typeCode: Int, size: Int, scale: Int): Tuple2[Int, String] = {
     if (typeCode == DECIMAL) {
       size match {
-        case 1 => (BOOLEAN, "boolean")
-        case 5 => (SMALLINT, "int2")
+        case 1  => (BOOLEAN, "boolean")
+        case 5  => (SMALLINT, "int2")
         case 10 => (INTEGER, "int4")
         case 19 => (BIGINT, "int8")
-        case _ => super.translate(typeCode, size, scale)
+        case _  => super.translate(typeCode, size, scale)
       }
 
     } else super.translate(typeCode, size, scale)

@@ -52,7 +52,7 @@ class SQLServerDialect(version: String) extends AbstractTransactSQLDialect(versi
     ']'
   }
 
-  //FIXME 
+  //FIXME
   override def storeCase: StoreCase.Value = {
     StoreCase.Mixed
   }

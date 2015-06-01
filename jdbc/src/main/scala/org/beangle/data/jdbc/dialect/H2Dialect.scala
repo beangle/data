@@ -67,7 +67,9 @@ class H2Dialect extends AbstractDialect("[1.3,)") {
     bean
   }
 
-  override def defaultSchema = "PUBLIC"
+  override def defaultSchema: String = {
+    "PUBLIC"
+  }
 
   override def storeCase: StoreCase.Value = {
     StoreCase.Upper
