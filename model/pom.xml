@@ -9,6 +9,11 @@
   <packaging>jar</packaging>
   <name>Beangle Data Model</name>
 
+  <properties>
+    <bundle.symbolicName>org.beangle.data.model</bundle.symbolicName>
+    <bundle.namespace>org.beangle.data.model</bundle.namespace>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.beangle.commons</groupId>

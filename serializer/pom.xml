@@ -9,6 +9,11 @@
   <packaging>jar</packaging>
   <name>Beangle Data Serializer</name>
 
+  <properties>
+    <bundle.symbolicName>org.beangle.data.serializer</bundle.symbolicName>
+    <bundle.namespace>org.beangle.data.serializer</bundle.namespace>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.beangle.commons</groupId>

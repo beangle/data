@@ -9,6 +9,11 @@
   <packaging>jar</packaging>
   <name>Beangle Data JDBC</name>
 
+  <properties>
+    <bundle.symbolicName>org.beangle.data.jdbc</bundle.symbolicName>
+    <bundle.namespace>org.beangle.data.jdbc</bundle.namespace>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.beangle.commons</groupId>

@@ -21,13 +21,13 @@ package org.beangle.data.jpa.model
 import org.beangle.data.model.IntId
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.commons.lang.time.HourMinute
-import org.beangle.commons.lang.time.WeekDays
+import org.beangle.commons.lang.time.WeekDay
 
 class TimeBean extends IntId {
 
   var time: HourMinute = _
 
-  var weekday: WeekDays.WeekDay = _
+  var weekday: WeekDay.WeekDay = _
 
   var state: WeekState = _
 

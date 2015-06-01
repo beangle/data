@@ -24,7 +24,7 @@ import org.apache.commons.dbcp.{ ConnectionFactory, DriverManagerConnectionFacto
 import org.apache.commons.pool.impl.GenericObjectPool
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.time.{ HourMinute, WeekDays, WeekState }
+import org.beangle.commons.lang.time.{ HourMinute, WeekDay, WeekState }
 import org.beangle.data.jpa.hibernate.{ HibernateEntityDao, OverrideConfiguration, RailsNamingStrategy }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
 import org.beangle.data.jpa.model.{ ExtendRole, Name, Role, TimeBean, User }
@@ -102,7 +102,7 @@ class UdtTest extends FunSpec with Matchers {
       val id = 1
       val timebean = new TimeBean()
       timebean.time = HourMinute(1230.asInstanceOf[Short])
-      timebean.weekday = WeekDays.Sun
+      timebean.weekday = WeekDay.Sun
       timebean.state = new WeekState(1)
       timebean.id = id
       s.save(timebean)
