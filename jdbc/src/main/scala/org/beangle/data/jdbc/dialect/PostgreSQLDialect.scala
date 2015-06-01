@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -67,7 +67,7 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
     ss
   }
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true, false, false)
+  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
 
   override def tableGrammar = {
     val bean = new TableGrammarBean()
@@ -75,16 +75,18 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
     bean
   }
 
-  override def defaultSchema = "public"
+  override def defaultSchema: String = {
+    "public"
+  }
 
   override def translate(typeCode: Int, size: Int, scale: Int): Tuple2[Int, String] = {
     if (typeCode == DECIMAL) {
       size match {
-        case 1 => (BOOLEAN, "boolean")
-        case 5 => (SMALLINT, "int2")
+        case 1  => (BOOLEAN, "boolean")
+        case 5  => (SMALLINT, "int2")
         case 10 => (INTEGER, "int4")
         case 19 => (BIGINT, "int8")
-        case _ => super.translate(typeCode, size, scale)
+        case _  => super.translate(typeCode, size, scale)
       }
 
     } else super.translate(typeCode, size, scale)

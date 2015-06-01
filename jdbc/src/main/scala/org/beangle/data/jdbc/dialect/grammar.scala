@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -70,27 +70,23 @@ class TableGrammarBean extends TableGrammar {
 
 trait LimitGrammar {
 
-  /**
-   * ANSI SQL defines the LIMIT clause to be in the form LIMIT offset, limit.
-   * Does this dialect require us to bind the parameters in reverse order?
-   *
-   * @return true if the correct order is limit, offset
-   */
-  def bindInReverseOrder: Boolean
-
-  def bindFirst: Boolean
-
-  def useMax: Boolean
-
-  def limit(query: String, hasOffset: Boolean): String
+  def limit(query: String, offset: Int, limit: Int): Tuple2[String, List[Int]]
 
 }
 
-class LimitGrammarBean(pattern: String, offsetPattern: String, val bindInReverseOrder: Boolean,
-    val bindFirst: Boolean, val useMax: Boolean) extends LimitGrammar {
+class LimitGrammarBean(pattern: String, offsetPattern: String, val bindInReverseOrder: Boolean) extends LimitGrammar {
 
-  def limit(query: String, hasOffset: Boolean) =
-    if (hasOffset) Strings.replace(offsetPattern, "{}", query) else Strings.replace(pattern, "{}", query)
+  def limit(query: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
+    val hasOffset = offset > 0
+    val limitOrMax = if (null == offsetPattern) offset + limit else limit
+
+    if (hasOffset) {
+      val params = if (bindInReverseOrder) List(limitOrMax, offset) else List(offset, limitOrMax)
+      (Strings.replace(offsetPattern, "{}", query), params)
+    } else {
+      (Strings.replace(pattern, "{}", query), List(limitOrMax))
+    }
+  }
 }
 
 /**

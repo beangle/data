@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -63,10 +63,10 @@ class MySQLDialect extends AbstractDialect("[5.0,)") {
     registerType(CLOB, "longtext")
   }
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ?, ?", false, false, false)
+  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
 
   override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
-    referencedTable: String, primaryKey: Iterable[String]) = {
+                             referencedTable: String, primaryKey: Iterable[String]) = {
     val cols = Strings.join(foreignKey, ", ")
     new StringBuffer(30).append(" add index ").append(constraintName).append(" (").append(cols)
       .append("), add constraInt ").append(constraintName).append(" foreign key (").append(cols)

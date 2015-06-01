@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -44,9 +44,9 @@ class Constraint(var table: Table, var name: Name) extends Ordered[Constraint] w
     columns ++= changed
   }
 
-  def toLowerCase(): Unit = {
-    if (null != name) this.name = name.toLowerCase
-    val lowers = columns.map { col => col.toLowerCase() }
+  def toCase(lower: Boolean): Unit = {
+    if (null != name) this.name = name.toCase(lower)
+    val lowers = columns.map { col => col.toCase(lower) }
     columns.clear()
     columns ++= lowers
   }

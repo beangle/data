@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -39,12 +39,16 @@ class SQLServer2005Dialect(version: String) extends SQLServerDialect(version) {
     registerType(CLOB, "varchar(MAX)")
   }
 
-  override def limitGrammar: LimitGrammar = {
-    class SqlServerLimitGrammar extends LimitGrammarBean(null, null, false, false, true) {
-      override def limit(querySqlString: String, hasOffset: Boolean) = {
-        val sb: StringBuilder = new StringBuilder(querySqlString)
+  override def defaultSchema: String = {
+    "dbo"
+  }
 
-        val orderByIndex: Int = querySqlString.toLowerCase().indexOf("order by")
+  override def limitGrammar: LimitGrammar = {
+    class SqlServerLimitGrammar extends LimitGrammar {
+      override def limit(querySql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
+        val sb: StringBuilder = new StringBuilder(querySql)
+
+        val orderByIndex: Int = querySql.toLowerCase().indexOf("order by")
         var orderby: CharSequence = "ORDER BY CURRENT_TIMESTAMP";
         if (orderByIndex > 0) orderby = sb.subSequence(orderByIndex, sb.length())
 
@@ -60,11 +64,9 @@ class SQLServer2005Dialect(version: String) extends SQLServerDialect(version) {
 
         // Wrap the query within a with statement:
         sb.insert(0, "WITH query AS (").append(") SELECT * FROM query ")
-        if (hasOffset)
-          sb.append("WHERE _row_nr_ BETWEEN ? AND ?")
-        else
-          sb.append("WHERE _row_nr_ BETWEEN 1 AND ?")
-        sb.toString()
+        sb.append("WHERE _row_nr_ BETWEEN ? AND ?")
+
+        (sb.toString(), List(offset + 1, offset + limit))
       }
     }
     new SqlServerLimitGrammar

@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,16 +18,16 @@
  */
 package org.beangle.data.jpa.model
 
-import org.beangle.data.model.bean.IntIdBean
+import org.beangle.data.model.IntId
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.commons.lang.time.HourMinute
-import org.beangle.commons.lang.time.WeekDays
+import org.beangle.commons.lang.time.WeekDay
 
-class TimeBean extends IntIdBean {
+class TimeBean extends IntId {
 
   var time: HourMinute = _
 
-  var weekday: WeekDays.WeekDay = _
+  var weekday: WeekDay.WeekDay = _
 
   var state: WeekState = _
 

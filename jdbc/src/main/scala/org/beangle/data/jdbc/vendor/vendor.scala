@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -44,6 +44,7 @@ object Vendors {
   val hsql = Vendor("HSQL Database Engine", Driver("org.hsqldb.jdbcDriver", "hsqldb", "hsql://<host>:<port>",
     "file:<path>", "hsqls://<host>:<port>", "http://<host>:<port>", "https://<host>:<port>", "res:<database_name>"))
 
+  //default port 1433
   val sqlserver = Vendor("Microsoft SQL Server", Driver("com.microsoft.sqlserver.jdbc.SQLServerDriver", "sqlserver",
     "//<server_name>:<port>"),
     Driver("net.sourceforge.jtds.jdbc.Driver", "jtds", "sqlserver://<server_name>:<port>/<database_name>"))

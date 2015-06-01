@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -38,6 +38,7 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
     registerType(BIGINT, "number(19,0)");
 
     registerType(FLOAT, "float");
+    registerType(REAL, "float");
     registerType(DOUBLE, "double precision");
 
     registerType(DECIMAL, "number($p,$s)");
@@ -59,15 +60,16 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
   }
 
   override def limitGrammar: LimitGrammar = {
-    class OracleLimitGrammar extends LimitGrammarBean(null, null, true, false, true) {
-      override def limit(sqlStr: String, hasOffset: Boolean) = {
-        var sql = sqlStr.trim();
+    class OracleLimitGrammar extends LimitGrammar {
+      override def limit(querySql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
+        var sql = querySql.trim();
         var isForUpdate = false;
         if (sql.toLowerCase().endsWith(" for update")) {
           sql = sql.substring(0, sql.length() - 11);
           isForUpdate = true;
         }
         val pagingSelect: StringBuilder = new StringBuilder(sql.length() + 100);
+        val hasOffset = offset > 0
         if (hasOffset) {
           pagingSelect.append("select * from ( select row_.*, rownum rownum_ from ( ");
         } else {
@@ -83,7 +85,7 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
         if (isForUpdate) {
           pagingSelect.append(" for update");
         }
-        pagingSelect.toString()
+        (pagingSelect.toString, if (hasOffset) List(limit + offset, offset) else List(limit))
       }
     }
 
@@ -100,7 +102,9 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
     ss
   }
 
-  override def defaultSchema = "$user"
+  override def defaultSchema: String = {
+    "$user"
+  }
 
   override def metadataGrammar: MetadataGrammar = {
     new MetadataGrammar(

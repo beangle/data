@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -49,7 +49,7 @@ class ForeignKeyTest extends FlatSpec with Matchers {
   "toLowerCase " should "correct" in {
     val tableA = buildTable
     val pgdialect = new PostgreSQLDialect()
-    tableA.toLowerCase()
+    tableA.toCase(true)
     assert(tableA.foreignKeys.size == 1)
     val head = tableA.foreignKeys.head
     assert(head.name.value == "fkxyz")

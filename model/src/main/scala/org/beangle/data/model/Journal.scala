@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,17 +16,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.model.bean
+package org.beangle.data.model
 
-import java.sql.Date
-import org.beangle.data.model.TemporalOn
-/**
- * Jounal Entity
- *
- * @author chaostone
- * @since 3.1.0
- */
-@deprecated("Using TemporalOn directly","4.1.11")
-trait TemporalOnBean extends TemporalOn {
+import scala.collection.mutable.ListBuffer
 
+trait Journal[T <: TemporalOn] extends Component {
+
+  var head: T = _
+
+  var journals: Seq[T] = new ListBuffer[T]
 }

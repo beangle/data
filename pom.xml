@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>22.1</version>
+    <version>22.2</version>
   </parent>
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent</artifactId>
   <packaging>pom</packaging>
-  <version>4.2.1</version>
+  <version>4.2.2</version>
   <name>Beangle Data Parent</name>
-  
+
   <modules>
     <module>jdbc</module>
     <module>model</module>
@@ -23,7 +23,7 @@
   </description>
 
   <url>https://github.com/beangle/data</url>
-  
+
   <issueManagement>
     <system>github</system>
     <url>https://github.com/beangle/data/issues</url>
@@ -38,7 +38,7 @@
 
   <properties>
     <javax.validation.version>1.1.0.Final</javax.validation.version>
-    <commons.version>4.2.4</commons.version>
+    <commons.version>4.2.5</commons.version>
   </properties>
 
   <dependencyManagement>
@@ -75,7 +75,7 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-  
+
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>

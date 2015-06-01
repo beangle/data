@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -61,7 +61,7 @@ class TableTest extends FlatSpec with Matchers {
     val table = new Table("PUBLIC", "USER")
     val cloned = table.clone(new PostgreSQLDialect())
     (cloned == table) should be(false)
-    cloned.toLowerCase()
+    cloned.toCase(true)
     table.name.value should equal("USER")
     cloned.name.value should equal("user")
   }

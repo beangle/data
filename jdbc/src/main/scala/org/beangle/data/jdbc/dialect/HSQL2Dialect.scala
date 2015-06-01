@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -62,7 +62,7 @@ class HSQL2Dialect extends AbstractDialect("[2.0.0,)") {
     ss
   }
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{}  offset ? limit ?", false, false, false)
+  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} offset ? limit ?", false)
 
   override def tableGrammar = {
     val bean = new TableGrammarBean()
@@ -70,7 +70,9 @@ class HSQL2Dialect extends AbstractDialect("[2.0.0,)") {
     bean
   }
 
-  override def defaultSchema = "PUBLIC"
+  override def defaultSchema: String = {
+    "PUBLIC"
+  }
 
   override def storeCase: StoreCase.Value = {
     StoreCase.Upper

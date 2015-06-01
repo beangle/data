@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -70,8 +70,8 @@ class Column(var name: Name, var typeCode: Int) extends Ordered[Column] with Clo
     //    col
   }
 
-  def toLowerCase(): Unit = {
-    this.name = name.toLowerCase
+  def toCase(lower: Boolean): Unit = {
+    this.name = name.toCase(lower)
   }
 
   def qualifiedName(dialect: Dialect): String = {

@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2014, Beangle Software.
+ * Copyright (c) 2005-2015, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -55,7 +55,16 @@ trait Entity[ID] extends Serializable {
   }
 }
 
-trait IntIdEntity extends Entity[java.lang.Integer]
+trait NumId[ID] extends Entity[ID] {
 
-trait LongIdEntity extends Entity[java.lang.Long]
+  var id: ID = _
+}
 
+trait LongId extends NumId[java.lang.Long]
+
+trait IntId extends NumId[java.lang.Integer]
+
+trait StringId extends Entity[String] {
+
+  var id: String = _
+}
