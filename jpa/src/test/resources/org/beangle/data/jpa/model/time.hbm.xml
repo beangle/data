@@ -3,11 +3,12 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 
 <hibernate-mapping package="org.beangle.data.jpa.model" default-access="org.beangle.data.jpa.hibernate.PropertyAccessor">
+
     <class name="org.beangle.data.jpa.model.TimeBean" >
         <id name="id" unsaved-value="0" type="int">
           <generator class="assigned"/>
         </id>
-        <property name="time" not-null="true" type="hourminute"/>
+        <property name="time" type="hourminute"/>
         <property name="weekday" not-null="true" type="weekday"/>
         <property name="state" not-null="true" type="weekstate" />
     </class>

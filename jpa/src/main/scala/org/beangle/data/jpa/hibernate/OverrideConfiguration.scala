@@ -26,9 +26,10 @@ import scala.collection.mutable
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, TableSeqGenerator }
-import org.beangle.data.jpa.hibernate.udt.{ EnumType, HourMinuteType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, WeekStateType }
+import org.beangle.data.jpa.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, ValueType }
 import org.beangle.data.jpa.mapping.NamingPolicy
 import org.hibernate.DuplicateMappingException
 import org.hibernate.DuplicateMappingException.Type
@@ -65,8 +66,12 @@ class OverrideConfiguration extends Configuration with Logging {
     val p = new ju.Properties
     p.put("enumClass", "org.beangle.commons.lang.time.WeekDay")
     mappings.addTypeDef("weekday", classOf[EnumType].getName, p)
-    mappings.addTypeDef("hourminute", classOf[HourMinuteType].getName, new ju.Properties)
-    mappings.addTypeDef("weekstate", classOf[WeekStateType].getName, new ju.Properties)
+    val minuteProperties = new ju.Properties
+    minuteProperties.put("valueClass", "org.beangle.commons.lang.time.HourMinute")
+    mappings.addTypeDef("hourminute", classOf[ValueType].getName, minuteProperties)
+    val weekstateProperties = new ju.Properties
+    weekstateProperties.put("valueClass", "org.beangle.commons.lang.time.WeekState")
+    mappings.addTypeDef("weekstate", classOf[ValueType].getName, weekstateProperties)
   }
 
   /**
