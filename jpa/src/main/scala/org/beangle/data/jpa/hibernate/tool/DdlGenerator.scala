@@ -25,6 +25,7 @@ import java.util.Locale
 import org.beangle.commons.lang.{ ClassLoaders, Locales, Strings }
 import org.beangle.commons.lang.Strings.{ isBlank, split, substringAfter, substringAfterLast, substringBeforeLast }
 import org.beangle.commons.lang.SystemInfo
+import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.jpa.hibernate.{ DefaultConfigurationBuilder, OverrideConfiguration }
 import org.hibernate.cfg.AvailableSettings.{ DEFAULT_CATALOG, DEFAULT_SCHEMA, DIALECT }
@@ -60,8 +61,9 @@ object DdlGenerator {
   }
 }
 
-class DdlGenerator(dialect: Dialect, locale: Locale) {
+class DdlGenerator(dialect: Dialect, locale: Locale) extends Logging {
   private var configuration: Configuration = _
+  private val schemas = new collection.mutable.ListBuffer[String]
   private val tables = new collection.mutable.ListBuffer[String]
   private val sequences = new collection.mutable.ListBuffer[String]
   private val comments = new collection.mutable.ListBuffer[String]
@@ -76,6 +78,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
   private val processed = new collection.mutable.HashSet[Table]
 
   private val files = List(
+    "0-schemas.sql" -> List(schemas),
     "1-tables.sql" -> List(tables, constraints, indexes),
     "2-sequences.sql" -> List(sequences),
     "3-comments.sql" -> List(comments))
@@ -89,14 +92,18 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     defaultCatalog = configuration.getProperties.getProperty(DEFAULT_CATALOG)
     defaultSchema = configuration.getProperties.getProperty(DEFAULT_SCHEMA)
     configuration.getProperties.put(DIALECT, dialect)
+
     // 1. first process class mapping
+    val schemaSet= new collection.mutable.HashSet[String]
     val iterpc = configuration.getClassMappings
     while (iterpc.hasNext) {
       val pc = iterpc.next
       val clazz = pc.getMappedClass
-      pc.getTable.setComment(messages.get(clazz, clazz.getSimpleName))
-      commentIdProperty(clazz, pc.getTable, pc.getIdentifierProperty, pc.getIdentifier)
-      commentProperties(clazz, pc.getTable, pc.getPropertyIterator)
+      val table = pc.getTable
+      if(!isBlank(table.getSchema)) schemaSet += table.getSchema
+      table.setComment(getComment(clazz, clazz.getSimpleName))
+      commentIdProperty(clazz, table, pc.getIdentifierProperty, pc.getIdentifier)
+      commentProperties(clazz, table, pc.getPropertyIterator)
 
       if (isBlank(packageName) || clazz.getPackage.getName.startsWith(packageName)) {
         if (pc.isInstanceOf[RootClass]) {
@@ -106,7 +113,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
             sequences ++= ig.asInstanceOf[PersistentIdentifierGenerator].sqlCreateStrings(dialect)
           }
         }
-        generateTableSql(pc.getTable)
+        generateTableSql(table)
       }
     }
 
@@ -128,11 +135,12 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
         if (!col.isOneToMany) {
           val table = col.getCollectionTable
           val owner = col.getTable.getComment
+          if(!isBlank(table.getSchema)) schemaSet += table.getSchema
           var ownerClass = col.getOwner.getMappedClass
           // resolved nested compoent name in collection's role
           val colName = substringAfter(col.getRole, col.getOwnerEntityName + ".")
           if (colName.contains(".")) ownerClass = getPropertyType(col.getOwner, substringBeforeLast(colName, "."))
-          table.setComment(owner + "-" + messages.get(ownerClass, substringAfterLast(col.getRole, ".")))
+          table.setComment(owner + "-" + getComment(ownerClass, substringAfterLast(col.getRole, ".")))
 
           val keyColumn = table.getColumn(col.getKey.getColumnIterator.next.asInstanceOf[Column])
           if (null != keyColumn) keyColumn.setComment(owner + "ID")
@@ -158,6 +166,8 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     val newcomments = comments.toSet.toList
     comments.clear
     comments ++= newcomments
+    schemas ++= schemaSet.map(s=>s"create schema $s")
+    schemas.sorted
 
     // 3. export to files
     var total = 0
@@ -204,10 +214,10 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
   private def commentIdProperty(clazz: Class[_], table: Table, p: Property, identifier: KeyValue): Unit = {
     if (p.getColumnSpan == 1) {
       val column = p.getColumnIterator.next.asInstanceOf[Column]
-      var comment = messages.get(clazz, p.getName)
+      var comment = getComment(clazz, p.getName)
       identifier match {
         case sv: SimpleValue => comment += (":" + sv.getIdentifierGeneratorStrategy + toString(sv.getIdentifierGeneratorProperties))
-        case _ =>
+        case _               =>
       }
       column.setComment(comment)
     } else if (p.getColumnSpan > 1) {
@@ -233,9 +243,9 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     if (p.getColumnSpan == 1) {
       val column = p.getColumnIterator.next.asInstanceOf[Column]
       if (isForeignColumn(table, column)) {
-        column.setComment(messages.get(clazz, p.getName) + "ID")
+        column.setComment(getComment(clazz, p.getName) + "ID")
       } else {
-        column.setComment(messages.get(clazz, p.getName))
+        column.setComment(getComment(clazz, p.getName))
       }
     } else if (p.getColumnSpan > 1) {
       val pc = p.getValue.asInstanceOf[Component]
@@ -293,6 +303,15 @@ class DdlGenerator(dialect: Dialect, locale: Locale) {
     return false
   }
 
+  private def getComment(clazz: Class[_], key: String): String = {
+    val comment = messages.get(clazz, key)
+    if (key == comment) {
+      logger.warn(s"Cannot find ${clazz.getName} . $key")
+      key + "?"
+    } else {
+      comment
+    }
+  }
   private def writes(writer: Writer, contentList: List[collection.mutable.ListBuffer[String]]): Unit = {
     for (contents <- contentList) {
       for (script <- contents.sorted) {

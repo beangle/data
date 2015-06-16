@@ -20,6 +20,7 @@ package org.beangle.data.jpa.hibernate
 
 import java.net.URL
 import java.{ util => ju }
+
 import org.beangle.commons.io.{ IOs, ResourcePatternResolver }
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.annotation.description
@@ -32,6 +33,7 @@ import org.hibernate.{ SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.{ Configuration, NamingStrategy }
 import org.hibernate.cfg.AvailableSettings.{ DATASOURCE, DIALECT }
+
 import javax.sql.DataSource
 
 trait ConfigurableSessionFactory {
@@ -218,4 +220,3 @@ object DefaultConfigurationBuilder {
     cfg
   }
 }
-

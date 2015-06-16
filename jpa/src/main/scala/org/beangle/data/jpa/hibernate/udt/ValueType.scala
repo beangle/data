@@ -27,7 +27,7 @@ object ValueType {
     }
     def getValue(resultSet: ResultSet, name: String): Object
   }
-  
+
   class ShortMapper extends ValueMapper {
     override def getValue(resultSet: ResultSet, name: String): Object = {
       java.lang.Short.valueOf(resultSet.getShort(name))
