@@ -42,7 +42,7 @@ class OverrideConfiguration extends Configuration with Logging {
   var minColumnEnableDynaUpdate = 7
 
   override def createMappings(): Mappings = {
-    val mappings = new OverrideMappings("true" == getProperty("hibernate.global_assigned"))
+    val mappings = new OverrideMappings(getProperty("hibernate.global_id_generator"))
     // 注册缺省的sequence生成器
     addGenerator(mappings, "table_sequence", classOf[TableSeqGenerator])
     addGenerator(mappings, "auto_increment", classOf[AutoIncrementGenerator])
@@ -86,7 +86,7 @@ class OverrideConfiguration extends Configuration with Logging {
   /**
    * Config table's schema by TableNamingStrategy.<br>
    *
-   * @see org.beangle.data.jpa.hibernate.RailsNamingStrategy
+   * @see org.beangle.data.jpa.hibernate.cfg.RailsNamingStrategy
    */
   private def configSchema() {
     var namingPolicy: NamingPolicy = null
@@ -127,7 +127,7 @@ class OverrideConfiguration extends Configuration with Logging {
   /**
    * Custom MappingsImpl supports class overriding
    */
-  protected class OverrideMappings(val globalAssinged: Boolean) extends MappingsImpl {
+  protected class OverrideMappings(val globalIdGenerator: String) extends MappingsImpl {
     private val tmpColls = new mutable.HashMap[String, mutable.ListBuffer[Collection]]
     /**
      * <ul>
@@ -151,12 +151,12 @@ class OverrideConfiguration extends Configuration with Logging {
         entityNameChanged = true
       }
 
-      if (globalAssinged) {
+      if (null != globalIdGenerator) {
         pClass match {
           case rc: RootClass =>
             rc.getIdentifier() match {
               case sv: SimpleValue =>
-                sv.setIdentifierGeneratorStrategy("assigned")
+                sv.setIdentifierGeneratorStrategy(globalIdGenerator)
                 sv.setIdentifierGeneratorProperties(new ju.Properties)
               case _ =>
             }
