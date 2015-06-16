@@ -22,7 +22,8 @@ import java.io.{ File, FileWriter, Writer }
 import java.sql.{ Connection, Types }
 
 import org.beangle.commons.conversion.converter.String2BooleanConverter
-import org.beangle.data.jpa.hibernate.{ DefaultConfigurationBuilder, OverrideConfiguration }
+import org.beangle.data.jpa.hibernate.DefaultConfigurationBuilder
+import org.beangle.data.jpa.hibernate.cfg.OverrideConfiguration
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.{ AvailableSettings, Configuration, NamingStrategy, ObjectNameNormalizer }
 import org.hibernate.dialect.Dialect

@@ -25,7 +25,8 @@ import org.apache.commons.pool.impl.GenericObjectPool
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.time.{ HourMinute, WeekDay, WeekState }
-import org.beangle.data.jpa.hibernate.{ HibernateEntityDao, OverrideConfiguration, RailsNamingStrategy }
+import org.beangle.data.jpa.hibernate.HibernateEntityDao
+import org.beangle.data.jpa.hibernate.cfg.{ OverrideConfiguration, RailsNamingStrategy }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
 import org.beangle.data.jpa.model.{ ExtendRole, Name, Role, TimeBean, User }
 import org.hibernate.{ Session, SessionFactory, SessionFactoryObserver }
@@ -41,7 +42,7 @@ import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
-  val configuration = new OverrideConfiguration()
+  val configuration = new OverrideConfiguration
   configuration.setNamingStrategy(new RailsNamingStrategy(new RailsNamingPolicy))
   val configProperties = configuration.getProperties()
   configProperties.put(AvailableSettings.DIALECT, classOf[Oracle10gDialect].getName)

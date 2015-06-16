@@ -24,7 +24,9 @@ import java.lang.reflect.Method
 import java.{ util => ju }
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jpa.hibernate.{ DefaultConfigurationBuilder, OverrideConfiguration }
+import org.beangle.commons.lang.annotation.beta
+import org.beangle.data.jpa.hibernate.DefaultConfigurationBuilder
+import org.beangle.data.jpa.hibernate.cfg.OverrideConfiguration
 import org.hibernate.`type`.{ CustomType, EnumType, Type }
 import org.hibernate.cfg.{ AvailableSettings, Configuration }
 import org.hibernate.dialect.Oracle10gDialect
@@ -45,13 +47,14 @@ object HbmGenerator {
  * TODO support Map/List mapping
  * @author chaostone
  */
+@beta
 class HbmGenerator {
 
   private val freemarkerConfig = new freemarker.template.Configuration
   freemarkerConfig.setTemplateLoader(new ClassTemplateLoader(getClass(), "/"))
 
   def gen(file: String) {
-    val hbconfig: Configuration = new OverrideConfiguration()
+    val hbconfig: Configuration = new OverrideConfiguration
     DefaultConfigurationBuilder.build(hbconfig)
     hbconfig.getProperties().put(AvailableSettings.DIALECT, new Oracle10gDialect())
     gen(hbconfig, file)

@@ -16,17 +16,15 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.jpa.hibernate.cfg
 
 import java.lang.reflect.Field
 import java.{ util => ju }
 
-import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, TableSeqGenerator }
 import org.beangle.data.jpa.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, ValueType }
@@ -35,7 +33,7 @@ import org.hibernate.DuplicateMappingException
 import org.hibernate.DuplicateMappingException.Type
 import org.hibernate.cfg.{ Configuration, Mappings }
 import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass, SimpleValue }
-
+import collection.JavaConversions._
 /**
  * Override Configuration
  */
@@ -227,7 +225,7 @@ class OverrideConfiguration extends Configuration with Logging {
   }
 }
 
-private[hibernate] object PersistentClassMerger extends Logging {
+private[cfg] object PersistentClassMerger extends Logging {
 
   private val subPropertyField = getField("subclassProperties")
   private val declarePropertyField = getField("declaredProperties")

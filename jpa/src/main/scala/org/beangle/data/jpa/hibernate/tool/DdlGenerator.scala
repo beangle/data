@@ -27,7 +27,8 @@ import org.beangle.commons.lang.Strings.{ isBlank, split, substringAfter, substr
 import org.beangle.commons.lang.SystemInfo
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
-import org.beangle.data.jpa.hibernate.{ DefaultConfigurationBuilder, OverrideConfiguration }
+import org.beangle.data.jpa.hibernate.DefaultConfigurationBuilder
+import org.beangle.data.jpa.hibernate.cfg.OverrideConfiguration
 import org.hibernate.cfg.AvailableSettings.{ DEFAULT_CATALOG, DEFAULT_SCHEMA, DIALECT }
 import org.hibernate.cfg.Configuration
 import org.hibernate.dialect.Dialect
@@ -94,13 +95,13 @@ class DdlGenerator(dialect: Dialect, locale: Locale) extends Logging {
     configuration.getProperties.put(DIALECT, dialect)
 
     // 1. first process class mapping
-    val schemaSet= new collection.mutable.HashSet[String]
+    val schemaSet = new collection.mutable.HashSet[String]
     val iterpc = configuration.getClassMappings
     while (iterpc.hasNext) {
       val pc = iterpc.next
       val clazz = pc.getMappedClass
       val table = pc.getTable
-      if(!isBlank(table.getSchema)) schemaSet += table.getSchema
+      if (!isBlank(table.getSchema)) schemaSet += table.getSchema
       table.setComment(getComment(clazz, clazz.getSimpleName))
       commentIdProperty(clazz, table, pc.getIdentifierProperty, pc.getIdentifier)
       commentProperties(clazz, table, pc.getPropertyIterator)
@@ -135,7 +136,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) extends Logging {
         if (!col.isOneToMany) {
           val table = col.getCollectionTable
           val owner = col.getTable.getComment
-          if(!isBlank(table.getSchema)) schemaSet += table.getSchema
+          if (!isBlank(table.getSchema)) schemaSet += table.getSchema
           var ownerClass = col.getOwner.getMappedClass
           // resolved nested compoent name in collection's role
           val colName = substringAfter(col.getRole, col.getOwnerEntityName + ".")
@@ -166,7 +167,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) extends Logging {
     val newcomments = comments.toSet.toList
     comments.clear
     comments ++= newcomments
-    schemas ++= schemaSet.map(s=>s"create schema $s")
+    schemas ++= schemaSet.map(s => s"create schema $s")
     schemas.sorted
 
     // 3. export to files
