@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate.udt
+package org.beangle.data.jpa.hibernate
 
 import java.util.Properties
 import scala.collection.mutable.ListBuffer
@@ -25,7 +25,6 @@ import org.apache.commons.pool.impl.GenericObjectPool
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.time.{ HourMinute, WeekDay, WeekState }
-import org.beangle.data.jpa.hibernate.HibernateEntityDao
 import org.beangle.data.jpa.hibernate.cfg.{ OverrideConfiguration, RailsNamingStrategy }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
 import org.beangle.data.jpa.model.{ ExtendRole, Name, Role, TimeBean, User }

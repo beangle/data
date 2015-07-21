@@ -25,8 +25,7 @@ import org.beangle.commons.lang.{ Charsets, ClassLoaders, Primitives }
 import org.beangle.commons.lang.Strings.isBlank
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanManifest
-import org.beangle.data.jpa.hibernate.DefaultConfigurationBuilder
-import org.beangle.data.jpa.hibernate.cfg.OverrideConfiguration
+import org.beangle.data.jpa.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration }
 import org.hibernate.`type`.{ BasicType, Type }
 import org.hibernate.mapping.{ Component, Property, RootClass }
 
@@ -45,7 +44,7 @@ object HbmLint {
 
 @beta
 class HbmLint {
-  val configuration = DefaultConfigurationBuilder.build(new OverrideConfiguration)
+  val configuration = ConfigurationBuilder.build(new OverrideConfiguration)
   val mapping = configuration.buildMapping
 
   def check(dir: String, packageName: String): Unit = {

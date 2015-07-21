@@ -27,8 +27,7 @@ import org.beangle.commons.lang.Strings.{ isBlank, split, substringAfter, substr
 import org.beangle.commons.lang.SystemInfo
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
-import org.beangle.data.jpa.hibernate.DefaultConfigurationBuilder
-import org.beangle.data.jpa.hibernate.cfg.OverrideConfiguration
+import org.beangle.data.jpa.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration }
 import org.hibernate.cfg.AvailableSettings.{ DEFAULT_CATALOG, DEFAULT_SCHEMA, DIALECT }
 import org.hibernate.cfg.Configuration
 import org.hibernate.dialect.Dialect
@@ -88,7 +87,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) extends Logging {
    * Generate sql scripts
    */
   def gen(dirName: String, packageName: String): Unit = {
-    configuration = DefaultConfigurationBuilder.build(new OverrideConfiguration)
+    configuration = ConfigurationBuilder.build(new OverrideConfiguration)
     mapping = configuration.buildMapping
     defaultCatalog = configuration.getProperties.getProperty(DEFAULT_CATALOG)
     defaultSchema = configuration.getProperties.getProperty(DEFAULT_SCHEMA)

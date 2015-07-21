@@ -51,10 +51,14 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
    * 配置好的实体表名和关联表的名字都会经过此方法。
    * </re>
    */
-  override def tableName(tableName: String): String = tableName
+  override def tableName(tableName: String): String = {
+    tableName
+  }
 
   /** 对配置文件起好的列名,不进行处理 */
-  override def columnName(columnName: String): String = columnName
+  override def columnName(columnName: String): String = {
+    columnName
+  }
 
   /**
    * 数据列的逻辑名
@@ -82,7 +86,9 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
   }
 
   /** Return the argument */
-  override def joinKeyColumnName(joinedColumn: String, joinedTable: String): String = columnName(joinedColumn)
+  override def joinKeyColumnName(joinedColumn: String, joinedTable: String): String = {
+    columnName(joinedColumn)
+  }
 
   /** Return the property name or propertyTableName */
   override def foreignKeyColumnName(propertyName: String, propertyEntityName: String,
@@ -149,7 +155,8 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
     var matched = false
     if (trace.length >= 9) {
       matched = (2 to 8) exists { i =>
-        ("bindManyToOne" == trace(i).getMethodName() || trace(i).getClassName().equals("org.hibernate.cfg.ToOneFkSecondPass"))
+        ("bindManyToOne" == trace(i).getMethodName && trace(i).getClassName.startsWith("org.hibernate.cfg")
+          || trace(i).getClassName.equals("org.hibernate.cfg.ToOneFkSecondPass"))
       }
     }
     matched

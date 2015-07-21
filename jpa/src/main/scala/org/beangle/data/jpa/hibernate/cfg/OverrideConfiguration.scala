@@ -21,11 +21,13 @@ package org.beangle.data.jpa.hibernate.cfg
 import java.lang.reflect.Field
 import java.{ util => ju }
 
+import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.logging.Logging
+import org.beangle.data.jpa.hibernate.PropertyAccessor
 import org.beangle.data.jpa.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, TableSeqGenerator }
 import org.beangle.data.jpa.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, ValueType }
 import org.beangle.data.jpa.mapping.NamingPolicy
@@ -33,7 +35,6 @@ import org.hibernate.DuplicateMappingException
 import org.hibernate.DuplicateMappingException.Type
 import org.hibernate.cfg.{ Configuration, Mappings }
 import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass, SimpleValue }
-import collection.JavaConversions._
 /**
  * Override Configuration
  */
@@ -50,6 +51,7 @@ class OverrideConfiguration extends Configuration with Logging {
     addGenerator(mappings, "code", classOf[CodeStyleGenerator])
     // 注册CustomTypes
     addCustomTypes(mappings)
+    mappings.setDefaultAccess(classOf[PropertyAccessor].getName)
     mappings
   }
 

@@ -18,8 +18,11 @@
  */
 package org.beangle.data.jpa.model
 
+import scala.reflect.runtime.universe
+import scala.reflect.runtime.universe.typeTag
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.model.Entity
+import org.beangle.data.model.Component
 
 class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
   def this() = this(0)
@@ -32,8 +35,23 @@ class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
   var createdOn: java.sql.Date = _
 }
 
-class Name {
-
+class Name extends Component {
   var first: String = _
   var last: String = _
+}
+
+class Member extends Component {
+  var granter: Role = _
+  var admin: Boolean = _
+  var roles: collection.mutable.Set[Role] = new collection.mutable.HashSet[Role]
+}
+
+class UserAb(var id: java.lang.Long) extends Entity[java.lang.Long] {
+  def this() = this(0)
+  var name: Name = _
+  var age: Option[Integer] = None
+  var role: Role = _
+  var roleList: collection.mutable.Seq[Role] = new collection.mutable.ListBuffer[Role]
+  var properties: collection.mutable.Map[String, String] = _
+  var member: Member = _
 }

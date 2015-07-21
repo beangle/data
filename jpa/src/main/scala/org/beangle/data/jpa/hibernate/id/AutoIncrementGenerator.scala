@@ -47,11 +47,11 @@ class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
       st.registerOutParameter(1, java.sql.Types.BIGINT)
       st.setString(2, tableName)
       st.execute()
-      val id = st.getLong(1)
+      val id = java.lang.Long.valueOf(st.getLong(1))
       identifierType match {
-        case lt: LongType    => new java.lang.Long(id)
-        case it: IntegerType => new Integer(id.asInstanceOf[Int])
-        case sht: ShortType  => new java.lang.Short(st.getShort(1).asInstanceOf[Short])
+        case lt: LongType    => id
+        case it: IntegerType => Integer.valueOf(id.intValue())
+        case sht: ShortType  => java.lang.Short.valueOf(id.shortValue())
       }
     } finally {
       jdbc.release(st)

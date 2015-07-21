@@ -16,12 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate.id
+package org.beangle.data.jpa.hibernate
 
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.jpa.hibernate.cfg.{ OverrideConfiguration, RailsNamingStrategy }
-import org.beangle.data.jpa.hibernate.udt.PoolingDataSourceFactory
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
 import org.beangle.data.jpa.model.{ IntIdResource, LongDateIdResource, LongIdResource }
 import org.hibernate.{ SessionFactory, SessionFactoryObserver }

@@ -12,9 +12,21 @@
   <properties>
     <bundle.symbolicName>org.beangle.data.model</bundle.symbolicName>
     <bundle.namespace>org.beangle.data.model</bundle.namespace>
+    <jpa.version>1.0.0.Final</jpa.version>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-reflect</artifactId>
+      <version>${scala.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate.javax.persistence</groupId>
+      <artifactId>hibernate-jpa-2.1-api</artifactId>
+      <version>${jpa.version}</version>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>org.beangle.commons</groupId>
       <artifactId>beangle-commons-core</artifactId>

@@ -25,8 +25,7 @@ import java.{ util => ju }
 
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.data.jpa.hibernate.DefaultConfigurationBuilder
-import org.beangle.data.jpa.hibernate.cfg.OverrideConfiguration
+import org.beangle.data.jpa.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration }
 import org.hibernate.`type`.{ CustomType, EnumType, Type }
 import org.hibernate.cfg.{ AvailableSettings, Configuration }
 import org.hibernate.dialect.Oracle10gDialect
@@ -55,7 +54,7 @@ class HbmGenerator {
 
   def gen(file: String) {
     val hbconfig: Configuration = new OverrideConfiguration
-    DefaultConfigurationBuilder.build(hbconfig)
+    ConfigurationBuilder.build(hbconfig)
     hbconfig.getProperties().put(AvailableSettings.DIALECT, new Oracle10gDialect())
     gen(hbconfig, file)
   }
