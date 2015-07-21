@@ -22,7 +22,6 @@ import scala.collection.mutable
 import scala.collection.mutable.Buffer
 
 import org.beangle.commons.collection.Collections
-import org.beangle.data.jpa.util.Jpas
 
 object Binder {
   final class Collection(val clazz: Class[_], val property: String) {
