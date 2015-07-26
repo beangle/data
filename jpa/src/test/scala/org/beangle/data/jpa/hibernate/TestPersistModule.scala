@@ -11,6 +11,8 @@ class TestPersistModule extends PersistModule {
 
   protected def binding(): Unit = {
     defaultIdGenerator("table_sequence")
+    defaultCache("test_cache_region", "read-write")
+    
     bind[LongIdResource]
     bind[LongDateIdResource]
     bind[IntIdResource]
@@ -19,7 +21,7 @@ class TestPersistModule extends PersistModule {
       c.code is (notnull, length(20))))
 
     bind[UserAb].generator("native")
-    
+
     bind[Role].on(r => declare(
       r.name is (notnull, length(112), unique),
       r.id is (notnull))).generator("native")

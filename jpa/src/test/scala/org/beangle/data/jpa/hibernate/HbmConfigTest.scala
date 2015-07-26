@@ -44,7 +44,7 @@ class HbmConfigTest extends FunSpec with Matchers {
   val configuration = new OverrideConfiguration
   configuration.setNamingStrategy(new RailsNamingStrategy(new RailsNamingPolicy))
   val builder = new ConfigurationBuilder(configuration, properties)
-  builder.persistLocations = List(ClassLoaders.getResource("META-INF/beangle/orm.properties"))
+  builder.ormLocations = List(ClassLoaders.getResource("META-INF/beangle/orm.xml"))
   builder.build()
   val dbprops = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
   val ds: DataSource = new PoolingDataSourceFactory(dbprops("h2.driverClassName"),

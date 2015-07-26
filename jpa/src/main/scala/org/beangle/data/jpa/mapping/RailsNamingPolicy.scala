@@ -44,7 +44,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
 
   private var pluralizer: Pluralizer = new EnNounPluralizer()
 
-  private val modules = new collection.mutable.HashMap[String, TableModule]
+  private val profiles = new collection.mutable.HashMap[String, TableProfile]
 
   private val schemas = new collection.mutable.HashSet[String]
 
@@ -54,14 +54,14 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
    * adjust parent relation by package name
    */
   def autoWire(): Unit = {
-    if (modules.size > 1) {
-      modules.foreach {
-        case (key, module) =>
+    if (profiles.size > 1) {
+      profiles.foreach {
+        case (key, profile) =>
           var parentName = substringBeforeLast(key, ".")
-          while (isNotEmpty(parentName) && null == module.parent) {
-            if (modules.contains(parentName) && module.packageName != parentName) {
-              logger.debug(s"set ${module.packageName}'s parent is $parentName")
-              module.parent = modules(parentName)
+          while (isNotEmpty(parentName) && null == profile.parent) {
+            if (profiles.contains(parentName) && profile.packageName != parentName) {
+              logger.debug(s"set ${profile.packageName}'s parent is $parentName")
+              profile.parent = profiles(parentName)
             }
             val len = parentName.length
             parentName = substringBeforeLast(parentName, ".")
@@ -77,7 +77,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       val is = url.openStream()
       if (null != is) {
         configLocations.add(url)
-        (scala.xml.XML.load(is) \ "module") foreach { ele => parseModule(ele, null) }
+        (scala.xml.XML.load(is) \"naming" \ "profile") foreach { ele => parseProfile(ele, null) }
         is.close()
       }
       autoWire()
@@ -86,17 +86,17 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     }
   }
 
-  private def parseModule(melem: scala.xml.Node, parent: TableModule): Unit = {
-    val module = new TableModule
+  private def parseProfile(melem: scala.xml.Node, parent: TableProfile): Unit = {
+    val profile = new TableProfile
     if (!(melem \ "@package").isEmpty) {
-      module.packageName = (melem \ "@package").text
-      if (null != parent) module.packageName = parent.packageName + "." + module.packageName
+      profile.packageName = (melem \ "@package").text
+      if (null != parent) profile.packageName = parent.packageName + "." + profile.packageName
     }
     (melem \ "class") foreach { anElem =>
       val clazz = ClassLoaders.loadClass((anElem \ "@annotation").text)
       val value = (anElem \ "@value").text
       val annModule = new AnnotationModule(clazz, value)
-      module._annotations += annModule
+      profile._annotations += annModule
 
       if (!(anElem \ "@schema").isEmpty) {
         annModule.schema = parseSchema((anElem \ "@schema").text)
@@ -105,22 +105,22 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       if (!(anElem \ "@prefix").isEmpty) annModule.prefix = (anElem \ "@prefix").text
     }
     if (!(melem \ "@schema").isEmpty) {
-      module._schema = parseSchema((melem \ "@schema").text)
-      schemas += module._schema
+      profile._schema = parseSchema((melem \ "@schema").text)
+      schemas += profile._schema
     }
-    if (!(melem \ "@prefix").isEmpty) module._prefix = (melem \ "@prefix").text
-    if (!(melem \ "@pluralize").isEmpty) module.pluralize = (melem \ "@pluralize").text == "true"
-    modules.put(module.packageName, module)
-    module.parent = parent
-    (melem \ "module") foreach { child => parseModule(child, module) }
+    if (!(melem \ "@prefix").isEmpty) profile._prefix = (melem \ "@prefix").text
+    if (!(melem \ "@pluralize").isEmpty) profile.pluralize = (melem \ "@pluralize").text == "true"
+    profiles.put(profile.packageName, profile)
+    profile.parent = parent
+    (melem \ "profile") foreach { child => parseProfile(child, profile) }
   }
 
   def getSchema(clazz: Class[_]): Option[String] = {
-    getModule(clazz) match {
+    getProfile(clazz) match {
       case None => None
-      case Some(module) => {
-        var schema = module.schema
-        val anno = module.annotations find { ann =>
+      case Some(profile) => {
+        var schema = profile.schema
+        val anno = profile.annotations find { ann =>
           clazz.getAnnotations() exists { annon =>
             if (ann.clazz.isAssignableFrom(annon.getClass())) {
               if (Strings.isNotEmpty(ann.value)) {
@@ -148,11 +148,11 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   }
 
   def getPrefix(clazz: Class[_]): String = {
-    getModule(clazz) match {
+    getProfile(clazz) match {
       case None => ""
-      case Some(module) => {
-        var prefix = module.prefix
-        val anno = module.annotations find { ann =>
+      case Some(profile) => {
+        var prefix = profile.prefix
+        val anno = profile.annotations find { ann =>
           clazz.getAnnotations() exists { annon =>
             if (ann.clazz.isAssignableFrom(annon.getClass())) {
               if (Strings.isNotEmpty(ann.value)) {
@@ -175,11 +175,11 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     }
   }
 
-  def getModule(clazz: Class[_]): Option[TableModule] = {
+  def getProfile(clazz: Class[_]): Option[TableProfile] = {
     var name = clazz.getName()
-    var matched: Option[TableModule] = None
+    var matched: Option[TableProfile] = None
     while (isNotEmpty(name) && matched == None) {
-      if (modules.contains(name)) matched = Some(modules(name))
+      if (profiles.contains(name)) matched = Some(profiles(name))
       val len = name.length
       name = substringBeforeLast(name, ".")
       if (name.length() == len) name = ""
@@ -195,7 +195,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   def setResources(resources: Resources) {
     if (null != resources) {
       for (url <- resources.paths) addConfig(url)
-      if (!modules.isEmpty) logger.info(s"Table name pattern: -> ${this.toString}")
+      if (!profiles.isEmpty) logger.info(s"Table name pattern: -> ${this.toString}")
     }
   }
 
@@ -242,14 +242,14 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   }
 
   override def toString: String = {
-    if (modules.isEmpty) return ""
-    val maxlength = modules.map(m => m._1.length).max
+    if (profiles.isEmpty) return ""
+    val maxlength = profiles.map(m => m._1.length).max
     val sb = new StringBuilder()
-    modules foreach {
-      case (packageName, module) =>
+    profiles foreach {
+      case (packageName, profile) =>
         sb.append(rightPad(packageName, maxlength, ' ')).append(" : [")
-          .append(module.schema.getOrElse(""))
-        sb.append(",").append(module.prefix)
+          .append(profile.schema.getOrElse(""))
+        sb.append(",").append(profile.prefix)
         //      if (!module.abbreviations.isEmpty()) {
         //        sb.append(" , ").append(module.abbreviations)
         //      }
@@ -260,12 +260,12 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   }
   protected def addUnderscores(name: String): String = unCamel(name.replace('.', '_'), '_')
 
-  class TableModule {
+  class TableProfile {
     var packageName: String = _
     var pluralize: Boolean = _
     var _schema: String = _
     var _prefix: String = _
-    var parent: TableModule = _
+    var parent: TableProfile = _
 
     def schema: Option[String] = {
       if (isNotEmpty(_schema)) Some(_schema)

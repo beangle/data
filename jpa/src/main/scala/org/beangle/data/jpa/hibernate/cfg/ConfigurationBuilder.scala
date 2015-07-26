@@ -38,9 +38,9 @@ object ConfigurationBuilder {
     val resolver = new ResourcePatternResolver
     val cfgBuilder = new ConfigurationBuilder(cfg)
     cfgBuilder.configLocations = resolver.getResources("classpath*:META-INF/hibernate.cfg.xml")
-    cfgBuilder.persistLocations = resolver.getResources("classpath*:META-INF/beangle/orm.properties")
+    cfgBuilder.ormLocations = resolver.getResources("classpath*:META-INF/beangle/orm.xml")
     val namingPolicy = new RailsNamingPolicy()
-    for (resource <- resolver.getResources("classpath*:META-INF/beangle/orm-naming.xml"))
+    for (resource <- cfgBuilder.ormLocations)
       namingPolicy.addConfig(resource)
     cfgBuilder.namingStrategy = new RailsNamingStrategy(namingPolicy)
     cfgBuilder.build()
@@ -63,7 +63,7 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
   /**
    * Set the locations of multiple persister.properties
    */
-  var persistLocations: Seq[URL] = List.empty
+  var ormLocations: Seq[URL] = List.empty
 
   /**
    * Set a Hibernate NamingStrategy for the SessionFactory, determining the
@@ -108,24 +108,19 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
         for (resource <- configLocations)
           configuration.configure(resource)
       }
-      if (null != persistLocations) {
+      if (null != ormLocations) {
         val mappings = configuration.createMappings();
-        for (resource <- persistLocations) {
+        for (resource <- ormLocations) {
           val is = resource.openStream
-          val props = new ju.Properties
-          if (null != is) props.load(is)
-
-          val module = props.remove("module")
-          if (null == module) {
-            logger.warn(s"Cannot find module in $resource")
-          } else {
-            val persistModule = Reflections.newInstance(ClassLoaders.loadClass(module.toString)).asInstanceOf[PersistModule]
+          (scala.xml.XML.load(is) \ "module") foreach { ele =>
+            val moduleClass = (ele \ "@class").text
+            val persistModule = Reflections.newInstance(ClassLoaders.loadClass(moduleClass)).asInstanceOf[PersistModule]
             addPersistInfo(persistModule.getConfig, mappings)
-            val enumer = props.propertyNames.asInstanceOf[ju.Enumeration[String]]
-            while (enumer.hasMoreElements) {
-              val propertyName = enumer.nextElement
-              configuration.setProperty(propertyName, props.getProperty(propertyName))
-            }
+            //            val enumer = props.propertyNames.asInstanceOf[ju.Enumeration[String]]
+            //            while (enumer.hasMoreElements) {
+            //              val propertyName = enumer.nextElement
+            //              configuration.setProperty(propertyName, props.getProperty(propertyName))
+            //            }
           }
           IOs.close(is)
         }

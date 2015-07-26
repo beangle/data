@@ -69,9 +69,9 @@ object Binder {
     }
 
     def cache(region: String, usage: String): this.type = {
-      this.cacheRegion = region;
-      this.cacheUsage = usage;
-      return this;
+      this.cacheRegion = region
+      this.cacheUsage = usage
+      this
     }
 
     def getColumns(property: String): Seq[Column] = {

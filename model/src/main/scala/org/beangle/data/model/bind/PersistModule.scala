@@ -19,17 +19,16 @@
 package org.beangle.data.model.bind
 
 import java.lang.reflect.Modifier
-
 import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => ru}
-
+import scala.reflect.runtime.{ universe => ru }
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.{ClassLoaders, Primitives, Strings}
-import org.beangle.commons.lang.reflect.{BeanManifest, Getter}
-import org.beangle.data.model.bind.Binder.{Collection, Column, ComponentProperty, Entity, IdGenerator, IdProperty, Index, ManyToManyElement, ManyToOneProperty, MapProperty, ModelProxy, Property, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey}
+import org.beangle.commons.lang.{ ClassLoaders, Primitives, Strings }
+import org.beangle.commons.lang.reflect.{ BeanManifest, Getter }
+import org.beangle.commons.lang.annotation.beta
+import org.beangle.data.model.bind.Binder.{ Collection, Column, ComponentProperty, Entity, IdGenerator, IdProperty, Index, ManyToManyElement, ManyToOneProperty, MapProperty, ModelProxy, Property, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey }
 import org.beangle.data.model.{ Entity => MEntity, Component => MComponent }
 
 object PersistModule {
@@ -79,7 +78,7 @@ object PersistModule {
     var proxy: ModelProxy = _
 
     def cacheable(): this.type = {
-      entity.cache(binder.cache.region, binder.cache.usage);
+      entity.cache(binder.cache.region, binder.cache.usage)
       this
     }
 
@@ -103,24 +102,24 @@ object PersistModule {
       entity.idGenerator = Some(new IdGenerator(strategy))
       this
     }
-    
+
     def generateProxy(): Unit = {
-      if (null != proxy) return ;
+      if (null != proxy) return
       proxy = binder.generateProxy(clazz)
     }
   }
-  
+
   final class CacheHolder(val binder: Binder) {
     var cacheUsage: String = _
     var cacheRegion: String = _
 
     def add(first: List[Collection], definitionLists: List[Collection]*): this.type = {
       for (definition <- first) {
-        binder.addCollection(definition.cache(cacheRegion, cacheUsage));
+        binder.addCollection(definition.cache(cacheRegion, cacheUsage))
       }
       for (definitions <- definitionLists) {
         for (definition <- definitions) {
-          binder.addCollection(definition.cache(cacheRegion, cacheUsage));
+          binder.addCollection(definition.cache(cacheRegion, cacheUsage))
         }
       }
       this
@@ -146,6 +145,7 @@ object PersistModule {
 
 }
 
+@beta
 abstract class PersistModule {
 
   import PersistModule._
@@ -154,7 +154,7 @@ abstract class PersistModule {
 
   import scala.language.implicitConversions
   implicit def any2Expression(i: Any): Expression = {
-    new Expression(currentHolder);
+    new Expression(currentHolder)
   }
 
   private var binder: Binder = _
@@ -177,7 +177,6 @@ abstract class PersistModule {
     autobind(entity, ttag.tpe)
     entities += (cls -> entity)
     if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers)) binder.addEntity(entity)
-
     val holder = new EntityHolder(entity, binder, cls)
     currentHolder = holder
 
@@ -210,6 +209,7 @@ abstract class PersistModule {
     supers.reverse foreach { e =>
       inheris ++= e.properties
       e.idGenerator foreach (g => entity.idGenerator = Some(g))
+      entity.cache(e.cacheRegion, e.cacheUsage)
     }
 
     if (!cls.isAnnotationPresent(classOf[javax.persistence.Entity])) {
@@ -363,11 +363,11 @@ abstract class PersistModule {
   }
 
   protected final def cache(region: String): CacheHolder = {
-    new CacheHolder(binder).cache(region).usage(binder.cache.usage);
+    new CacheHolder(binder).cache(region).usage(binder.cache.usage)
   }
 
   protected final def cache(): CacheHolder = {
-    new CacheHolder(binder).cache(binder.cache.region).usage(binder.cache.usage);
+    new CacheHolder(binder).cache(binder.cache.region).usage(binder.cache.usage)
   }
 
   protected final def collection(clazz: Class[_], properties: String*): List[Collection] = {
@@ -380,8 +380,8 @@ abstract class PersistModule {
   }
 
   protected final def defaultCache(region: String, usage: String) {
-    binder.cache.region = region;
-    binder.cache.usage = usage;
+    binder.cache.region = region
+    binder.cache.usage = usage
   }
 
   final def getConfig(): Binder = {
