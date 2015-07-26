@@ -20,8 +20,16 @@ package org.beangle.data.model.bind
 
 import scala.collection.mutable
 import scala.collection.mutable.Buffer
-
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.reflect.BeanManifest
+import javassist.CtMethod
+import javassist.ClassPool
+import javassist.CtConstructor
+import javassist.compiler.Javac
+import org.beangle.commons.lang.ClassLoaders
+import javassist.LoaderClassPath
+import javassist.CtField
+import org.beangle.commons.lang.Primitives
 
 object Binder {
   final class Collection(val clazz: Class[_], val property: String) {
@@ -34,10 +42,12 @@ object Binder {
       return this;
     }
   }
-
+  
+  /**
+   * genderator shortname or qualified name
+   */
   final class IdGenerator(var generator: String) {
     val params = Collections.newMap[String, String]
-    var clazz: Option[String] = None
     var nullValue: Option[String] = None
   }
 
@@ -50,7 +60,7 @@ object Binder {
     var table: String = _
     var isAbstract: Boolean = _
 
-    var idGenerator: IdGenerator = new IdGenerator("native")
+    var idGenerator: Option[IdGenerator] = None
 
     val properties = Collections.newMap[String, Property]
 
@@ -80,11 +90,12 @@ object Binder {
   trait ColumnHolder {
     var columns: Buffer[Column] = Buffer.empty[Column]
   }
+
   trait TypeNameHolder {
     var typeName: Option[String] = None
   }
 
-  final class Column(var name: String) {
+  final class Column(var name: String) extends Cloneable {
     var length: Option[Int] = None
     var scale: Option[Int] = None
     var precision: Option[Int] = None
@@ -93,9 +104,13 @@ object Binder {
 
     var defaultValue: Option[String] = None
     var sqlType: Option[String] = None
+
+    override def clone: this.type = {
+      super.clone().asInstanceOf[this.type]
+    }
   }
 
-  class Property(val name: String, val propertyType: Class[_]) extends ColumnHolder {
+  class Property(val name: String, val propertyType: Class[_]) extends ColumnHolder with Cloneable {
     var access: Option[String] = None
     var cascade: Option[String] = None
 
@@ -106,6 +121,15 @@ object Binder {
 
     var generated: Option[String] = None
 
+    override def clone: this.type = {
+      val cloned = super.clone().asInstanceOf[this.type]
+      val old = cloned.columns
+      cloned.columns = Buffer.empty[Column]
+      old foreach { c =>
+        cloned.columns += c.clone()
+      }
+      cloned
+    }
   }
 
   class ScalarProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder {
@@ -199,6 +223,10 @@ object Binder {
 
   final class CacheConfig(var region: String = null, var usage: String = null) {
   }
+
+  trait ModelProxy {
+    def lastAccessed(): java.util.Set[String]
+  }
 }
 /**
  * @author chaostone
@@ -207,6 +235,10 @@ object Binder {
 final class Binder {
 
   import Binder._
+  val pool = new ClassPool(true)
+  pool.appendClassPath(new LoaderClassPath(ClassLoaders.defaultClassLoader))
+
+  var defaultIdGenerator: Option[String] = None
   /**
    * Classname -> Entity
    */
@@ -234,4 +266,44 @@ final class Binder {
     collectMap.put(definition.clazz.getName() + definition.property, definition)
     return this
   }
+
+  def generateProxy(clazz: Class[_]): ModelProxy = {
+    val proxyClassName = clazz.getSimpleName + "_proxy"
+    val fullClassName = clazz.getName + "_proxy"
+    try {
+      val proxyCls = ClassLoaders.loadClass(fullClassName)
+      return proxyCls.getConstructor().newInstance().asInstanceOf[ModelProxy]
+    } catch {
+      case e: Exception =>
+    }
+    val cct = pool.makeClass(fullClassName)
+    if (clazz.isInterface()) cct.addInterface(pool.makeClass(clazz.getName))
+    else cct.setSuperclass(pool.makeClass(clazz.getName))
+    cct.addInterface(pool.get(classOf[ModelProxy].getName))
+    val javac = new Javac(cct)
+    cct.addField(javac.compile("public java.util.Set _lastAccessed;").asInstanceOf[CtField])
+    val manifest = BeanManifest.get(clazz)
+    manifest.getters foreach {
+      case (name, m) =>
+        var value = String.valueOf(Primitives.default(m.returnType))
+        if (m.returnType == classOf[Long]) value += "l"
+        else if (m.returnType == classOf[Double]) value += "d"
+        val body = s"public ${m.returnType.getName} ${m.method.getName}() { return $value;}"
+        val ctmod = javac.compile(body).asInstanceOf[CtMethod]
+        ctmod.setBody("{_lastAccessed.add(\"" + name + "\");return " + value + ";}")
+        cct.addMethod(ctmod)
+    }
+    val ctor = javac.compile("public " + proxyClassName + "(){}").asInstanceOf[CtConstructor]
+    ctor.setBody("_lastAccessed = new java.util.HashSet();")
+    cct.addConstructor(ctor)
+
+    val ctmod = javac.compile("public java.util.Set lastAccessed() { return null;}").asInstanceOf[CtMethod]
+    ctmod.setBody("{return _lastAccessed;}")
+    cct.addMethod(ctmod)
+    //    cct.debugWriteFile("/tmp/handlers")
+    val maked = cct.toClass()
+    cct.detach()
+    maked.getConstructor().newInstance().asInstanceOf[ModelProxy]
+  }
+
 }

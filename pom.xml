@@ -3,10 +3,10 @@
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>22.2</version>
+    <version>22.3</version>
   </parent>
   <groupId>org.beangle.data</groupId>
-  <artifactId>beangle-data-parent</artifactId>
+  <artifactId>beangle-data-parent_2.11</artifactId>
   <packaging>pom</packaging>
   <version>4.2.3-SNAPSHOT</version>
   <name>Beangle Data Parent</name>
@@ -55,17 +55,17 @@
       </dependency>
       <dependency>
         <groupId>org.beangle.data</groupId>
-        <artifactId>beangle-data-model</artifactId>
+        <artifactId>beangle-data-model_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.beangle.data</groupId>
-        <artifactId>beangle-data-jpa</artifactId>
+        <artifactId>beangle-data-jpa_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.beangle.data</groupId>
-        <artifactId>beangle-data-jdbc</artifactId>
+        <artifactId>beangle-data-jdbc_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

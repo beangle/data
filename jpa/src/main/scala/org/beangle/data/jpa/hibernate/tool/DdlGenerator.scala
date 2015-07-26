@@ -306,7 +306,7 @@ class DdlGenerator(dialect: Dialect, locale: Locale) extends Logging {
   private def getComment(clazz: Class[_], key: String): String = {
     val comment = messages.get(clazz, key)
     if (key == comment) {
-      logger.warn(s"Cannot find ${clazz.getName} . $key")
+      logger.warn(s"Cannot find comment of ${clazz.getName}.$key")
       key + "?"
     } else {
       comment

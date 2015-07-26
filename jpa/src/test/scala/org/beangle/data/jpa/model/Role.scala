@@ -20,7 +20,7 @@ package org.beangle.data.jpa.model
 
 import org.beangle.data.model.Entity
 
-class Role(var id: java.lang.Integer) extends Entity[java.lang.Integer] {
+class Role(var id: java.lang.Integer) extends Entity[java.lang.Integer] with Coded {
   def this() = this(0)
   var name: String = _
 }

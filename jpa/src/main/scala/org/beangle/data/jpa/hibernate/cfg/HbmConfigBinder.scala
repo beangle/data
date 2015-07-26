@@ -1,7 +1,7 @@
 package org.beangle.data.jpa.hibernate.cfg
 
 import java.{ util => ju }
-
+import java.lang.reflect.Modifier
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanManifest
 import org.beangle.data.model.bind.Binder.{ CollectionProperty, Column, ColumnHolder, Component, ComponentProperty, CompositeElement, CompositeKey, Element, Entity, Fetchable, IdProperty, ManyToManyElement, ManyToOneKey, ManyToOneProperty, MapProperty, OneToManyElement, Property => PropertyConfig, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey, TypeNameHolder }
@@ -193,23 +193,24 @@ object HbmConfigBinder {
   }
 
   def makeIdentifier(em: Entity, sv: SimpleValue): Unit = {
-    val idgenerator = em.idGenerator
+    val idgenerator = em.idGenerator.get
     val mappings = sv.getMappings
-    if (idgenerator.generator != null) {
-      idgenerator.clazz foreach (c => sv.setIdentifierGeneratorStrategy(c))
+    //    val idGeneratorStrategy =
+    //      if (idgenerator.contains(".")) idgenerator else
+    //        mappings.getIdentifierGeneratorFactory.getIdentifierGeneratorClass(idgenerator).getName
 
-      val params = new ju.Properties
-      val normalizer = mappings.getObjectNameNormalizer
-      params.put(IDENTIFIER_NORMALIZER, normalizer)
+    sv.setIdentifierGeneratorStrategy(idgenerator.generator)
+    val params = new ju.Properties
+    val normalizer = mappings.getObjectNameNormalizer
+    params.put(IDENTIFIER_NORMALIZER, normalizer)
 
-      if (mappings.getSchemaName != null) params.setProperty(SCHEMA, normalizer.normalizeIdentifierQuoting(mappings.getSchemaName))
-      if (mappings.getCatalogName != null) params.setProperty(CATALOG, normalizer.normalizeIdentifierQuoting(mappings.getCatalogName))
+    if (mappings.getSchemaName != null) params.setProperty(SCHEMA, normalizer.normalizeIdentifierQuoting(mappings.getSchemaName))
+    if (mappings.getCatalogName != null) params.setProperty(CATALOG, normalizer.normalizeIdentifierQuoting(mappings.getCatalogName))
 
-      idgenerator.params foreach {
-        case (k, v) => params.setProperty(k, v)
-      }
-      sv.setIdentifierGeneratorProperties(params)
+    idgenerator.params foreach {
+      case (k, v) => params.setProperty(k, v)
     }
+    sv.setIdentifierGeneratorProperties(params)
     sv.getTable.setIdentifierValue(sv)
     idgenerator.nullValue match {
       case Some(v) => sv.setNullValue(v)
@@ -428,6 +429,7 @@ class HbmConfigBinder(val mappings: Mappings) {
     entity.setEntityName(em.entityName)
     entity.setJpaEntityName(em.entityName)
 
+    entity.setAbstract(Modifier.isAbstract(em.clazz.getModifiers))
     entity.setLazy(em.isLazy)
     entity.setClassName(em.clazz.getName)
     if (null != em.proxy) {

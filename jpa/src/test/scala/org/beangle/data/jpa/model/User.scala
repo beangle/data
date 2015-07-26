@@ -23,6 +23,7 @@ import scala.reflect.runtime.universe.typeTag
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.model.Entity
 import org.beangle.data.model.Component
+import org.beangle.data.model.StringId
 
 class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
   def this() = this(0)
@@ -46,7 +47,15 @@ class Member extends Component {
   var roles: collection.mutable.Set[Role] = new collection.mutable.HashSet[Role]
 }
 
-class UserAb(var id: java.lang.Long) extends Entity[java.lang.Long] {
+trait Coded{
+  var code:String=_
+}
+
+abstract class CodedEntity   extends StringId with Coded
+
+abstract class StringIdCodedEntity   extends CodedEntity
+
+class UserAb(var id: java.lang.Long) extends Entity[java.lang.Long] with Coded {
   def this() = this(0)
   var name: Name = _
   var age: Option[Integer] = None
@@ -55,3 +64,8 @@ class UserAb(var id: java.lang.Long) extends Entity[java.lang.Long] {
   var properties: collection.mutable.Map[String, String] = _
   var member: Member = _
 }
+
+class Menu extends StringIdCodedEntity
+
+
+

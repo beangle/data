@@ -19,15 +19,15 @@
 package org.beangle.data.jpa.hibernate.cfg
 
 import java.net.URL
-import java.{util => ju}
+import java.{ util => ju }
 
-import org.beangle.commons.io.{IOs, ResourcePatternResolver}
+import org.beangle.commons.io.{ IOs, ResourcePatternResolver }
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.logging.Logging
-import org.beangle.data.model.bind.{AbstractPersistModule, Binder}
+import org.beangle.data.model.bind.{ PersistModule, Binder }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
-import org.hibernate.cfg.{Configuration, Mappings, NamingStrategy}
+import org.hibernate.cfg.{ Configuration, Mappings, NamingStrategy }
 import org.hibernate.cfg.AvailableSettings.DIALECT
 
 import javax.persistence.Entity
@@ -119,7 +119,7 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
           if (null == module) {
             logger.warn(s"Cannot find module in $resource")
           } else {
-            val persistModule = Reflections.newInstance(ClassLoaders.loadClass(module.toString)).asInstanceOf[AbstractPersistModule]
+            val persistModule = Reflections.newInstance(ClassLoaders.loadClass(module.toString)).asInstanceOf[PersistModule]
             addPersistInfo(persistModule.getConfig, mappings)
             val enumer = props.propertyNames.asInstanceOf[ju.Enumeration[String]]
             while (enumer.hasMoreElements) {
