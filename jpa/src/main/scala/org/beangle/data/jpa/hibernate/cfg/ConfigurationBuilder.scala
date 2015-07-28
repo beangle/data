@@ -109,13 +109,15 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
           configuration.configure(resource)
       }
       if (null != ormLocations) {
-        val mappings = configuration.createMappings();
+        val mappings = configuration.createMappings()
         for (resource <- ormLocations) {
           val is = resource.openStream
           (scala.xml.XML.load(is) \ "module") foreach { ele =>
             val moduleClass = (ele \ "@class").text
             val persistModule = Reflections.newInstance(ClassLoaders.loadClass(moduleClass)).asInstanceOf[PersistModule]
-            addPersistInfo(persistModule.getConfig, mappings)
+             val binder= new Binder()
+            persistModule.configure(binder)
+            addPersistInfo(binder, mappings)
             //            val enumer = props.propertyNames.asInstanceOf[ju.Enumeration[String]]
             //            while (enumer.hasMoreElements) {
             //              val propertyName = enumer.nextElement

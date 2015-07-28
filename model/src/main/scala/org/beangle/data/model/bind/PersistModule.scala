@@ -38,7 +38,7 @@ object PersistModule {
       val lasts = holder.proxy.lastAccessed()
       import collection.JavaConversions.asScalaSet
       for (property <- lasts; attribute <- attributes) {
-        attribute(holder.entity.getProperty(property))
+        attribute(holder, holder.entity.getProperty(property))
       }
       lasts.clear()
       this
@@ -46,27 +46,29 @@ object PersistModule {
   }
 
   trait Declaration {
-    def apply(property: Property): Unit
+    def apply(holder: EntityHolder[_], property: Property): Unit
   }
 
   class NotNull extends Declaration {
-    def apply(property: Property): Unit = {
-      property.columns foreach { c =>
-        c.nullable = false
-      }
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      property.columns foreach (c => c.nullable = false)
     }
   }
 
   class Unique extends Declaration {
-    def apply(property: Property): Unit = {
-      property.columns foreach { c =>
-        c.unique = true
-      }
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      property.columns foreach (c => c.unique = true)
+    }
+  }
+
+  class Cache(val cacheholder: CacheHolder) extends Declaration {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      cacheholder.add(List(new Collection(holder.clazz, property.name)))
     }
   }
 
   class One2Many(val targetEntity: Class[_], val mappedBy: String) extends Declaration {
-    def apply(property: Property): Unit = {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
       property match {
         case collp: CollectionProperty =>
           collp.key = Some(new SimpleKey(new Column(columnName(mappedBy, true))))
@@ -80,22 +82,23 @@ object PersistModule {
   }
 
   class OrderBy(orderBy: String) extends Declaration {
-    def apply(property: Property): Unit = {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
       property match {
         case collp: CollectionProperty => collp.orderBy = Some(orderBy)
         case _                         => throw new RuntimeException("order by should used on seq")
       }
     }
   }
+
   class Length(val len: Int) extends Declaration {
-    def apply(property: Property): Unit = {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
       property.columns foreach { c =>
         c.length = Some(len)
       }
     }
   }
 
-  final class EntityHolder[T](val entity: Entity, val binder: Binder, clazz: Class[T]) {
+  final class EntityHolder[T](val entity: Entity, val binder: Binder, val clazz: Class[T]) {
 
     var proxy: ModelProxy = _
 
@@ -198,6 +201,14 @@ abstract class PersistModule {
   protected def unique = new Unique
 
   protected def length(len: Int) = new Length(len)
+
+  protected def cacheable: Cache = {
+    new Cache(new CacheHolder(binder).cache(binder.cache.region).usage(binder.cache.usage))
+  }
+
+  protected def cacheable(region: String, usage: String): Cache = {
+    new Cache(new CacheHolder(binder).cache(region).usage(usage))
+  }
 
   protected def one2many(mappedBy: String): One2Many = {
     new One2Many(null, mappedBy)
@@ -400,9 +411,10 @@ abstract class PersistModule {
     new CacheHolder(binder).cache(binder.cache.region).usage(binder.cache.usage)
   }
 
-  protected final def collection(clazz: Class[_], properties: String*): List[Collection] = {
+  protected final def collection[T](properties: String*)(implicit manifest: Manifest[T]): List[Collection] = {
     import scala.collection.mutable
     val definitions = new mutable.ListBuffer[Collection]
+    val clazz = manifest.runtimeClass
     for (property <- properties) {
       definitions += new Collection(clazz, property)
     }
@@ -414,10 +426,9 @@ abstract class PersistModule {
     binder.cache.usage = usage
   }
 
-  final def getConfig(): Binder = {
-    binder = new Binder()
+  def configure(binder: Binder): Unit = {
+    this.binder = binder
     binding()
-    binder
   }
 
 }

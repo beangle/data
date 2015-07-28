@@ -37,9 +37,9 @@ object Binder {
     var cacheUsage: String = _
 
     def cache(region: String, usage: String): this.type = {
-      this.cacheRegion = region;
-      this.cacheUsage = usage;
-      return this;
+      this.cacheRegion = region
+      this.cacheUsage = usage
+      this
     }
   }
 
@@ -132,18 +132,18 @@ object Binder {
     }
   }
 
-  class ScalarProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder {
+  final class ScalarProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder {
 
   }
 
-  class IdProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder {
+  final class IdProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder {
   }
 
-  class ManyToOneProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with Fetchable {
+  final class ManyToOneProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with Fetchable {
     var targetEntity: String = _
   }
 
-  class ComponentProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with Component {
+  final class ComponentProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with Component {
     this.clazz = Some(propertyType.getName)
     var unique: Boolean = false
   }
@@ -168,12 +168,13 @@ object Binder {
     var sort: Option[String] = None
   }
 
-  class SeqProperty(name: String, propertyType: Class[_]) extends CollectionProperty(name, propertyType) {
+  final class SeqProperty(name: String, propertyType: Class[_]) extends CollectionProperty(name, propertyType) {
 
   }
 
-  class SetProperty(name: String, propertyType: Class[_]) extends CollectionProperty(name, propertyType)
-  class MapProperty(name: String, propertyType: Class[_]) extends CollectionProperty(name, propertyType) {
+  final class SetProperty(name: String, propertyType: Class[_]) extends CollectionProperty(name, propertyType)
+
+  final class MapProperty(name: String, propertyType: Class[_]) extends CollectionProperty(name, propertyType) {
     var mapKey: Key = _
   }
 
@@ -268,7 +269,7 @@ final class Binder {
 
   def addCollection(definition: Collection): this.type = {
     collectMap.put(definition.clazz.getName() + definition.property, definition)
-    return this
+    this
   }
 
   def generateProxy(clazz: Class[_]): ModelProxy = {

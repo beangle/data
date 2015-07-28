@@ -12,7 +12,7 @@ class TestPersistModule extends PersistModule {
   protected def binding(): Unit = {
     defaultIdGenerator("table_sequence")
     defaultCache("test_cache_region", "read-write")
-    
+
     bind[LongIdResource]
     bind[LongDateIdResource]
     bind[IntIdResource]
@@ -24,8 +24,7 @@ class TestPersistModule extends PersistModule {
 
     bind[Role].on(r => declare(
       r.name is (notnull, length(112), unique),
-      r.childred is (one2many("parent"))
-      )).generator("native")
+      r.children is (one2many("parent"), cacheable))).generator("native")
 
     bind[CodedEntity].on(c => declare(
       c.code is (length(22))))
@@ -35,6 +34,8 @@ class TestPersistModule extends PersistModule {
 
     bind[Menu].on(e => declare(
       e.code is (length(30))))
+
+    //    cache().add(collection[Role]("children"))
   }
 
 }

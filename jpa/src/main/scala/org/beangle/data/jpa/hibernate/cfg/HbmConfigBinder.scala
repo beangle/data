@@ -230,7 +230,7 @@ object HbmConfigBinder {
 
   def unqualify(name: String): String = {
     val lastDotIdx = name.lastIndexOf(".")
-    if (lastDotIdx == -1) name else name.substring(lastDotIdx)
+    if (lastDotIdx == -1) name else name.substring(lastDotIdx + 1)
   }
 
   def qualify(first: String, second: String): String = {

@@ -26,7 +26,7 @@ class Role(var id: java.lang.Integer) extends Entity[java.lang.Integer] with Cod
   var name: String = _
 
   var parent: Role = _
-  var childred = Collections.newBuffer[Role]
+  var children = Collections.newBuffer[Role]
 }
 
 class ExtendRole(id: Integer) extends Role(id) {
