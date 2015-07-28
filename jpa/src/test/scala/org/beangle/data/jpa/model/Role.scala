@@ -19,10 +19,14 @@
 package org.beangle.data.jpa.model
 
 import org.beangle.data.model.Entity
+import org.beangle.commons.collection.Collections
 
 class Role(var id: java.lang.Integer) extends Entity[java.lang.Integer] with Coded {
   def this() = this(0)
   var name: String = _
+
+  var parent: Role = _
+  var childred = Collections.newBuffer[Role]
 }
 
 class ExtendRole(id: Integer) extends Role(id) {

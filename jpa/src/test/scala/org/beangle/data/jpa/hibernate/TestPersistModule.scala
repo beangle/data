@@ -24,7 +24,8 @@ class TestPersistModule extends PersistModule {
 
     bind[Role].on(r => declare(
       r.name is (notnull, length(112), unique),
-      r.id is (notnull))).generator("native")
+      r.childred is (one2many("parent"))
+      )).generator("native")
 
     bind[CodedEntity].on(c => declare(
       c.code is (length(22))))
@@ -49,22 +50,3 @@ class Author(val id: Long,
   def this() = this(0, "", "", Some(""))
 
 }
-
-import org.squeryl.PrimitiveTypeMode.{ optionString2ScalarString, string2ScalarString }
-import org.squeryl.Schema
-object Library extends Schema {
-
-  val authors = table[Author]
-
-  on(authors)(s => declare(
-    s.email is (unique, indexed("idxEmailAddresses")), //indexes can be named explicitely
-    s.firstName is (indexed),
-    s.lastName is (indexed, dbType("varchar(255)")), // the default column type can be overriden     
-    columns(s.firstName, s.lastName) are (indexed)))
-
-  def a(): Unit = {
-
-    println("a")
-  }
-}
-   

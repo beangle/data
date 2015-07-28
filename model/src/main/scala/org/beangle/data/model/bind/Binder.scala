@@ -42,7 +42,7 @@ object Binder {
       return this;
     }
   }
-  
+
   /**
    * genderator shortname or qualified name
    */
@@ -199,13 +199,17 @@ object Binder {
 
   }
 
-  class ManyToManyElement(var entityName: String, column: Column) extends Element with ColumnHolder {
-    columns += column
-  }
+  class ToManyElement(var entityName: String) extends Element with ColumnHolder {
+    var one2many = true
+    def this(entityName: String, column: Column) {
+      this(entityName)
+      this.one2many = false
+      columns += column
+    }
 
-  class OneToManyElement extends Element {
-    var entityName: String = _
-
+    def many2many: Boolean = {
+      !one2many
+    }
   }
 
   trait Component {

@@ -4,7 +4,7 @@ import java.{ util => ju }
 import java.lang.reflect.Modifier
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanManifest
-import org.beangle.data.model.bind.Binder.{ CollectionProperty, Column, ColumnHolder, Component, ComponentProperty, CompositeElement, CompositeKey, Element, Entity, Fetchable, IdProperty, ManyToManyElement, ManyToOneKey, ManyToOneProperty, MapProperty, OneToManyElement, Property => PropertyConfig, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey, TypeNameHolder }
+import org.beangle.data.model.bind.Binder.{ CollectionProperty, Column, ColumnHolder, Component, ComponentProperty, CompositeElement, CompositeKey, Element, Entity, Fetchable, IdProperty, ToManyElement, ManyToOneKey, ManyToOneProperty, MapProperty, Property => PropertyConfig, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey, TypeNameHolder }
 import org.hibernate.{ FetchMode, MappingException }
 import org.hibernate.cfg.{ CollectionSecondPass, Mappings }
 import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, IDENTIFIER_NORMALIZER, SCHEMA }
@@ -20,32 +20,33 @@ object HbmConfigBinder {
   class CollSecondPass(colp: CollectionProperty, mappings: Mappings, collection: Collection)
     extends CollectionSecondPass(mappings, collection, new java.util.HashMap[String, String]) {
 
-    def secondPass(persistentClasses: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
-      bindCollectionSecondPass(colp, collection, persistentClasses, mappings)
+    def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
+      bindCollectionSecondPass(colp, collection, entities.asInstanceOf[java.util.Map[String, PersistentClass]], mappings)
     }
   }
 
   class MapSecondPass(mapp: MapProperty, mappings: Mappings, map: HMap)
     extends CollSecondPass(mapp, mappings, map) {
-    override def secondPass(persistentClasses: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
-      bindMapSecondPass(mapp, map, persistentClasses, mappings)
+    override def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
+      bindMapSecondPass(mapp, map, entities.asInstanceOf[java.util.Map[String, PersistentClass]], mappings)
     }
   }
 
   def bindCollectionSecondPass(colp: CollectionProperty, collection: Collection,
-    persistentClasses: java.util.Map[_, _], mappings: Mappings): Unit = {
-    if (collection.isOneToMany) {
-      val oneToMany = collection.getElement.asInstanceOf[HOneToMany]
-      val assocClass = oneToMany.getReferencedEntityName
-      val persistentClass = persistentClasses.get(assocClass).asInstanceOf[PersistentClass]
-      if (persistentClass == null) throw new MappingException("Association references unmapped class: " + assocClass)
-      oneToMany.setAssociatedClass(persistentClass)
-      collection.setCollectionTable(persistentClass.getTable)
-    }
+    entities: java.util.Map[String, PersistentClass], mappings: Mappings): Unit = {
 
     colp.element foreach { ele =>
       ele match {
-        case m2m: ManyToManyElement =>
+        case o2m: ToManyElement if (o2m.one2many) =>
+          val oneToMany = collection.getElement.asInstanceOf[HOneToMany]
+          val assocClass = oneToMany.getReferencedEntityName
+          val entity = entities.get(assocClass)
+          if (entity == null) throw new MappingException("Association references unmapped class: " + assocClass)
+          oneToMany.setAssociatedClass(entity)
+          collection.setCollectionTable(entity.getTable)
+
+          collection.setInverse(true)
+        case m2m: ToManyElement if (m2m.many2many) =>
           val element = bindManyToOne(new HManyToOne(mappings, collection.getCollectionTable), Collection.DEFAULT_ELEMENT_COLUMN_NAME, m2m.entityName, m2m.columns)
           collection.setElement(element)
         //        bindManyToManySubelements( collection, subnode, mappings )
@@ -59,8 +60,7 @@ object HbmConfigBinder {
           bindSimpleValue(elt, DEFAULT_ELEMENT_COLUMN_NAME, e, e)
       }
     }
-    //    val keyElem = colp.key.asInstanceOf[SimpleKey]
-    //    if (null != keyElem) {
+
     colp.key foreach { k =>
       val keyElem = k.asInstanceOf[SimpleKey]
       val propRef = collection.getReferencedPropertyName
@@ -97,8 +97,8 @@ object HbmConfigBinder {
     }
   }
 
-  def bindMapSecondPass(mapp: MapProperty, map: HMap, classes: java.util.Map[_, _], mappings: Mappings): Unit = {
-    bindCollectionSecondPass(mapp, map, classes, mappings)
+  def bindMapSecondPass(mapp: MapProperty, map: HMap, entities: java.util.Map[String, PersistentClass], mappings: Mappings): Unit = {
+    bindCollectionSecondPass(mapp, map, entities, mappings)
 
     mapp.mapKey match {
       case sk: SimpleKey =>
@@ -184,6 +184,7 @@ object HbmConfigBinder {
     manyToOne.setReferenceToPrimaryKey(true)
     manyToOne
   }
+
   def initOuterJoinFetchSetting(col: HFetchable, seqp: Fetchable): Unit = {
     seqp.fetch match {
       case Some(fetch) => col.setFetchMode(if ("join" == fetch) FetchMode.JOIN else FetchMode.SELECT)
@@ -195,10 +196,6 @@ object HbmConfigBinder {
   def makeIdentifier(em: Entity, sv: SimpleValue): Unit = {
     val idgenerator = em.idGenerator.get
     val mappings = sv.getMappings
-    //    val idGeneratorStrategy =
-    //      if (idgenerator.contains(".")) idgenerator else
-    //        mappings.getIdentifierGeneratorFactory.getIdentifierGeneratorClass(idgenerator).getName
-
     sv.setIdentifierGeneratorStrategy(idgenerator.generator)
     val params = new ju.Properties
     val normalizer = mappings.getObjectNameNormalizer
@@ -343,9 +340,10 @@ object HbmConfigBinder {
 
     seqp.element foreach { ele =>
       ele match {
-        case o2m: OneToManyElement =>
+        case o2m: ToManyElement if o2m.one2many =>
           val oneToMany = new HOneToMany(mappings, coll.getOwner)
           coll.setElement(oneToMany)
+          oneToMany.setReferencedEntityName(o2m.entityName)
         case ele: Element =>
           var tableName = seqp.table match {
             case Some(t) => mappings.getNamingStrategy.tableName(t)
@@ -358,15 +356,6 @@ object HbmConfigBinder {
           }
           val table = mappings.addTable(seqp.schema.orNull, null, tableName, seqp.subselect.orNull, false)
           coll.setCollectionTable(table)
-
-          seqp match {
-            case seqp: SeqProperty =>
-              mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
-            case setp: SetProperty =>
-              mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
-            case mapp: MapProperty =>
-              mappings.addSecondPass(new MapSecondPass(mapp, mappings, coll.asInstanceOf[HMap]))
-          }
       }
     }
 
@@ -375,6 +364,14 @@ object HbmConfigBinder {
       case Some(sort) =>
         coll.setSorted(true)
         if (sort != "natural") coll.setComparatorClassName(sort)
+    }
+    seqp match {
+      case seqp: SeqProperty =>
+        mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
+      case setp: SetProperty =>
+        mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
+      case mapp: MapProperty =>
+        mappings.addSecondPass(new MapSecondPass(mapp, mappings, coll.asInstanceOf[HMap]))
     }
     coll
   }

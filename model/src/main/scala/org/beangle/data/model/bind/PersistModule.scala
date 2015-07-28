@@ -28,13 +28,13 @@ import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{ ClassLoaders, Primitives, Strings }
 import org.beangle.commons.lang.reflect.{ BeanManifest, Getter }
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.data.model.bind.Binder.{ Collection, Column, ComponentProperty, Entity, IdGenerator, IdProperty, Index, ManyToManyElement, ManyToOneProperty, MapProperty, ModelProxy, Property, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey }
+import org.beangle.data.model.bind.Binder.{ Collection, Column, ComponentProperty, Entity, IdGenerator, IdProperty, CollectionProperty, Index, ToManyElement, ManyToOneProperty, MapProperty, ModelProxy, Property, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey }
 import org.beangle.data.model.{ Entity => MEntity, Component => MComponent }
 
 object PersistModule {
 
   class Expression(val holder: EntityHolder[_]) {
-    def is(attributes: PropertyAttribute*): Expression = {
+    def is(attributes: Declaration*): Expression = {
       val lasts = holder.proxy.lastAccessed()
       import collection.JavaConversions.asScalaSet
       for (property <- lasts; attribute <- attributes) {
@@ -45,11 +45,11 @@ object PersistModule {
     }
   }
 
-  trait PropertyAttribute {
+  trait Declaration {
     def apply(property: Property): Unit
   }
 
-  class NotNull extends PropertyAttribute {
+  class NotNull extends Declaration {
     def apply(property: Property): Unit = {
       property.columns foreach { c =>
         c.nullable = false
@@ -57,7 +57,7 @@ object PersistModule {
     }
   }
 
-  class Unique extends PropertyAttribute {
+  class Unique extends Declaration {
     def apply(property: Property): Unit = {
       property.columns foreach { c =>
         c.unique = true
@@ -65,7 +65,29 @@ object PersistModule {
     }
   }
 
-  class Length(val len: Int) extends PropertyAttribute {
+  class One2Many(val targetEntity: Class[_], val mappedBy: String) extends Declaration {
+    def apply(property: Property): Unit = {
+      property match {
+        case collp: CollectionProperty =>
+          collp.key = Some(new SimpleKey(new Column(columnName(mappedBy, true))))
+          val ele = collp.element.get.asInstanceOf[ToManyElement]
+          ele.columns.clear
+          ele.one2many = true
+          if (null != targetEntity) ele.entityName = targetEntity.getName
+        case _ => throw new RuntimeException("order by should used on seq")
+      }
+    }
+  }
+
+  class OrderBy(orderBy: String) extends Declaration {
+    def apply(property: Property): Unit = {
+      property match {
+        case collp: CollectionProperty => collp.orderBy = Some(orderBy)
+        case _                         => throw new RuntimeException("order by should used on seq")
+      }
+    }
+  }
+  class Length(val len: Int) extends Declaration {
     def apply(property: Property): Unit = {
       property.columns foreach { c =>
         c.length = Some(len)
@@ -143,6 +165,12 @@ object PersistModule {
     }
   }
 
+  def columnName(propertyName: String, key: Boolean = false): String = {
+    val lastDot = propertyName.lastIndexOf(".")
+    val columnName = if (lastDot == -1) s"@${propertyName}" else "@" + propertyName.substring(lastDot + 1)
+    if (key) columnName + "Id" else columnName
+  }
+
 }
 
 @beta
@@ -170,6 +198,14 @@ abstract class PersistModule {
   protected def unique = new Unique
 
   protected def length(len: Int) = new Length(len)
+
+  protected def one2many(mappedBy: String): One2Many = {
+    new One2Many(null, mappedBy)
+  }
+
+  protected def orderby(orderby: String): OrderBy = {
+    new OrderBy(orderby)
+  }
 
   protected final def bind[T: ClassTag]()(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): EntityHolder[T] = {
     val cls = manifest.runtimeClass.asInstanceOf[Class[T]]
@@ -300,7 +336,7 @@ abstract class PersistModule {
     val p = new SeqProperty(name, method.returnType)
     val typeSignature = tye.member(ru.TermName(name)).typeSignature.toString()
     val entityName = Strings.substringBetween(typeSignature, "[", "]")
-    val m2m = new ManyToManyElement(entityName, new Column(columnName(entityName, true)))
+    val m2m = new ToManyElement(entityName, new Column(columnName(entityName, true)))
     val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
 
     val idx = new Index(new Column("idx"))
@@ -314,7 +350,7 @@ abstract class PersistModule {
     val p = new SetProperty(name, method.returnType)
     val typeSignature = tye.member(ru.TermName(name)).typeSignature.toString()
     val entityName = Strings.substringBetween(typeSignature, "[", "]")
-    val m2m = new ManyToManyElement(entityName, new Column(columnName(entityName, true)))
+    val m2m = new ToManyElement(entityName, new Column(columnName(entityName, true)))
     val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
 
     p.element = Some(m2m)
@@ -354,12 +390,6 @@ abstract class PersistModule {
     p.targetEntity = method.returnType.getName
     p.columns += column
     p
-  }
-
-  private def columnName(propertyName: String, key: Boolean = false): String = {
-    val lastDot = propertyName.lastIndexOf(".")
-    val columnName = if (lastDot == -1) s"@${propertyName}" else "@" + propertyName.substring(lastDot + 1)
-    if (key) columnName + "Id" else columnName
   }
 
   protected final def cache(region: String): CacheHolder = {
