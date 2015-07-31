@@ -44,12 +44,12 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
       propertyMap ++= properties
     } else {
       properties foreach { tuple =>
-        val getters = BeanManifest.get(tuple._1).getters
+        val getters = BeanManifest.get(tuple._1).readables
         val filted = new collection.mutable.ListBuffer[String]
         tuple._2 foreach { p =>
           getters.get(p) match {
-            case Some(getter) => if (!isCollectionType(getter.returnType)) filted += p
-            case None => throw new RuntimeException("cannot find property $p of class ${tuple2._1.getName}")
+            case Some(getter) => if (!isCollectionType(getter.clazz)) filted += p
+            case None         => throw new RuntimeException("cannot find property $p of class ${tuple2._1.getName}")
           }
         }
         propertyMap.put(tuple._1, filted.toList)
@@ -72,14 +72,15 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
         if (registry.lookup(clazz).targetType == Type.Object) {
           val p = searchProperties(clazz)
           if (null == p) {
+            val readables = BeanManifest.get(clazz).readables
             val bp =
-              if (BeanManifest.get(clazz).getters.contains("id") && null != elementType && elementType != clazz) {
+              if (readables.contains("id") && null != elementType && elementType != clazz) {
                 List("id")
               } else {
                 if (serializer.hierarchical) {
-                  BeanManifest.get(clazz).getters.filter(!_._2.isTransient).keySet.toList
+                  readables.filter(!_._2.isTransient).keySet.toList
                 } else {
-                  BeanManifest.get(clazz).getters.filter { g => !g._2.isTransient && !isCollectionType(g._2.returnType) }.keySet.toList
+                  readables.filter { g => !g._2.isTransient && !isCollectionType(g._2.clazz) }.keySet.toList
                 }
               }
             propertyMap.put(clazz, bp)

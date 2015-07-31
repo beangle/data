@@ -38,19 +38,19 @@
 
   <properties>
     <javax.validation.version>1.1.0.Final</javax.validation.version>
-    <commons.version>4.2.5</commons.version>
+    <commons.version>4.2.6-SNAPSHOT</commons.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>org.beangle.commons</groupId>
-        <artifactId>beangle-commons-core</artifactId>
+        <artifactId>beangle-commons-core_2.11</artifactId>
         <version>${commons.version}</version>
       </dependency>
       <dependency>
         <groupId>org.beangle.commons</groupId>
-        <artifactId>beangle-commons-web</artifactId>
+        <artifactId>beangle-commons-web_2.11</artifactId>
         <version>${commons.version}</version>
       </dependency>
       <dependency>

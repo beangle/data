@@ -28,16 +28,6 @@ import org.beangle.commons.lang.functor.Predicate;
  * @author chaostone
  *
  */
-@deprecated("Use Valid instead", "4.1.2")
-object ValidKey extends Predicate[Any] {
-
-  def apply(value: Any): Boolean = {
-    if (null == value) return false
-    if (value.isInstanceOf[Number]) return NotZero(value.asInstanceOf[Number])
-    return NotEmpty.apply(value.toString)
-  }
-}
-
 object Valid extends Predicate[Any] {
   def apply(value: Any): Boolean = {
     if (null == value) return false

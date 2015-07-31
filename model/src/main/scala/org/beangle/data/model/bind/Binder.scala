@@ -18,18 +18,18 @@
  */
 package org.beangle.data.model.bind
 
+import java.lang.reflect.Modifier
 import scala.collection.mutable
 import scala.collection.mutable.Buffer
+import scala.reflect.runtime.{ universe => ru }
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.reflect.BeanManifest
-import javassist.CtMethod
-import javassist.ClassPool
-import javassist.CtConstructor
+import org.beangle.commons.lang.{ ClassLoaders, Primitives, Strings }
+import org.beangle.commons.lang.reflect.{ BeanManifest, Getter }
+import org.beangle.data.model.{ Entity => MEntity, Component => MComponent }
+import javassist.{ ClassPool, CtConstructor, CtField, CtMethod, LoaderClassPath }
 import javassist.compiler.Javac
-import org.beangle.commons.lang.ClassLoaders
-import javassist.LoaderClassPath
-import javassist.CtField
-import org.beangle.commons.lang.Primitives
+import java.lang.reflect.Method
+import org.beangle.commons.lang.reflect.MethodInfo
 
 object Binder {
   final class Collection(val clazz: Class[_], val property: String) {
@@ -113,6 +113,7 @@ object Binder {
   class Property(val name: String, val propertyType: Class[_]) extends ColumnHolder with Cloneable {
     var access: Option[String] = None
     var cascade: Option[String] = None
+    var mergeable: Boolean = true
 
     var updateable: Boolean = true
     var insertable: Boolean = true
@@ -232,6 +233,13 @@ object Binder {
   trait ModelProxy {
     def lastAccessed(): java.util.Set[String]
   }
+
+  def columnName(propertyName: String, key: Boolean = false): String = {
+    val lastDot = propertyName.lastIndexOf(".")
+    val columnName = if (lastDot == -1) s"@${propertyName}" else "@" + propertyName.substring(lastDot + 1)
+    if (key) columnName + "Id" else columnName
+  }
+
 }
 /**
  * @author chaostone
@@ -240,30 +248,31 @@ object Binder {
 final class Binder {
 
   import Binder._
-  val pool = new ClassPool(true)
+  var pool = new ClassPool(true)
   pool.appendClassPath(new LoaderClassPath(ClassLoaders.defaultClassLoader))
 
-  var defaultIdGenerator: Option[String] = None
   /**
    * Classname -> Entity
    */
-  val entityMap = new mutable.HashMap[String, Entity]
+  val mappings = new mutable.HashMap[Class[_], Entity]
 
   /**
    * Classname.property -> Collection
    */
   val collectMap = new mutable.HashMap[String, Collection]
 
-  val cache = new CacheConfig();
+  val cache = new CacheConfig()
 
-  def entities: Iterable[Entity] = entityMap.values
+  val entities = Collections.newSet[Entity]
 
   def collections: Iterable[Collection] = collectMap.values
 
-  def getEntity(clazz: Class[_]): Entity = entityMap(clazz.getName)
+  def getEntity(clazz: Class[_]): Entity = mappings(clazz)
 
-  def addEntity(definition: Entity): this.type = {
-    entityMap.put(definition.clazz.getName(), definition)
+  def addEntity(entity: Entity): this.type = {
+    val cls = entity.clazz
+    mappings.put(cls, entity)
+    if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers)) entities += entity
     this
   }
 
@@ -288,15 +297,16 @@ final class Binder {
     val javac = new Javac(cct)
     cct.addField(javac.compile("public java.util.Set _lastAccessed;").asInstanceOf[CtField])
     val manifest = BeanManifest.get(clazz)
-    manifest.getters foreach {
-      case (name, m) =>
-        var value = String.valueOf(Primitives.default(m.returnType))
-        if (m.returnType == classOf[Long]) value += "l"
-        else if (m.returnType == classOf[Double]) value += "d"
-        val body = s"public ${m.returnType.getName} ${m.method.getName}() { return $value;}"
-        val ctmod = javac.compile(body).asInstanceOf[CtMethod]
-        ctmod.setBody("{_lastAccessed.add(\"" + name + "\");return " + value + ";}")
-        cct.addMethod(ctmod)
+    manifest.properties foreach {
+      case (name, p) =>
+        if (p.readable) {
+          val value = Primitives.defaultLiteral(p.clazz)
+          val getter = p.getter.get
+          val body = s"public ${p.clazz.getName} ${getter.getName}() { return $value;}"
+          val ctmod = javac.compile(body).asInstanceOf[CtMethod]
+          ctmod.setBody("{_lastAccessed.add(\"" + name + "\");return " + value + ";}")
+          cct.addMethod(ctmod)
+        }
     }
     val ctor = javac.compile("public " + proxyClassName + "(){}").asInstanceOf[CtConstructor]
     ctor.setBody("_lastAccessed = new java.util.HashSet();")
@@ -309,6 +319,192 @@ final class Binder {
     val maked = cct.toClass()
     cct.detach()
     maked.getConstructor().newInstance().asInstanceOf[ModelProxy]
+  }
+
+  def autobind(): Unit = {
+    mappings.keys.toList.sortWith { (a, b) => a.isAssignableFrom(b) } foreach (cls => merge(mappings(cls)))
+  }
+
+  def clear(): Unit = {
+    this.entities.clear()
+    this.mappings.clear()
+    this.collectMap.clear()
+    this.pool = null
+  }
+
+  def autobind(cls: Class[_], tpe: ru.Type): Entity = {
+    val entity = new Entity(cls)
+    if (cls.isAnnotationPresent(classOf[javax.persistence.Entity])) return entity;
+    val manifest = BeanManifest.get(entity.clazz, tpe)
+    manifest.readables foreach {
+      case (name, prop) =>
+        if (prop.writable) {
+          val returnType = prop.clazz
+          val p =
+            if (name == "id") {
+              bindId(name, returnType, tpe)
+            } else if (classOf[MEntity[_]].isAssignableFrom(returnType)) {
+              bindManyToOne(name, returnType, tpe)
+            } else if (classOf[scala.collection.mutable.Seq[_]].isAssignableFrom(returnType)) {
+              bindSeq(name, returnType, entity, tpe)
+            } else if (classOf[scala.collection.mutable.Set[_]].isAssignableFrom(returnType)) {
+              bindSet(name, returnType, entity, tpe)
+            } else if (classOf[scala.collection.mutable.Map[_, _]].isAssignableFrom(returnType)) {
+              bindMap(name, returnType, entity, tpe)
+            } else if (classOf[MComponent].isAssignableFrom(returnType)) {
+              bindComponent(name, returnType, entity, tpe)
+            } else {
+              bindScalar(name, returnType, tpe)
+            }
+          entity.properties += (name -> p)
+        }
+    }
+    entity
+  }
+  /**
+   * support features
+   * <li> buildin primary type will be not null
+   */
+  def merge(entity: Entity): Unit = {
+    val cls = entity.clazz
+    // search parent and interfaces
+    var supclz: Class[_] = cls.getSuperclass
+    val supers = new mutable.ListBuffer[Entity]
+    cls.getInterfaces foreach { i =>
+      if (mappings.contains(i)) supers += mappings(i)
+    }
+    while (supclz != null && supclz != classOf[Object]) {
+      if (mappings.contains(supclz)) supers += mappings(supclz)
+      supclz.getInterfaces foreach { i =>
+        if (mappings.contains(i)) supers += mappings(i)
+      }
+      supclz = supclz.getSuperclass
+    }
+
+    val inheris = Collections.newMap[String, Property]
+    supers.reverse foreach { e =>
+      inheris ++= e.properties
+      if (entity.idGenerator == None) e.idGenerator foreach (g => entity.idGenerator = Some(g))
+      if (null == entity.cacheRegion && null == entity.cacheUsage) entity.cache(e.cacheRegion, e.cacheUsage)
+    }
+
+    val inherited = Collections.newMap[String, Property]
+    entity.properties foreach {
+      case (name, p) =>
+        if (p.mergeable && inheris.contains(name)) inherited.put(name, inheris(name).clone())
+    }
+    entity.properties ++= inherited
+  }
+
+  private def bindComponent(name: String, propertyType: Class[_], entity: Entity, tpe: ru.Type): ComponentProperty = {
+    val cp = new ComponentProperty(name, propertyType)
+    val manifest = BeanManifest.get(propertyType,tpe)
+    val ctpe = tpe.member(ru.TermName(name)).asMethod.returnType
+    manifest.readables foreach {
+      case (name, prop) =>
+        if (prop.writable) {
+          val resultType = prop.clazz
+          val p =
+            if (classOf[MEntity[_]].isAssignableFrom(resultType)) {
+              bindManyToOne(name, resultType, ctpe)
+            } else if (classOf[scala.collection.mutable.Seq[_]].isAssignableFrom(resultType)) {
+              bindSeq(name, resultType, entity, ctpe)
+            } else if (classOf[scala.collection.mutable.Set[_]].isAssignableFrom(resultType)) {
+              bindSet(name, resultType, entity, ctpe)
+            } else if (classOf[scala.collection.mutable.Map[_, _]].isAssignableFrom(resultType)) {
+              bindMap(name, resultType, entity, ctpe)
+            } else if (classOf[MComponent].isAssignableFrom(resultType)) {
+              bindComponent(name, resultType, entity, ctpe)
+            } else {
+              bindScalar(name, resultType, ctpe)
+            }
+          cp.properties += (name -> p)
+        }
+    }
+    cp
+  }
+
+  private def bindMap(name: String, propertyType: Class[_], entity: Entity, tye: ru.Type): MapProperty = {
+    val p = new MapProperty(name, propertyType)
+    val typeSignature = typeNameOf(tye, name)
+    val kvtype = Strings.substringBetween(typeSignature, "[", "]")
+
+    val mapKeyType = Strings.substringBefore(kvtype, ",").trim
+    val mapEleType = Strings.substringAfter(kvtype, ",").trim
+
+    val mapKey = new SimpleKey(new Column("key"))
+    mapKey.typeName = Some(if (mapKeyType.contains(".")) mapKeyType else "java.lang." + mapKeyType)
+
+    val mapElem = new SimpleElement(new Column("value"))
+    mapElem.typeName = Some(if (mapEleType.contains(".")) mapKeyType else "java.lang." + mapEleType)
+
+    //val m2m = new ManyToManyElement(entityName, new Column(columnName(entityName, true)))
+    val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
+    p.key = Some(key)
+    p.mapKey = mapKey
+    p.element = Some(mapElem)
+    p
+  }
+
+  private def typeNameOf(tye: ru.Type, name: String): String = {
+    tye.member(ru.TermName(name)).typeSignatureIn(tye).toString()
+  }
+
+  private def bindSeq(name: String, propertyType: Class[_], entity: Entity, tye: ru.Type): SeqProperty = {
+    val p = new SeqProperty(name, propertyType)
+    val typeSignature = typeNameOf(tye, name)
+    val entityName = Strings.substringBetween(typeSignature, "[", "]")
+    val m2m = new ToManyElement(entityName, new Column(columnName(entityName, true)))
+    val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
+
+    p.element = Some(m2m)
+    p.key = Some(key)
+    p.index = Some(new Index(new Column("idx")))
+    p
+  }
+
+  private def bindSet(name: String, propertyType: Class[_], entity: Entity, tye: ru.Type): SetProperty = {
+    val p = new SetProperty(name, propertyType)
+    val typeSignature = typeNameOf(tye, name)
+    val entityName = Strings.substringBetween(typeSignature, "[", "]")
+    val m2m = new ToManyElement(entityName, new Column(columnName(entityName, true)))
+    val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
+
+    p.element = Some(m2m)
+    p.key = Some(key)
+    p
+  }
+
+  private def bindId(name: String, propertyType: Class[_], tye: ru.Type): IdProperty = {
+    val p = new IdProperty(name, propertyType)
+    val column = new Column(columnName(name))
+    if (Primitives.isWrapperType(propertyType)) column.nullable = false
+    p.columns += column
+    p
+  }
+
+  private def bindScalar(name: String, propertyType: Class[_], tye: ru.Type): ScalarProperty = {
+    val p = new ScalarProperty(name, propertyType)
+    val column = new Column(columnName(name))
+    if (propertyType == classOf[Option[_]]) {
+      val a = tye.member(ru.TermName(name)).typeSignature
+      val innerType = a.resultType.typeArgs.head.toString
+      val innerClass = ClassLoaders.loadClass(if (innerType.contains(".")) innerType else "java.lang." + innerType)
+      val primitiveClass = Primitives.unwrap(innerClass)
+      p.typeName = Some(primitiveClass.getName + "?")
+    } else if (Primitives.isWrapperType(propertyType)) {
+      column.nullable = false
+    }
+    p.columns += column
+    p
+  }
+
+  private def bindManyToOne(name: String, propertyType: Class[_], tye: ru.Type): ManyToOneProperty = {
+    val p = new ManyToOneProperty(name, propertyType)
+    val column = new Column(columnName(name, true))
+    p.targetEntity = propertyType.getName
+    p.columns += column
+    p
   }
 
 }

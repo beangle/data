@@ -61,7 +61,7 @@ abstract class NumId[ID] extends Entity[ID] {
 
 abstract class LongId extends NumId[java.lang.Long]
 
-abstract class IntId extends NumId[java.lang.Integer]
+abstract class IntId extends NumId[Integer]
 
 abstract class StringId extends Entity[String] {
 

@@ -32,11 +32,11 @@ class BeanMarshaller(val mapper: Mapper) extends Marshaller[Object] {
     val sourceType = source.getClass
     val properties = context.getProperties(sourceType)
     if (!properties.isEmpty) {
-      val getters = BeanManifest.get(sourceType).getters
+      val getters = BeanManifest.get(sourceType).properties
       properties foreach { name =>
         val getter = getters(name)
         if (!getter.isTransient) {
-          val value = extractOption(getter.method.invoke(source))
+          val value = extractOption(getter.getter.get.invoke(source))
           if (null != value) {
             writer.startNode(mapper.serializedMember(source.getClass, name), value.getClass)
             context.marshal(value)

@@ -110,14 +110,14 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
       }
       if (null != ormLocations) {
         val mappings = configuration.createMappings()
+        val binder = new Binder()
         for (resource <- ormLocations) {
+          logger.info(s"Process $resource")
           val is = resource.openStream
           (scala.xml.XML.load(is) \ "module") foreach { ele =>
             val moduleClass = (ele \ "@class").text
-            val persistModule = Reflections.newInstance(ClassLoaders.loadClass(moduleClass)).asInstanceOf[PersistModule]
-             val binder= new Binder()
-            persistModule.configure(binder)
-            addPersistInfo(binder, mappings)
+            val pm = Reflections.newInstance(ClassLoaders.loadClass(moduleClass)).asInstanceOf[PersistModule]
+            pm.configure(binder)
             //            val enumer = props.propertyNames.asInstanceOf[ju.Enumeration[String]]
             //            while (enumer.hasMoreElements) {
             //              val propertyName = enumer.nextElement
@@ -126,6 +126,9 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
           }
           IOs.close(is)
         }
+        binder.autobind()
+        addPersistInfo(binder, mappings)
+        binder.clear()
       }
     } finally {
     }
@@ -135,14 +138,15 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
   /**
    * Add annotation class from persist configuration
    */
-  private def addPersistInfo(epconfig: Binder, mappings: Mappings) {
-    for (definition <- epconfig.entities) {
+  private def addPersistInfo(binder: Binder, mappings: Mappings) {
+    val hbmconfigBinder = new HbmConfigBinder(mappings)
+    for (definition <- binder.entities) {
       val clazz = definition.clazz
       if (clazz.isAnnotationPresent(classOf[javax.persistence.Entity])) {
         configuration.addAnnotatedClass(definition.clazz)
         logger.debug(s"Add annotation ${definition.clazz}")
       } else {
-        new HbmConfigBinder(mappings).bindClass(definition)
+        hbmconfigBinder.bindClass(definition)
       }
 
       if (null != definition.cacheUsage) {
@@ -150,8 +154,8 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
         configuration.setCacheConcurrencyStrategy(definition.entityName, definition.cacheUsage, region, true)
       }
     }
-    for (definition <- epconfig.collections if (null != definition.cacheUsage)) {
-      val role = epconfig.getEntity(definition.clazz).entityName + "." + definition.property
+    for (definition <- binder.collections if (null != definition.cacheUsage)) {
+      val role = binder.getEntity(definition.clazz).entityName + "." + definition.property
       val region = if (null == definition.cacheRegion) role else definition.cacheRegion
       configuration.setCollectionCacheConcurrencyStrategy(role, definition.cacheUsage, region)
     }

@@ -74,7 +74,7 @@ class DefaultCsvWriter(out: Writer) extends AbstractWriter {
       val processed = new collection.mutable.HashSet[Class[_]]
       processed += context.elementType
       for (name <- context.getProperties(context.elementType)) {
-        addAttribute("", name, manifest.getGetter(name).get.returnType, propertyNames, context, processed)
+        addAttribute("", name, manifest.getPropertyType(name).get, propertyNames, context, processed)
       }
     }
     propertyNames.toArray
@@ -93,7 +93,7 @@ class DefaultCsvWriter(out: Writer) extends AbstractWriter {
       val manifest = BeanManifest.get(clazz)
       processed += clazz
       properties foreach { n =>
-        addAttribute(prefix + name + ".", n, manifest.getGetter(n).get.returnType, names, context, processed)
+        addAttribute(prefix + name + ".", n, manifest.getPropertyType(n).get, names, context, processed)
       }
     }
   }

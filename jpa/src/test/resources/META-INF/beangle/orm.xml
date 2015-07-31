@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <orm>
-  <module class="org.beangle.data.jpa.hibernate.TestPersistModule"/>
+  <module class="org.beangle.data.jpa.hibernate.TestPersistModule1"/>
+  <module class="org.beangle.data.jpa.hibernate.TestPersistModule2"/>
   <naming>
     <profile package = "org.beangle.data.jpa" pluralize="true" schema="${jpa_prefix}jpa">
       <class annotation = "org.beangle.data.model.annotation.code" prefix="gb_" value="nation" />
