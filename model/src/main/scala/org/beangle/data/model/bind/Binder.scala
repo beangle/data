@@ -18,18 +18,19 @@
  */
 package org.beangle.data.model.bind
 
-import java.lang.reflect.Modifier
+import java.lang.reflect.{ Method, Modifier }
+
 import scala.collection.mutable
 import scala.collection.mutable.Buffer
 import scala.reflect.runtime.{ universe => ru }
+
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{ ClassLoaders, Primitives, Strings }
-import org.beangle.commons.lang.reflect.{ BeanManifest, Getter }
-import org.beangle.data.model.{ Entity => MEntity, Component => MComponent }
+import org.beangle.commons.lang.reflect.{ BeanManifest, MethodInfo }
+import org.beangle.data.model.{ Component => MComponent, Entity => MEntity }
+
 import javassist.{ ClassPool, CtConstructor, CtField, CtMethod, LoaderClassPath }
 import javassist.compiler.Javac
-import java.lang.reflect.Method
-import org.beangle.commons.lang.reflect.MethodInfo
 
 object Binder {
   final class Collection(val clazz: Class[_], val property: String) {
@@ -227,9 +228,6 @@ object Binder {
     if (null != column) columns += column
   }
 
-  final class CacheConfig(var region: String = null, var usage: String = null) {
-  }
-
   trait ModelProxy {
     def lastAccessed(): java.util.Set[String]
   }
@@ -240,6 +238,7 @@ object Binder {
     if (key) columnName + "Id" else columnName
   }
 
+  class TypeDef(val clazz: String, val params: Map[String, String])
 }
 /**
  * @author chaostone
@@ -248,21 +247,27 @@ object Binder {
 final class Binder {
 
   import Binder._
-  var pool = new ClassPool(true)
+  private var pool = new ClassPool(true)
   pool.appendClassPath(new LoaderClassPath(ClassLoaders.defaultClassLoader))
 
   /**
-   * Classname -> Entity
+   * all type mappings(clazz -> Entity)
    */
   val mappings = new mutable.HashMap[Class[_], Entity]
+
+  /**
+   * custome types
+   */
+  val types = new mutable.HashMap[String, TypeDef]
 
   /**
    * Classname.property -> Collection
    */
   val collectMap = new mutable.HashMap[String, Collection]
 
-  val cache = new CacheConfig()
-
+  /**
+   * Only entities
+   */
   val entities = Collections.newSet[Entity]
 
   def collections: Iterable[Collection] = collectMap.values
@@ -279,6 +284,10 @@ final class Binder {
   def addCollection(definition: Collection): this.type = {
     collectMap.put(definition.clazz.getName() + definition.property, definition)
     this
+  }
+
+  def addType(name: String, clazz: String, params: Map[String, String]): Unit = {
+    types.put(name, new TypeDef(clazz, params))
   }
 
   def generateProxy(clazz: Class[_]): ModelProxy = {
@@ -329,6 +338,7 @@ final class Binder {
     this.entities.clear()
     this.mappings.clear()
     this.collectMap.clear()
+    this.types.clear()
     this.pool = null
   }
 
@@ -398,7 +408,7 @@ final class Binder {
 
   private def bindComponent(name: String, propertyType: Class[_], entity: Entity, tpe: ru.Type): ComponentProperty = {
     val cp = new ComponentProperty(name, propertyType)
-    val manifest = BeanManifest.get(propertyType,tpe)
+    val manifest = BeanManifest.get(propertyType, tpe)
     val ctpe = tpe.member(ru.TermName(name)).asMethod.returnType
     manifest.readables foreach {
       case (name, prop) =>
@@ -487,13 +497,16 @@ final class Binder {
     val p = new ScalarProperty(name, propertyType)
     val column = new Column(columnName(name))
     if (propertyType == classOf[Option[_]]) {
-      val a = tye.member(ru.TermName(name)).typeSignature
+      val a = tye.member(ru.TermName(name)).typeSignatureIn(tye)
       val innerType = a.resultType.typeArgs.head.toString
-      val innerClass = ClassLoaders.loadClass(if (innerType.contains(".")) innerType else "java.lang." + innerType)
+      val innerClass = ClassLoaders.loadClass(innerType)
       val primitiveClass = Primitives.unwrap(innerClass)
       p.typeName = Some(primitiveClass.getName + "?")
     } else if (Primitives.isWrapperType(propertyType)) {
       column.nullable = false
+    }
+    if (None == p.typeName) {
+      p.typeName = Some(propertyType.getName)
     }
     p.columns += column
     p

@@ -22,27 +22,13 @@ import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => ru}
-
+import scala.reflect.runtime.{ universe => ru }
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.data.model.bind.Binder.{Collection, CollectionProperty, Column, Entity, IdGenerator, ModelProxy, Property, SimpleKey, ToManyElement}
+import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, Entity, IdGenerator, ModelProxy, Property, SimpleKey, ToManyElement, TypeNameHolder }
 import org.beangle.data.model.{ Entity => MEntity, Component => MComponent }
+import org.beangle.commons.collection.Collections
 
-object PersistModule {
-
-  class Expression(val holder: EntityHolder[_]) {
-    def is(declarations: Declaration*): Expression = {
-      val lasts = holder.proxy.lastAccessed()
-      import collection.JavaConversions.asScalaSet
-      for (property <- lasts; declaration <- declarations) {
-        val p =holder.entity.getProperty(property)
-        p.mergeable=false
-        declaration(holder, p)
-      }
-      lasts.clear()
-      this
-    }
-  }
+object Mapping {
 
   trait Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit
@@ -63,6 +49,15 @@ object PersistModule {
   class Cache(val cacheholder: CacheHolder) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
       cacheholder.add(List(new Collection(holder.clazz, property.name)))
+    }
+  }
+
+  class TypeSetter(val typeName: String) extends Declaration {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      property match {
+        case th: TypeNameHolder => th.typeName = Some(typeName)
+        case _                  => throw new RuntimeException(s"${property.name} is not TypeNameHolder,Cannot specified with typeis")
+      }
     }
   }
 
@@ -95,12 +90,50 @@ object PersistModule {
     }
   }
 
-  final class EntityHolder[T](val entity: Entity, val binder: Binder, val clazz: Class[T]) {
+  class Expression(val holder: EntityHolder[_]) {
+
+    def is(declarations: Declaration*): Unit = {
+      val lasts = holder.proxy.lastAccessed()
+      import collection.JavaConversions.asScalaSet
+      for (property <- lasts; declaration <- declarations) {
+        val p = holder.entity.getProperty(property)
+        p.mergeable = false
+        declaration(holder, p)
+      }
+      lasts.clear()
+    }
+
+    def &(next: Expression): Expressions = {
+      new Expressions(holder)
+    }
+  }
+
+  class Expressions(val holder: EntityHolder[_]) {
+    def &(next: Expression): this.type = {
+      this
+    }
+
+    def are(declarations: Declaration*): Unit = {
+      val lasts = holder.proxy.lastAccessed()
+      import collection.JavaConversions.asScalaSet
+      for (property <- lasts; declaration <- declarations) {
+        val p = holder.entity.getProperty(property)
+        p.mergeable = false
+        declaration(holder, p)
+      }
+      lasts.clear()
+    }
+  }
+
+  final class CacheConfig(var region: String = null, var usage: String = null) {
+  }
+
+  final class EntityHolder[T](val entity: Entity, val binder: Binder, val clazz: Class[T], module: Mapping) {
 
     var proxy: ModelProxy = _
 
     def cacheable(): this.type = {
-      entity.cache(binder.cache.region, binder.cache.usage)
+      entity.cache(module.cacheConfig.region, module.cacheConfig.usage)
       this
     }
 
@@ -114,7 +147,7 @@ object PersistModule {
       this
     }
 
-    def on(declarations: T => Seq[Expression])(implicit manifest: Manifest[T]): this.type = {
+    def on(declarations: T => Any)(implicit manifest: Manifest[T]): this.type = {
       generateProxy()
       declarations(proxy.asInstanceOf[T])
       this
@@ -131,10 +164,7 @@ object PersistModule {
     }
   }
 
-  final class CacheHolder(val binder: Binder) {
-    var cacheUsage: String = _
-    var cacheRegion: String = _
-
+  final class CacheHolder(val binder: Binder, val cacheRegion: String, val cacheUsage: String) {
     def add(first: List[Collection], definitionLists: List[Collection]*): this.type = {
       for (definition <- first) {
         binder.addCollection(definition.cache(cacheRegion, cacheUsage))
@@ -153,16 +183,6 @@ object PersistModule {
         binder.getEntity(clazz).cache(cacheRegion, cacheUsage)
       this
     }
-
-    def usage(cacheUsage: String): this.type = {
-      this.cacheUsage = cacheUsage
-      this
-    }
-
-    def cache(cacheRegion: String): this.type = {
-      this.cacheRegion = cacheRegion
-      this
-    }
   }
 
   def columnName(propertyName: String, key: Boolean = false): String = {
@@ -174,20 +194,22 @@ object PersistModule {
 }
 
 @beta
-abstract class PersistModule {
+abstract class Mapping {
 
-  import PersistModule._
-  var currentHolder: EntityHolder[_] = _
-  var defaultIdGenerator: Option[String] = None
+  import Mapping._
+  private var currentHolder: EntityHolder[_] = _
+  private var defaultIdGenerator: Option[String] = None
+  private val cacheConfig = new CacheConfig()
 
   import scala.language.implicitConversions
+
   implicit def any2Expression(i: Any): Expression = {
     new Expression(currentHolder)
   }
 
   private var binder: Binder = _
 
-  protected def binding(): Unit
+  def binding(): Unit
 
   protected def declare[B](a: B*): Seq[B] = {
     a
@@ -200,11 +222,11 @@ abstract class PersistModule {
   protected def length(len: Int) = new Length(len)
 
   protected def cacheable: Cache = {
-    new Cache(new CacheHolder(binder).cache(binder.cache.region).usage(binder.cache.usage))
+    new Cache(new CacheHolder(binder, cacheConfig.region, cacheConfig.usage))
   }
 
   protected def cacheable(region: String, usage: String): Cache = {
-    new Cache(new CacheHolder(binder).cache(region).usage(usage))
+    new Cache(new CacheHolder(binder, region, usage))
   }
 
   protected def one2many(mappedBy: String): One2Many = {
@@ -215,12 +237,16 @@ abstract class PersistModule {
     new OrderBy(orderby)
   }
 
+  protected def typeis(t: String): TypeSetter = {
+    new TypeSetter(t)
+  }
+
   protected final def bind[T: ClassTag]()(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): EntityHolder[T] = {
     val cls = manifest.runtimeClass.asInstanceOf[Class[T]]
-    val entity= binder.autobind(cls, ttag.tpe)
+    val entity = binder.autobind(cls, ttag.tpe)
     this.defaultIdGenerator foreach { a => entity.idGenerator = Some(new IdGenerator(a)) }
     binder.addEntity(entity)
-    val holder = new EntityHolder(entity, binder, cls)
+    val holder = new EntityHolder(entity, binder, cls, this)
     currentHolder = holder
     holder
   }
@@ -230,11 +256,11 @@ abstract class PersistModule {
   }
 
   protected final def cache(region: String): CacheHolder = {
-    new CacheHolder(binder).cache(region).usage(binder.cache.usage)
+    new CacheHolder(binder, region, cacheConfig.usage)
   }
 
   protected final def cache(): CacheHolder = {
-    new CacheHolder(binder).cache(binder.cache.region).usage(binder.cache.usage)
+    new CacheHolder(binder, cacheConfig.region, cacheConfig.usage)
   }
 
   protected final def collection[T](properties: String*)(implicit manifest: Manifest[T]): List[Collection] = {
@@ -248,13 +274,26 @@ abstract class PersistModule {
   }
 
   protected final def defaultCache(region: String, usage: String) {
-    binder.cache.region = region
-    binder.cache.usage = usage
+    cacheConfig.region = region
+    cacheConfig.usage = usage
   }
 
   final def configure(binder: Binder): Unit = {
     this.binder = binder
-    binding()
   }
+
+  def typedef(name: String, clazz: String, params: Map[String, String] = Map.empty): Unit = {
+    binder.addType(name, clazz, params)
+  }
+
+  def typedef(forClass: Class[_], clazz: String): Unit = {
+    binder.addType(forClass.getName, clazz, Map.empty)
+  }
+
+  def typedef(forClass: Class[_], clazz: String, params: Map[String, String]): Unit = {
+    binder.addType(forClass.getName, clazz, params)
+  }
+
+  def registerTypes(): Unit = {}
 }
 

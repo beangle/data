@@ -4,6 +4,10 @@
 
 <hibernate-mapping package="org.beangle.data.jpa.model" default-access="org.beangle.data.jpa.hibernate.PropertyAccessor">
 
+    <typedef name="weekstate" class="org.beangle.data.jpa.hibernate.udt.ValueType">
+      <param name="valueClass">org.beangle.commons.lang.time.WeekState</param>
+    </typedef>
+ 
     <class name="org.beangle.data.jpa.model.TimeBean" >
         <id name="id" unsaved-value="0" type="int">
           <generator class="assigned"/>

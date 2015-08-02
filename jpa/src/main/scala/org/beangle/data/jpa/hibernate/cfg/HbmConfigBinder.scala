@@ -124,16 +124,17 @@ object HbmConfigBinder {
   }
 
   private def bindSimpleValue(value: SimpleValue, name: String, colHolder: ColumnHolder, typeHolder: TypeNameHolder): SimpleValue = {
-    bindSimpleValueType(value, typeHolder)
+    typeHolder.typeName foreach { typeName =>
+      val typeDef = value.getMappings.getTypeDef(typeName)
+      if (null == typeDef) {
+        value.setTypeName(typeName)
+      } else {
+        value.setTypeName(typeDef.getTypeClass)
+        value.setTypeParameters(typeDef.getParameters)
+      }
+    }
     bindColumns(colHolder.columns, value, name)
     value
-  }
-
-  private def bindSimpleValueType(sv: SimpleValue, th: TypeNameHolder) {
-    th.typeName foreach { typeName =>
-      val typeDef = sv.getMappings.getTypeDef(typeName)
-      sv.setTypeName(if (null == typeDef) typeName else typeDef.getTypeClass)
-    }
   }
 
   private def bindColumns(cms: Seq[Column], simpleValue: SimpleValue, propertyPath: String): Unit = {

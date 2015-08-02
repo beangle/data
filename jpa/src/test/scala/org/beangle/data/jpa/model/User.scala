@@ -18,22 +18,24 @@
  */
 package org.beangle.data.jpa.model
 
-import scala.reflect.runtime.universe
-import scala.reflect.runtime.universe.typeTag
+import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.time.WeekState
-import org.beangle.data.model.Entity
-import org.beangle.data.model.Component
-import org.beangle.data.model.StringId
+import org.beangle.data.model.{ Component, Entity, Hierarchical, LongId, StringId }
+import org.beangle.commons.lang.time.WeekDay._
 
 class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
   def this() = this(0)
   var name: Name = _
-  var roleList: collection.mutable.Seq[Role] = new collection.mutable.ListBuffer[Role]
   var roleSet: collection.mutable.Set[Role] = new collection.mutable.HashSet[Role]
   var age: Option[Int] = None
   var properties: collection.mutable.Map[String, String] = _
   var occupy: WeekState = _
+  var weekday: WeekDay = _
+
   var createdOn: java.sql.Date = _
+  var role: Role = _
+  var roleList: collection.mutable.Seq[Role] = new collection.mutable.ListBuffer[Role]
+  var member: Member = _
 }
 
 class Name extends Component {
@@ -47,25 +49,17 @@ class Member extends Component {
   var roles: collection.mutable.Set[Role] = new collection.mutable.HashSet[Role]
 }
 
-trait Coded{
-  var code:String=_
+trait Coded {
+  var code: String = _
 }
 
-abstract class CodedEntity   extends StringId with Coded
+abstract class CodedEntity extends StringId with Coded
 
-abstract class StringIdCodedEntity   extends CodedEntity
-
-class UserAb(var id: java.lang.Long) extends Entity[java.lang.Long] with Coded {
-  def this() = this(0)
-  var name: Name = _
-  var age: Option[Integer] = None
-  var role: Role = _
-  var roleList: collection.mutable.Seq[Role] = new collection.mutable.ListBuffer[Role]
-  var properties: collection.mutable.Map[String, String] = _
-  var member: Member = _
-}
+abstract class StringIdCodedEntity extends CodedEntity
 
 class Menu extends StringIdCodedEntity
+
+class Department extends LongId with Hierarchical[Department]
 
 
 
