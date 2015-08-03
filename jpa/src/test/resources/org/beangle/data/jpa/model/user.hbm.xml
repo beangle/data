@@ -12,11 +12,11 @@
           <property name="first" length="50" />
           <property name="last" length="50" />
         </component>
-        <set name="roleSet" collection-type="set" table="users_roles">
+        <set name="roleSet" table="users_role_set">
           <key column="user_id"/>
           <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
         </set>
-        <list name="roleList" collection-type="seq" table="users_role2s">
+        <list name="roleList" collection-type="seq" table="users_role_list">
           <key column="user_id"/>
           <list-index column="idx"/>
           <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
@@ -28,6 +28,14 @@
            <map-key column="name" type="string"/>
            <element column="value" type="string"/>
         </map>
+        <component name="member" class="Member">
+          <many-to-one name="granter"/>
+          <property name="admin" not-null="true"/>
+          <set name="roles" table="users_roles" collection-type="set">
+            <key column="user_id"/>
+            <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
+          </set>
+        </component>
         <property name="occupy" type="weekstate"/>
         <property name="createdOn"/>
     </class>

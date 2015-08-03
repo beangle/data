@@ -18,18 +18,18 @@
  */
 package org.beangle.data.jpa.hibernate
 
+import java.{ util => ju }
+import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.annotation.description
 import org.beangle.data.jpa.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration, RailsNamingStrategy }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
-import org.junit.runner.RunWith
-import org.scalatest.{ Finders, FunSpec, Matchers }
-import org.scalatest.junit.JUnitRunner
-import org.hibernate.dialect.Oracle10gDialect
-import org.beangle.commons.io.IOs
 import org.hibernate.cfg.AvailableSettings
-import javax.sql.DataSource
 import org.hibernate.dialect.H2Dialect
-import java.{ util => ju }
+import org.junit.runner.RunWith
+import org.scalatest.{ FunSpec, Matchers }
+import javax.sql.DataSource
+import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class HbmConfigTest extends FunSpec with Matchers {
@@ -50,6 +50,10 @@ class HbmConfigTest extends FunSpec with Matchers {
   val ds: DataSource = new PoolingDataSourceFactory(dbprops("h2.driverClassName"),
     dbprops("h2.url"), dbprops("h2.username"), dbprops("h2.password"), new java.util.Properties()).getObject
 
-  new SessionFactoryBuilder(ds, configuration).build()
+  val sf = new SessionFactoryBuilder(ds, configuration).build()
+  val entityDao = new HibernateEntityDao(sf)
 
+  it("Should support int? and scala collection") {
+    UserCrudTest.testCrud(sf)
+  }
 }

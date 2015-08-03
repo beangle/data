@@ -266,6 +266,7 @@ private[cfg] object PersistentClassMerger extends Logging {
     msc.setMappedClass(parent.getMappedClass())
 
     // 2.clear old subclass property
+    val parentClassName=parent.getClassName
     parent.setSuperMappedSuperclass(msc)
     parent.setClassName(className)
     parent.setProxyInterfaceName(className)
@@ -299,6 +300,6 @@ private[cfg] object PersistentClassMerger extends Logging {
     } catch {
       case e: Exception =>
     }
-    logger.info(s"${sub.getClassName()} replace ${parent.getClassName()}.")
+    logger.info(s"${sub.getClassName()} replace $parentClassName.")
   }
 }

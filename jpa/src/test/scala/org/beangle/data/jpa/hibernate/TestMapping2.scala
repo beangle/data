@@ -1,10 +1,10 @@
 package org.beangle.data.jpa.hibernate
 
 import scala.reflect.runtime.universe
-import org.beangle.data.jpa.model.{ IntIdResource, LongDateIdResource, LongIdResource, Role }
+
+import org.beangle.commons.lang.annotation.beta
+import org.beangle.data.jpa.model.{ CodedEntity, Department, ExtendRole, Menu, Role, StringIdCodedEntity }
 import org.beangle.data.model.bind.Mapping
-import org.beangle.data.jpa.model.{ Coded, Menu, CodedEntity, StringIdCodedEntity }
-import org.beangle.data.jpa.model.Department
 
 class TestMapping2 extends Mapping {
 
@@ -14,7 +14,9 @@ class TestMapping2 extends Mapping {
 
     bind[Role].on(r => declare(
       r.name is (notnull, length(112), unique),
-      r.children is (one2many("parent"), cacheable))).generator("native")
+      r.children is (one2many("parent"), cacheable))).generator("assigned")
+
+    bind[ExtendRole](classOf[Role].getName)
 
     bind[CodedEntity].on(c => declare(
       c.code is (length(22))))

@@ -46,7 +46,7 @@ object PropertyAccessor {
   final class BasicSetter(val clazz: Class[_], val method: Method, val propertyName: String) extends Setter {
     def set(target: Object, value: Object, factory: SessionFactoryImplementor) {
       try {
-        method.invoke(target, value);
+        method.invoke(target, value)
       } catch {
         case npe: NullPointerException =>
           if (value == null && method.getParameterTypes()(0).isPrimitive) {
@@ -61,7 +61,7 @@ object PropertyAccessor {
               "Null value was assigned to a property of primitive type", true, clazz, propertyName);
           } else {
             val expectedType = method.getParameterTypes()(0)
-            throw new PropertySetterAccessException(iae, clazz, propertyName, expectedType, target, value);
+            throw new PropertySetterAccessException(iae, clazz, propertyName, expectedType, target, value.getClass);
           }
 
         case e: Exception => Throwables.propagate(e)

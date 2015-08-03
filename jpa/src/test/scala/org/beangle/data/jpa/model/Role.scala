@@ -21,9 +21,12 @@ package org.beangle.data.jpa.model
 import org.beangle.data.model.Entity
 import org.beangle.commons.collection.Collections
 
+//FIXME id
 class Role(var id: java.lang.Integer) extends Entity[java.lang.Integer] with Coded {
+  this.code = String.valueOf(System.identityHashCode(this))
+  var name: String = "Role" + String.valueOf(System.identityHashCode(this))
+
   def this() = this(0)
-  var name: String = _
 
   var parent: Role = _
   var children = Collections.newBuffer[Role]

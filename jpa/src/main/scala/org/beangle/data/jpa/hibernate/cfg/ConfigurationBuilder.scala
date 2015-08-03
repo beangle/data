@@ -131,8 +131,9 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
         }
 
         mappingModules foreach { m =>
-          logger.info(s"Process ${m.getClass}")
+          logger.info(s"Process ${m.getClass.getName}")
           m.binding()
+          m.clear()
         }
 
         binder.autobind()
@@ -149,7 +150,7 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
    */
   private def addPersistInfo(binder: Binder, mappings: Mappings) {
     val hbmconfigBinder = new HbmConfigBinder(mappings)
-    for (definition <- binder.entities) {
+    for ((name, definition) <- binder.entities) {
       val clazz = definition.clazz
       if (clazz.isAnnotationPresent(classOf[javax.persistence.Entity])) {
         configuration.addAnnotatedClass(definition.clazz)

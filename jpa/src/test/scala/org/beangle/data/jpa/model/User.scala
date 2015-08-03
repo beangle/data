@@ -22,11 +22,12 @@ import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.model.{ Component, Entity, Hierarchical, LongId, StringId }
 import org.beangle.commons.lang.time.WeekDay._
+import org.beangle.data.model.Remark
 
 class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
   def this() = this(0)
   var name: Name = _
-  var roleSet: collection.mutable.Set[Role] = new collection.mutable.HashSet[Role]
+  var roleSet:java.util.Set[Role] = new java.util.HashSet[Role]
   var age: Option[Int] = None
   var properties: collection.mutable.Map[String, String] = _
   var occupy: WeekState = _
@@ -34,7 +35,7 @@ class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
 
   var createdOn: java.sql.Date = _
   var role: Role = _
-  var roleList: collection.mutable.Seq[Role] = new collection.mutable.ListBuffer[Role]
+  var roleList :collection.mutable.Buffer[Role]= new collection.mutable.ListBuffer[Role]
   var member: Member = _
 }
 
@@ -45,8 +46,8 @@ class Name extends Component {
 
 class Member extends Component {
   var granter: Role = _
-  var admin: Boolean = _
-  var roles: collection.mutable.Set[Role] = new collection.mutable.HashSet[Role]
+  var admin:Boolean = _
+  var roles: collection.mutable.Set[Role] = _
 }
 
 trait Coded {
@@ -59,7 +60,7 @@ abstract class StringIdCodedEntity extends CodedEntity
 
 class Menu extends StringIdCodedEntity
 
-class Department extends LongId with Hierarchical[Department]
+class Department extends LongId with Hierarchical[Department] with Remark
 
 
 

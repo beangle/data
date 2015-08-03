@@ -268,7 +268,7 @@ final class Binder {
   /**
    * Only entities
    */
-  val entities = Collections.newSet[Entity]
+  val entities = Collections.newMap[String, Entity]
 
   def collections: Iterable[Collection] = collectMap.values
 
@@ -277,7 +277,15 @@ final class Binder {
   def addEntity(entity: Entity): this.type = {
     val cls = entity.clazz
     mappings.put(cls, entity)
-    if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers)) entities += entity
+    if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers)) {
+      //replace super entity with same entityName
+      //It's very strange,hibnerate ClassMetadata with has same entityName and mappedClass in type overriding,
+      //So, we leave  hibernate a  clean world.
+      entities.get(entity.entityName) match {
+        case Some(o) => if (o.clazz.isAssignableFrom(entity.clazz)) entities.put(entity.entityName, entity)
+        case None    => entities.put(entity.entityName, entity)
+      }
+    }
     this
   }
 
@@ -331,6 +339,7 @@ final class Binder {
   }
 
   def autobind(): Unit = {
+    //superclass first
     mappings.keys.toList.sortWith { (a, b) => a.isAssignableFrom(b) } foreach (cls => merge(mappings(cls)))
   }
 
@@ -342,8 +351,8 @@ final class Binder {
     this.pool = null
   }
 
-  def autobind(cls: Class[_], tpe: ru.Type): Entity = {
-    val entity = new Entity(cls)
+  def autobind(cls: Class[_], entityName: String, tpe: ru.Type): Entity = {
+    val entity = if (entityName == null) new Entity(cls) else new Entity(cls, entityName)
     if (cls.isAnnotationPresent(classOf[javax.persistence.Entity])) return entity;
     val manifest = BeanManifest.get(entity.clazz, tpe)
     manifest.readables foreach {
@@ -355,11 +364,11 @@ final class Binder {
               bindId(name, returnType, tpe)
             } else if (classOf[MEntity[_]].isAssignableFrom(returnType)) {
               bindManyToOne(name, returnType, tpe)
-            } else if (classOf[scala.collection.mutable.Seq[_]].isAssignableFrom(returnType)) {
+            } else if (isSeq(returnType)) {
               bindSeq(name, returnType, entity, tpe)
-            } else if (classOf[scala.collection.mutable.Set[_]].isAssignableFrom(returnType)) {
+            } else if (isSet(returnType)) {
               bindSet(name, returnType, entity, tpe)
-            } else if (classOf[scala.collection.mutable.Map[_, _]].isAssignableFrom(returnType)) {
+            } else if (isMap(returnType)) {
               bindMap(name, returnType, entity, tpe)
             } else if (classOf[MComponent].isAssignableFrom(returnType)) {
               bindComponent(name, returnType, entity, tpe)
@@ -370,6 +379,18 @@ final class Binder {
         }
     }
     entity
+  }
+
+  def isSeq(clazz: Class[_]): Boolean = {
+    classOf[collection.mutable.Seq[_]].isAssignableFrom(clazz) || classOf[java.util.List[_]].isAssignableFrom(clazz)
+  }
+
+  def isSet(clazz: Class[_]): Boolean = {
+    classOf[collection.mutable.Set[_]].isAssignableFrom(clazz) || classOf[java.util.Set[_]].isAssignableFrom(clazz)
+  }
+
+  def isMap(clazz: Class[_]): Boolean = {
+    classOf[collection.mutable.Map[_, _]].isAssignableFrom(clazz) || classOf[java.util.Map[_, _]].isAssignableFrom(clazz)
   }
   /**
    * support features
@@ -417,11 +438,11 @@ final class Binder {
           val p =
             if (classOf[MEntity[_]].isAssignableFrom(resultType)) {
               bindManyToOne(name, resultType, ctpe)
-            } else if (classOf[scala.collection.mutable.Seq[_]].isAssignableFrom(resultType)) {
+            } else if (isSeq(resultType)) {
               bindSeq(name, resultType, entity, ctpe)
-            } else if (classOf[scala.collection.mutable.Set[_]].isAssignableFrom(resultType)) {
+            } else if (isSet(resultType)) {
               bindSet(name, resultType, entity, ctpe)
-            } else if (classOf[scala.collection.mutable.Map[_, _]].isAssignableFrom(resultType)) {
+            } else if (isMap(resultType)) {
               bindMap(name, resultType, entity, ctpe)
             } else if (classOf[MComponent].isAssignableFrom(resultType)) {
               bindComponent(name, resultType, entity, ctpe)
@@ -448,7 +469,7 @@ final class Binder {
     val mapElem = new SimpleElement(new Column("value"))
     mapElem.typeName = Some(if (mapEleType.contains(".")) mapKeyType else "java.lang." + mapEleType)
 
-    //val m2m = new ManyToManyElement(entityName, new Column(columnName(entityName, true)))
+    if (propertyType.getName.startsWith("scala.")) p.typeName = Some("map")
     val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
     p.key = Some(key)
     p.mapKey = mapKey
@@ -466,7 +487,7 @@ final class Binder {
     val entityName = Strings.substringBetween(typeSignature, "[", "]")
     val m2m = new ToManyElement(entityName, new Column(columnName(entityName, true)))
     val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
-
+    if (propertyType.getName.startsWith("scala.")) p.typeName = Some("seq")
     p.element = Some(m2m)
     p.key = Some(key)
     p.index = Some(new Index(new Column("idx")))
@@ -479,7 +500,7 @@ final class Binder {
     val entityName = Strings.substringBetween(typeSignature, "[", "]")
     val m2m = new ToManyElement(entityName, new Column(columnName(entityName, true)))
     val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
-
+    if (propertyType.getName.startsWith("scala.")) p.typeName = Some("set")
     p.element = Some(m2m)
     p.key = Some(key)
     p
@@ -502,7 +523,7 @@ final class Binder {
       val innerClass = ClassLoaders.loadClass(innerType)
       val primitiveClass = Primitives.unwrap(innerClass)
       p.typeName = Some(primitiveClass.getName + "?")
-    } else if (Primitives.isWrapperType(propertyType)) {
+    } else if (propertyType.isPrimitive) {
       column.nullable = false
     }
     if (None == p.typeName) {

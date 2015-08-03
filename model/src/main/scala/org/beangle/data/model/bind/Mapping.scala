@@ -125,9 +125,6 @@ object Mapping {
     }
   }
 
-  final class CacheConfig(var region: String = null, var usage: String = null) {
-  }
-
   final class EntityHolder[T](val entity: Entity, val binder: Binder, val clazz: Class[T], module: Mapping) {
 
     var proxy: ModelProxy = _
@@ -164,15 +161,14 @@ object Mapping {
     }
   }
 
+  final class CacheConfig(var region: String = null, var usage: String = null) {
+  }
+
   final class CacheHolder(val binder: Binder, val cacheRegion: String, val cacheUsage: String) {
     def add(first: List[Collection], definitionLists: List[Collection]*): this.type = {
-      for (definition <- first) {
-        binder.addCollection(definition.cache(cacheRegion, cacheUsage))
-      }
+      first.foreach(d => binder.addCollection(d.cache(cacheRegion, cacheUsage)))
       for (definitions <- definitionLists) {
-        for (definition <- definitions) {
-          binder.addCollection(definition.cache(cacheRegion, cacheUsage))
-        }
+        definitions.foreach(d => binder.addCollection(d.cache(cacheRegion, cacheUsage)))
       }
       this
     }
@@ -181,6 +177,30 @@ object Mapping {
       binder.getEntity(first).cache(cacheRegion, cacheUsage)
       for (clazz <- classes)
         binder.getEntity(clazz).cache(cacheRegion, cacheUsage)
+      this
+    }
+  }
+
+  final class Entities(val entities: collection.mutable.Map[String, Entity], cacheConfig: CacheConfig) {
+    def except(clazzes: Class[_]*): this.type = {
+      clazzes foreach { c => entities -= c.getName }
+      this
+    }
+
+    def cacheable(): Unit = {
+      entities foreach { e =>
+        e._2.cacheRegion = cacheConfig.region
+        e._2.cacheUsage = cacheConfig.usage
+      }
+    }
+
+    def cache(region: String): this.type = {
+      entities foreach (e => e._2.cacheRegion = region)
+      this
+    }
+
+    def usage(usage: String): this.type = {
+      entities foreach (e => e._2.cacheUsage = usage)
       this
     }
   }
@@ -200,6 +220,8 @@ abstract class Mapping {
   private var currentHolder: EntityHolder[_] = _
   private var defaultIdGenerator: Option[String] = None
   private val cacheConfig = new CacheConfig()
+
+  private var entities = Collections.newMap[String, Entity]
 
   import scala.language.implicitConversions
 
@@ -242,12 +264,32 @@ abstract class Mapping {
   }
 
   protected final def bind[T: ClassTag]()(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): EntityHolder[T] = {
-    val cls = manifest.runtimeClass.asInstanceOf[Class[T]]
-    val entity = binder.autobind(cls, ttag.tpe)
-    this.defaultIdGenerator foreach { a => entity.idGenerator = Some(new IdGenerator(a)) }
+    bind(manifest.runtimeClass.asInstanceOf[Class[T]], null, ttag)
+  }
+
+  protected final def bind[T: ClassTag](entityName: String)(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): EntityHolder[T] = {
+    bind(manifest.runtimeClass.asInstanceOf[Class[T]], entityName, ttag)
+  }
+
+  private def bind[T](cls: Class[T], entityName: String, ttag: ru.TypeTag[T]): EntityHolder[T] = {
+    val entity = binder.autobind(cls, entityName, ttag.tpe)
+    //find superclass's id generator
+    var superCls: Class[_] = cls.getSuperclass
+    while (null != superCls && superCls != classOf[Object]) {
+      if (entities.contains(superCls.getName)) {
+        entities(superCls.getName).idGenerator match {
+          case Some(idg) =>
+            entity.idGenerator = Some(idg); superCls = classOf[Object]
+          case None =>
+        }
+      }
+      superCls = superCls.getSuperclass
+    }
+    if (entity.idGenerator.isEmpty) this.defaultIdGenerator foreach { a => entity.idGenerator = Some(new IdGenerator(a)) }
     binder.addEntity(entity)
     val holder = new EntityHolder(entity, binder, cls, this)
     currentHolder = holder
+    entities.put(entity.entityName, entity)
     holder
   }
 
@@ -261,6 +303,11 @@ abstract class Mapping {
 
   protected final def cache(): CacheHolder = {
     new CacheHolder(binder, cacheConfig.region, cacheConfig.usage)
+  }
+
+  protected final def all: Entities = {
+    val newEntities = Collections.newMap[String, Entity]
+    new Entities(newEntities ++ entities, cacheConfig)
   }
 
   protected final def collection[T](properties: String*)(implicit manifest: Manifest[T]): List[Collection] = {
@@ -295,5 +342,9 @@ abstract class Mapping {
   }
 
   def registerTypes(): Unit = {}
+
+  final def clear(): Unit = {
+    entities.clear()
+  }
 }
 

@@ -38,6 +38,7 @@ import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
+import org.beangle.data.jpa.model.Member
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
@@ -48,7 +49,7 @@ class UdtTest extends FunSpec with Matchers {
   configProperties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
   configProperties.put("hibernate.hbm2ddl.auto", "create")
   configProperties.put("hibernate.show_sql", "true")
-  configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/model.hbm.xml"))
+  configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/user.hbm.xml"))
   configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/time.hbm.xml"))
   configProperties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[SimpleCurrentSessionContext].getName())
   val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
@@ -70,32 +71,7 @@ class UdtTest extends FunSpec with Matchers {
 
   describe("Beangle UDT") {
     it("Should support int? and scala collection") {
-      //      val s = sf.openSession().asInstanceOf[SessionImpl]
-      val user = new User(1)
-      user.name = new Name
-      user.name.first = "Bill"
-      user.name.last = "Smith"
-      val role1 = new ExtendRole(1)
-      val role2 = new ExtendRole(2)
-      user.roleSet += role1
-      user.roleSet += role2
-      user.roleList.asInstanceOf[ListBuffer[Role]] += role1
-      user.age = Some(20)
-      user.properties = new collection.mutable.HashMap[String, String]
-      user.properties.put("address", "some street")
-      user.occupy = new WeekState(2)
-      entityDao.saveOrUpdate(role1, role2, user)
-      sf.getCurrentSession.flush()
-      sf.getCurrentSession.clear()
-
-      val saved = entityDao.get(classOf[User], user.id).asInstanceOf[User]
-      assert(saved.properties.size == 1)
-      assert(saved.roleSet.size == 2)
-      assert(saved.roleList.size == 1)
-      saved.roleSet -= saved.roleSet.head
-      entityDao.saveOrUpdate(saved);
-      sf.getCurrentSession.flush()
-      sf.getCurrentSession.close()
+      UserCrudTest.testCrud(sf)
     }
     it("Support user defined time ") {
       val s = sf.openSession()
@@ -130,7 +106,6 @@ class PoolingDataSourceFactory(url: String, username: String, password: String, 
   }
 
   def registeDriver(newDriverClassName: String) = {
-    //Validate.notEmpty(newDriverClassName, "Property 'driverClassName' must not be empty")
     val driverClassNameToUse: String = newDriverClassName.trim()
     try {
       Class.forName(driverClassNameToUse)
