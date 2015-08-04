@@ -25,11 +25,10 @@ class TestMapping1 extends Mapping {
     bind[Coded].on(c => declare(
       c.code is (notnull, length(20))))
     bind[User].on(e => declare(
-      e.name & e.createdOn are notnull)).generator("native")
+      e.name.first & e.name.last & e.createdOn are notnull)).generator("native")
 
     //issues:
     // 1.users_roles without primary key
   }
-
 }
 

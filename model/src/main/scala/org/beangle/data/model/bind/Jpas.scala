@@ -19,12 +19,31 @@
 package org.beangle.data.model.bind
 
 import org.beangle.commons.lang.Strings
-import javax.persistence.Entity
-import javax.persistence.Entity
+import org.beangle.data.model.{ Entity, Component }
 
 object Jpas {
   def findEntityName(clazz: Class[_]): String = {
     val annotation = clazz.getAnnotation(classOf[javax.persistence.Entity])
-    if (null!=annotation && Strings.isNotBlank(annotation.name)) annotation.name else clazz.getName
+    if (null != annotation && Strings.isNotBlank(annotation.name)) annotation.name else clazz.getName
+  }
+
+  def isSeq(clazz: Class[_]): Boolean = {
+    classOf[collection.mutable.Seq[_]].isAssignableFrom(clazz) || classOf[java.util.List[_]].isAssignableFrom(clazz)
+  }
+
+  def isSet(clazz: Class[_]): Boolean = {
+    classOf[collection.mutable.Set[_]].isAssignableFrom(clazz) || classOf[java.util.Set[_]].isAssignableFrom(clazz)
+  }
+
+  def isMap(clazz: Class[_]): Boolean = {
+    classOf[collection.mutable.Map[_, _]].isAssignableFrom(clazz) || classOf[java.util.Map[_, _]].isAssignableFrom(clazz)
+  }
+
+  def isEntity(clazz: Class[_]): Boolean = {
+    classOf[Entity[_]].isAssignableFrom(clazz) || null != clazz.getAnnotation(classOf[javax.persistence.Entity])
+  }
+
+  def isComponent(clazz: Class[_]): Boolean = {
+    classOf[Component].isAssignableFrom(clazz) || null != clazz.getAnnotation(classOf[javax.persistence.Embeddable])
   }
 }

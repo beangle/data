@@ -24,7 +24,7 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, Entity, IdGenerator, ModelProxy, Property, SimpleKey, ToManyElement, TypeNameHolder }
+import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, Entity, IdGenerator, EntityProxy, Property, SimpleKey, ToManyElement, TypeNameHolder }
 import org.beangle.data.model.{ Entity => MEntity, Component => MComponent }
 import org.beangle.commons.collection.Collections
 
@@ -127,7 +127,7 @@ object Mapping {
 
   final class EntityHolder[T](val entity: Entity, val binder: Binder, val clazz: Class[T], module: Mapping) {
 
-    var proxy: ModelProxy = _
+    var proxy: EntityProxy = _
 
     def cacheable(): this.type = {
       entity.cache(module.cacheConfig.region, module.cacheConfig.usage)
@@ -145,7 +145,7 @@ object Mapping {
     }
 
     def on(declarations: T => Any)(implicit manifest: Manifest[T]): this.type = {
-      generateProxy()
+      if (null == proxy) proxy = binder.generateProxy(clazz)
       declarations(proxy.asInstanceOf[T])
       this
     }
@@ -153,11 +153,6 @@ object Mapping {
     def generator(strategy: String): this.type = {
       entity.idGenerator = Some(new IdGenerator(strategy))
       this
-    }
-
-    def generateProxy(): Unit = {
-      if (null != proxy) return
-      proxy = binder.generateProxy(clazz)
     }
   }
 
