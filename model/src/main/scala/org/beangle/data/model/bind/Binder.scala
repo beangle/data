@@ -99,11 +99,10 @@ object Binder {
     var typeName: Option[String] = None
   }
 
-  final class Column(var name: String) extends Cloneable {
+  final class Column(var name: String, var nullable: Boolean = true) extends Cloneable {
     var length: Option[Int] = None
     var scale: Option[Int] = None
     var precision: Option[Int] = None
-    var nullable: Boolean = true
     var unique: Boolean = false
 
     var defaultValue: Option[String] = None
@@ -130,9 +129,7 @@ object Binder {
       val cloned = super.clone().asInstanceOf[this.type]
       val old = cloned.columns
       cloned.columns = Buffer.empty[Column]
-      old foreach { c =>
-        cloned.columns += c.clone()
-      }
+      old foreach (c => cloned.columns += c.clone())
       cloned
     }
   }
@@ -173,9 +170,7 @@ object Binder {
     var sort: Option[String] = None
   }
 
-  final class SeqProperty(name: String, propertyType: Class[_]) extends CollectionProperty(name, propertyType) {
-
-  }
+  final class SeqProperty(name: String, propertyType: Class[_]) extends CollectionProperty(name, propertyType)
 
   final class SetProperty(name: String, propertyType: Class[_]) extends CollectionProperty(name, propertyType)
 
@@ -185,43 +180,25 @@ object Binder {
 
   class Key
 
-  class SimpleKey(column: Column) extends Key with ColumnHolder with TypeNameHolder {
+  class SimpleKey(column: Column, tpeName: String = null) extends Key with ColumnHolder with TypeNameHolder {
     if (null != column) columns += column
+    if (null != tpeName) this.typeName = Some(tpeName)
   }
 
-  class CompositeKey extends Key with Component {
+  class CompositeKey extends Key with Component
 
-  }
-
-  class ManyToOneKey extends Key with ColumnHolder {
-    var entityName: String = _
+  class ManyToOneKey(val entityName: String) extends Key with ColumnHolder {
+    columns += ref(entityName)
   }
 
   class Index(column: Column) extends ColumnHolder with TypeNameHolder {
     columns += column
   }
 
-  class Element {
-
-  }
-
-  class ToManyElement(var entityName: String) extends Element with ColumnHolder {
-    var one2many = true
-    def this(entityName: String, column: Column) {
-      this(entityName)
-      this.one2many = false
-      columns += column
-    }
-
-    def many2many: Boolean = {
-      !one2many
-    }
-  }
-
   trait Component {
     var clazz: Option[String] = None
     val properties = Collections.newMap[String, Property]
-
+    var parentProperty: Option[String] = None
     def getProperty(property: String): Property = {
       val idx = property.indexOf(".")
       if (idx == -1) properties(property)
@@ -229,21 +206,33 @@ object Binder {
     }
   }
 
-  class CompositeElement extends Element with Component {
+  class Element
 
+  class ToManyElement(var entityName: String, column: Column) extends Element with ColumnHolder {
+    var one2many = false
+    if (null != column) columns += column
+
+    def this(entityName: String) {
+      this(entityName, ref(entityName))
+    }
+
+    def many2many: Boolean = {
+      !one2many
+    }
   }
 
-  class SimpleElement(column: Column) extends Element with ColumnHolder with TypeNameHolder {
+  class CompositeElement extends Element with Component
+
+  class SimpleElement(column: Column, tpeName: String = null) extends Element with ColumnHolder with TypeNameHolder {
     if (null != column) columns += column
+    if (null != tpeName) this.typeName = Some(tpeName)
   }
 
   trait ModelProxy {
     def lastAccessed(): java.util.Set[String]
   }
 
-  trait EntityProxy extends ModelProxy {
-
-  }
+  trait EntityProxy extends ModelProxy
 
   trait ComponentProxy extends ModelProxy {
     def setParent(proxy: ModelProxy): Unit
@@ -256,6 +245,10 @@ object Binder {
   }
 
   class TypeDef(val clazz: String, val params: Map[String, String])
+
+  def ref(entityName: String): Column = {
+    new Column(columnName(entityName, true), false)
+  }
 }
 /**
  * @author chaostone
@@ -486,14 +479,10 @@ final class Binder {
     // search parent and interfaces
     var supclz: Class[_] = cls.getSuperclass
     val supers = new mutable.ListBuffer[Entity]
-    cls.getInterfaces foreach { i =>
-      if (mappings.contains(i)) supers += mappings(i)
-    }
+    cls.getInterfaces foreach (i => if (mappings.contains(i)) supers += mappings(i))
     while (supclz != null && supclz != classOf[Object]) {
       if (mappings.contains(supclz)) supers += mappings(supclz)
-      supclz.getInterfaces foreach { i =>
-        if (mappings.contains(i)) supers += mappings(i)
-      }
+      supclz.getInterfaces foreach (i => if (mappings.contains(i)) supers += mappings(i))
       supclz = supclz.getSuperclass
     }
 
@@ -522,7 +511,11 @@ final class Binder {
           val resultType = prop.clazz
           val p =
             if (isEntity(resultType)) {
-              bindManyToOne(name, resultType, ctpe)
+              if (resultType == entity.clazz) {
+                cp.parentProperty = Some(name); null.asInstanceOf[Property]
+              } else {
+                bindManyToOne(name, resultType, ctpe)
+              }
             } else if (isSeq(resultType)) {
               bindSeq(name, resultType, entity, ctpe)
             } else if (isSet(resultType)) {
@@ -534,7 +527,7 @@ final class Binder {
             } else {
               bindScalar(name, resultType, ctpe)
             }
-          cp.properties += (name -> p)
+          if (null != p) cp.properties += (name -> p)
         }
     }
     cp
@@ -545,19 +538,21 @@ final class Binder {
     val typeSignature = typeNameOf(tye, name)
     val kvtype = Strings.substringBetween(typeSignature, "[", "]")
 
-    val mapKeyType = Strings.substringBefore(kvtype, ",").trim
-    val mapEleType = Strings.substringAfter(kvtype, ",").trim
+    var mapKeyType = Strings.substringBefore(kvtype, ",").trim
+    var mapEleType = Strings.substringAfter(kvtype, ",").trim
+    mapKeyType = if (mapKeyType.contains(".")) mapKeyType else "java.lang." + mapKeyType
+    mapEleType = if (mapEleType.contains(".")) mapEleType else "java.lang." + mapEleType
 
-    val mapKey = new SimpleKey(new Column("key"))
-    mapKey.typeName = Some(if (mapKeyType.contains(".")) mapKeyType else "java.lang." + mapKeyType)
+    p.mapKey =
+      if (isEntity(ClassLoaders.loadClass(mapKeyType))) new ManyToOneKey(mapKeyType)
+      else new SimpleKey(new Column("name", false), mapKeyType)
 
-    val mapElem = new SimpleElement(new Column("value"))
-    mapElem.typeName = Some(if (mapEleType.contains(".")) mapKeyType else "java.lang." + mapEleType)
+    val mapElem =
+      if (isEntity(ClassLoaders.loadClass(mapEleType))) new ToManyElement(mapEleType)
+      else new SimpleElement(new Column("value", false), mapEleType)
 
     if (propertyType.getName.startsWith("scala.")) p.typeName = Some("map")
-    val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
-    p.key = Some(key)
-    p.mapKey = mapKey
+    p.key = Some(new SimpleKey(ref(entity.entityName)))
     p.element = Some(mapElem)
     p
   }
@@ -570,12 +565,9 @@ final class Binder {
     val p = new SeqProperty(name, propertyType)
     val typeSignature = typeNameOf(tye, name)
     val entityName = Strings.substringBetween(typeSignature, "[", "]")
-    val m2m = new ToManyElement(entityName, new Column(columnName(entityName, true)))
-    val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
+    p.element = Some(new ToManyElement(entityName))
+    p.key = Some(new SimpleKey(ref(entity.entityName)))
     if (propertyType.getName.startsWith("scala.")) p.typeName = Some("seq")
-    p.element = Some(m2m)
-    p.key = Some(key)
-    p.index = Some(new Index(new Column("idx")))
     p
   }
 
@@ -583,17 +575,15 @@ final class Binder {
     val p = new SetProperty(name, propertyType)
     val typeSignature = typeNameOf(tye, name)
     val entityName = Strings.substringBetween(typeSignature, "[", "]")
-    val m2m = new ToManyElement(entityName, new Column(columnName(entityName, true)))
-    val key = new SimpleKey(new Column(columnName(entity.entityName, true)))
     if (propertyType.getName.startsWith("scala.")) p.typeName = Some("set")
-    p.element = Some(m2m)
-    p.key = Some(key)
+    p.element = Some(new ToManyElement(entityName))
+    p.key = Some(new SimpleKey(ref(entity.entityName)))
     p
   }
 
   private def bindId(name: String, propertyType: Class[_], tye: ru.Type): IdProperty = {
     val p = new IdProperty(name, propertyType)
-    val column = new Column(columnName(name))
+    val column = new Column(columnName(name), false)
     if (Primitives.isWrapperType(propertyType)) column.nullable = false
     p.columns += column
     p
@@ -611,9 +601,7 @@ final class Binder {
     } else if (propertyType.isPrimitive) {
       column.nullable = false
     }
-    if (None == p.typeName) {
-      p.typeName = Some(propertyType.getName)
-    }
+    if (None == p.typeName) p.typeName = Some(propertyType.getName)
     p.columns += column
     p
   }

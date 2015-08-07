@@ -1,12 +1,12 @@
 package org.beangle.data.jpa.hibernate
 
 import scala.reflect.runtime.universe
-import org.beangle.data.jpa.model.{ IntIdResource, LongDateIdResource, LongIdResource, Role }
-import org.beangle.data.model.bind.Mapping
-import org.beangle.data.jpa.model.User
-import org.beangle.data.jpa.model.{ Coded, Menu, CodedEntity, StringIdCodedEntity }
-import org.beangle.data.jpa.hibernate.udt.ValueType
+
+import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.time.WeekState
+import org.beangle.data.jpa.hibernate.udt.ValueType
+import org.beangle.data.jpa.model.{ Coded, IntIdResource, LongDateIdResource, LongIdResource, Skill, SkillType, User }
+import org.beangle.data.model.bind.Mapping
 
 class TestMapping1 extends Mapping {
 
@@ -25,10 +25,13 @@ class TestMapping1 extends Mapping {
     bind[Coded].on(c => declare(
       c.code is (notnull, length(20))))
     bind[User].on(e => declare(
-      e.name.first & e.name.last & e.createdOn are notnull)).generator("native")
+      e.name.first & e.name.last & e.createdOn are notnull,
+      e.roleList is ordered
+      
+    )).generator("native")
 
-    //issues:
-    // 1.users_roles without primary key
+    bind[SkillType]
+    bind[Skill]
   }
 }
 

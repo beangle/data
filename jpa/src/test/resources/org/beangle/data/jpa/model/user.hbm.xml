@@ -29,6 +29,7 @@
            <element column="value" type="string"/>
         </map>
         <component name="member" class="Member">
+          <parent name="user"/>
           <many-to-one name="granter"/>
           <property name="admin" not-null="true"/>
           <set name="roles" table="users_roles" collection-type="set">

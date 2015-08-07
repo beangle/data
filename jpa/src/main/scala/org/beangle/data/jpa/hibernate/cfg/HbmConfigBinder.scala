@@ -22,6 +22,7 @@ object HbmConfigBinder {
 
     def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
       bindCollectionSecondPass(colp, collection, entities.asInstanceOf[java.util.Map[String, PersistentClass]], mappings)
+      collection.createAllKeys()
     }
   }
 
@@ -29,6 +30,7 @@ object HbmConfigBinder {
     extends CollSecondPass(mapp, mappings, map) {
     override def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
       bindMapSecondPass(mapp, map, entities.asInstanceOf[java.util.Map[String, PersistentClass]], mappings)
+      map.createAllKeys()
     }
   }
 
@@ -195,6 +197,7 @@ object HbmConfigBinder {
   }
 
   def makeIdentifier(em: Entity, sv: SimpleValue): Unit = {
+    if (em.idGenerator.isEmpty) throw new RuntimeException("Cannot find id generator for entity " + em.entityName)
     val idgenerator = em.idGenerator.get
     val mappings = sv.getMappings
     sv.setIdentifierGeneratorStrategy(idgenerator.generator)
@@ -248,13 +251,9 @@ object HbmConfigBinder {
 
   def createCollection(colp: CollectionProperty, owner: PersistentClass, mappings: Mappings): Collection = {
     colp match {
-      case seqp: SeqProperty =>
-        if (null != seqp.index) new HList(mappings, owner)
-        else new HBag(mappings, owner)
-      case setp: SetProperty =>
-        new HSet(mappings, owner)
-      case mapp: MapProperty =>
-        new HMap(mappings, owner)
+      case seqp: SeqProperty => if (seqp.index.isEmpty) new HBag(mappings, owner) else new HList(mappings, owner)
+      case setp: SetProperty => new HSet(mappings, owner)
+      case mapp: MapProperty => new HMap(mappings, owner)
     }
   }
 
@@ -262,16 +261,13 @@ object HbmConfigBinder {
     component.setEmbedded(isEmbedded)
     component.setRoleName(path)
 
-    comp.clazz foreach { clz =>
-      component.setComponentClassName(clz)
-    }
+    comp.clazz foreach (clz => component.setComponentClassName(clz))
     if (isEmbedded) {
-      if (component.getOwner.hasPojoRepresentation) {
-        component.setComponentClassName(component.getOwner.getClassName)
-      } else {
-        component.setDynamic(true)
-      }
+      if (component.getOwner.hasPojoRepresentation) component.setComponentClassName(component.getOwner.getClassName)
+      else component.setDynamic(true)
     }
+    comp.parentProperty foreach (pp => component.setParentProperty(pp))
+
     comp.properties foreach {
       case (propertyName, p) =>
         var value: Value = null
@@ -346,12 +342,12 @@ object HbmConfigBinder {
           coll.setElement(oneToMany)
           oneToMany.setReferencedEntityName(o2m.entityName)
         case ele: Element =>
-          var tableName = seqp.table match {
+          val tableName = seqp.table match {
             case Some(t) => mappings.getNamingStrategy.tableName(t)
             case None =>
               val ownerTable = coll.getOwner.getTable
               val logicalOwnerTableName = ownerTable.getName
-              var tblName = mappings.getNamingStrategy.collectionTableName(
+              val tblName = mappings.getNamingStrategy.collectionTableName(
                 coll.getOwner.getEntityName, logicalOwnerTableName, null, null, seqp.name)
               if (ownerTable.isQuoted) quote(tblName) else tblName
           }
@@ -361,18 +357,14 @@ object HbmConfigBinder {
     }
 
     seqp.sort match {
-      case None => coll.setSorted(false)
-      case Some(sort) =>
-        coll.setSorted(true)
-        if (sort != "natural") coll.setComparatorClassName(sort)
+      case None       => coll.setSorted(false)
+      case Some(sort) => coll.setSorted(true); if (sort != "natural") coll.setComparatorClassName(sort)
     }
+
     seqp match {
-      case seqp: SeqProperty =>
-        mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
-      case setp: SetProperty =>
-        mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
-      case mapp: MapProperty =>
-        mappings.addSecondPass(new MapSecondPass(mapp, mappings, coll.asInstanceOf[HMap]))
+      case seqp: SeqProperty => mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
+      case setp: SetProperty => mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
+      case mapp: MapProperty => mappings.addSecondPass(new MapSecondPass(mapp, mappings, coll.asInstanceOf[HMap]))
     }
     coll
   }

@@ -44,6 +44,8 @@ object Jpas {
   }
 
   def isComponent(clazz: Class[_]): Boolean = {
-    classOf[Component].isAssignableFrom(clazz) || null != clazz.getAnnotation(classOf[javax.persistence.Embeddable])
+    classOf[Component].isAssignableFrom(clazz) ||
+      null != clazz.getAnnotation(classOf[org.beangle.commons.bean.component]) ||
+      null != clazz.getAnnotation(classOf[javax.persistence.Embeddable])
   }
 }

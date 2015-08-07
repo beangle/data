@@ -24,7 +24,7 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, Entity, IdGenerator, EntityProxy, Property, SimpleKey, ToManyElement, TypeNameHolder }
+import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, Entity, IdGenerator, EntityProxy, Property, SimpleKey, ToManyElement, TypeNameHolder, Index, SeqProperty }
 import org.beangle.data.model.{ Entity => MEntity, Component => MComponent }
 import org.beangle.commons.collection.Collections
 
@@ -80,6 +80,17 @@ object Mapping {
       property match {
         case collp: CollectionProperty => collp.orderBy = Some(orderBy)
         case _                         => throw new RuntimeException("order by should used on seq")
+      }
+    }
+  }
+
+  class OrderColumn(orderColumn: String) extends Declaration {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      property match {
+        case collp: SeqProperty =>
+          val col = new Column(if (null != orderColumn) "idx" else orderColumn, false)
+          collp.index = Some(new Index(col))
+        case _ => throw new RuntimeException("order by should used on seq")
       }
     }
   }
@@ -252,6 +263,14 @@ abstract class Mapping {
 
   protected def orderby(orderby: String): OrderBy = {
     new OrderBy(orderby)
+  }
+
+  protected def ordered: OrderColumn = {
+    new OrderColumn(null)
+  }
+
+  protected def ordered(column: String): OrderColumn = {
+    new OrderColumn(column)
   }
 
   protected def typeis(t: String): TypeSetter = {

@@ -35,6 +35,7 @@ object UserCrudTest {
     assert(saved.properties.size == 1)
     assert(saved.roleSet.size == 2)
     assert(saved.roleList.size == 1)
+    assert(null!=saved.member.user)
     saved.roleSet -= saved.roleSet.head
     entityDao.saveOrUpdate(saved);
     sf.getCurrentSession.flush()

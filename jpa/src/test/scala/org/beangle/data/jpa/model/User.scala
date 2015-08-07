@@ -27,17 +27,22 @@ import org.beangle.data.model.Remark
 class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
   def this() = this(0)
   var name = new Name
-  var roleSet:java.util.Set[Role] = new java.util.HashSet[Role]
+  var roleSet: java.util.Set[Role] = new java.util.HashSet[Role]
   var age: Option[Int] = None
+  var money: Float = _
   var properties: collection.mutable.Map[String, String] = _
   var occupy: WeekState = _
   var weekday: WeekDay = _
 
   var createdOn: java.sql.Date = _
   var role: Role = _
-  var roleList :collection.mutable.Buffer[Role]= new collection.mutable.ListBuffer[Role]
+  var roleList: collection.mutable.Buffer[Role] = new collection.mutable.ListBuffer[Role]
   var member: Member = _
+  var skills: collection.mutable.Map[SkillType, Skill] = _
 }
+class SkillType extends LongId
+
+class Skill extends LongId
 
 class Name extends Component {
   var first: String = _
@@ -45,8 +50,10 @@ class Name extends Component {
 }
 
 class Member extends Component {
+  @scala.beans.BeanProperty
+  var user: User = _
   var granter: Role = _
-  var admin:Boolean = _
+  var admin: Boolean = _
   var roles: collection.mutable.Set[Role] = _
 }
 
