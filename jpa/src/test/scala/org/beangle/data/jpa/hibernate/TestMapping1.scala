@@ -25,10 +25,9 @@ class TestMapping1 extends Mapping {
     bind[Coded].on(c => declare(
       c.code is (notnull, length(20))))
     bind[User].on(e => declare(
+      e.name.first is unique,
       e.name.first & e.name.last & e.createdOn are notnull,
-      e.roleList is ordered
-      
-    )).generator("native")
+      e.roleList is ordered)).generator("native")
 
     bind[SkillType]
     bind[Skill]

@@ -55,6 +55,10 @@ trait Entity[ID] extends Serializable {
   }
 }
 
+trait LongIdEntity extends Entity[java.lang.Long]
+trait IntIdEntity extends Entity[java.lang.Integer]
+trait StringIdEntity extends Entity[java.lang.String]
+
 abstract class NumId[ID] extends Entity[ID] {
   var id: ID = _
 }

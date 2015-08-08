@@ -14,7 +14,7 @@ class TestMapping2 extends Mapping {
 
     bind[Role].on(r => declare(
       r.name is (notnull, length(112), unique),
-      r.children is (one2many("parent"), cacheable))).generator("assigned")
+      r.children is (depends("parent"), cacheable))).generator("assigned")
 
     bind[ExtendRole](classOf[Role].getName)
 

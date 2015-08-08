@@ -24,7 +24,8 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, Entity, IdGenerator, EntityProxy, Property, SimpleKey, ToManyElement, TypeNameHolder, Index, SeqProperty }
+import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, Entity, IdGenerator, EntityProxy }
+import org.beangle.data.model.bind.Binder.{ Property, SimpleKey, ToManyElement, TypeNameHolder, Index, SeqProperty, ManyToOneProperty, ComponentProperty }
 import org.beangle.data.model.{ Entity => MEntity, Component => MComponent }
 import org.beangle.commons.collection.Collections
 
@@ -56,12 +57,16 @@ object Mapping {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
       property match {
         case th: TypeNameHolder => th.typeName = Some(typeName)
-        case _                  => throw new RuntimeException(s"${property.name} is not TypeNameHolder,Cannot specified with typeis")
+        case _                  => mismatch("TypeNameHolder needed", holder.entity, property)
       }
     }
   }
 
-  class One2Many(val targetEntity: Class[_], val mappedBy: String) extends Declaration {
+  private def mismatch(msg: String, e: Entity, p: Property): Unit = {
+    throw new RuntimeException(msg + s",Not for ${e.entityName}.${p.name}(${p.getClass.getSimpleName}/${p.propertyType.getName})")
+  }
+
+  class One2Many(targetEntity: Option[Class[_]], mappedBy: String, private var cascade: Option[String] = None) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
       property match {
         case collp: CollectionProperty =>
@@ -69,9 +74,20 @@ object Mapping {
           val ele = collp.element.get.asInstanceOf[ToManyElement]
           ele.columns.clear
           ele.one2many = true
-          if (null != targetEntity) ele.entityName = targetEntity.getName
-        case _ => throw new RuntimeException("order by should used on seq")
+          targetEntity foreach (e => ele.entityName = e.getName)
+          cascade foreach (c => collp.cascade = Some(c))
+        case _ => mismatch("one2many should used on seq", holder.entity, property)
       }
+    }
+
+    def cascade(c: String, orphanRemoval: Boolean = true): this.type = {
+      this.cascade = Some(if (orphanRemoval && !c.contains("delete-orphan")) c + ",delete-orphan" else c)
+      this
+    }
+
+    def cascaded: this.type = {
+      this.cascade = Some("all,delete-orphan")
+      this
     }
   }
 
@@ -79,7 +95,7 @@ object Mapping {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
       property match {
         case collp: CollectionProperty => collp.orderBy = Some(orderBy)
-        case _                         => throw new RuntimeException("order by should used on seq")
+        case _                         => mismatch("order by should used on seq", holder.entity, property)
       }
     }
   }
@@ -90,28 +106,47 @@ object Mapping {
         case collp: SeqProperty =>
           val col = new Column(if (null != orderColumn) "idx" else orderColumn, false)
           collp.index = Some(new Index(col))
-        case _ => throw new RuntimeException("order by should used on seq")
+        case _ => mismatch("order column should used on many2many seq", holder.entity, property)
       }
     }
   }
 
-  class Length(val len: Int) extends Declaration {
+  class Length(len: Int) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
       property.columns foreach (c => c.length = Some(len))
     }
   }
 
+  class Target(clazz: Class[_]) extends Declaration {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      property match {
+        case collp: ManyToOneProperty => collp.targetEntity = clazz.getName
+        case _                        => mismatch("target should used on manytoone", holder.entity, property)
+      }
+    }
+  }
+
+  object Expression {
+    // only apply unique on component properties
+    def is(holder: EntityHolder[_], declarations: Seq[Declaration]): Unit = {
+      val lasts = holder.proxy.lastAccessed()
+      import collection.JavaConversions.asScalaSet
+
+      lasts foreach { property =>
+        val p = holder.entity.getProperty(property)
+        p match {
+          case cp: ComponentProperty => declarations foreach (d => if (d.isInstanceOf[Unique]) d(holder, p))
+          case _                     => declarations foreach (d => d(holder, p))
+        }
+        p.mergeable = false
+      }
+      lasts.clear()
+    }
+  }
   class Expression(val holder: EntityHolder[_]) {
 
     def is(declarations: Declaration*): Unit = {
-      val lasts = holder.proxy.lastAccessed()
-      import collection.JavaConversions.asScalaSet
-      for (property <- lasts; declaration <- declarations) {
-        val p = holder.entity.getProperty(property)
-        p.mergeable = false
-        declaration(holder, p)
-      }
-      lasts.clear()
+      Expression.is(holder, declarations)
     }
 
     def &(next: Expression): Expressions = {
@@ -125,14 +160,7 @@ object Mapping {
     }
 
     def are(declarations: Declaration*): Unit = {
-      val lasts = holder.proxy.lastAccessed()
-      import collection.JavaConversions.asScalaSet
-      for (property <- lasts; declaration <- declarations) {
-        val p = holder.entity.getProperty(property)
-        p.mergeable = false
-        declaration(holder, p)
-      }
-      lasts.clear()
+      Expression.is(holder, declarations)
     }
   }
 
@@ -257,8 +285,24 @@ abstract class Mapping {
     new Cache(new CacheHolder(binder, region, usage))
   }
 
+  protected def target[T](implicit manifest: Manifest[T]): Target = {
+    new Target(manifest.runtimeClass)
+  }
+
+  protected def depends(clazz: Class[_], mappedBy: String): One2Many = {
+    new One2Many(Some(clazz), mappedBy).cascaded
+  }
+
+  protected def depends(mappedBy: String): One2Many = {
+    new One2Many(None, mappedBy).cascaded
+  }
+
   protected def one2many(mappedBy: String): One2Many = {
-    new One2Many(null, mappedBy)
+    new One2Many(None, mappedBy)
+  }
+
+  protected def one2many(clazz: Class[_], mappedBy: String): One2Many = {
+    new One2Many(Some(clazz), mappedBy)
   }
 
   protected def orderby(orderby: String): OrderBy = {
@@ -294,7 +338,7 @@ abstract class Mapping {
         entities(superCls.getName).idGenerator match {
           case Some(idg) =>
             entity.idGenerator = Some(idg); superCls = classOf[Object]
-          case None =>
+          case None      =>
         }
       }
       superCls = superCls.getSuperclass
@@ -325,12 +369,9 @@ abstract class Mapping {
   }
 
   protected final def collection[T](properties: String*)(implicit manifest: Manifest[T]): List[Collection] = {
-    import scala.collection.mutable
-    val definitions = new mutable.ListBuffer[Collection]
+    val definitions = new scala.collection.mutable.ListBuffer[Collection]
     val clazz = manifest.runtimeClass
-    for (property <- properties) {
-      definitions += new Collection(clazz, property)
-    }
+    properties foreach (p => definitions += new Collection(clazz, p))
     definitions.toList
   }
 
@@ -343,6 +384,7 @@ abstract class Mapping {
     this.binder = binder
   }
 
+  //  def valuedef(name,)
   def typedef(name: String, clazz: String, params: Map[String, String] = Map.empty): Unit = {
     binder.addType(name, clazz, params)
   }

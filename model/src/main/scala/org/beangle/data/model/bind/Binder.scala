@@ -80,10 +80,17 @@ object Binder {
       properties(property).columns
     }
 
+    def getSimpleProperty(property: String): Property = {
+      properties.get(property) match {
+        case Some(p) => p
+        case None    => throw new RuntimeException("Cannot find property " + property + " in " + entityName)
+      }
+    }
+
     def getProperty(property: String): Property = {
       val idx = property.indexOf(".")
-      if (idx == -1) properties(property)
-      else properties(property.substring(0, idx)).asInstanceOf[ComponentProperty].getProperty(property.substring(idx + 1))
+      if (idx == -1) getSimpleProperty(property)
+      else getSimpleProperty(property.substring(0, idx)).asInstanceOf[ComponentProperty].getProperty(property.substring(idx + 1))
     }
 
     override def hashCode: Int = clazz.hashCode()
@@ -328,7 +335,7 @@ final class Binder {
     val componentValues = Collections.newMap[Method, ComponentProxy]
     manifest.properties foreach {
       case (name, p) =>
-        if (p.readable && p.writable) {
+        if (p.readable) {
           val getter = p.getter.get
           val value = Primitives.defaultLiteral(p.clazz)
           val body = s"public ${p.clazz.getName} ${getter.getName}() { return $value;}"
@@ -384,7 +391,7 @@ final class Binder {
     val componentValues = Collections.newMap[Method, ComponentProxy]
     manifest.properties foreach {
       case (name, p) =>
-        if (p.readable && p.writable) {
+        if (p.readable) {
           val getter = p.getter.get
           val value = Primitives.defaultLiteral(p.clazz)
           val body = s"public ${p.clazz.getName} ${getter.getName}() { return $value;}"
@@ -394,7 +401,7 @@ final class Binder {
           if (isComponent(p.clazz)) {
             val cproxy = generateComponentProxy(p.clazz, path + name + ".")
             componentValues += (p.setter.get -> cproxy)
-            ctmod.setBody("{" + accessed + ".add(_path + \"@" + name + "\");return this." + name + ";}")
+            ctmod.setBody("{" + accessed + ".add(_path + \"" + name + "\");return super." + getter.getName + "();}")
           } else {
             val value = Primitives.defaultLiteral(p.clazz)
             ctmod.setBody("{" + accessed + ".add(_path + \"" + name + "\");return " + value + ";}")
@@ -446,7 +453,7 @@ final class Binder {
     val manifest = BeanManifest.get(entity.clazz, tpe)
     manifest.readables foreach {
       case (name, prop) =>
-        if (prop.writable) {
+        if (prop.readable & prop.writable) {
           val returnType = prop.clazz
           val p =
             if (name == "id") {

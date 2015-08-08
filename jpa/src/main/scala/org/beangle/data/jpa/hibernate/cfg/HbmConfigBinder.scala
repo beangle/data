@@ -4,20 +4,20 @@ import java.{ util => ju }
 import java.lang.reflect.Modifier
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanManifest
-import org.beangle.data.model.bind.Binder.{ CollectionProperty, Column, ColumnHolder, Component, ComponentProperty, CompositeElement, CompositeKey, Element, Entity, Fetchable, IdProperty, ToManyElement, ManyToOneKey, ManyToOneProperty, MapProperty, Property => PropertyConfig, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey, TypeNameHolder }
+import org.beangle.data.model.bind.Binder.{ CollectionProperty, Column, ColumnHolder, Component, ComponentProperty, CompositeElement, CompositeKey, Element, Entity, Fetchable, IdProperty, ToManyElement, ManyToOneKey, ManyToOneProperty, MapProperty, Property, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey, TypeNameHolder }
 import org.hibernate.{ FetchMode, MappingException }
 import org.hibernate.cfg.{ CollectionSecondPass, Mappings }
 import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, IDENTIFIER_NORMALIZER, SCHEMA }
-import org.hibernate.mapping.{ Backref, Bag => HBag, Collection }
+import org.hibernate.mapping.{ Backref, Bag => HBag, Collection => HCollection }
 import org.hibernate.mapping.{ Column => HColumn, Component => HComponent, DependantValue, Fetchable => HFetchable, IndexBackref }
-import org.hibernate.mapping.{ KeyValue, List => HList, ManyToOne => HManyToOne, Map => HMap, OneToMany => HOneToMany, PersistentClass, Property, RootClass, Set => HSet, SimpleValue, ToOne, Value }
+import org.hibernate.mapping.{ KeyValue, List => HList, ManyToOne => HManyToOne, Map => HMap, OneToMany => HOneToMany, PersistentClass, Property => HProperty, RootClass, Set => HSet, SimpleValue, ToOne, Value }
 import org.hibernate.mapping.Collection.{ DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_KEY_COLUMN_NAME }
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
 import org.hibernate.tuple.{ GeneratedValueGeneration, GenerationTiming }
 
 object HbmConfigBinder {
 
-  class CollSecondPass(colp: CollectionProperty, mappings: Mappings, collection: Collection)
+  class CollSecondPass(colp: CollectionProperty, mappings: Mappings, collection: HCollection)
     extends CollectionSecondPass(mappings, collection, new java.util.HashMap[String, String]) {
 
     def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
@@ -34,7 +34,7 @@ object HbmConfigBinder {
     }
   }
 
-  def bindCollectionSecondPass(colp: CollectionProperty, collection: Collection,
+  def bindCollectionSecondPass(colp: CollectionProperty, collection: HCollection,
     entities: java.util.Map[String, PersistentClass], mappings: Mappings): Unit = {
 
     colp.element foreach { ele =>
@@ -49,7 +49,7 @@ object HbmConfigBinder {
 
           collection.setInverse(true)
         case m2m: ToManyElement if (m2m.many2many) =>
-          val element = bindManyToOne(new HManyToOne(mappings, collection.getCollectionTable), Collection.DEFAULT_ELEMENT_COLUMN_NAME, m2m.entityName, m2m.columns)
+          val element = bindManyToOne(new HManyToOne(mappings, collection.getCollectionTable), DEFAULT_ELEMENT_COLUMN_NAME, m2m.entityName, m2m.columns)
           collection.setElement(element)
         //        bindManyToManySubelements( collection, subnode, mappings )
         case compositeElem: CompositeElement =>
@@ -249,7 +249,7 @@ object HbmConfigBinder {
     }
   }
 
-  def createCollection(colp: CollectionProperty, owner: PersistentClass, mappings: Mappings): Collection = {
+  def createCollection(colp: CollectionProperty, owner: PersistentClass, mappings: Mappings): HCollection = {
     colp match {
       case seqp: SeqProperty => if (seqp.index.isEmpty) new HBag(mappings, owner) else new HList(mappings, owner)
       case setp: SetProperty => new HSet(mappings, owner)
@@ -288,37 +288,32 @@ object HbmConfigBinder {
             value = new HComponent(mappings, component)
             bindComponent(value.asInstanceOf[HComponent], cp, subpath, isEmbedded, mappings)
         }
-        //      else if ( "parent".equals( name ) ) {
-        //        component.setParentProperty( propertyName )
-        //      }
-        //
         if (value != null) {
           val property = createProperty(value, propertyName, ClassLoaders.loadClass(component.getComponentClassName), p, mappings)
           component.addProperty(property)
         }
     }
+
     comp match {
-      case cp: ComponentProperty =>
+      case cp: ComponentProperty if (cp.unique) =>
         val iter = component.getColumnIterator
         val cols = new java.util.ArrayList[HColumn]
-        while (iter.hasNext) {
-          cols.add(iter.next.asInstanceOf[HColumn])
-        }
+        while (iter.hasNext) cols.add(iter.next.asInstanceOf[HColumn])
         component.getOwner.getTable.createUniqueKey(cols)
       case _ =>
     }
     component
   }
 
-  def bindCollection(entity: PersistentClass, role: String, seqp: CollectionProperty, coll: Collection): Collection = {
+  def bindCollection(entity: PersistentClass, role: String, cp: CollectionProperty, coll: HCollection): HCollection = {
     coll.setRole(role)
-    coll.setInverse(seqp.inverse)
+    coll.setInverse(cp.inverse)
     val mappings = coll.getMappings
-    seqp.orderBy foreach (v => coll.setOrderBy(v))
-    seqp.where foreach (v => coll.setWhere(v))
-    seqp.batchSize foreach (v => coll.setBatchSize(v))
+    cp.orderBy foreach (v => coll.setOrderBy(v))
+    cp.where foreach (v => coll.setWhere(v))
+    cp.batchSize foreach (v => coll.setBatchSize(v))
 
-    seqp.typeName foreach { typeName =>
+    cp.typeName foreach { typeName =>
       val typeDef = mappings.getTypeDef(typeName)
       if (typeDef != null) {
         coll.setTypeName(typeDef.getTypeClass)
@@ -328,70 +323,68 @@ object HbmConfigBinder {
       }
     }
 
-    initOuterJoinFetchSetting(coll, seqp)
-    if (Some("subselect") == seqp.fetch) {
+    initOuterJoinFetchSetting(coll, cp)
+    if (Some("subselect") == cp.fetch) {
       coll.setSubselectLoadable(true)
       coll.getOwner.setSubselectLoadableCollections(true)
     }
     coll.setLazy(true)
 
-    seqp.element foreach { ele =>
+    cp.element foreach { ele =>
       ele match {
         case o2m: ToManyElement if o2m.one2many =>
           val oneToMany = new HOneToMany(mappings, coll.getOwner)
           coll.setElement(oneToMany)
           oneToMany.setReferencedEntityName(o2m.entityName)
         case ele: Element =>
-          val tableName = seqp.table match {
+          val tableName = cp.table match {
             case Some(t) => mappings.getNamingStrategy.tableName(t)
             case None =>
               val ownerTable = coll.getOwner.getTable
               val logicalOwnerTableName = ownerTable.getName
               val tblName = mappings.getNamingStrategy.collectionTableName(
-                coll.getOwner.getEntityName, logicalOwnerTableName, null, null, seqp.name)
+                coll.getOwner.getEntityName, logicalOwnerTableName, null, null, cp.name)
               if (ownerTable.isQuoted) quote(tblName) else tblName
           }
-          val table = mappings.addTable(seqp.schema.orNull, null, tableName, seqp.subselect.orNull, false)
+          val table = mappings.addTable(cp.schema.orNull, null, tableName, cp.subselect.orNull, false)
           coll.setCollectionTable(table)
       }
     }
 
-    seqp.sort match {
+    cp.sort match {
       case None       => coll.setSorted(false)
       case Some(sort) => coll.setSorted(true); if (sort != "natural") coll.setComparatorClassName(sort)
     }
 
-    seqp match {
+    cp match {
       case seqp: SeqProperty => mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
-      case setp: SetProperty => mappings.addSecondPass(new CollSecondPass(seqp, mappings, coll))
+      case setp: SetProperty => mappings.addSecondPass(new CollSecondPass(cp, mappings, coll))
       case mapp: MapProperty => mappings.addSecondPass(new MapSecondPass(mapp, mappings, coll.asInstanceOf[HMap]))
     }
+    cp.cascade foreach (cascade => if (cascade.contains("delete-orphan")) coll.setOrphanDelete(true))
     coll
   }
 
-  def createProperty(value: Value, propertyName: String, clazz: Class[_], pm: PropertyConfig, mappings: Mappings): Property = {
+  def createProperty(value: Value, propertyName: String, clazz: Class[_], pm: Property, mappings: Mappings): HProperty = {
     setTypeUsingReflection(value, clazz, propertyName)
     value match {
       case toOne: ToOne =>
         val propertyRef = toOne.getReferencedPropertyName
-        if (propertyRef != null) {
-          mappings.addUniquePropertyReference(toOne.getReferencedEntityName, propertyRef)
-        }
-      //      toOne.setCascadeDeleteEnabled( "cascade".equals(subnode.attributeValue( "on-delete" ) ) )
-      case coll: Collection =>
+        if (propertyRef != null) mappings.addUniquePropertyReference(toOne.getReferencedEntityName, propertyRef)
+      case coll: HCollection =>
         val propertyRef = coll.getReferencedPropertyName
         if (propertyRef != null) mappings.addPropertyReference(coll.getOwnerEntityName, propertyRef)
       case _ =>
     }
 
     value.createForeignKey
-    val prop = new Property
+    val prop = new HProperty
     prop.setValue(value)
     bindProperty(pm, prop, mappings)
     prop
   }
 
-  def bindProperty(pm: PropertyConfig, property: Property, mappings: Mappings): Unit = {
+  def bindProperty(pm: Property, property: HProperty, mappings: Mappings): Unit = {
     property.setName(pm.name)
     property.setPropertyAccessorName(pm.access.getOrElse(mappings.getDefaultAccess))
     property.setCascade(pm.cascade.getOrElse(mappings.getDefaultCascade))
@@ -470,7 +463,7 @@ class HbmConfigBinder(val mappings: Mappings) {
     entity.setIdentifier(id)
     bindColumns(idp.columns, id, idp.name)
     setTypeUsingReflection(id, entity.getMappedClass, idp.name)
-    val prop = new Property
+    val prop = new HProperty
     prop.setValue(id)
     bindProperty(idp, prop, mappings)
     entity.setIdentifierProperty(prop)
