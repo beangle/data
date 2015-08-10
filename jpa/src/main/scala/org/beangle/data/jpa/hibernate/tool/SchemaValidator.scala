@@ -22,7 +22,7 @@ import java.io.{ File, FileWriter, Writer }
 import java.sql.{ Connection, Types }
 
 import org.beangle.commons.conversion.converter.String2BooleanConverter
-import org.beangle.data.jpa.hibernate.{ DefaultConfigurationBuilder, OverrideConfiguration }
+import org.beangle.data.jpa.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.{ AvailableSettings, Configuration, NamingStrategy, ObjectNameNormalizer }
 import org.hibernate.dialect.Dialect
@@ -42,7 +42,7 @@ object SchemaValidator {
       return
     }
 
-    val config = DefaultConfigurationBuilder.build(new OverrideConfiguration)
+    val config = ConfigurationBuilder.build(new OverrideConfiguration)
     val serviceRegistry = new StandardServiceRegistryBuilder().applySettings(config.getProperties).build()
 
     val writer = new FileWriter(target + "/schema_validate.txt")

@@ -16,16 +16,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.util
+package org.beangle.data.jpa.hibernate
 
-import org.beangle.commons.lang.Assert
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.bean.Factory
+import org.beangle.commons.inject.{ Container, ContainerRefreshedHook }
+import org.beangle.commons.lang.annotation.description
+import org.beangle.data.model.meta.EntityMetadata
+import org.hibernate.SessionFactory
 
-import javax.persistence.Entity
+@description("基于Hibernate提供的元信息工厂")
+class HibernateMetadataFactory extends Factory[EntityMetadata] with ContainerRefreshedHook {
 
-object Jpas {
-  def findEntityName(clazz: Class[_]): String = {
-    val annotation = clazz.getAnnotation(classOf[javax.persistence.Entity])
-    if (null!=annotation && Strings.isNotBlank(annotation.name)) annotation.name else clazz.getName
+  var result: EntityMetadata = null
+
+  override def notify(container: Container): Unit = {
+    result = new EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values).build()
   }
 }

@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.beangle.data</groupId>
-    <artifactId>beangle-data-parent</artifactId>
-    <version>4.2.2</version>
+    <artifactId>beangle-data-parent_2.11</artifactId>
+    <version>4.2.3.RC1</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>beangle-data-jpa</artifactId>
+  <artifactId>beangle-data-jpa_2.11</artifactId>
   <packaging>jar</packaging>
   <name>Beangle Data Jpa</name>
 
@@ -15,21 +15,16 @@
     <jpa.version>1.0.0.Final</jpa.version>
     <jta.version>1.1</jta.version>
     <hibernate.version>4.3.1.Final</hibernate.version>
-    <hibernate.validator.version>5.0.2.Final</hibernate.validator.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.beangle.commons</groupId>
-      <artifactId>beangle-commons-core</artifactId>
+      <artifactId>beangle-commons-core_2.11</artifactId>
     </dependency>
     <dependency>
       <groupId>org.beangle.data</groupId>
-      <artifactId>beangle-data-model</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>javax.validation</groupId>
-      <artifactId>validation-api</artifactId>
+      <artifactId>beangle-data-model_2.11</artifactId>
     </dependency>
     <dependency>
       <groupId>org.hibernate.javax.persistence</groupId>
@@ -46,12 +41,6 @@
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-core</artifactId>
       <version>${hibernate.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.hibernate</groupId>
-      <artifactId>hibernate-validator</artifactId>
-      <version>${hibernate.validator.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -75,19 +64,6 @@
       <artifactId>commons-dbcp</artifactId>
       <version>1.4</version>
       <scope>test</scope>
-    </dependency>
-    <!--FIXME what's that?-->
-    <dependency>
-      <groupId>jaxen</groupId>
-      <artifactId>jaxen</artifactId>
-      <version>1.1.6</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.freemarker</groupId>
-      <artifactId>freemarker</artifactId>
-      <version>2.3.20</version>
-      <optional>true</optional>
     </dependency>
   </dependencies>
 </project>

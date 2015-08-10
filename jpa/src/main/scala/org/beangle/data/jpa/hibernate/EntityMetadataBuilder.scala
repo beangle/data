@@ -18,30 +18,16 @@
  */
 package org.beangle.data.jpa.hibernate
 
-import java.{ util => ju }
 import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable
-import org.beangle.commons.bean.Factory
-import org.beangle.commons.inject.Container
-import org.beangle.commons.lang.annotation.description
+
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.meta.{ CollectionType, ComponentType, DefaultEntityMetadata, EntityMetadata, EntityType, IdentifierType, Type }
 import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
-import org.beangle.commons.inject.ContainerRefreshedHook
-import org.beangle.data.model.Entity
-
-@description("基于Hibernate提供的元信息工厂")
-class HibernateMetadataFactory extends Factory[EntityMetadata] with ContainerRefreshedHook {
-
-  var result: EntityMetadata = null
-
-  override def notify(container: Container): Unit = {
-    result = new EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values).build()
-  }
-}
+import java.{ util => ju }
 
 //TODO add test by xml or annotation configuration
 class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging {
@@ -134,7 +120,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
         } else if (etype.isCollectionType) {
           propertyTypes.put(pName,
             buildCollectionType(factory, defaultCollectionClass(etype), entityName + "." + propertyName + "." + pName))
-        }else {
+        } else {
           propertyTypes.put(pName, new IdentifierType(etype.getReturnedClass))
         }
         j += 1

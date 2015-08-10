@@ -16,25 +16,25 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.jpa.hibernate.cfg
 
 import java.lang.reflect.Field
 import java.{ util => ju }
-
 import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
-
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.logging.Logging
+import org.beangle.data.jpa.hibernate.PropertyAccessor
 import org.beangle.data.jpa.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, TableSeqGenerator }
-import org.beangle.data.jpa.hibernate.udt.{ EnumType, HourMinuteType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, WeekStateType }
+import org.beangle.data.jpa.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, ValueType }
 import org.beangle.data.jpa.mapping.NamingPolicy
 import org.hibernate.DuplicateMappingException
 import org.hibernate.DuplicateMappingException.Type
 import org.hibernate.cfg.{ Configuration, Mappings }
 import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass, SimpleValue }
-
+import org.beangle.commons.lang.time.HourMinute
+import org.beangle.commons.lang.time.WeekDay._
 /**
  * Override Configuration
  */
@@ -43,7 +43,7 @@ class OverrideConfiguration extends Configuration with Logging {
   var minColumnEnableDynaUpdate = 7
 
   override def createMappings(): Mappings = {
-    val mappings = new OverrideMappings("true" == getProperty("hibernate.global_assigned"))
+    val mappings = new OverrideMappings(getProperty("hibernate.global_id_generator"))
     // 注册缺省的sequence生成器
     addGenerator(mappings, "table_sequence", classOf[TableSeqGenerator])
     addGenerator(mappings, "auto_increment", classOf[AutoIncrementGenerator])
@@ -51,6 +51,7 @@ class OverrideConfiguration extends Configuration with Logging {
     addGenerator(mappings, "code", classOf[CodeStyleGenerator])
     // 注册CustomTypes
     addCustomTypes(mappings)
+    mappings.setDefaultAccess(classOf[PropertyAccessor].getName)
     mappings
   }
 
@@ -62,11 +63,6 @@ class OverrideConfiguration extends Configuration with Logging {
       ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType])) foreach {
         case (name, clazz) => mappings.addTypeDef(name, clazz.getName, new ju.Properties)
       }
-    val p = new ju.Properties
-    p.put("enumClass", "org.beangle.commons.lang.time.WeekDay")
-    mappings.addTypeDef("weekday", classOf[EnumType].getName, p)
-    mappings.addTypeDef("hourminute", classOf[HourMinuteType].getName, new ju.Properties)
-    mappings.addTypeDef("weekstate", classOf[WeekStateType].getName, new ju.Properties)
   }
 
   /**
@@ -83,7 +79,7 @@ class OverrideConfiguration extends Configuration with Logging {
   /**
    * Config table's schema by TableNamingStrategy.<br>
    *
-   * @see org.beangle.data.jpa.hibernate.RailsNamingStrategy
+   * @see org.beangle.data.jpa.hibernate.cfg.RailsNamingStrategy
    */
   private def configSchema() {
     var namingPolicy: NamingPolicy = null
@@ -124,7 +120,7 @@ class OverrideConfiguration extends Configuration with Logging {
   /**
    * Custom MappingsImpl supports class overriding
    */
-  protected class OverrideMappings(val globalAssinged: Boolean) extends MappingsImpl {
+  protected class OverrideMappings(val globalIdGenerator: String) extends MappingsImpl {
     private val tmpColls = new mutable.HashMap[String, mutable.ListBuffer[Collection]]
     /**
      * <ul>
@@ -148,12 +144,12 @@ class OverrideConfiguration extends Configuration with Logging {
         entityNameChanged = true
       }
 
-      if (globalAssinged) {
+      if (null != globalIdGenerator) {
         pClass match {
           case rc: RootClass =>
             rc.getIdentifier() match {
               case sv: SimpleValue =>
-                sv.setIdentifierGeneratorStrategy("assigned")
+                sv.setIdentifierGeneratorStrategy(globalIdGenerator)
                 sv.setIdentifierGeneratorProperties(new ju.Properties)
               case _ =>
             }
@@ -222,7 +218,7 @@ class OverrideConfiguration extends Configuration with Logging {
   }
 }
 
-private[hibernate] object PersistentClassMerger extends Logging {
+private[cfg] object PersistentClassMerger extends Logging {
 
   private val subPropertyField = getField("subclassProperties")
   private val declarePropertyField = getField("declaredProperties")
@@ -262,6 +258,7 @@ private[hibernate] object PersistentClassMerger extends Logging {
     msc.setMappedClass(parent.getMappedClass())
 
     // 2.clear old subclass property
+    val parentClassName=parent.getClassName
     parent.setSuperMappedSuperclass(msc)
     parent.setClassName(className)
     parent.setProxyInterfaceName(className)
@@ -295,6 +292,6 @@ private[hibernate] object PersistentClassMerger extends Logging {
     } catch {
       case e: Exception =>
     }
-    logger.info(s"${sub.getClassName()} replace ${parent.getClassName()}.")
+    logger.info(s"${sub.getClassName()} replace $parentClassName.")
   }
 }

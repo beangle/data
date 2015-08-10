@@ -16,12 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate.id
+package org.beangle.data.jpa.hibernate
 
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.jpa.hibernate.{ OverrideConfiguration, RailsNamingStrategy }
-import org.beangle.data.jpa.hibernate.udt.{ PoolingDataSourceFactory, UdtTest }
+import org.beangle.data.jpa.hibernate.cfg.{ OverrideConfiguration, RailsNamingStrategy }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
 import org.beangle.data.jpa.model.{ IntIdResource, LongDateIdResource, LongIdResource }
 import org.hibernate.{ SessionFactory, SessionFactoryObserver }
@@ -29,14 +28,14 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.AvailableSettings
 import org.hibernate.dialect.PostgreSQL9Dialect
 import org.junit.runner.RunWith
-import org.scalatest.{ Finders, FunSpec, Matchers }
+import org.scalatest.{ FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class GeneratorTest extends FunSpec with Matchers {
 
-  val configuration = new OverrideConfiguration()
+  val configuration = new OverrideConfiguration
   configuration.setNamingStrategy(new RailsNamingStrategy(new RailsNamingPolicy))
   configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/id.hbm.xml"))
   val configProperties = configuration.getProperties()

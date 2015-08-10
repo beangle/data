@@ -18,25 +18,16 @@
  */
 package org.beangle.data.jpa.hibernate.tool
 
-import java.io.File
-import java.io.FileOutputStream
-import java.io.StringWriter
-import java.io.Writer
+import java.io.{ File, FileOutputStream, StringWriter, Writer }
+
 import org.beangle.commons.io.IOs
-import org.beangle.commons.lang.Charsets
+import org.beangle.commons.lang.{ Charsets, ClassLoaders, Primitives }
 import org.beangle.commons.lang.Strings.isBlank
+import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanManifest
-import org.beangle.data.jpa.hibernate.DefaultConfigurationBuilder
-import org.beangle.data.jpa.hibernate.OverrideConfiguration
-import org.hibernate.mapping.Component
-import org.hibernate.mapping.Property
-import org.hibernate.mapping.RootClass
-import org.hibernate.`type`.TimestampType
-import org.hibernate.`type`.BasicType
-import org.hibernate.`type`.Type
-import org.beangle.commons.lang.ClassLoaders
-import org.hibernate.`type`.DateType
-import org.beangle.commons.lang.Primitives
+import org.beangle.data.jpa.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration }
+import org.hibernate.`type`.{ BasicType, Type }
+import org.hibernate.mapping.{ Component, Property, RootClass }
 
 object HbmLint {
   def main(args: Array[String]): Unit = {
@@ -51,8 +42,9 @@ object HbmLint {
   }
 }
 
+@beta
 class HbmLint {
-  val configuration = DefaultConfigurationBuilder.build(new OverrideConfiguration)
+  val configuration = ConfigurationBuilder.build(new OverrideConfiguration)
   val mapping = configuration.buildMapping
 
   def check(dir: String, packageName: String): Unit = {

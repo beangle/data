@@ -18,22 +18,56 @@
  */
 package org.beangle.data.jpa.model
 
+import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.time.WeekState
-import org.beangle.data.model.Entity
+import org.beangle.data.model.{ Component, Entity, Hierarchical, LongId, StringId }
+import org.beangle.commons.lang.time.WeekDay._
+import org.beangle.data.model.Remark
 
 class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
   def this() = this(0)
-  var name: Name = _
-  var roleList: collection.mutable.Seq[Role] = new collection.mutable.ListBuffer[Role]
-  var roleSet: collection.mutable.Set[Role] = new collection.mutable.HashSet[Role]
+  var name = new Name
+  var roleSet: java.util.Set[Role] = new java.util.HashSet[Role]
   var age: Option[Int] = None
+  var money: Short = _
   var properties: collection.mutable.Map[String, String] = _
   var occupy: WeekState = _
+  var weekday: WeekDay = _
+
   var createdOn: java.sql.Date = _
+  var role: Role = _
+  var roleList: collection.mutable.Buffer[Role] = new collection.mutable.ListBuffer[Role]
+  var member: Member = _
+  var skills: collection.mutable.Map[SkillType, Skill] = _
 }
+class SkillType extends LongId
 
-class Name {
+class Skill extends LongId
 
+class Name extends Component {
   var first: String = _
   var last: String = _
 }
+
+class Member extends Component {
+  @scala.beans.BeanProperty
+  var user: User = _
+  var granter: Role = _
+  var admin: Boolean = _
+  var roles: collection.mutable.Set[Role] = _
+}
+
+trait Coded {
+  var code: String = _
+}
+
+abstract class CodedEntity extends StringId with Coded
+
+abstract class StringIdCodedEntity extends CodedEntity
+
+class Menu extends StringIdCodedEntity
+
+class Department extends LongId with Hierarchical[Department] with Remark
+
+
+

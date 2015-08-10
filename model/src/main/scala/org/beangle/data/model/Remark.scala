@@ -16,23 +16,9 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.model.util
+package org.beangle.data.model
 
-import org.beangle.commons.lang.functor.NotEmpty;
-import org.beangle.commons.lang.functor.NotZero
-import org.beangle.commons.lang.functor.Predicate;
+trait Remark {
 
-/**
- * 判断实体类中的主键是否是有效主键
- *
- * @author chaostone
- *
- */
-object Valid extends Predicate[Any] {
-  def apply(value: Any): Boolean = {
-    if (null == value) return false
-    if (value.isInstanceOf[Number]) return NotZero(value.asInstanceOf[Number])
-    return NotEmpty.apply(value.toString)
-  }
-
+  var remark:String =_
 }

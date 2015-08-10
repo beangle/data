@@ -41,9 +41,11 @@ object OptionBasicType {
 abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
   import OptionBasicType._
 
-  def inner: AbstractSingleColumnStandardBasicType[_] = java2HibernateTypes(clazz)
+  val inner = java2HibernateTypes(clazz)
 
-  def sqlTypes = Array(inner.sqlType)
+  def sqlTypes: Array[Int] = {
+    Array(inner.sqlType)
+  }
 
   def returnedClass = classOf[Option[T]]
 

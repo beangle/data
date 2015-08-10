@@ -104,8 +104,8 @@ object QuerySupport {
 
   def setParameter(query: Query, param: String, value: Any): Query = {
     value match {
-      case null => query.setParameter(param, null.asInstanceOf[AnyRef])
-      case av: Array[AnyRef] => query.setParameterList(param, av)
+      case null                         => query.setParameter(param, null.asInstanceOf[AnyRef])
+      case av: Array[AnyRef]            => query.setParameterList(param, av)
       case col: java.util.Collection[_] => query.setParameterList(param, col)
       case iter: Iterable[_] =>
         val jList = new java.util.ArrayList[Any]
@@ -511,7 +511,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
       for (entity <- entities)
         entity match {
           case col: Seq[_] => for (elementEntry <- col) persistEntity(elementEntry, null)
-          case _ => persistEntity(entity, null)
+          case _           => persistEntity(entity, null)
         }
     }
   }
@@ -594,7 +594,10 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   protected def entityName(clazz: Class[_]): String = {
-    metadata.getType(clazz).get.entityName
+    metadata.getType(clazz) match {
+      case Some(e) => e.entityName
+      case None    => throw new RuntimeException(s"Cannot find ${clazz.getName} entity")
+    }
   }
 
   def isCollectionType(clazz: Class[_]): Boolean = {

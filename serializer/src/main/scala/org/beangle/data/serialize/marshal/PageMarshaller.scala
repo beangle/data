@@ -30,9 +30,9 @@ class PageMarshaller(val mapper: Mapper) extends Marshaller[Page[Object]] {
   def marshal(source: Page[Object], writer: StreamWriter, context: MarshallingContext): Unit = {
     val sourceType = source.getClass
     val properties = context.getProperties(sourceType)
-    val getters = BeanManifest.get(sourceType).getters
+    val getters = BeanManifest.get(sourceType).readables
     properties foreach { property =>
-      val itemType = Primitives.wrap(getters(property).returnType)
+      val itemType = Primitives.wrap(getters(property).clazz)
       writer.startNode(mapper.serializedMember(source.getClass, property), itemType)
       property match {
         case "pageIndex" =>
@@ -45,7 +45,7 @@ class PageMarshaller(val mapper: Mapper) extends Marshaller[Page[Object]] {
           context.marshal(Integer.valueOf(source.totalItems))
         case "items" =>
           context.marshal(source.items)
-        case other: String => context.marshal(getters(other).method.invoke(source))
+        case other: String => context.marshal(getters(other).getter.get.invoke(source))
       }
       writer.endNode()
     }

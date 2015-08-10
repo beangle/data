@@ -3,11 +3,24 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 
 <hibernate-mapping package="org.beangle.data.jpa.model" default-access="org.beangle.data.jpa.hibernate.PropertyAccessor">
+
+    <typedef name="weekstate" class="org.beangle.data.jpa.hibernate.udt.ValueType">
+      <param name="valueClass">org.beangle.commons.lang.time.WeekState</param>
+    </typedef>
+ 
+    <typedef name="weekday" class="org.beangle.data.jpa.hibernate.udt.EnumType">
+      <param name="enumClass">org.beangle.commons.lang.time.WeekDay</param>
+    </typedef>
+
+    <typedef name="hourminute" class="org.beangle.data.jpa.hibernate.udt.ValueType">
+      <param name="valueClass">org.beangle.commons.lang.time.HourMinute</param>
+    </typedef>
+
     <class name="org.beangle.data.jpa.model.TimeBean" >
         <id name="id" unsaved-value="0" type="int">
           <generator class="assigned"/>
         </id>
-        <property name="time" not-null="true" type="hourminute"/>
+        <property name="time" type="hourminute"/>
         <property name="weekday" not-null="true" type="weekday"/>
         <property name="state" not-null="true" type="weekstate" />
     </class>
