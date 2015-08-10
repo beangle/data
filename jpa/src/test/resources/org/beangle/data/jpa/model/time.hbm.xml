@@ -8,6 +8,14 @@
       <param name="valueClass">org.beangle.commons.lang.time.WeekState</param>
     </typedef>
  
+    <typedef name="weekday" class="org.beangle.data.jpa.hibernate.udt.EnumType">
+      <param name="enumClass">org.beangle.commons.lang.time.WeekDay</param>
+    </typedef>
+
+    <typedef name="hourminute" class="org.beangle.data.jpa.hibernate.udt.ValueType">
+      <param name="valueClass">org.beangle.commons.lang.time.HourMinute</param>
+    </typedef>
+
     <class name="org.beangle.data.jpa.model.TimeBean" >
         <id name="id" unsaved-value="0" type="int">
           <generator class="assigned"/>

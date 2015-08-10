@@ -19,15 +19,14 @@
 package org.beangle.data.model.bind
 
 import scala.collection.JavaConversions.asScalaSet
-import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
-import org.beangle.commons.lang.annotation.beta
-import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, Entity, IdGenerator, EntityProxy }
-import org.beangle.data.model.bind.Binder.{ Property, SimpleKey, ToManyElement, TypeNameHolder, Index, SeqProperty, ManyToOneProperty, ComponentProperty }
-import org.beangle.data.model.{ Entity => MEntity, Component => MComponent }
+
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.annotation.beta
+import org.beangle.commons.logging.Logging
+import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, ComponentProperty, Entity, EntityProxy, IdGenerator, Index, ManyToOneProperty, Property, SeqProperty, SimpleKey, ToManyElement, TypeNameHolder }
 
 object Mapping {
 
@@ -207,7 +206,7 @@ object Mapping {
       this
     }
 
-    def add(first: Class[_ <: MEntity[_]], classes: Class[_ <: MEntity[_]]*): this.type = {
+    def add(first: Class[_ <: org.beangle.data.model.Entity[_]], classes: Class[_ <: org.beangle.data.model.Entity[_]]*): this.type = {
       binder.getEntity(first).cache(cacheRegion, cacheUsage)
       for (clazz <- classes)
         binder.getEntity(clazz).cache(cacheRegion, cacheUsage)
@@ -248,7 +247,7 @@ object Mapping {
 }
 
 @beta
-abstract class Mapping {
+abstract class Mapping extends Logging {
 
   import Mapping._
   private var currentHolder: EntityHolder[_] = _
@@ -338,7 +337,7 @@ abstract class Mapping {
         entities(superCls.getName).idGenerator match {
           case Some(idg) =>
             entity.idGenerator = Some(idg); superCls = classOf[Object]
-          case None      =>
+          case None =>
         }
       }
       superCls = superCls.getSuperclass
@@ -381,10 +380,12 @@ abstract class Mapping {
   }
 
   final def configure(binder: Binder): Unit = {
+    logger.info(s"Process ${getClass.getName}")
     this.binder = binder
+    this.binding()
+    entities.clear()
   }
 
-  //  def valuedef(name,)
   def typedef(name: String, clazz: String, params: Map[String, String] = Map.empty): Unit = {
     binder.addType(name, clazz, params)
   }
@@ -395,12 +396,6 @@ abstract class Mapping {
 
   def typedef(forClass: Class[_], clazz: String, params: Map[String, String]): Unit = {
     binder.addType(forClass.getName, clazz, params)
-  }
-
-  def registerTypes(): Unit = {}
-
-  final def clear(): Unit = {
-    entities.clear()
   }
 }
 

@@ -19,19 +19,17 @@
 package org.beangle.data.model.bind
 
 import java.lang.reflect.{ Method, Modifier }
-
 import scala.collection.mutable
 import scala.collection.mutable.Buffer
 import scala.reflect.runtime.{ universe => ru }
-
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{ ClassLoaders, Primitives, Strings }
 import org.beangle.commons.lang.reflect.BeanManifest
 import org.beangle.data.model.Component
 import org.beangle.data.model.bind.Jpas.{ isMap, isSeq, isSet, isEntity, isComponent }
-
 import javassist.{ ClassPool, CtConstructor, CtField, CtMethod, LoaderClassPath }
 import javassist.compiler.Javac
+import org.beangle.commons.lang.annotation.value
 
 object Binder {
   final class Collection(val clazz: Class[_], val property: String) {
@@ -278,6 +276,16 @@ final class Binder {
   val types = new mutable.HashMap[String, TypeDef]
 
   /**
+   * Buildin value types
+   */
+  val valueTypes = new mutable.HashSet[Class[_]]
+
+  /**
+   * Buildin enum types
+   */
+  val enumTypes = new mutable.HashMap[String, String]
+
+  /**
    * Classname.property -> Collection
    */
   val collectMap = new mutable.HashMap[String, Collection]
@@ -444,6 +452,8 @@ final class Binder {
     this.mappings.clear()
     this.collectMap.clear()
     this.types.clear()
+    this.valueTypes.clear()
+    this.enumTypes.clear()
     this.pool = null
   }
 
@@ -454,22 +464,22 @@ final class Binder {
     manifest.readables foreach {
       case (name, prop) =>
         if (prop.readable & prop.writable) {
-          val returnType = prop.clazz
+          val propType = prop.clazz
           val p =
             if (name == "id") {
-              bindId(name, returnType, tpe)
-            } else if (isEntity(returnType)) {
-              bindManyToOne(name, returnType, tpe)
-            } else if (isSeq(returnType)) {
-              bindSeq(name, returnType, entity, tpe)
-            } else if (isSet(returnType)) {
-              bindSet(name, returnType, entity, tpe)
-            } else if (isMap(returnType)) {
-              bindMap(name, returnType, entity, tpe)
-            } else if (isComponent(returnType)) {
-              bindComponent(name, returnType, entity, tpe)
+              bindId(name, propType, tpe)
+            } else if (isEntity(propType)) {
+              bindManyToOne(name, propType, tpe)
+            } else if (isSeq(propType)) {
+              bindSeq(name, propType, entity, tpe)
+            } else if (isSet(propType)) {
+              bindSet(name, propType, entity, tpe)
+            } else if (isMap(propType)) {
+              bindMap(name, propType, entity, tpe)
+            } else if (isComponent(propType)) {
+              bindComponent(name, propType, entity, tpe)
             } else {
-              bindScalar(name, returnType, tpe)
+              bindScalar(name, propType, scalarTypeName(name, propType, tpe))
             }
           entity.properties += (name -> p)
         }
@@ -515,29 +525,46 @@ final class Binder {
     manifest.readables foreach {
       case (name, prop) =>
         if (prop.writable) {
-          val resultType = prop.clazz
+          val propType = prop.clazz
           val p =
-            if (isEntity(resultType)) {
-              if (resultType == entity.clazz) {
+            if (isEntity(propType)) {
+              if (propType == entity.clazz) {
                 cp.parentProperty = Some(name); null.asInstanceOf[Property]
               } else {
-                bindManyToOne(name, resultType, ctpe)
+                bindManyToOne(name, propType, ctpe)
               }
-            } else if (isSeq(resultType)) {
-              bindSeq(name, resultType, entity, ctpe)
-            } else if (isSet(resultType)) {
-              bindSet(name, resultType, entity, ctpe)
-            } else if (isMap(resultType)) {
-              bindMap(name, resultType, entity, ctpe)
-            } else if (isComponent(resultType)) {
-              bindComponent(name, resultType, entity, ctpe)
+            } else if (isSeq(propType)) {
+              bindSeq(name, propType, entity, ctpe)
+            } else if (isSet(propType)) {
+              bindSet(name, propType, entity, ctpe)
+            } else if (isMap(propType)) {
+              bindMap(name, propType, entity, ctpe)
+            } else if (isComponent(propType)) {
+              bindComponent(name, propType, entity, ctpe)
             } else {
-              bindScalar(name, resultType, ctpe)
+              bindScalar(name, propType, scalarTypeName(name, propType, ctpe))
             }
           if (null != p) cp.properties += (name -> p)
         }
     }
     cp
+  }
+
+  private def scalarTypeName(name: String, clazz: Class[_], tpe: ru.Type): String = {
+    if (clazz == classOf[Option[_]]) {
+      val a = tpe.member(ru.TermName(name)).typeSignatureIn(tpe)
+      val innerType = a.resultType.typeArgs.head.toString
+      val innerClass = ClassLoaders.loadClass(innerType)
+      val primitiveClass = Primitives.unwrap(innerClass)
+      primitiveClass.getName + "?"
+    } else if (clazz.isAnnotationPresent(classOf[value])) {
+      valueTypes += clazz
+      clazz.getName
+    } else if (classOf[Enumeration#Value].isAssignableFrom(clazz)) {
+      val typeName = tpe.member(ru.TermName(name)).asMethod.returnType.toString
+      enumTypes.put(typeName, Strings.substringBeforeLast(typeName, "."))
+      typeName
+    } else clazz.getName
   }
 
   private def bindMap(name: String, propertyType: Class[_], entity: Entity, tye: ru.Type): MapProperty = {
@@ -596,19 +623,11 @@ final class Binder {
     p
   }
 
-  private def bindScalar(name: String, propertyType: Class[_], tye: ru.Type): ScalarProperty = {
+  private def bindScalar(name: String, propertyType: Class[_], typeName: String): ScalarProperty = {
     val p = new ScalarProperty(name, propertyType)
     val column = new Column(columnName(name))
-    if (propertyType == classOf[Option[_]]) {
-      val a = tye.member(ru.TermName(name)).typeSignatureIn(tye)
-      val innerType = a.resultType.typeArgs.head.toString
-      val innerClass = ClassLoaders.loadClass(innerType)
-      val primitiveClass = Primitives.unwrap(innerClass)
-      p.typeName = Some(primitiveClass.getName + "?")
-    } else if (propertyType.isPrimitive) {
-      column.nullable = false
-    }
-    if (None == p.typeName) p.typeName = Some(propertyType.getName)
+    if (propertyType.isPrimitive) column.nullable = false
+    if (None == p.typeName) p.typeName = Some(typeName)
     p.columns += column
     p
   }

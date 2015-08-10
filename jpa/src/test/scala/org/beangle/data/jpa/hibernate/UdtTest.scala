@@ -77,7 +77,7 @@ class UdtTest extends FunSpec with Matchers {
       val s = sf.openSession()
       val id = 1
       val timebean = new TimeBean()
-      timebean.time = HourMinute(1230.asInstanceOf[Short])
+      timebean.time = new HourMinute(1230.asInstanceOf[Short])
       timebean.weekday = WeekDay.Sun
       timebean.state = new WeekState(1)
       timebean.id = id

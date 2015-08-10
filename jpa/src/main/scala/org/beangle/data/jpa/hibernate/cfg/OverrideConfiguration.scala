@@ -63,14 +63,6 @@ class OverrideConfiguration extends Configuration with Logging {
       ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType])) foreach {
         case (name, clazz) => mappings.addTypeDef(name, clazz.getName, new ju.Properties)
       }
-    val p = new ju.Properties
-    p.put("enumClass", "org.beangle.commons.lang.time.WeekDay")
-    mappings.addTypeDef("weekday", classOf[EnumType].getName, p)
-    mappings.addTypeDef(classOf[WeekDay].getName, classOf[EnumType].getName, p)
-    val minuteProperties = new ju.Properties
-    minuteProperties.put("valueClass",classOf[HourMinute].getName)
-    mappings.addTypeDef("hourminute", classOf[ValueType].getName, minuteProperties)
-    mappings.addTypeDef(classOf[HourMinute].getName, classOf[ValueType].getName, minuteProperties)
   }
 
   /**

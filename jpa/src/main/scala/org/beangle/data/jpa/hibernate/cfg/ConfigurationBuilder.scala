@@ -20,16 +20,21 @@ package org.beangle.data.jpa.hibernate.cfg
 
 import java.net.URL
 import java.{ util => ju }
+
+import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.{ IOs, ResourcePatternResolver }
-import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.logging.Logging
-import org.beangle.data.model.bind.{ Mapping, Binder }
+import org.beangle.data.jpa.hibernate.udt.{ EnumType, ValueType }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
+import org.beangle.data.model.bind.Binder
+import org.beangle.data.model.bind.Binder.TypeDef
+import org.beangle.data.model.bind.Mapping
 import org.hibernate.cfg.{ Configuration, Mappings, NamingStrategy }
 import org.hibernate.cfg.AvailableSettings.DIALECT
+
 import javax.persistence.Entity
-import org.beangle.commons.collection.Collections
 
 object ConfigurationBuilder {
 
@@ -110,33 +115,29 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
       if (null != ormLocations) {
         val mappings = configuration.createMappings()
         val binder = new Binder()
-        val mappingModules = Collections.newBuffer[Mapping]
-
         for (resource <- ormLocations) {
           val is = resource.openStream
           (scala.xml.XML.load(is) \ "mapping") foreach { ele =>
             val moduleClass = (ele \ "@class").text
             val mapping = Reflections.newInstance(ClassLoaders.loadClass(moduleClass)).asInstanceOf[Mapping]
-            mappingModules += mapping
             mapping.configure(binder)
-            mapping.registerTypes()
           }
           IOs.close(is)
         }
-        binder.types foreach {
+
+        binder.autobind()
+
+        val types = new collection.mutable.HashMap[String, TypeDef]
+        types ++= binder.types
+        binder.valueTypes foreach (t => types += (t.getName -> new TypeDef(classOf[ValueType].getName, Map("valueClass" -> t.getName))))
+        binder.enumTypes foreach (t => types += (t._1 -> new TypeDef(classOf[EnumType].getName, Map("enumClass" -> t._2))))
+        types foreach {
           case (m, t) =>
             val p = new ju.Properties
             t.params foreach (e => p.put(e._1, e._2))
             mappings.addTypeDef(m, t.clazz, p)
         }
 
-        mappingModules foreach { m =>
-          logger.info(s"Process ${m.getClass.getName}")
-          m.binding()
-          m.clear()
-        }
-
-        binder.autobind()
         addPersistInfo(binder, mappings)
         binder.clear()
       }

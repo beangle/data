@@ -1,18 +1,15 @@
 package org.beangle.data.jpa.hibernate
 
 import scala.reflect.runtime.universe
-
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.jpa.hibernate.udt.ValueType
 import org.beangle.data.jpa.model.{ Coded, IntIdResource, LongDateIdResource, LongIdResource, Skill, SkillType, User }
 import org.beangle.data.model.bind.Mapping
+import org.beangle.commons.lang.time.WeekDay
 
 class TestMapping1 extends Mapping {
 
-  override def registerTypes(): Unit = {
-    typedef(classOf[WeekState], classOf[ValueType].getName, Map("valueClass" -> classOf[WeekState].getName))
-  }
 
   def binding(): Unit = {
     defaultIdGenerator("table_sequence")
@@ -33,4 +30,3 @@ class TestMapping1 extends Mapping {
     bind[Skill]
   }
 }
-
