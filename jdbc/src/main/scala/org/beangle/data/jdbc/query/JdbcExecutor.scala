@@ -34,7 +34,7 @@ import javax.sql.DataSource
 object JdbcExecutor {
   var oracleTimestampMethod: Method = _
   try {
-    val clz = ClassLoaders.loadClass("oracle.sql.TIMESTAMP")
+    val clz = ClassLoaders.load("oracle.sql.TIMESTAMP")
     oracleTimestampMethod = clz.getMethod("timestampValue")
   } catch {
     case e: Exception =>

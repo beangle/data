@@ -8,8 +8,7 @@ import org.beangle.data.jpa.model.{ Coded, IntIdResource, LongDateIdResource, Lo
 import org.beangle.data.model.bind.Mapping
 import org.beangle.commons.lang.time.WeekDay
 
-class TestMapping1 extends Mapping {
-
+object TestMapping1 extends Mapping {
 
   def binding(): Unit = {
     defaultIdGenerator("table_sequence")
@@ -22,11 +21,12 @@ class TestMapping1 extends Mapping {
     bind[Coded].on(c => declare(
       c.code is (notnull, length(20))))
     bind[User].on(e => declare(
-      e.name.first is unique,
+      e.name.first is (unique, column("first_name")),
       e.name.first & e.name.last & e.createdOn are notnull,
-      e.roleList is ordered)).generator("native")
+      e.roleList is (ordered, table("role_list_xyz")),
+      e.properties is (table("users_props"), eleColumn("value2"), eleLength(200)))).generator("native")
 
     bind[SkillType]
-    bind[Skill]
+    bind[Skill].table("skill_list")
   }
 }

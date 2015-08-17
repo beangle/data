@@ -85,7 +85,7 @@ class HbmLint {
                 bpt.getRegistrationKeys foreach { typekey =>
                   if (typekey.contains(".")) {
                     try {
-                      val keyClass = ClassLoaders.loadClass(typekey)
+                      val keyClass = ClassLoaders.load(typekey)
                       if (clz.isAssignableFrom(keyClass)) matched = true
                     } catch {
                       case e: Throwable =>

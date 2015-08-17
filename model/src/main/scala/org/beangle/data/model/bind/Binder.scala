@@ -327,7 +327,7 @@ final class Binder {
     val proxyClassName = clazz.getSimpleName + "_proxy"
     val fullClassName = clazz.getName + "_proxy"
     try {
-      val proxyCls = ClassLoaders.loadClass(fullClassName)
+      val proxyCls = ClassLoaders.load(fullClassName)
       return proxyCls.getConstructor().newInstance().asInstanceOf[EntityProxy]
     } catch {
       case e: Exception =>
@@ -381,7 +381,7 @@ final class Binder {
     val proxyClassName = clazz.getSimpleName + "_proxy"
     val fullClassName = clazz.getName + "_proxy"
     try {
-      val proxyCls = ClassLoaders.loadClass(fullClassName)
+      val proxyCls = ClassLoaders.load(fullClassName)
       return proxyCls.getConstructor(classOf[String]).newInstance(path).asInstanceOf[ComponentProxy]
     } catch {
       case e: Exception =>
@@ -554,7 +554,7 @@ final class Binder {
     if (clazz == classOf[Option[_]]) {
       val a = tpe.member(ru.TermName(name)).typeSignatureIn(tpe)
       val innerType = a.resultType.typeArgs.head.toString
-      val innerClass = ClassLoaders.loadClass(innerType)
+      val innerClass = ClassLoaders.load(innerType)
       val primitiveClass = Primitives.unwrap(innerClass)
       primitiveClass.getName + "?"
     } else if (clazz.isAnnotationPresent(classOf[value])) {
@@ -578,11 +578,11 @@ final class Binder {
     mapEleType = if (mapEleType.contains(".")) mapEleType else "java.lang." + mapEleType
 
     p.mapKey =
-      if (isEntity(ClassLoaders.loadClass(mapKeyType))) new ManyToOneKey(mapKeyType)
+      if (isEntity(ClassLoaders.load(mapKeyType))) new ManyToOneKey(mapKeyType)
       else new SimpleKey(new Column("name", false), mapKeyType)
 
     val mapElem =
-      if (isEntity(ClassLoaders.loadClass(mapEleType))) new ToManyElement(mapEleType)
+      if (isEntity(ClassLoaders.load(mapEleType))) new ToManyElement(mapEleType)
       else new SimpleElement(new Column("value", false), mapEleType)
 
     if (propertyType.getName.startsWith("scala.")) p.typeName = Some("map")

@@ -54,13 +54,16 @@ trait ConfigurableSessionFactory {
 
   def configLocations: Array[_]
 
-  def persistLocations: Array[_]
+  def ormLocations: Array[_]
 
-  def namingStrategy: NamingStrategy
+  var configurationClass: Class[_ <: Configuration] = _
 
-  def hibernateProperties: ju.Properties
+  var namingStrategy: NamingStrategy = _
 
-  def configuration: Configuration
+  var hibernateProperties: ju.Properties = new ju.Properties
 
-  def result: SessionFactory
+  /**For display informations*/
+  var configuration: Configuration = _
+
+  var result: SessionFactory = _
 }

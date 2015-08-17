@@ -289,7 +289,7 @@ object HbmConfigBinder {
             bindComponent(value.asInstanceOf[HComponent], cp, subpath, isEmbedded, mappings)
         }
         if (value != null) {
-          val property = createProperty(value, propertyName, ClassLoaders.loadClass(component.getComponentClassName), p, mappings)
+          val property = createProperty(value, propertyName, ClassLoaders.load(component.getComponentClassName), p, mappings)
           component.addProperty(property)
         }
     }
