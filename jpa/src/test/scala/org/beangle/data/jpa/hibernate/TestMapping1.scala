@@ -23,7 +23,7 @@ object TestMapping1 extends Mapping {
     bind[User].on(e => declare(
       e.name.first is (unique, column("first_name")),
       e.name.first & e.name.last & e.createdOn are notnull,
-      e.roleList is (ordered, table("role_list_xyz")),
+      e.roleList is (ordered, table("users_roles_list")),
       e.properties is (table("users_props"), eleColumn("value2"), eleLength(200)))).generator("native")
 
     bind[SkillType]

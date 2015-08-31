@@ -3,7 +3,7 @@
   <mapping class="org.beangle.data.jpa.hibernate.TestMapping1"/>
   <mapping class="org.beangle.data.jpa.hibernate.TestMapping2"/>
   <naming>
-    <profile package = "org.beangle.data.jpa" pluralize="true" schema="${jpa_prefix}jpa">
+    <profile package = "org.beangle.data.jpa" pluralize="true" schema="${jpa_prefix}">
       <class annotation = "org.beangle.data.model.annotation.code" prefix="gb_" value="nation" />
       <class annotation = "org.beangle.data.model.annotation.code" prefix="jb_" value="ministry" />
       <class annotation = "org.beangle.data.model.annotation.code" prefix="xb_" value="school" schema="school"/>
@@ -11,6 +11,6 @@
       <profile package = "mapping" plau="true" schema="${jpa_prefix}mapping"/>
     </profile>
 
-    <profile package = "org.beangle.data.jpa.dao" pluralize="true" schema="${jpa_prefix}dao"/>
+    <profile package = "org.beangle.data.jpa.dao" pluralize="true" schema="${jpa_prefix}"/>
   </naming>
 </orm>

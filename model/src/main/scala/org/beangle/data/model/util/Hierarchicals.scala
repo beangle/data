@@ -19,10 +19,14 @@
 package org.beangle.data.model.util
 
 import scala.collection.mutable
-
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.lang.Objects
 import org.beangle.data.model.Hierarchical
+import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.Numbers
+import org.beangle.commons.collection.Collections
+import scala.collection.mutable.Buffer
+
 object Hierarchicals {
 
   /**
@@ -145,7 +149,6 @@ object Hierarchicals {
 
   /**
    * addParent.
-   * @param [T] a T object.
    */
   def addParent[T <: Hierarchical[T]](nodes: mutable.Set[T]) {
     addParent(nodes, null.asInstanceOf[T])
@@ -153,9 +156,6 @@ object Hierarchicals {
 
   /**
    * addParent.
-   *
-   * @param toRoot a T object.
-   * @param [T] a T object.
    */
   def addParent[T <: Hierarchical[T]](nodes: mutable.Set[T], toRoot: T): Unit = {
     val parents = new mutable.HashSet[T]
@@ -168,5 +168,66 @@ object Hierarchicals {
       }
     }
     nodes ++= parents
+  }
+
+  def move[T <: Hierarchical[T]](node: T, sibling: Buffer[T], index: Int): Iterable[T] = {
+    if (node.parent == null) {
+      if (Numbers.toInt(node.indexno) != index) shiftCode(node, sibling, index)
+      else Seq.empty
+    } else {
+      if (null != node.parent) node.parent.children -= node
+      node.parent = null.asInstanceOf[T]
+      shiftCode(node, sibling, index)
+    }
+  }
+
+  def move[T <: Hierarchical[T]](node: T, location: T, index: Int): Iterable[T] = {
+    var sibling: Buffer[T] = location.children
+    sibling.sorted
+    sibling -= node
+
+    if (node.parent == location) {
+      if (Numbers.toInt(node.indexno) != index) shiftCode(node, sibling, index)
+      else Seq.empty
+    } else {
+      if (null != node.parent) node.parent.children -= node
+      node.parent = location
+      shiftCode(node, sibling, index)
+    }
+  }
+
+  private def shiftCode[T <: Hierarchical[T]](node: T, sibling: Buffer[T], idx: Int): Iterable[T] = {
+    var index = idx
+    index -= 1
+    if (index > sibling.size) index = sibling.size
+    sibling.insert(index, node)
+    val nolength = String.valueOf(sibling.size).length
+    val nodes = Collections.newSet[T]
+    (1 to sibling.size) foreach { seqno =>
+      val one = sibling(seqno - 1)
+      generateCode(one, Strings.leftPad(String.valueOf(seqno), nolength, '0'), nodes)
+    }
+    nodes
+  }
+
+  private def generateCode[T <: Hierarchical[T]](node: T, indexno: String, nodes: collection.mutable.Set[T]): Unit = {
+    nodes.add(node)
+    if (null != indexno) genIndexno(node, indexno) else genIndexno(node)
+
+    if (null != node.children) {
+      node.children foreach { m =>
+        generateCode(m, null, nodes)
+      }
+    }
+  }
+
+  private def genIndexno[T <: Hierarchical[T]](node: T, indexno: String): Unit = {
+    if (null == node.parent) node.indexno = indexno
+    else node.indexno = Strings.concat(node.parent.indexno, ".", indexno)
+  }
+
+  private def genIndexno[T <: Hierarchical[T]](node: T) {
+    if (null != node.parent)
+      node.indexno = Strings.concat(node.parent.indexno, ".", String.valueOf(node.lastindex));
   }
 }
