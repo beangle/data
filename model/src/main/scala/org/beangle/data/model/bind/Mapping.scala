@@ -26,7 +26,7 @@ import scala.reflect.runtime.{ universe => ru }
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.logging.Logging
-import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, ComponentProperty, Entity, EntityProxy, IdGenerator, Index, ManyToOneProperty, Property, SeqProperty, SimpleKey, ToManyElement, TypeNameHolder }
+import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, ComponentProperty, Entity, EntityProxy, IdGenerator, Index, ManyToOneProperty, Property, SeqProperty, MapProperty, SimpleKey, ToManyElement, TypeNameHolder, ColumnHolder }
 
 object Mapping {
 
@@ -46,6 +46,22 @@ object Mapping {
     }
   }
 
+  class ElementColumn(name: String) extends Declaration {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      val mp = cast[MapProperty](property, holder, "element column should used on map")
+      val ch = mp.element.get.asInstanceOf[ColumnHolder]
+      ch.columns foreach (x => x.name = name)
+    }
+  }
+
+  class ElementLength(len: Int) extends Declaration {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      val mp = cast[MapProperty](property, holder, "element length should used on map")
+      val ch = mp.element.get.asInstanceOf[ColumnHolder]
+      ch.columns foreach (x => x.length = Some(len))
+    }
+  }
+
   class Cache(val cacheholder: CacheHolder) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
       cacheholder.add(List(new Collection(holder.clazz, property.name)))
@@ -54,29 +70,19 @@ object Mapping {
 
   class TypeSetter(val typeName: String) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
-      property match {
-        case th: TypeNameHolder => th.typeName = Some(typeName)
-        case _                  => mismatch("TypeNameHolder needed", holder.entity, property)
-      }
+      cast[TypeNameHolder](property, holder, "TypeNameHolder needed").typeName = Some(typeName)
     }
-  }
-
-  private def mismatch(msg: String, e: Entity, p: Property): Unit = {
-    throw new RuntimeException(msg + s",Not for ${e.entityName}.${p.name}(${p.getClass.getSimpleName}/${p.propertyType.getName})")
   }
 
   class One2Many(targetEntity: Option[Class[_]], mappedBy: String, private var cascade: Option[String] = None) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
-      property match {
-        case collp: CollectionProperty =>
-          collp.key = Some(new SimpleKey(new Column(columnName(mappedBy, true))))
-          val ele = collp.element.get.asInstanceOf[ToManyElement]
-          ele.columns.clear
-          ele.one2many = true
-          targetEntity foreach (e => ele.entityName = e.getName)
-          cascade foreach (c => collp.cascade = Some(c))
-        case _ => mismatch("one2many should used on seq", holder.entity, property)
-      }
+      val collp = cast[CollectionProperty](property, holder, "one2many should used on seq")
+      collp.key = Some(new SimpleKey(new Column(columnName(mappedBy, true))))
+      val ele = collp.element.get.asInstanceOf[ToManyElement]
+      ele.columns.clear
+      ele.one2many = true
+      targetEntity foreach (e => ele.entityName = e.getName)
+      cascade foreach (c => collp.cascade = Some(c))
     }
 
     def cascade(c: String, orphanRemoval: Boolean = true): this.type = {
@@ -92,21 +98,27 @@ object Mapping {
 
   class OrderBy(orderBy: String) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
-      property match {
-        case collp: CollectionProperty => collp.orderBy = Some(orderBy)
-        case _                         => mismatch("order by should used on seq", holder.entity, property)
-      }
+      cast[CollectionProperty](property, holder, "order by should used on seq").orderBy = Some(orderBy)
+    }
+  }
+
+  class Table(table: String) extends Declaration {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      cast[CollectionProperty](property, holder, "table should used on seq").table = Some(table)
+    }
+  }
+
+  class ColumnName(name: String) extends Declaration {
+    def apply(holder: EntityHolder[_], property: Property): Unit = {
+      if (property.columns.size == 1) property.columns.head.name = name
     }
   }
 
   class OrderColumn(orderColumn: String) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
-      property match {
-        case collp: SeqProperty =>
-          val col = new Column(if (null != orderColumn) "idx" else orderColumn, false)
-          collp.index = Some(new Index(col))
-        case _ => mismatch("order column should used on many2many seq", holder.entity, property)
-      }
+      val collp = cast[SeqProperty](property, holder, "order column should used on many2many seq")
+      val col = new Column(if (null != orderColumn) "idx" else orderColumn, false)
+      collp.index = Some(new Index(col))
     }
   }
 
@@ -118,10 +130,7 @@ object Mapping {
 
   class Target(clazz: Class[_]) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
-      property match {
-        case collp: ManyToOneProperty => collp.targetEntity = clazz.getName
-        case _                        => mismatch("target should used on manytoone", holder.entity, property)
-      }
+      cast[ManyToOneProperty](property, holder, "target should used on manytoone").targetEntity = clazz.getName
     }
   }
 
@@ -192,6 +201,11 @@ object Mapping {
       entity.idGenerator = Some(new IdGenerator(strategy))
       this
     }
+
+    def table(table: String): this.type = {
+      entity.table = table
+      this
+    }
   }
 
   final class CacheConfig(var region: String = null, var usage: String = null) {
@@ -244,6 +258,14 @@ object Mapping {
     if (key) columnName + "Id" else columnName
   }
 
+  private def mismatch(msg: String, e: Entity, p: Property): Unit = {
+    throw new RuntimeException(msg + s",Not for ${e.entityName}.${p.name}(${p.getClass.getSimpleName}/${p.propertyType.getName})")
+  }
+
+  private def cast[T](p: Property, holder: EntityHolder[_], msg: String)(implicit manifest: Manifest[T]): T = {
+    if (!manifest.runtimeClass.isAssignableFrom(p.getClass)) mismatch(msg, holder.entity, p)
+    p.asInstanceOf[T]
+  }
 }
 
 @beta
@@ -308,12 +330,28 @@ abstract class Mapping extends Logging {
     new OrderBy(orderby)
   }
 
+  protected def table(t: String): Table = {
+    new Table(t)
+  }
+
   protected def ordered: OrderColumn = {
     new OrderColumn(null)
   }
 
   protected def ordered(column: String): OrderColumn = {
     new OrderColumn(column)
+  }
+
+  protected def column(name: String): ColumnName = {
+    new ColumnName(name)
+  }
+
+  protected def eleColumn(name: String): ElementColumn = {
+    new ElementColumn(name)
+  }
+
+  protected def eleLength(len: Int): ElementLength = {
+    new ElementLength(len)
   }
 
   protected def typeis(t: String): TypeSetter = {

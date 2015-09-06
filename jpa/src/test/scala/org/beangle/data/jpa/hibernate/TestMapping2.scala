@@ -6,7 +6,7 @@ import org.beangle.commons.lang.annotation.beta
 import org.beangle.data.jpa.model.{ CodedEntity, Department, ExtendRole, Menu, Role, StringIdCodedEntity }
 import org.beangle.data.model.bind.Mapping
 
-class TestMapping2 extends Mapping {
+object TestMapping2 extends Mapping {
 
   def binding(): Unit = {
     defaultIdGenerator("table_sequence")

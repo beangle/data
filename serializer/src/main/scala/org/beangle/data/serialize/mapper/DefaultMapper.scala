@@ -45,7 +45,7 @@ class DefaultMapper extends Mapper {
 
   def alias(alias: String, className: String): Unit = {
     try {
-      classAlias.put(ClassLoaders.loadClass(className), alias)
+      classAlias.put(ClassLoaders.load(className), alias)
     } catch {
       case e: Throwable =>
     }

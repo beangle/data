@@ -41,7 +41,7 @@ object OqlBuilder {
 
   def from[E](entityName: String, alias: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
-    query.entityClass = ClassLoaders.loadClass(entityName).asInstanceOf[Class[E]]
+    query.entityClass = ClassLoaders.load(entityName).asInstanceOf[Class[E]]
     query.alias = alias
     query.select = "select " + alias
     query.from = concat("from ", entityName, " ", alias)

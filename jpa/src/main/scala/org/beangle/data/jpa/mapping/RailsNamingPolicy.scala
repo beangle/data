@@ -77,7 +77,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       val is = url.openStream()
       if (null != is) {
         configLocations.add(url)
-        (scala.xml.XML.load(is) \"naming" \ "profile") foreach { ele => parseProfile(ele, null) }
+        (scala.xml.XML.load(is) \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
         is.close()
       }
       autoWire()
@@ -93,7 +93,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       if (null != parent) profile.packageName = parent.packageName + "." + profile.packageName
     }
     (melem \ "class") foreach { anElem =>
-      val clazz = ClassLoaders.loadClass((anElem \ "@annotation").text)
+      val clazz = ClassLoaders.load((anElem \ "@annotation").text)
       val value = (anElem \ "@value").text
       val annModule = new AnnotationModule(clazz, value)
       profile._annotations += annModule
@@ -144,7 +144,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   }
 
   def getSchema(className: String): Option[String] = {
-    getSchema(ClassLoaders.loadClass(className))
+    getSchema(ClassLoaders.load(className))
   }
 
   def getPrefix(clazz: Class[_]): String = {
@@ -204,10 +204,10 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     var tableName = addUnderscores(unqualify(className))
     if (null != pluralizer) tableName = pluralizer.pluralize(tableName)
     val clazz: Class[_] = try {
-      ClassLoaders.loadClass(className)
+      ClassLoaders.load(className)
     } catch {
-      case e: ClassNotFoundException => if (clazzName != className) ClassLoaders.loadClass(clazzName) else throw e
-      case e: Throwable => throw e
+      case e: ClassNotFoundException => if (clazzName != className) ClassLoaders.load(clazzName) else throw e
+      case e: Throwable              => throw e
     }
     tableName = getPrefix(clazz) + tableName
     //      if (tableName.length() > entityTableMaxLength) {
@@ -219,7 +219,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
 
   def collectionToTableName(className: String, tableName: String, collectionName: String): String = {
     var collectionTableName = tableName + "_" + addUnderscores(unqualify(collectionName))
-    //    getModule(ClassLoaders.loadClass(className)) foreach { p =>
+    //    getModule(ClassLoaders.load(className)) foreach { p =>
     //      if ((collectionTableName.length() > relationTableMaxLength)) {
     //        for ((k, v) <- p.abbreviations)
     //          collectionTableName = replace(collectionTableName, k, v)
@@ -237,8 +237,8 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     if (Strings.isEmpty(name) || (-1 == name.indexOf('{'))) return name
     var newName = Strings.replace(name, "$", "")
     val propertyName = Strings.substringBetween(newName, "{", "}")
-    val value = SystemInfo.properties.get(propertyName).getOrElse("")
-    Strings.replace(newName, "{" + propertyName + "}", value)
+    val pv = System.getProperty(propertyName)
+    Strings.replace(newName, "{" + propertyName + "}", if (pv == null) "" else pv)
   }
 
   override def toString: String = {

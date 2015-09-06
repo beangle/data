@@ -40,9 +40,14 @@ class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
   var member: Member = _
   var skills: collection.mutable.Map[SkillType, Skill] = _
 }
-class SkillType extends LongId
+class SkillType extends LongId{
+  var name:String=_
+}
 
-class Skill extends LongId
+class Skill extends LongId {
+  var skillType:SkillType=_
+  var name:String=_
+}
 
 class Name extends Component {
   var first: String = _

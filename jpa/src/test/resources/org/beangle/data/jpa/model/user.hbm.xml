@@ -6,24 +6,23 @@
 
     <class name="org.beangle.data.jpa.model.User" >
         <id name="id" unsaved-value="0" type="long" >
-          <generator class="assigned"/>
+          <generator class="native"/>
         </id>
         <component name="name" class="Name">
-          <property name="first" length="50" />
-          <property name="last" length="50" />
+          <property name="first" length="50"  column="first_name" not-null="true"/>
+          <property name="last" length="50" not-null="true"/>
         </component>
         <set name="roleSet" table="users_role_set">
           <key column="user_id"/>
           <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
         </set>
-        <list name="roleList" collection-type="seq" table="users_role_list">
+        <list name="roleList" collection-type="seq" table="users_roles_list">
           <key column="user_id"/>
           <list-index column="idx"/>
           <many-to-many entity-name="org.beangle.data.jpa.model.Role" column="role_id"/>
         </list>
         <property name="age" type="int?"/>
-        <!-- -->
-        <map name="properties" cascade="all" collection-type="map">
+        <map name="properties" cascade="all" collection-type="map" table="users_props">
            <key column="user_id"/>
            <map-key column="name" type="string"/>
            <element column="value" type="string"/>
@@ -39,6 +38,11 @@
         </component>
         <property name="occupy" type="weekstate"/>
         <property name="createdOn"/>
+        <map name="skills" cascade="all" collection-type="map">
+           <key column="user_id"/>
+           <map-key-many-to-many class="org.beangle.data.jpa.model.SkillType" column="skill_type_id"/>
+           <many-to-many class="org.beangle.data.jpa.model.Skill" column="skill_id"/>
+        </map>
     </class>
 
     <class name="org.beangle.data.jpa.model.Role" >
@@ -46,6 +50,21 @@
           <generator class="assigned"/>
         </id>
         <property name="name" length="50" unique="true"/>
+    </class>
+
+    <class name="org.beangle.data.jpa.model.Skill" table="skill_list" >
+        <id name="id" unsaved-value="0" type="integer">
+          <generator class="assigned"/>
+        </id>
+        <many-to-one name="skillType"/>
+        <property name="name"/>
+    </class>
+
+    <class name="org.beangle.data.jpa.model.SkillType" >
+        <id name="id" unsaved-value="0" type="integer">
+          <generator class="assigned"/>
+        </id>
+        <property name="name"/>
     </class>
 
     <class name="org.beangle.data.jpa.model.ExtendRole" entity-name="org.beangle.data.jpa.model.Role">

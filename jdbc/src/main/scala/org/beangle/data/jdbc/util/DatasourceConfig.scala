@@ -28,7 +28,7 @@ import org.beangle.data.jdbc.dialect.Name
 object DatasourceConfig {
 
   def build(xml: scala.xml.Node): DatasourceConfig = {
-    val dialect = ClassLoaders.loadClass((xml \\ "dialect").text.trim).newInstance().asInstanceOf[Dialect]
+    val dialect = ClassLoaders.load((xml \\ "dialect").text.trim).newInstance().asInstanceOf[Dialect]
     val dbconf = new DatasourceConfig(dialect)
     dbconf.url = (xml \\ "url").text.trim
     if (!(xml \ "@name").isEmpty) dbconf.name = (xml \ "@name").text.trim

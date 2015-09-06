@@ -57,7 +57,7 @@ object DdlGenerator {
       if (!dialect.endsWith("Dialect")) dialect += "Dialect"
       dialect = "org.hibernate.dialect." + Strings.capitalize(dialect)
     }
-    new DdlGenerator(ClassLoaders.loadClass(dialect).newInstance.asInstanceOf[Dialect], locale).gen(dir, pattern)
+    new DdlGenerator(ClassLoaders.load(dialect).newInstance.asInstanceOf[Dialect], locale).gen(dir, pattern)
   }
 }
 

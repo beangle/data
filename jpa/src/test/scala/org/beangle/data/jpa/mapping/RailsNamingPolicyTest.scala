@@ -33,7 +33,6 @@ class RailsNamingPolicyTest extends FunSpec with Matchers {
       val policy = new RailsNamingPolicy
       for (resource <- ClassLoaders.getResources("META-INF/beangle/orm.xml"))
         policy.addConfig(resource)
-      assert(policy.getSchema("org.beangle.data.jpa.model.LongIdResource").isDefined)
       val module = policy.getProfile(classOf[NationBean])
       assert(module.isDefined)
       assert(module.get.schema == Some("j_mapping"))

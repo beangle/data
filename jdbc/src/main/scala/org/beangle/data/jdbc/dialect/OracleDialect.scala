@@ -60,6 +60,9 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
   }
 
   override def limitGrammar: LimitGrammar = {
+
+    //FIXME distinguish sql with order by or not
+    //@see http://blog.csdn.net/czp11210/article/details/23958065
     class OracleLimitGrammar extends LimitGrammar {
       override def limit(querySql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
         var sql = querySql.trim();

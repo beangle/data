@@ -18,8 +18,9 @@
  */
 package org.beangle.data.model
 
-import org.beangle.commons.lang.Strings
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.Numbers
 /**
  * <p>
  * Hierarchical interface.
@@ -27,7 +28,7 @@ import org.beangle.commons.collection.Collections
  *
  * @author chaostone
  */
-trait Hierarchical[T] {
+trait Hierarchical[T] extends Ordered[T] {
 
   /** index no */
   var indexno: String = _
@@ -39,5 +40,17 @@ trait Hierarchical[T] {
 
   def depth: Int = {
     Strings.count(indexno, ".") + 1
+  }
+
+  def lastindex: Int = {
+    var index = Strings.substringAfterLast(indexno, ".")
+    if (Strings.isEmpty(index)) index = indexno
+    var idx = Numbers.toInt(index)
+    if (idx <= 0) idx = 1
+    idx
+  }
+
+  def compare(that: T): Int = {
+    this.indexno.compareTo(that.asInstanceOf[Hierarchical[_]].indexno)
   }
 }

@@ -188,7 +188,7 @@ class OverrideConfiguration extends Configuration with Logging {
       if (null == existing) {
         imports.put(rename, entityName)
       } else {
-        if (ClassLoaders.loadClass(existing).isAssignableFrom(ClassLoaders.loadClass(entityName))) {
+        if (ClassLoaders.load(existing).isAssignableFrom(ClassLoaders.load(entityName))) {
           imports.put(rename, entityName)
         } else {
           throw new DuplicateMappingException("duplicate import: " + rename + " refers to both "
