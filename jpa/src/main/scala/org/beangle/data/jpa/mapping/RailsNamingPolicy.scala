@@ -77,7 +77,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       val is = url.openStream()
       if (null != is) {
         configLocations.add(url)
-        (scala.xml.XML.load(is) \"naming" \ "profile") foreach { ele => parseProfile(ele, null) }
+        (scala.xml.XML.load(is) \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
         is.close()
       }
       autoWire()
@@ -207,7 +207,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
       ClassLoaders.load(className)
     } catch {
       case e: ClassNotFoundException => if (clazzName != className) ClassLoaders.load(clazzName) else throw e
-      case e: Throwable => throw e
+      case e: Throwable              => throw e
     }
     tableName = getPrefix(clazz) + tableName
     //      if (tableName.length() > entityTableMaxLength) {
@@ -237,8 +237,8 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     if (Strings.isEmpty(name) || (-1 == name.indexOf('{'))) return name
     var newName = Strings.replace(name, "$", "")
     val propertyName = Strings.substringBetween(newName, "{", "}")
-    val value = SystemInfo.properties.get(propertyName).getOrElse("")
-    Strings.replace(newName, "{" + propertyName + "}", value)
+    val pv = System.getProperty(propertyName)
+    Strings.replace(newName, "{" + propertyName + "}", if (pv == null) "" else pv)
   }
 
   override def toString: String = {

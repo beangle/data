@@ -102,6 +102,9 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
     configuration.addProperties(this.properties)
   }
 
+  /**
+   * FIXME using Reflections.getInstance instead
+   */
   private def getInstance[T: ClassTag](name: String)(implicit manifest: Manifest[T]): T = {
     var moduleClass = ClassLoaders.load(name)
     if (!manifest.runtimeClass.isAssignableFrom(moduleClass)) {
