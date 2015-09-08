@@ -31,6 +31,7 @@ import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
+import org.beangle.data.jdbc.ds.DataSourceUtils
 
 @RunWith(classOf[JUnitRunner])
 class GeneratorTest extends FunSpec with Matchers {
@@ -45,8 +46,7 @@ class GeneratorTest extends FunSpec with Matchers {
   configProperties.put("hibernate.show_sql", "false")
 
   val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
-  val ds: DataSource = new PoolingDataSourceFactory(properties("pg.driverClassName"),
-    properties("pg.url"), properties("pg.username"), properties("pg.password"), new java.util.Properties()).getObject
+  val ds: DataSource = DataSourceUtils.build("postgresql", properties("pg.username"), properties("pg.password"), Map("url" -> properties("pg.url")))
 
   configProperties.put(AvailableSettings.DATASOURCE, ds)
 

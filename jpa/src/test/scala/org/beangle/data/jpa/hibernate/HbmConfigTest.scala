@@ -30,6 +30,7 @@ import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
+import org.beangle.data.jdbc.ds.DataSourceUtils
 
 @RunWith(classOf[JUnitRunner])
 class HbmConfigTest extends FunSpec with Matchers {
@@ -44,16 +45,14 @@ class HbmConfigTest extends FunSpec with Matchers {
   val configuration = new OverrideConfiguration
   configuration.setInterceptor(new TestInterceptor)
   val builder = new ConfigurationBuilder(configuration, properties)
-  val namingPolicy=new RailsNamingPolicy
-  val ormLocations= List(ClassLoaders.getResource("META-INF/beangle/orm.xml"))
-  ormLocations foreach(url => namingPolicy.addConfig(url))
+  val namingPolicy = new RailsNamingPolicy
+  val ormLocations = List(ClassLoaders.getResource("META-INF/beangle/orm.xml"))
+  ormLocations foreach (url => namingPolicy.addConfig(url))
   builder.namingStrategy = new RailsNamingStrategy(namingPolicy)
-  builder.ormLocations=ormLocations
+  builder.ormLocations = ormLocations
   builder.build()
   val dbprops = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
-  val ds: DataSource = new PoolingDataSourceFactory(dbprops("h2.driverClassName"),
-    dbprops("h2.url"), dbprops("h2.username"), dbprops("h2.password"), new java.util.Properties()).getObject
-
+  val ds: DataSource = DataSourceUtils.build("h2", dbprops("h2.username"), dbprops("h2.password"), Map("url" -> dbprops("h2.url")))
   val sf = new SessionFactoryBuilder(ds, configuration).build()
   val entityDao = new HibernateEntityDao(sf)
 

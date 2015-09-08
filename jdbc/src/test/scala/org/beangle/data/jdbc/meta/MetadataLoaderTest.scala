@@ -22,7 +22,7 @@ import scala.collection.JavaConversions._
 import javax.sql.DataSource
 import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.data.jdbc.dialect.H2Dialect
-import org.beangle.data.jdbc.util.PoolingDataSourceFactory
+import org.beangle.data.jdbc.ds.DataSourceUtils
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.junit.runner.RunWith
@@ -35,8 +35,7 @@ import java.sql.SQLException
 class MetadataLoaderTest extends FlatSpec with Matchers {
 
   "test h2 metadata loader " should "ok" in {
-    val datasource: DataSource = new PoolingDataSourceFactory("org.postgresql.Driver",
-      "jdbc:postgresql://localhost:5432/urp", "postgres", "", new java.util.Properties()).getObject
+    val datasource: DataSource = DataSourceUtils.build("postgresql", "postgres", "", Map("url" -> "jdbc:postgresql://localhost:5432/urp"))
     val dialect = new PostgreSQLDialect
     try {
       val schema = new Schema(dialect, null, Name("public"))

@@ -38,6 +38,7 @@
 
   <properties>
     <commons.version>4.3.0</commons.version>
+    <HikariCP.version>2.4.1</HikariCP.version>
   </properties>
 
   <dependencyManagement>
@@ -66,6 +67,11 @@
         <groupId>org.beangle.data</groupId>
         <artifactId>beangle-data-jdbc_2.11</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.zaxxer</groupId>
+        <artifactId>HikariCP</artifactId>
+        <version>${HikariCP.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

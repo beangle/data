@@ -30,9 +30,8 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>commons-dbcp</groupId>
-      <artifactId>commons-dbcp</artifactId>
-      <version>1.4</version>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
       <optional>true</optional>
     </dependency>
   </dependencies>
