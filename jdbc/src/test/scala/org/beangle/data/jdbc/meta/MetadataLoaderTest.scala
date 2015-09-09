@@ -35,7 +35,7 @@ import java.sql.SQLException
 class MetadataLoaderTest extends FlatSpec with Matchers {
 
   "test h2 metadata loader " should "ok" in {
-    val datasource: DataSource = DataSourceUtils.build("postgresql", "postgres", "", Map("url" -> "jdbc:postgresql://localhost:5432/urp"))
+    val datasource = DataSourceUtils.build("postgresql", "postgres", "", Map("url" -> "jdbc:postgresql://localhost:5432/urp"))
     val dialect = new PostgreSQLDialect
     try {
       val schema = new Schema(dialect, null, Name("public"))

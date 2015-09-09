@@ -28,7 +28,7 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   override def result: DataSource = {
     _result
   }
-  
+
   override def destroy(): Unit = {
     DataSourceUtils.close(result)
   }
@@ -43,12 +43,19 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
       }
     } else if (url.startsWith("file:")) {
       merge(readConf(new FileInputStream(url.substring(5)), isXML))
+    } else if (!url.contains(':')) {
+      merge(readConf(new FileInputStream(url), isXML))
     } else {
       val text = getURLText(url)
       val is = new ByteArrayInputStream(text.getBytes)
       merge(readConf(is, isXML))
     }
+    postInit()
     _result = DataSourceUtils.build(driver, user, password, props)
+  }
+
+  protected def postInit(): Unit = {
+
   }
 
   private def readConf(is: InputStream, isXML: Boolean): DatasourceConfig = {
@@ -100,6 +107,7 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
     }
   }
 
+  import scala.language.existentials
   private def parseJson(string: String): collection.mutable.HashMap[String, String] = {
     val sem = new ScriptEngineManager();
     val engine = sem.getEngineByName("javascript");
