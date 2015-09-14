@@ -21,7 +21,7 @@ package org.beangle.data.jpa.hibernate
 import java.io.{ ByteArrayOutputStream, InputStream, Serializable }
 import java.sql.{ Blob, Clob }
 
-import scala.collection.JavaConversions.{ asScalaBuffer, mapAsJavaMap, seqAsJavaList }
+import scala.collection.JavaConversions.{ asScalaBuffer, mapAsJavaMap, seqAsJavaList, asJavaCollection }
 import scala.collection.mutable
 
 import org.beangle.commons.collection.page.{ Page, PageLimit, SinglePage }
@@ -32,11 +32,14 @@ import org.beangle.data.jpa.dao.OqlBuilder
 import org.beangle.data.model.Entity
 import org.beangle.data.model.dao.{ Condition, EntityDao, LimitQuery, Operation, Query => BQuery, QueryBuilder }
 import org.beangle.data.model.meta.EntityMetadata
-import org.hibernate.{ Hibernate, Query, SQLQuery, Session, SessionFactory }
+import org.hibernate.{ Hibernate, Query }
+import org.hibernate.{ SQLQuery, Session, SessionFactory }
 import org.hibernate.collection.spi.PersistentCollection
 import org.hibernate.engine.jdbc.StreamUtils
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.proxy.HibernateProxy
+
+import QuerySupport.{ doCount, doFind, list, setParameters }
 
 object QuerySupport {
 
@@ -107,11 +110,8 @@ object QuerySupport {
       case null                         => query.setParameter(param, null.asInstanceOf[AnyRef])
       case av: Array[AnyRef]            => query.setParameterList(param, av)
       case col: java.util.Collection[_] => query.setParameterList(param, col)
-      case iter: Iterable[_] =>
-        val jList = new java.util.ArrayList[Any]
-        for (o <- iter) jList.add(o)
-        query.setParameterList(param, jList)
-      case _ => query.setParameter(param, value)
+      case iter: Iterable[_]            => query.setParameterList(param, asJavaCollection(iter))
+      case _                            => query.setParameter(param, value)
     }
     query
   }
@@ -150,7 +150,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     sessionFactory.getCurrentSession()
   }
 
-  override def get[T <: Entity[ID], ID <: Serializable](clazz: Class[T], id: ID): T = {
+  override def get[T <: Entity[ID], ID](clazz: Class[T], id: ID): T = {
     (find(metadata.getType(clazz).get.entityName, id).orNull).asInstanceOf[T]
   }
 
@@ -161,7 +161,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     asScalaBuffer(query.list()).toList.asInstanceOf[List[T]]
   }
 
-  def find[T <: Entity[ID], ID <: Serializable](entityName: String, id: ID): Option[T] = {
+  def find[T <: Entity[ID], ID](entityName: String, id: ID): Option[T] = {
     if (Strings.contains(entityName, '.')) {
       val obj = currentSession.get(entityName, id.asInstanceOf[Serializable])
       if (null == obj) None else Some(obj.asInstanceOf[T])
@@ -174,18 +174,11 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
-  override def find[T <: Entity[ID], ID <: Serializable](clazz: Class[T], id: ID): Option[T] = {
+  override def find[T <: Entity[ID], ID](clazz: Class[T], id: ID): Option[T] = {
     find[T, ID](metadata.getType(clazz).get.entityName, id)
   }
 
-  /**
-   * search T by id.
-   */
-  override def find[T <: Entity[ID], ID <: Serializable](clazz: Class[T], ids: Array[ID]): Seq[T] = {
-    find(clazz, ids.toList)
-  }
-
-  override def find[T <: Entity[ID], ID <: Serializable](entityClass: Class[T], ids: Iterable[ID]): Seq[T] = {
+  override def find[T <: Entity[ID], ID](entityClass: Class[T], ids: Iterable[ID]): Seq[T] = {
     findBy(metadata.getType(entityClass).get.entityName, "id", ids)
   }
 
@@ -431,7 +424,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     remove(first :: entities.toList)
   }
 
-  override def remove[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], id: ID, ids: ID*): Unit = {
+  override def remove[T <: Entity[ID], ID](clazz: Class[T], id: ID, ids: ID*): Unit = {
     removeBy(clazz, "id", id :: ids.toList)
   }
 

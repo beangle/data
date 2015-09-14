@@ -87,7 +87,7 @@ class GeneratorTest extends FunSpec with Matchers {
         val lresource = new LongDateIdResource();
         lresource.year = 2013
         s.saveOrUpdate(lresource)
-        assert(lresource.id != null)
+        assert(lresource.id > 0)
         assert(lresource.id.toString.startsWith("2013"))
         s.flush()
         s.close()

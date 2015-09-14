@@ -84,7 +84,7 @@ class UdtTest extends FunSpec with Matchers {
       timebean.state = new WeekState(1)
       timebean.id = id
       s.save(timebean)
-      assert(null != timebean.id)
+      assert(timebean.id > 0)
       s.flush()
       s.clear()
       val saved = s.get(classOf[TimeBean], id).asInstanceOf[TimeBean]
