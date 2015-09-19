@@ -30,6 +30,10 @@ class Role(var id: java.lang.Integer) extends Entity[java.lang.Integer] with Cod
 
   var parent: Role = _
   var children = Collections.newBuffer[Role]
+  var createdAt: java.util.Date = _
+  var expiredOn: java.sql.Date = _
+  var updatedAt: java.sql.Timestamp = _
+  var s: java.util.Calendar = _
 }
 
 class ExtendRole(id: Integer) extends Role(id) {

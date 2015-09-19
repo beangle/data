@@ -63,9 +63,7 @@ final class CsvSerializer(val driver: CsvDriver, val mapper: Mapper, val registr
   override def marshalNull(obj: Object, property: String, context: MarshallingContext): Unit = {
     val size = context.getProperties(BeanManifest.get(obj.getClass).properties.get(property).get.clazz).size
     if (size > 0) {
-      (0 until size) foreach { i =>
-        context.writer.setValue("")
-      }
+      (0 until size) foreach ( i =>        context.writer.setValue(""))
     } else {
       context.writer.setValue("")
     }

@@ -37,7 +37,7 @@
   </scm>
 
   <properties>
-    <commons.version>4.3.0</commons.version>
+    <commons.version>4.4.0-SNAPSHOT</commons.version>
     <HikariCP.version>2.4.1</HikariCP.version>
   </properties>
 
@@ -46,6 +46,21 @@
       <dependency>
         <groupId>org.beangle.commons</groupId>
         <artifactId>beangle-commons-core_2.11</artifactId>
+        <version>${commons.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-i18n_2.11</artifactId>
+        <version>${commons.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-csv_2.11</artifactId>
+        <version>${commons.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-text_2.11</artifactId>
         <version>${commons.version}</version>
       </dependency>
       <dependency>
@@ -77,6 +92,10 @@
   </dependencyManagement>
 
   <dependencies>
+    <dependency>
+      <groupId>org.beangle.commons</groupId>
+      <artifactId>beangle-commons-core_2.11</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>

@@ -31,6 +31,7 @@ import org.scalatest.{ FunSpec, Matchers }
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
 import org.beangle.data.jdbc.ds.DataSourceUtils
+import org.beangle.data.jpa.model.Role
 
 @RunWith(classOf[JUnitRunner])
 class HbmConfigTest extends FunSpec with Matchers {
@@ -58,5 +59,17 @@ class HbmConfigTest extends FunSpec with Matchers {
 
   it("Should support int? and scala collection") {
     UserCrudTest.testCrud(sf)
+  }
+
+  it("get java.sql.Date on Role.expiredOn") {
+    val entityMeta = new EntityMetadataBuilder(List(sf)).build()
+    val roleMeta = entityMeta.getType(classOf[Role])
+    assert(None != roleMeta)
+    roleMeta.foreach { rm =>
+      assert(classOf[java.sql.Timestamp] == rm.getPropertyType("updatedAt").get.returnedClass)
+      assert(classOf[java.util.Date] == rm.getPropertyType("createdAt").get.returnedClass)
+      assert(classOf[java.util.Calendar] == rm.getPropertyType("s").get.returnedClass)
+      assert(classOf[java.sql.Date] == rm.getPropertyType("expiredOn").get.returnedClass)
+    }
   }
 }
