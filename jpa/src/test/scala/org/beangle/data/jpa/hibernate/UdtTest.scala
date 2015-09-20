@@ -31,7 +31,7 @@ import org.hibernate.{ Session, SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.AvailableSettings
 import org.hibernate.context.spi.AbstractCurrentSessionContext
-import org.hibernate.dialect.Oracle10gDialect
+import org.hibernate.dialect.H2Dialect
 import org.hibernate.engine.spi.SessionFactoryImplementor
 import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
@@ -44,7 +44,7 @@ class UdtTest extends FunSpec with Matchers {
   val configuration = new OverrideConfiguration
   configuration.setNamingStrategy(new RailsNamingStrategy(new RailsNamingPolicy))
   val configProperties = configuration.getProperties()
-  configProperties.put(AvailableSettings.DIALECT, classOf[Oracle10gDialect].getName)
+  configProperties.put(AvailableSettings.DIALECT, classOf[H2Dialect].getName)
   configProperties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
   configProperties.put("hibernate.hbm2ddl.auto", "create")
   configProperties.put("hibernate.show_sql", "true")

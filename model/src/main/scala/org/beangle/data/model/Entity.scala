@@ -20,7 +20,7 @@ package org.beangle.data.model
 
 import java.beans.Transient
 
-import org.beangle.data.model.util.Valid
+import org.beangle.data.model.util.Id
 
 trait Entity[ID] extends Serializable {
 
@@ -33,7 +33,7 @@ trait Entity[ID] extends Serializable {
    * Return true if persisted
    */
   @Transient
-  def persisted: Boolean = Valid(id)
+  def persisted: Boolean = Id.isValid(id)
 
   /**
    * @see java.lang.Object#hashCode()

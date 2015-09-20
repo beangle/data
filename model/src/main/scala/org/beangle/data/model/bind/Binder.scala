@@ -51,6 +51,11 @@ object Binder {
   final class IdGenerator(var generator: String) {
     val params = Collections.newMap[String, String]
     var nullValue: Option[String] = None
+
+    def unsaved(value: String): this.type = {
+      nullValue = Some(value)
+      this
+    }
   }
 
   final class Entity(val clazz: Class[_], val entityName: String) {
@@ -334,7 +339,7 @@ final class Binder extends Logging {
     } catch {
       case e: Exception =>
     }
-    val watch=new Stopwatch(true)
+    val watch = new Stopwatch(true)
     val cct = pool.makeClass(fullClassName)
     if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
     else cct.setSuperclass(pool.get(clazz.getName))
@@ -377,7 +382,7 @@ final class Binder extends Logging {
         method.invoke(proxy, component)
         component.setParent(proxy)
     }
-    logger.info(s"generate $fullClassName using $watch")
+    logger.debug(s"generate $fullClassName using $watch")
     proxy
   }
 

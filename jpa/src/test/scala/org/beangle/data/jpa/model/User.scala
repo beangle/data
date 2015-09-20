@@ -24,7 +24,7 @@ import org.beangle.data.model.{ Component, Entity, Hierarchical, LongId, StringI
 import org.beangle.commons.lang.time.WeekDay._
 import org.beangle.data.model.Remark
 
-class User(var id: java.lang.Long) extends Entity[java.lang.Long] {
+class User(var id: Long) extends Entity[Long] {
   def this() = this(0)
   var name = new Name
   var roleSet: java.util.Set[Role] = new java.util.HashSet[Role]
@@ -73,6 +73,4 @@ abstract class StringIdCodedEntity extends CodedEntity
 class Menu extends StringIdCodedEntity
 
 class Department extends LongId with Hierarchical[Department] with Remark
-
-
 
