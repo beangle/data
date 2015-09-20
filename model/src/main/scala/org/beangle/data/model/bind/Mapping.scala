@@ -22,11 +22,13 @@ import scala.collection.JavaConversions.asScalaSet
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
-
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, ComponentProperty, Entity, EntityProxy, IdGenerator, Index, ManyToOneProperty, Property, SeqProperty, MapProperty, SimpleKey, ToManyElement, TypeNameHolder, ColumnHolder }
+import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.lang.annotation.value
+import org.beangle.commons.lang.Primitives
 
 object Mapping {
 
@@ -380,7 +382,14 @@ abstract class Mapping extends Logging {
       }
       superCls = superCls.getSuperclass
     }
-    if (entity.idGenerator.isEmpty) this.defaultIdGenerator foreach { a => entity.idGenerator = Some(new IdGenerator(a)) }
+
+    if (entity.idGenerator.isEmpty) {
+      val unsaved = BeanManifest.get(cls, null).getPropertyType("id") match {
+        case Some(idtype) => if (idtype.isPrimitive) "0" else "null"
+        case None         => "null"
+      }
+      this.defaultIdGenerator foreach { a => entity.idGenerator = Some(new IdGenerator(a).unsaved(unsaved)) }
+    }
     binder.addEntity(entity)
     val holder = new EntityHolder(entity, binder, cls, this)
     currentHolder = holder

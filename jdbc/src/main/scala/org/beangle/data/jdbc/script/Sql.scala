@@ -20,18 +20,17 @@ package org.beangle.data.jdbc.script
 
 import java.io.{ File, FileInputStream }
 import java.net.URL
-
 import scala.Array.canBuildFrom
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
-
 import org.beangle.commons.io.Files.{ / => / }
 import org.beangle.commons.lang.Consoles.{ prompt, readPassword, shell }
 import org.beangle.commons.lang.Numbers
 import org.beangle.commons.lang.Strings.{ isBlank, isNotEmpty, split, substringAfter, trim }
 import org.beangle.commons.lang.SystemInfo
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.util.{ DatasourceConfig, PoolingDataSourceFactory }
+import org.beangle.data.jdbc.ds.DataSourceUtils
+import org.beangle.data.jdbc.ds.DatasourceConfig
 import org.beangle.data.jdbc.vendor.UrlFormat
 
 object Sql extends Logging {
@@ -64,7 +63,7 @@ object Sql extends Logging {
         else "sql"
       prefix + " >"
     }, Set("exit", "quit", "q"), command => command match {
-      case "ls" => info()
+      case "ls"   => info()
       case "help" => printHelp()
       case t => {
         if (t.startsWith("use")) use(Numbers.toInt(trim(substringAfter(t, "use")), 0))
@@ -107,8 +106,7 @@ object Sql extends Logging {
         if (null == datasource.password)
           datasource.password = readPassword("enter datasource [%1$s] %2$s password:", datasource.name, datasource.user)
 
-        val ds = new PoolingDataSourceFactory(datasource.driver,
-          datasource.url, datasource.user, datasource.password, datasource.props).getObject
+        val ds = DataSourceUtils.build(datasource.driver, datasource.user, datasource.password, datasource.props)
         runner.execute(ds, true)
       }
     }
@@ -154,16 +152,19 @@ object Sql extends Logging {
   }
 
   private def config(resource: DatasourceConfig) {
-    val format = new UrlFormat(resource.url)
-    if (!format.params.isEmpty) {
-      val params = format.params
-      val values = new collection.mutable.HashMap[String, String]
-      params.foreach { param => values.put(param, prompt("enter " + param + ":")) }
-      resource.url = format.fill(values.toMap)
-    }
-
-    if (null == resource.user || resource.user == "<username>") {
-      resource.user = prompt("enter datasource " + resource.url + " username:")
+    var url = resource.props.get("url").orNull
+    if (null == url) {
+      val format = new UrlFormat(url)
+      if (!format.params.isEmpty) {
+        val params = format.params
+        val values = new collection.mutable.HashMap[String, String]
+        params.foreach { param => values.put(param, prompt("enter " + param + ":")) }
+        url = format.fill(values.toMap)
+        resource.props.put("url", url)
+      }
+      if (null == resource.user || resource.user == "<username>") {
+        resource.user = prompt("enter datasource " + url + " username:")
+      }
     }
   }
 

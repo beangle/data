@@ -24,38 +24,13 @@ package org.beangle.data.model.meta
  * @author chaostone
  */
 class IdentifierType(val clazz: Class[_]) extends AbstractType {
-  /**
-   * getName.
-   *
-   * @return a {@link java.lang.String} object.
-   */
   override def name = clazz.toString
 
-  /**
-   * getReturnedClass.
-   *
-   * @return a {@link java.lang.Class} object.
-   */
   override def returnedClass = clazz
 
-  /**
-   * isCollectionType.
-   *
-   * @return a boolean.
-   */
   override def isCollectionType = false
-
-  /**
-   * isComponentType.
-   *
-   * @return a boolean.
-   */
+  
   override def isComponentType = false
 
-  /**
-   * isEntityType.
-   *
-   * @return a boolean.
-   */
   override def isEntityType = false
 }

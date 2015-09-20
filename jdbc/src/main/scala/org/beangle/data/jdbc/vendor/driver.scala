@@ -19,15 +19,17 @@
 package org.beangle.data.jdbc.vendor
 
 import java.util.regex.Pattern
+
 import org.beangle.commons.lang.Strings.replace
 
 object Driver {
-  def apply(className: String, prefix: String, formats: String*): DriverInfo = {
-    new DriverInfo(className, prefix, formats)
+  def apply(prefix: String, dataSourceClassName: String, className: String, urlformats: String*): DriverInfo = {
+    new DriverInfo(dataSourceClassName, className, prefix, urlformats)
   }
 }
 
-class DriverInfo(val className: String, val prefix: String, val urlformats: Seq[String]) {
+class DriverInfo(val dataSourceClassName: String, val className: String, val prefix: String, val urlformats: Seq[String]) {
+  var vendor: VendorInfo = _
 }
 
 class UrlFormat(val format: String) {

@@ -22,7 +22,7 @@ import org.beangle.data.model.Entity
 import org.beangle.commons.collection.Collections
 
 //FIXME id
-class Role(var id: java.lang.Integer) extends Entity[java.lang.Integer] with Coded {
+class Role(var id: Int) extends Entity[Int] with Coded {
   this.code = String.valueOf(System.identityHashCode(this))
   var name: String = "Role" + String.valueOf(System.identityHashCode(this))
 
@@ -30,9 +30,13 @@ class Role(var id: java.lang.Integer) extends Entity[java.lang.Integer] with Cod
 
   var parent: Role = _
   var children = Collections.newBuffer[Role]
+  var createdAt: java.util.Date = _
+  var expiredOn: java.sql.Date = _
+  var updatedAt: java.sql.Timestamp = _
+  var s: java.util.Calendar = _
 }
 
-class ExtendRole(id: Integer) extends Role(id) {
+class ExtendRole(id: Int) extends Role(id) {
   var enName: String = _
   def this() = this(0)
 }

@@ -25,11 +25,13 @@ import scala.reflect.runtime.{ universe => ru }
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{ ClassLoaders, Primitives, Strings }
 import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.logging.Logging
+import org.beangle.commons.lang.annotation.value
+import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.data.model.Component
 import org.beangle.data.model.bind.Jpas.{ isMap, isSeq, isSet, isEntity, isComponent }
 import javassist.{ ClassPool, CtConstructor, CtField, CtMethod, LoaderClassPath }
 import javassist.compiler.Javac
-import org.beangle.commons.lang.annotation.value
 
 object Binder {
   final class Collection(val clazz: Class[_], val property: String) {
@@ -49,6 +51,11 @@ object Binder {
   final class IdGenerator(var generator: String) {
     val params = Collections.newMap[String, String]
     var nullValue: Option[String] = None
+
+    def unsaved(value: String): this.type = {
+      nullValue = Some(value)
+      this
+    }
   }
 
   final class Entity(val clazz: Class[_], val entityName: String) {
@@ -259,7 +266,7 @@ object Binder {
  * @author chaostone
  * @since 3.1
  */
-final class Binder {
+final class Binder extends Logging {
 
   import Binder._
   private var pool = ClassPool.getDefault
@@ -332,6 +339,7 @@ final class Binder {
     } catch {
       case e: Exception =>
     }
+    val watch = new Stopwatch(true)
     val cct = pool.makeClass(fullClassName)
     if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
     else cct.setSuperclass(pool.get(clazz.getName))
@@ -366,7 +374,7 @@ final class Binder {
     ctmod.setBody("{return _lastAccessed;}")
     cct.addMethod(ctmod)
     //    cct.debugWriteFile("/tmp/handlers")
-    val maked = cct.toClass()
+    val maked = cct.toClass
     cct.detach()
     val proxy = maked.getConstructor().newInstance().asInstanceOf[EntityProxy]
     componentValues foreach {
@@ -374,6 +382,7 @@ final class Binder {
         method.invoke(proxy, component)
         component.setParent(proxy)
     }
+    logger.debug(s"generate $fullClassName using $watch")
     proxy
   }
 

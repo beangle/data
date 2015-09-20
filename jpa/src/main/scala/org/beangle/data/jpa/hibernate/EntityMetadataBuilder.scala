@@ -20,7 +20,6 @@ package org.beangle.data.jpa.hibernate
 
 import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable
-
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.meta.{ CollectionType, ComponentType, DefaultEntityMetadata, EntityMetadata, EntityType, IdentifierType, Type }
@@ -28,6 +27,7 @@ import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
 import java.{ util => ju }
+import org.beangle.commons.lang.reflect.BeanManifest
 
 //TODO add test by xml or annotation configuration
 class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging {
@@ -49,6 +49,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
     }
     new DefaultEntityMetadata(entityTypes.values)
   }
+
   /**
    * 按照实体名，构建或者查找实体类型信息.<br>
    * 调用后，实体类型则存放与entityTypes中.
@@ -61,6 +62,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
         logger.error(s"Cannot find classMetadata for $entityName")
         return null
       }
+      val entityManifest = BeanManifest.get(cm.getMappedClass)
       entityType = new EntityType(cm.getMappedClass, cm.getEntityName, cm.getIdentifierPropertyName)
       entityTypes.put(cm.getEntityName, entityType)
       val propertyTypes = new mutable.HashMap[String, Type]
@@ -72,9 +74,9 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
           propertyTypes.put(pname, buildComponentType(factory, entityName, pname))
         } else if (htype.isCollectionType) {
           propertyTypes.put(pname,
-            buildCollectionType(factory, defaultCollectionClass(htype), entityName + "." + pname))
+            buildCollectionType(factory, entityManifest.getPropertyType(pname).get, entityName + "." + pname))
         } else {
-          propertyTypes.put(pname, new IdentifierType(htype.getReturnedClass))
+          propertyTypes.put(pname, new IdentifierType(entityManifest.getPropertyType(pname).get))
         }
       }
       propertyTypes.put(cm.getIdentifierPropertyName, new IdentifierType(cm.getIdentifierType.getReturnedClass))
@@ -108,6 +110,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
       val hcType = cm.getPropertyType(propertyName).asInstanceOf[htype.ComponentType]
       val propertyNames = hcType.getPropertyNames
 
+      val comManifest = BeanManifest.get(hcType.getReturnedClass)
       val propertyTypes = new mutable.HashMap[String, Type]
       var j = 0
       while (j < propertyNames.length) {
@@ -119,26 +122,14 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
           propertyTypes.put(pName, buildComponentType(factory, entityName, propertyName + "." + pName))
         } else if (etype.isCollectionType) {
           propertyTypes.put(pName,
-            buildCollectionType(factory, defaultCollectionClass(etype), entityName + "." + propertyName + "." + pName))
+            buildCollectionType(factory, comManifest.getPropertyType(pName).get, entityName + "." + propertyName + "." + pName))
         } else {
-          propertyTypes.put(pName, new IdentifierType(etype.getReturnedClass))
+          propertyTypes.put(pName, new IdentifierType(comManifest.getPropertyType(pName).get))
         }
         j += 1
       }
       result = new ComponentType(hcType.getReturnedClass, propertyTypes.toMap)
     }
     result
-  }
-
-  private def defaultCollectionClass(collectionType: htype.Type): Class[_] = {
-    if (collectionType.isAnyType) {
-      null
-    } else if (classOf[htype.SetType].isAssignableFrom(collectionType.getClass)) {
-      classOf[ju.HashSet[_]]
-    } else if (classOf[htype.MapType].isAssignableFrom(collectionType.getClass)) {
-      classOf[ju.HashMap[_, _]]
-    } else {
-      classOf[ju.ArrayList[_]]
-    }
   }
 }

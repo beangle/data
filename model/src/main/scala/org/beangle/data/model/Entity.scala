@@ -20,7 +20,7 @@ package org.beangle.data.model
 
 import java.beans.Transient
 
-import org.beangle.data.model.util.Valid
+import org.beangle.data.model.util.Id
 
 trait Entity[ID] extends Serializable {
 
@@ -33,7 +33,7 @@ trait Entity[ID] extends Serializable {
    * Return true if persisted
    */
   @Transient
-  def persisted: Boolean = Valid(id)
+  def persisted: Boolean = Id.isValid(id)
 
   /**
    * @see java.lang.Object#hashCode()
@@ -46,8 +46,6 @@ trait Entity[ID] extends Serializable {
    * </p>
    * 由于业务对象被CGlib或者javassist增强的原因，这里只提供一般的基于id的比较,不提供基于Class的比较。<br>
    * 如果在存在继承结构， 请重置equals方法。
-   *
-   * @see java.lang.Object#equals(Object)
    */
   override def equals(other: Any): Boolean = other match {
     case that: Entity[_] => (this eq that) || (null != id && null != that.id && id == that.id)
@@ -55,19 +53,18 @@ trait Entity[ID] extends Serializable {
   }
 }
 
-trait LongIdEntity extends Entity[java.lang.Long]
-trait IntIdEntity extends Entity[java.lang.Integer]
-trait StringIdEntity extends Entity[java.lang.String]
+trait LongIdEntity extends Entity[Long]
+trait IntIdEntity extends Entity[Int]
+trait StringIdEntity extends Entity[String]
 
 abstract class NumId[ID] extends Entity[ID] {
   var id: ID = _
 }
 
-abstract class LongId extends NumId[java.lang.Long]
+abstract class LongId extends NumId[Long]
 
-abstract class IntId extends NumId[Integer]
+abstract class IntId extends NumId[Int]
 
 abstract class StringId extends Entity[String] {
-
   var id: String = _
 }

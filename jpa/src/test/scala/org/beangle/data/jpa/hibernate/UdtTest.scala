@@ -18,34 +18,33 @@
  */
 package org.beangle.data.jpa.hibernate
 
-import java.util.Properties
-import scala.collection.mutable.ListBuffer
-import org.apache.commons.dbcp.{ ConnectionFactory, DriverManagerConnectionFactory, PoolableConnectionFactory, PoolingDataSource }
-import org.apache.commons.pool.impl.GenericObjectPool
+import org.beangle.commons.bean.Factory
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.time.{ HourMinute, WeekDay, WeekState }
+import org.beangle.commons.logging.Logging
 import org.beangle.data.jpa.hibernate.cfg.{ OverrideConfiguration, RailsNamingStrategy }
 import org.beangle.data.jpa.mapping.RailsNamingPolicy
-import org.beangle.data.jpa.model.{ ExtendRole, Name, Role, TimeBean, User }
+import org.beangle.data.jpa.model.TimeBean
+import org.h2.jdbcx.JdbcDataSource
 import org.hibernate.{ Session, SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.AvailableSettings
 import org.hibernate.context.spi.AbstractCurrentSessionContext
-import org.hibernate.dialect.Oracle10gDialect
+import org.hibernate.dialect.H2Dialect
 import org.hibernate.engine.spi.SessionFactoryImplementor
 import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
-import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
-import org.beangle.data.jpa.model.Member
+
+import javax.sql.DataSource
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
   val configuration = new OverrideConfiguration
   configuration.setNamingStrategy(new RailsNamingStrategy(new RailsNamingPolicy))
   val configProperties = configuration.getProperties()
-  configProperties.put(AvailableSettings.DIALECT, classOf[Oracle10gDialect].getName)
+  configProperties.put(AvailableSettings.DIALECT, classOf[H2Dialect].getName)
   configProperties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
   configProperties.put("hibernate.hbm2ddl.auto", "create")
   configProperties.put("hibernate.show_sql", "true")
@@ -53,8 +52,11 @@ class UdtTest extends FunSpec with Matchers {
   configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/jpa/model/time.hbm.xml"))
   configProperties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[SimpleCurrentSessionContext].getName())
   val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
-  val ds: DataSource = new PoolingDataSourceFactory(properties("h2.driverClassName"),
-    properties("h2.url"), properties("h2.username"), properties("h2.password"), new java.util.Properties()).getObject
+  
+  val ds = new JdbcDataSource
+  ds.setUser(properties("h2.username"))
+  ds.setPassword(properties("h2.password"))
+  ds.setUrl(properties("h2.url"))
   configProperties.put(AvailableSettings.DATASOURCE, ds)
 
   // do session factory build.
@@ -82,7 +84,7 @@ class UdtTest extends FunSpec with Matchers {
       timebean.state = new WeekState(1)
       timebean.id = id
       s.save(timebean)
-      assert(null != timebean.id)
+      assert(timebean.id > 0)
       s.flush()
       s.clear()
       val saved = s.get(classOf[TimeBean], id).asInstanceOf[TimeBean]
@@ -91,42 +93,6 @@ class UdtTest extends FunSpec with Matchers {
       assert(null != saved.state)
     }
   }
-}
-
-class PoolingDataSourceFactory(url: String, username: String, password: String, props: Properties) {
-
-  val properties = if (null == props) new Properties() else new Properties(props)
-
-  if (null != username) properties.put("user", username)
-  if (null != password) properties.put("password", password)
-
-  def this(newDriverClassName: String, url: String, username: String, password: String, props: Properties) = {
-    this(url, username, password, props)
-    registeDriver(newDriverClassName)
-  }
-
-  def registeDriver(newDriverClassName: String) = {
-    val driverClassNameToUse: String = newDriverClassName.trim()
-    try {
-      Class.forName(driverClassNameToUse)
-    } catch {
-      case ex: ClassNotFoundException =>
-        throw new IllegalStateException(
-          "Could not load JDBC driver class [" + driverClassNameToUse + "]", ex)
-    }
-  }
-
-  def getObject: DataSource = {
-    val config = new GenericObjectPool.Config()
-    config.maxActive = 16
-    val connectionPool = new GenericObjectPool(null, config)
-    val connectionFactory: ConnectionFactory = new DriverManagerConnectionFactory(url, properties)
-    new PoolableConnectionFactory(connectionFactory, connectionPool, null, null, false, true)
-    new PoolingDataSource(connectionPool)
-  }
-
-  def singleton = true
-
 }
 
 class SimpleCurrentSessionContext(factory: SessionFactoryImplementor) extends AbstractCurrentSessionContext(factory) {

@@ -33,25 +33,21 @@ trait EntityDao {
    * @param clazz 类型
    * @param id 唯一标识
    */
-  def get[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], id: ID): T
+  def get[T <: Entity[ID], ID](clazz: Class[T], id: ID): T
 
   def getAll[T <: Entity[_]](clazz: Class[T]): Seq[T]
 
   /**
    * find T by id.
    */
-  def find[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], id: ID): Option[T]
+  def find[T <: Entity[ID], ID](clazz: Class[T], id: ID): Option[T]
 
-  /**
-   * search T by id.
-   */
-  def find[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], ids: Array[ID]): Seq[T]
-
-  def find[T <: Entity[ID], ID <: java.io.Serializable](entityClass: Class[T], ids: Iterable[ID]): Seq[T]
+  def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T]
 
   def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[_]): Seq[T]
 
   def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T]
+  
   /**
    * save or update entities
    */
@@ -75,7 +71,7 @@ trait EntityDao {
   /**
    * remove entities by id
    */
-  def remove[T <: Entity[ID], ID <: java.io.Serializable](clazz: Class[T], id: ID, ids: ID*)
+  def remove[T <: Entity[ID], ID](clazz: Class[T], id: ID, ids: ID*)
 
   /**
    * Search by QueryBuilder

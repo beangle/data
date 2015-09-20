@@ -8,7 +8,7 @@
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent_2.11</artifactId>
   <packaging>pom</packaging>
-  <version>4.2.3</version>
+  <version>4.2.4</version>
   <name>Beangle Data Parent</name>
 
   <modules>
@@ -37,7 +37,8 @@
   </scm>
 
   <properties>
-    <commons.version>4.3.0</commons.version>
+    <commons.version>4.4.0</commons.version>
+    <HikariCP.version>2.4.1</HikariCP.version>
   </properties>
 
   <dependencyManagement>
@@ -45,6 +46,21 @@
       <dependency>
         <groupId>org.beangle.commons</groupId>
         <artifactId>beangle-commons-core_2.11</artifactId>
+        <version>${commons.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-i18n_2.11</artifactId>
+        <version>${commons.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-csv_2.11</artifactId>
+        <version>${commons.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-text_2.11</artifactId>
         <version>${commons.version}</version>
       </dependency>
       <dependency>
@@ -67,10 +83,19 @@
         <artifactId>beangle-data-jdbc_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.zaxxer</groupId>
+        <artifactId>HikariCP</artifactId>
+        <version>${HikariCP.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
+    <dependency>
+      <groupId>org.beangle.commons</groupId>
+      <artifactId>beangle-commons-core_2.11</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
