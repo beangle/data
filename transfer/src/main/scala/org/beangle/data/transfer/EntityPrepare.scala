@@ -16,12 +16,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.transfer;
 
-import java.io.Serializable;
-import org.hibernate.EmptyInterceptor
-class TestInterceptor extends EmptyInterceptor {
-  override def onPrepareStatement(sql: String): String = {
-    sql
+import org.beangle.data.transfer.io.ItemReader;
+
+/**
+ * DescriptionAttrPrepare class.
+ *
+ * @author chaostone
+ */
+object EntityPrepare extends TransferPrepare {
+
+  def prepare(importer: Transfer) {
+    val entityTransfer = importer.asInstanceOf[DefaultEntityTransfer]
+    entityTransfer.addEntity(DefaultEntityTransfer.alias, entityTransfer.entityClass)
+    
+    val reader = importer.reader.asInstanceOf[ItemReader]
+    importer.asInstanceOf[AbstractTransfer].setAttrs(reader.readTitle(), reader.readDescription());
   }
+
 }

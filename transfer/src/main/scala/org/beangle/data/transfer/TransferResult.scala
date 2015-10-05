@@ -16,19 +16,41 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.model.util
+package org.beangle.data.transfer;
 
-import org.beangle.commons.lang.functor.NotZero
-import org.beangle.commons.lang.functor.NotEmpty
+import org.beangle.commons.collection.Collections
+import scala.collection.mutable.Buffer
+import scala.collection.mutable.ListBuffer
+import org.beangle.commons.conversion.Conversion
+import org.beangle.commons.conversion.impl.DefaultConversion
 
 /**
+ * 转换结果
+ *
  * @author chaostone
  */
-object Id {
+class TransferResult {
 
-  def isValid(value: Any): Boolean = {
-    if (null == value) return false
-    if (value.isInstanceOf[Number]) return NotZero(value.asInstanceOf[Number])
-    return NotEmpty(value.toString)
+  val msgs = new ListBuffer[TransferMessage]
+
+  val errs = new ListBuffer[TransferMessage]
+
+  var transfer: Transfer = _
+
+  def addFailure(message: String, value: Any): Unit = {
+    errs += new TransferMessage(transfer.tranferIndex, message, value)
+  }
+
+  def addMessage(message: String, value: Any): Unit = {
+    msgs += new TransferMessage(transfer.tranferIndex, message, value)
+  }
+
+  def hasErrors: Boolean = {
+    !errs.isEmpty
+  }
+
+  def errors: Int = {
+    errs.size
   }
 }
+

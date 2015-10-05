@@ -16,12 +16,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.report
 
-import java.io.Serializable;
-import org.hibernate.EmptyInterceptor
-class TestInterceptor extends EmptyInterceptor {
-  override def onPrepareStatement(sql: String): String = {
-    sql
-  }
+import org.beangle.commons.collection.Collections
+
+/**
+ * @author chaostone
+ */
+class ReportContext {
+  val datas = Collections.newMap[String, Any]
 }

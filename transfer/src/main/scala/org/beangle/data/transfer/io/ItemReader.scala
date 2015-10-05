@@ -16,12 +16,22 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.transfer.io
 
-import java.io.Serializable;
-import org.hibernate.EmptyInterceptor
-class TestInterceptor extends EmptyInterceptor {
-  override def onPrepareStatement(sql: String): String = {
-    sql
-  }
+/**
+ * ItemReader interface.
+ *
+ * @author chaostone
+ */
+trait ItemReader extends Reader {
+
+  /** 标题所在行 */
+  var headIndex: Int = 0
+  /** 数据起始行 */
+  var dataIndex: Int = 1
+
+  def readDescription(): List[String]
+
+  def readTitle(): List[String]
+
 }

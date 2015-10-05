@@ -16,12 +16,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.transfer.io
 
-import java.io.Serializable;
-import org.hibernate.EmptyInterceptor
-class TestInterceptor extends EmptyInterceptor {
-  override def onPrepareStatement(sql: String): String = {
-    sql
-  }
+import java.io.OutputStream
+
+/**
+ * Writer interface.
+ *
+ * @author chaostone
+ */
+trait Writer {
+
+  def format: TransferFormat.Value
+
+  var outputStream: OutputStream = _
+  
+  def close()
 }

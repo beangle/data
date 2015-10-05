@@ -16,12 +16,26 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.transfer
 
-import java.io.Serializable;
-import org.hibernate.EmptyInterceptor
-class TestInterceptor extends EmptyInterceptor {
-  override def onPrepareStatement(sql: String): String = {
-    sql
-  }
+import java.util.Set
+import org.beangle.data.model.util.Populator
+import org.beangle.data.transfer.io.ItemReader
+import org.beangle.data.model.meta.EntityMetadata
+
+/**
+ * EntityImporter interface.
+ * 
+ * @author chaostone
+ */
+trait EntityTransfer extends Transfer {
+
+  def foreignerKeys:collection.Set[String]
+
+  def addForeignedKeys( foreignerKey:String)
+
+  var populator :Populator=_
+  
+  var entityMetadata:EntityMetadata=_
+
 }

@@ -16,12 +16,27 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.report.excel
 
-import java.io.Serializable;
-import org.hibernate.EmptyInterceptor
-class TestInterceptor extends EmptyInterceptor {
-  override def onPrepareStatement(sql: String): String = {
-    sql
+import java.io.OutputStream
+import java.net.URL
+import net.sf.jxls.transformer.XLSTransformer
+import org.beangle.data.report.Reporter
+import org.beangle.data.report.ReportContext
+
+/**
+ * ExcelTemplateReporter class.
+ *
+ * @author chaostone
+ */
+class ExcelTemplateReporter(template: URL) extends Reporter {
+
+  protected var transformer = new XLSTransformer()
+
+  override def generate(context: ReportContext, os: OutputStream): Unit = {
+    import scala.collection.JavaConversions.mapAsJavaMap
+    val workbook = transformer.transformXLS(template.openStream(), context.datas)
+    workbook.write(os)
   }
+
 }

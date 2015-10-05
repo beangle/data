@@ -16,12 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jpa.hibernate
+package org.beangle.data.transfer.io
 
-import java.io.Serializable;
-import org.hibernate.EmptyInterceptor
-class TestInterceptor extends EmptyInterceptor {
-  override def onPrepareStatement(sql: String): String = {
-    sql
-  }
+/**
+ * TransferFormats interface.
+ */
+object TransferFormat extends Enumeration(1) {
+  val Csv, Txt, Html, Xls, Xlsx, Pdf, Dbf = Value
 }
