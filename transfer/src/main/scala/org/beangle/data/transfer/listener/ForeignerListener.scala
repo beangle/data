@@ -21,7 +21,7 @@ package org.beangle.data.transfer.listener;
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.lang.Strings
 import org.beangle.data.model.Entity
-import org.beangle.data.model.dao.EntityDao
+import org.beangle.data.dao.EntityDao
 import org.beangle.data.transfer.{ AbstractTransfer, MultiEntityTransfer, TransferListener, TransferResult }
 
 import ForeignerListener.CACHE_SIZE

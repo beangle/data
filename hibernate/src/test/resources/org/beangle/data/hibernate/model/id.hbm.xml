@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="org.beangle.data.hibernate.model" default-access="org.beangle.data.hibernate.PropertyAccessor">
+    <class name="org.beangle.data.hibernate.model.LongIdResource" >
+        <id name="id" unsaved-value="0" type="long">
+          <generator class="auto_increment"/>
+        </id>
+        <property name="name" length="50" unique="true"/>
+    </class>
+
+    <class name="org.beangle.data.hibernate.model.IntIdResource" >
+        <id name="id" unsaved-value="0" type="int">
+          <generator class="date"/>
+        </id>
+        <property name="year" not-null="true"/>
+        <property name="name" length="50" unique="true"/>
+    </class>
+
+    <class name="org.beangle.data.hibernate.model.LongDateIdResource" >
+        <id name="id" unsaved-value="0" type="long">
+          <generator class="date"/>
+        </id>
+        <property name="year" not-null="true"/>
+        <property name="name" length="50" unique="true"/>
+    </class>
+</hibernate-mapping>

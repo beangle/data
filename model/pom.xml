@@ -11,7 +11,7 @@
 
   <properties>
     <bundle.symbolicName>org.beangle.data.model</bundle.symbolicName>
-    <bundle.namespace>org.beangle.data.model</bundle.namespace>
+    <bundle.namespace>org.beangle.data</bundle.namespace>
     <jpa.version>1.0.0.Final</jpa.version>
   </properties>
 
