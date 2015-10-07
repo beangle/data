@@ -8,14 +8,15 @@
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent_2.11</artifactId>
   <packaging>pom</packaging>
-  <version>4.2.4</version>
+  <version>4.3.0</version>
   <name>Beangle Data Parent</name>
 
   <modules>
     <module>jdbc</module>
     <module>model</module>
-    <module>jpa</module>
+    <module>hibernate</module>
     <module>serializer</module>
+    <module>transfer</module>
   </modules>
 
   <description>
@@ -37,7 +38,9 @@
   </scm>
 
   <properties>
-    <commons.version>4.4.0</commons.version>
+    <commons.version>4.4.2</commons.version>
+    <cdi.version>0.0.1</cdi.version>
+    <spring.version>4.0.4.RELEASE</spring.version>
     <HikariCP.version>2.4.1</HikariCP.version>
   </properties>
 
@@ -69,13 +72,18 @@
         <version>${commons.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.beangle.cdi</groupId>
+        <artifactId>beangle-cdi-spring_2.11</artifactId>
+        <version>${cdi.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.beangle.data</groupId>
         <artifactId>beangle-data-model_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.beangle.data</groupId>
-        <artifactId>beangle-data-jpa_2.11</artifactId>
+        <artifactId>beangle-data-hibernate_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
