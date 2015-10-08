@@ -47,7 +47,7 @@ object DatasourceConfig {
     dbconf.catalog = dialect.parse((xml \\ "catalog").text.trim)
 
     addProperty(dbconf, xml, "serverName", "databaseName", "portNumber", "url")
-    (xml \\ "db" \\ "props" \\ "prop").foreach { ele =>
+    (xml \\ "props" \\ "prop").foreach { ele =>
       dbconf.props.put((ele \ "@name").text, (ele \ "@value").text)
     }
     var schemaName = (xml \\ "schema").text.trim
