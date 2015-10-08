@@ -54,8 +54,10 @@ object DataSourceUtils {
     if (null != username) properties.put("username", username)
     if (null != password) properties.put("password", password)
 
-    if (!properties.containsKey("jdbcUrl") && !properties.containsKey("dataSourceClassName")) {
-      properties.put("dataSourceClassName", Vendors.drivers(driver).dataSourceClassName)
+    if (!properties.containsKey("jdbcUrl")) {
+      if (!properties.containsKey("dataSourceClassName")) properties.put("dataSourceClassName", Vendors.drivers(driver).dataSourceClassName)
+    } else {
+      Class.forName(Vendors.drivers(driver).className)
     }
     properties
   }
