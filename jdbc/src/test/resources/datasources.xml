@@ -6,6 +6,9 @@
     <user>tigre</user>
     <password>tigre</password>
     <schema>tigre</schema>
+    <props>
+      <prop name="driverType" value="thin"/>
+    </props>
   </datasource>
   <datasource name="test">
     <url>jdbc:postgresql://localhost:5432/test</url>

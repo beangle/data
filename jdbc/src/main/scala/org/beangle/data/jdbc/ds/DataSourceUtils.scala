@@ -49,22 +49,17 @@ object DataSourceUtils {
       properties.put(key, e._2)
     }
 
+    if (driver == "oracle" && !properties.containsKey("jdbcUrl") && !props.contains("driverType")) properties.put("dataSource.driverType", "thin")
+
     if (null != username) properties.put("username", username)
     if (null != password) properties.put("password", password)
 
-    if (!properties.containsKey("jdbcUrl") && !properties.containsKey("dataSourceClassName")) {
-      properties.put("dataSourceClassName", Vendors.drivers(driver).dataSourceClassName)
+    if (!properties.containsKey("jdbcUrl")) {
+      if (!properties.containsKey("dataSourceClassName")) properties.put("dataSourceClassName", Vendors.drivers(driver).dataSourceClassName)
+    } else {
+      Class.forName(Vendors.drivers(driver).className)
     }
     properties
   }
-
 }
-
-//class DataSourceFactory(driver: String, username: String, password: String, props: collection.Map[String, String]) extends Factory[DataSource] with Logging {
-//
-//  def result: DataSource = new HikariDataSource(new HikariConfig(DataSourceFactory.buildProperties(driver, username, password, props)))
-//
-//}
-
-
 
