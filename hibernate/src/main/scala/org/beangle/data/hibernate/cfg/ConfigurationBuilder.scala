@@ -20,20 +20,19 @@ package org.beangle.data.hibernate.cfg
 
 import java.net.URL
 import java.{ util => ju }
-import org.beangle.commons.collection.Collections
+
 import org.beangle.commons.io.{ IOs, ResourcePatternResolver }
-import org.beangle.commons.lang.{ ClassLoaders, Strings }
+import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.logging.Logging
-import org.beangle.data.hibernate.udt.{ EnumType, ValueType }
 import org.beangle.data.hibernate.naming.RailsNamingPolicy
+import org.beangle.data.hibernate.udt.{ EnumType, ValueType }
 import org.beangle.data.model.bind.Binder
 import org.beangle.data.model.bind.Binder.TypeDef
 import org.beangle.data.model.bind.Mapping
-import org.hibernate.cfg.{ Configuration, Mappings, NamingStrategy }
+import org.hibernate.cfg.{ Mappings, NamingStrategy }
 import org.hibernate.cfg.AvailableSettings.DIALECT
-import javax.persistence.Entity
-import scala.reflect.ClassTag
+import org.hibernate.cfg.Configuration
 
 object ConfigurationBuilder {
 
@@ -102,21 +101,6 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
     configuration.addProperties(this.properties)
   }
 
-  /**
-   * FIXME using Reflections.getInstance instead
-   */
-  private def getInstance[T: ClassTag](name: String)(implicit manifest: Manifest[T]): T = {
-    var moduleClass = ClassLoaders.load(name)
-    if (!manifest.runtimeClass.isAssignableFrom(moduleClass)) {
-      ClassLoaders.get(name + "$") match {
-        case Some(clazz) => moduleClass = clazz
-        case None        => throw new RuntimeException(name + " is not a mapping")
-      }
-    }
-    if (moduleClass.getConstructors.length > 0) moduleClass.newInstance().asInstanceOf[T]
-    else moduleClass.getDeclaredField("MODULE$").get(null).asInstanceOf[T]
-  }
-
   def build(): Configuration = {
     processProperties()
 
@@ -132,7 +116,7 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
         for (resource <- ormLocations) {
           val is = resource.openStream
           (scala.xml.XML.load(is) \ "mapping") foreach { ele =>
-            getInstance[Mapping]((ele \ "@class").text).configure(binder)
+            Reflections.getInstance[Mapping]((ele \ "@class").text).configure(binder)
           }
           IOs.close(is)
         }

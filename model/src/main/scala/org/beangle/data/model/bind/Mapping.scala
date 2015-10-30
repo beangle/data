@@ -22,13 +22,13 @@ import scala.collection.JavaConversions.asScalaSet
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
+
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.commons.logging.Logging
-import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, ComponentProperty, Entity, EntityProxy, IdGenerator, Index, ManyToOneProperty, Property, SeqProperty, MapProperty, SimpleKey, ToManyElement, TypeNameHolder, ColumnHolder }
 import org.beangle.commons.lang.reflect.BeanManifest
-import org.beangle.commons.lang.annotation.value
-import org.beangle.commons.lang.Primitives
+import org.beangle.commons.logging.Logging
+import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, ColumnHolder, ComponentProperty, Entity, IdGenerator, Index, ManyToOneProperty, MapProperty, Property, SeqProperty, SimpleKey, ToManyElement, TypeNameHolder }
+import org.beangle.data.model.bind.Mapping.EntityHolder
 
 object Mapping {
 
@@ -176,7 +176,7 @@ object Mapping {
 
   final class EntityHolder[T](val entity: Entity, val binder: Binder, val clazz: Class[T], module: Mapping) {
 
-    var proxy: EntityProxy = _
+    var proxy: Proxy.EntityProxy = _
 
     def cacheable(): this.type = {
       entity.cache(module.cacheConfig.region, module.cacheConfig.usage)
@@ -194,7 +194,7 @@ object Mapping {
     }
 
     def on(declarations: T => Any)(implicit manifest: Manifest[T]): this.type = {
-      if (null == proxy) proxy = binder.generateProxy(clazz)
+      if (null == proxy) proxy = Proxy.generate(clazz)
       declarations(proxy.asInstanceOf[T])
       this
     }
