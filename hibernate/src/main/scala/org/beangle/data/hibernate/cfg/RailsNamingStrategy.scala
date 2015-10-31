@@ -81,8 +81,7 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
    * </pre>
    */
   override def propertyToColumnName(propertyName: String): String = {
-    if (isManyToOne) addUnderscores(unqualify(propertyName)) + "_id"
-    else addUnderscores(unqualify(propertyName))
+    addUnderscores(unqualify(propertyName))
   }
 
   /** Return the argument */
@@ -95,7 +94,7 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
     propertyTableName: String, referencedColumnName: String): String = {
     var header = if (null == propertyName) propertyTableName else unqualify(propertyName)
     if (header == null) { throw new AssertionFailure("NamingStrategy not properly filled") }
-    header = if (isManyToOne) addUnderscores(header) else addUnderscores(propertyTableName)
+    header = addUnderscores(propertyTableName)
     return header + "_" + referencedColumnName
 
   }
@@ -146,19 +145,5 @@ class RailsNamingStrategy(val policy: NamingPolicy) extends NamingStrategy with 
   final def unqualify(qualifiedName: String): String = {
     val loc = qualifiedName.lastIndexOf('.')
     if (loc < 0) qualifiedName else qualifiedName.substring(loc + 1)
-  }
-  /**
-   * 检查是否为ManyToOne调用
-   */
-  private def isManyToOne: Boolean = {
-    val trace = Thread.currentThread().getStackTrace()
-    var matched = false
-    if (trace.length >= 9) {
-      matched = (2 to 8) exists { i =>
-        ("bindManyToOne" == trace(i).getMethodName && trace(i).getClassName.startsWith("org.hibernate.cfg")
-          || trace(i).getClassName.equals("org.hibernate.cfg.ToOneFkSecondPass"))
-      }
-    }
-    matched
   }
 }

@@ -18,20 +18,18 @@
  */
 package org.beangle.data.model.bind
 
-import java.lang.reflect.{ Method, Modifier }
+import java.lang.reflect.Modifier
+
 import scala.collection.mutable
 import scala.collection.mutable.Buffer
 import scala.reflect.runtime.{ universe => ru }
+
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{ ClassLoaders, Primitives, Strings }
+import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.reflect.BeanManifest
 import org.beangle.commons.logging.Logging
-import org.beangle.commons.lang.annotation.value
-import org.beangle.commons.lang.time.Stopwatch
-import org.beangle.data.model.Component
-import org.beangle.data.model.bind.Jpas.{ isMap, isSeq, isSet, isEntity, isComponent }
-import javassist.{ ClassPool, CtConstructor, CtField, CtMethod, LoaderClassPath }
-import javassist.compiler.Javac
+import org.beangle.data.model.bind.Jpas.{ isComponent, isEntity, isMap, isSeq, isSet }
 
 object Binder {
   final class Collection(val clazz: Class[_], val property: String) {
@@ -240,16 +238,6 @@ object Binder {
     if (null != tpeName) this.typeName = Some(tpeName)
   }
 
-  trait ModelProxy {
-    def lastAccessed(): java.util.Set[String]
-  }
-
-  trait EntityProxy extends ModelProxy
-
-  trait ComponentProxy extends ModelProxy {
-    def setParent(proxy: ModelProxy): Unit
-  }
-
   def columnName(propertyName: String, key: Boolean = false): String = {
     val lastDot = propertyName.lastIndexOf(".")
     val columnName = if (lastDot == -1) s"@${propertyName}" else "@" + propertyName.substring(lastDot + 1)
@@ -269,8 +257,6 @@ object Binder {
 final class Binder extends Logging {
 
   import Binder._
-  private var pool = ClassPool.getDefault
-  pool.appendClassPath(new LoaderClassPath(ClassLoaders.defaultClassLoader))
 
   /**
    * all type mappings(clazz -> Entity)
@@ -330,127 +316,6 @@ final class Binder extends Logging {
     types.put(name, new TypeDef(clazz, params))
   }
 
-  def generateProxy(clazz: Class[_]): EntityProxy = {
-    val proxyClassName = clazz.getSimpleName + "_proxy"
-    val fullClassName = clazz.getName + "_proxy"
-    try {
-      val proxyCls = ClassLoaders.load(fullClassName)
-      return proxyCls.getConstructor().newInstance().asInstanceOf[EntityProxy]
-    } catch {
-      case e: Exception =>
-    }
-    val watch = new Stopwatch(true)
-    val cct = pool.makeClass(fullClassName)
-    if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
-    else cct.setSuperclass(pool.get(clazz.getName))
-    cct.addInterface(pool.get(classOf[EntityProxy].getName))
-    val javac = new Javac(cct)
-    cct.addField(javac.compile("public java.util.Set _lastAccessed;").asInstanceOf[CtField])
-
-    val manifest = BeanManifest.get(clazz)
-    val componentValues = Collections.newMap[Method, ComponentProxy]
-    manifest.properties foreach {
-      case (name, p) =>
-        if (p.readable) {
-          val getter = p.getter.get
-          val value = Primitives.defaultLiteral(p.clazz)
-          val body = s"public ${p.clazz.getName} ${getter.getName}() { return $value;}"
-          val ctmod = javac.compile(body).asInstanceOf[CtMethod]
-          if (isComponent(p.clazz)) {
-            val cproxy = generateComponentProxy(p.clazz, name + ".")
-            componentValues += (p.setter.get -> cproxy)
-            ctmod.setBody("{_lastAccessed.add(\"" + name + "\");return super." + getter.getName + "();}")
-          } else {
-            ctmod.setBody("{_lastAccessed.add( \"" + name + "\");return " + value + ";}")
-          }
-          cct.addMethod(ctmod)
-        }
-    }
-    val ctor = javac.compile("public " + proxyClassName + "(){}").asInstanceOf[CtConstructor]
-    ctor.setBody("_lastAccessed = new java.util.HashSet();")
-    cct.addConstructor(ctor)
-
-    val ctmod = javac.compile("public java.util.Set lastAccessed() { return null;}").asInstanceOf[CtMethod]
-    ctmod.setBody("{return _lastAccessed;}")
-    cct.addMethod(ctmod)
-    //    cct.debugWriteFile("/tmp/handlers")
-    val maked = cct.toClass
-    cct.detach()
-    val proxy = maked.getConstructor().newInstance().asInstanceOf[EntityProxy]
-    componentValues foreach {
-      case (method, component) =>
-        method.invoke(proxy, component)
-        component.setParent(proxy)
-    }
-    logger.debug(s"generate $fullClassName using $watch")
-    proxy
-  }
-
-  private def generateComponentProxy(clazz: Class[_], path: String): ComponentProxy = {
-    val proxyClassName = clazz.getSimpleName + "_proxy"
-    val fullClassName = clazz.getName + "_proxy"
-    try {
-      val proxyCls = ClassLoaders.load(fullClassName)
-      return proxyCls.getConstructor(classOf[String]).newInstance(path).asInstanceOf[ComponentProxy]
-    } catch {
-      case e: Exception =>
-    }
-    val cct = pool.makeClass(fullClassName)
-    if (clazz.isInterface()) cct.addInterface(pool.get(clazz.getName))
-    else cct.setSuperclass(pool.get(clazz.getName))
-    cct.addInterface(pool.get(classOf[ComponentProxy].getName))
-    val javac = new Javac(cct)
-
-    cct.addField(javac.compile("public " + classOf[ModelProxy].getName + " _parent;").asInstanceOf[CtField])
-    cct.addField(javac.compile("public java.lang.String _path=null;").asInstanceOf[CtField])
-
-    val manifest = BeanManifest.get(clazz)
-    val componentValues = Collections.newMap[Method, ComponentProxy]
-    manifest.properties foreach {
-      case (name, p) =>
-        if (p.readable) {
-          val getter = p.getter.get
-          val value = Primitives.defaultLiteral(p.clazz)
-          val body = s"public ${p.clazz.getName} ${getter.getName}() { return $value;}"
-          val ctmod = javac.compile(body).asInstanceOf[CtMethod]
-
-          val accessed = "_parent.lastAccessed()"
-          if (isComponent(p.clazz)) {
-            val cproxy = generateComponentProxy(p.clazz, path + name + ".")
-            componentValues += (p.setter.get -> cproxy)
-            ctmod.setBody("{" + accessed + ".add(_path + \"" + name + "\");return super." + getter.getName + "();}")
-          } else {
-            val value = Primitives.defaultLiteral(p.clazz)
-            ctmod.setBody("{" + accessed + ".add(_path + \"" + name + "\");return " + value + ";}")
-          }
-          cct.addMethod(ctmod)
-        }
-    }
-    val ctor = javac.compile("public " + proxyClassName + "(String path){}").asInstanceOf[CtConstructor]
-    ctor.setBody("{this._parent=null;this._path=$1;}")
-    cct.addConstructor(ctor)
-
-    //implement setParent and lastAccessed
-    var ctmod = javac.compile("public void setParent(" + classOf[ModelProxy].getName + " proxy) { return null;}").asInstanceOf[CtMethod]
-    ctmod.setBody("{this._parent=$1;}")
-    cct.addMethod(ctmod)
-    ctmod = javac.compile("public java.util.Set lastAccessed() { return null;}").asInstanceOf[CtMethod]
-    ctmod.setBody("{return _parent.lastAccessed();}")
-    cct.addMethod(ctmod)
-
-    //    cct.debugWriteFile("/tmp/handlers")
-    val maked = cct.toClass()
-    cct.detach()
-    val proxy = maked.getConstructor(classOf[String]).newInstance(path).asInstanceOf[ComponentProxy]
-    //support nested component
-    componentValues foreach {
-      case (method, component) =>
-        method.invoke(proxy, component)
-        component.setParent(proxy)
-    }
-    proxy
-  }
-
   def autobind(): Unit = {
     //superclass first
     mappings.keys.toList.sortWith { (a, b) => a.isAssignableFrom(b) } foreach (cls => merge(mappings(cls)))
@@ -463,7 +328,6 @@ final class Binder extends Logging {
     this.types.clear()
     this.valueTypes.clear()
     this.enumTypes.clear()
-    this.pool = null
   }
 
   def autobind(cls: Class[_], entityName: String, tpe: ru.Type): Entity = {

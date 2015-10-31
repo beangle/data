@@ -29,12 +29,10 @@ import org.hibernate.cfg.AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS
 import org.hibernate.cfg.Configuration
 import org.springframework.core.io.Resource
 import javax.sql.DataSource
-import org.hibernate.cfg.NamingStrategy
-import java.{ util => ju }
 
 @description("构建Hibernate的会话工厂")
 class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory]
-  with Initializing with ConfigurableSessionFactory {
+    with Initializing with ConfigurableSessionFactory {
 
   var configLocations: Array[Resource] = Array.empty
 
@@ -56,8 +54,7 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
     }
     cfgBuilder.namingStrategy = namingStrategy
     cfgBuilder.build()
-    val builder = new SessionFactoryBuilder(dataSource, configuration)
-    result = builder.build()
+    result = new SessionFactoryBuilder(dataSource, configuration).build()
   }
 
 }

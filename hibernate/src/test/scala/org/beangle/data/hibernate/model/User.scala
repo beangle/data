@@ -26,7 +26,7 @@ import org.beangle.data.model.Remark
 
 class User(var id: Long) extends Entity[Long] {
   def this() = this(0)
-  var name = new Name
+  var name: Name = _
   var roleSet: java.util.Set[Role] = new java.util.HashSet[Role]
   var age: Option[Int] = None
   var money: Short = _
@@ -40,13 +40,13 @@ class User(var id: Long) extends Entity[Long] {
   var member: Member = _
   var skills: collection.mutable.Map[SkillType, Skill] = _
 }
-class SkillType extends LongId{
-  var name:String=_
+class SkillType extends LongId {
+  var name: String = _
 }
 
 class Skill extends LongId {
-  var skillType:SkillType=_
-  var name:String=_
+  var skillType: SkillType = _
+  var name: String = _
 }
 
 class Name extends Component {
