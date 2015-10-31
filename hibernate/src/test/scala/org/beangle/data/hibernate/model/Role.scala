@@ -21,7 +21,6 @@ package org.beangle.data.hibernate.model
 import org.beangle.data.model.Entity
 import org.beangle.commons.collection.Collections
 
-//FIXME id
 class Role(var id: Int) extends Entity[Int] with Coded {
   this.code = String.valueOf(System.identityHashCode(this))
   var name: String = "Role" + String.valueOf(System.identityHashCode(this))

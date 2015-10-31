@@ -61,37 +61,31 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
 
   override def limitGrammar: LimitGrammar = {
 
-    //FIXME distinguish sql with order by or not
-    //@see http://blog.csdn.net/czp11210/article/details/23958065
+    /**
+     * FIXME distinguish sql with order by or not
+     * @see http://blog.csdn.net/czp11210/article/details/23958065
+     */
     class OracleLimitGrammar extends LimitGrammar {
       override def limit(querySql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
-        var sql = querySql.trim();
-        var isForUpdate = false;
+        var sql = querySql.trim()
+        var isForUpdate = false
         if (sql.toLowerCase().endsWith(" for update")) {
-          sql = sql.substring(0, sql.length() - 11);
-          isForUpdate = true;
+          sql = sql.substring(0, sql.length - 11)
+          isForUpdate = true
         }
-        val pagingSelect: StringBuilder = new StringBuilder(sql.length() + 100);
+        val pagingSelect = new StringBuilder(sql.length + 100)
         val hasOffset = offset > 0
-        if (hasOffset) {
-          pagingSelect.append("select * from ( select row_.*, rownum rownum_ from ( ");
-        } else {
-          pagingSelect.append("select * from ( ");
-        }
-        pagingSelect.append(sql);
-        if (hasOffset) {
-          pagingSelect.append(" ) row_ where rownum <= ?) where rownum_ > ?");
-        } else {
-          pagingSelect.append(" ) where rownum <= ?");
-        }
+        if (hasOffset) pagingSelect.append("select * from ( select row_.*, rownum rownum_ from ( ")
+        else pagingSelect.append("select * from ( ")
 
-        if (isForUpdate) {
-          pagingSelect.append(" for update");
-        }
+        pagingSelect.append(sql)
+        if (hasOffset) pagingSelect.append(" ) row_ where rownum <= ?) where rownum_ > ?")
+        else pagingSelect.append(" ) where rownum <= ?")
+
+        if (isForUpdate) pagingSelect.append(" for update")
         (pagingSelect.toString, if (hasOffset) List(limit + offset, offset) else List(limit))
       }
     }
-
     new OracleLimitGrammar
   }
 
