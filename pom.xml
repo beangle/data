@@ -38,8 +38,8 @@
   </scm>
 
   <properties>
-    <commons.version>4.4.2</commons.version>
-    <cdi.version>0.0.1</cdi.version>
+    <commons.version>4.4.4</commons.version>
+    <cdi.version>0.0.2</cdi.version>
     <spring.version>4.0.4.RELEASE</spring.version>
     <HikariCP.version>2.4.1</HikariCP.version>
   </properties>

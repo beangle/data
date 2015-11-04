@@ -72,7 +72,7 @@ object Hierarchicals {
    * 按照上下关系和指定属性排序
    *
    * @param datas a {@link java.util.List} object.
-   * @param property a {@link java.lang.String} object.
+   * @param property a String object.
    * @param [T] a T object.
    * @return a {@link java.util.Map} object.
    */
@@ -88,7 +88,7 @@ object Hierarchicals {
    * [/p]
    *
    * @param datas a {@link java.util.List} object.
-   * @param property a {@link java.lang.String} object.
+   * @param property a String object.
    * @param [T] a T object.
    * @return a {@link java.util.Map} object.
    */

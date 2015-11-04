@@ -72,7 +72,7 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   /**
    * 描述放在第一行
    *
-   * @return an array of {@link java.lang.String} objects.
+   * @return an array of String objects.
    */
   override def readDescription(): List[String] = {
     if (workbook.getNumberOfSheets() < 1) {

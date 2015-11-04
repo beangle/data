@@ -105,7 +105,7 @@ class Condition(val content: String, initParams: Any*) {
    * </p>
    *
    * @see java.lang.Object#toString()
-   * @return a {@link java.lang.String} object.
+   * @return a String object.
    */
   override def toString: String = {
     val str = new StringBuilder(content).append(" ");

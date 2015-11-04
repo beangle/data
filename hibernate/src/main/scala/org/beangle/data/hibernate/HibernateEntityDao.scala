@@ -284,22 +284,21 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
 
   override def duplicate(entityName: String, id: Any, params: Map[String, Any]): Boolean = {
     val b = new StringBuilder("from ")
-    b.append(entityName).append(" where (1=1)")
+    b.append(entityName).append(" where ")
     val paramsMap = new mutable.HashMap[String, Any]
     var i = 0
     for ((key, value) <- params) {
-      b.append(" and ").append(key).append('=').append(":param" + i)
+      b.append(key).append('=').append(":param" + i)
       paramsMap.put("param" + i, value)
       i += 1
+      if (i < params.size) b.append(" and ")
     }
     val list = search(b.toString(), paramsMap).asInstanceOf[Seq[Entity[_]]]
-    if (!list.isEmpty) {
-      if (null == id) false
-      else {
-        for (e <- list) if (!(e.id == id)) return false
-      }
+    if (list.isEmpty) {
+      false
+    } else {
+      if (id == null) true else list.exists(e => e.id != id)
     }
-    true
   }
 
   /**
@@ -307,17 +306,12 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
    * @return boolean(是否存在) 如果entityId为空或者有不一样的entity存在则认为存在。
    */
   override def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, codeName: String, codeValue: Any): Boolean = {
-    if (null != codeValue && Strings.isNotEmpty(codeValue.toString())) {
-      val list = findBy(clazz, codeName, List(codeValue))
-      if (!list.isEmpty) {
-        if (id == null) true
-        else {
-          for (e <- list) if (!(e.id == id)) return true
-          false
-        }
-      }
+    val list = findBy(clazz, codeName, List(codeValue))
+    if (list.isEmpty) {
+      false
+    } else {
+      if (id == null) true else list.exists(e => e.id != id)
     }
-    false
   }
 
   /**
