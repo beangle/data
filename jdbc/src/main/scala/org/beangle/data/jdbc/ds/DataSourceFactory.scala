@@ -28,6 +28,7 @@ import javax.sql.DataSource
 import java.io.InputStream
 import java.net.HttpURLConnection
 import org.beangle.commons.bean.Disposable
+import org.beangle.commons.collection.Collections
 
 /**
  * Build a DataSource from file: or http: config url
@@ -39,7 +40,7 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   var password: String = _
   var driver: String = _
   var name: String = _
-  var props = new collection.mutable.HashMap[String, String]
+  var props = Collections.newMap[String, String]
 
   private var _result: DataSource = null
 
@@ -52,21 +53,22 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   }
 
   override def init(): Unit = {
-    var conf: DatasourceConfig = null
-    val isXML = url.endsWith(".xml")
-    if (url.startsWith("jdbc:")) {
-      if (null == driver) {
-        driver = Strings.substringBetween(url, "jdbc:", ":")
-        props.put("url", url)
+    if (null != url) {
+      val isXML = url.endsWith(".xml")
+      if (url.startsWith("jdbc:")) {
+        if (null == driver) {
+          driver = Strings.substringBetween(url, "jdbc:", ":")
+          props.put("url", url)
+        }
+      } else if (url.startsWith("file:")) {
+        merge(readConf(new FileInputStream(url.substring(5)), isXML))
+      } else if (!url.contains(':')) {
+        merge(readConf(new FileInputStream(url), isXML))
+      } else {
+        val text = getURLText(url)
+        val is = new ByteArrayInputStream(text.getBytes)
+        merge(readConf(is, isXML))
       }
-    } else if (url.startsWith("file:")) {
-      merge(readConf(new FileInputStream(url.substring(5)), isXML))
-    } else if (!url.contains(':')) {
-      merge(readConf(new FileInputStream(url), isXML))
-    } else {
-      val text = getURLText(url)
-      val is = new ByteArrayInputStream(text.getBytes)
-      merge(readConf(is, isXML))
     }
     postInit()
     _result = DataSourceUtils.build(driver, user, password, props)

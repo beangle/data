@@ -80,7 +80,6 @@ object Proxy extends Logging {
     val ctmod = javac.compile("public java.util.Set lastAccessed() { return null;}").asInstanceOf[CtMethod]
     ctmod.setBody("{return _lastAccessed;}")
     cct.addMethod(ctmod)
-    cct.debugWriteFile("/tmp/handlers")
     val maked = cct.toClass
     val proxy = maked.getConstructor().newInstance().asInstanceOf[EntityProxy]
     logger.debug(s"generate $classFullName using $watch")
@@ -146,7 +145,6 @@ object Proxy extends Logging {
     ctmod.setBody("{return _parent.lastAccessed();}")
     cct.addMethod(ctmod)
 
-    cct.debugWriteFile("/tmp/handlers")
     val maked = cct.toClass()
     proxies.put(classFullName, maked)
     maked
