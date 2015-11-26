@@ -42,7 +42,7 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
   /** 关联表表名长度限制 */
   var relationTableMaxLength = 30
 
-  private var pluralizer: Pluralizer = new EnNounPluralizer()
+  private var pluralizer: Pluralizer = EnNounPluralizer
 
   private val profiles = new collection.mutable.HashMap[String, TableProfile]
 

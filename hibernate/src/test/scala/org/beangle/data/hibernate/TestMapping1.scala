@@ -25,6 +25,7 @@ import org.beangle.data.hibernate.udt.ValueType
 import org.beangle.data.hibernate.model.{ Coded, IntIdResource, LongDateIdResource, LongIdResource, Skill, SkillType, User }
 import org.beangle.data.model.bind.Mapping
 import org.beangle.commons.lang.time.WeekDay
+import org.beangle.data.hibernate.model.Profile
 
 object TestMapping1 extends Mapping {
 
@@ -38,10 +39,13 @@ object TestMapping1 extends Mapping {
 
     bind[Coded].on(c => declare(
       c.code is (notnull, length(20))))
+
+    bind[Profile]
     bind[User].on(e => declare(
       e.name.first is (unique, column("first_name")),
       e.name.first & e.name.last & e.createdOn are notnull,
       e.roleList is (ordered, table("users_roles_list")),
+      e.profiles is depends("user"),
       e.properties is (table("users_props"), eleColumn("value2"), eleLength(200)))).generator("native")
 
     bind[SkillType]

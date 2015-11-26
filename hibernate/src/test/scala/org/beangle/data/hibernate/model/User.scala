@@ -39,7 +39,10 @@ class User(var id: Long) extends Entity[Long] {
   var roleList: collection.mutable.Buffer[Role] = new collection.mutable.ListBuffer[Role]
   var member: Member = _
   var skills: collection.mutable.Map[SkillType, Skill] = _
+
+  var profiles: collection.mutable.Set[Profile] = new collection.mutable.HashSet[Profile]
 }
+
 class SkillType extends LongId {
   var name: String = _
 }

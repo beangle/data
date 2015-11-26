@@ -123,9 +123,9 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
     for (inheritedInterface <- interfaceType.getInterfaces) addInterfaces(inheritedInterface, interfaces)
   }
 
-  def marshal(item: Object, marshaller: Marshaller[Object] = null): Unit = {
+  def marshal(item: Any, marshaller: Marshaller[Any] = null): Unit = {
     if (marshaller == null) {
-      serializer.marshal(item, registry.lookup(item.getClass.asInstanceOf[Class[Object]]), this)
+      serializer.marshal(item, registry.lookup(item.getClass.asInstanceOf[Class[Any]]), this)
     } else {
       serializer.marshal(item, marshaller, this)
     }

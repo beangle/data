@@ -41,7 +41,7 @@ final class CsvSerializer(val driver: CsvDriver, val mapper: Mapper, val registr
     List(MimeTypes.TextCsv)
   }
 
-  override def serialize(item: Object, writer: StreamWriter, params: Map[String, Any]): Unit = {
+  override def serialize(item: Any, writer: StreamWriter, params: Map[String, Any]): Unit = {
     val datas = item match {
       case null => null
       case page: Page[_] => page.items
@@ -60,7 +60,7 @@ final class CsvSerializer(val driver: CsvDriver, val mapper: Mapper, val registr
     writer.end(context)
   }
 
-  override def marshalNull(obj: Object, property: String, context: MarshallingContext): Unit = {
+  override def marshalNull(obj: Any, property: String, context: MarshallingContext): Unit = {
     val size = context.getProperties(BeanManifest.get(obj.getClass).properties.get(property).get.clazz).size
     if (size > 0) {
       (0 until size) foreach ( i =>        context.writer.setValue(""))
