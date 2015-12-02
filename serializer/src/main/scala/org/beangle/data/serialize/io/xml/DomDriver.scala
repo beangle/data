@@ -25,7 +25,7 @@ import org.beangle.data.serialize.io.{ AbstractDriver, StreamWriter }
 
 class DomDriver(encoding: String = "UTF-8") extends AbstractDriver(encoding) with XmlDriver {
 
-  def createWriter(out: Writer): StreamWriter = {
+  def createWriter(out: Writer, params: Map[String, Any]): StreamWriter = {
     return new PrettyXmlWriter(new BufferedWriter(out))
   }
 }

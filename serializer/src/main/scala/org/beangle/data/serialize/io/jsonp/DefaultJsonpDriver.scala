@@ -25,7 +25,7 @@ import org.beangle.data.serialize.io.StreamDriver
 
 class DefaultJsonpDriver(encoding: String = "UTF-8") extends AbstractDriver(encoding) with StreamDriver {
 
-  def createWriter(out: Writer): StreamWriter = {
+  def createWriter(out: Writer, params: Map[String, Any]): StreamWriter = {
     new DefaultJsonpWriter(new BufferedWriter(out), registry)
   }
 }

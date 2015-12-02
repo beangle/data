@@ -23,6 +23,6 @@ import org.beangle.data.serialize.marshal.MarshallerRegistry
 
 trait StreamDriver {
   var registry: MarshallerRegistry = _
-  def createWriter(out: Writer): StreamWriter
-  def createWriter(out: OutputStream): StreamWriter
+  def createWriter(out: Writer, params: Map[String, Any]): StreamWriter
+  def createWriter(out: OutputStream, params: Map[String, Any]): StreamWriter
 }

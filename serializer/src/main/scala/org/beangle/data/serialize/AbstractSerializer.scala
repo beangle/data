@@ -46,7 +46,7 @@ abstract class AbstractSerializer extends StreamSerializer {
   }
 
   override def serialize(obj: Any, out: OutputStream, params: Map[String, Any]): Unit = {
-    val writer = driver.createWriter(out)
+    val writer = driver.createWriter(out,params)
     try {
       serialize(obj, writer, params)
     } finally {
@@ -67,7 +67,7 @@ abstract class AbstractSerializer extends StreamSerializer {
   }
 
   def serialize(obj: Any, out: Writer, params: Map[String, Any]) {
-    val writer = driver.createWriter(out)
+    val writer = driver.createWriter(out, params)
     try {
       serialize(obj, writer, params)
     } finally {

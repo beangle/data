@@ -25,11 +25,11 @@ import org.beangle.data.serialize.io.{ AbstractDriver, StreamWriter }
 
 class DefaultCsvDriver(encoding: String = "UTF-8") extends AbstractDriver(encoding) with CsvDriver {
 
-  override def createWriter(out: OutputStream): StreamWriter = {
+  override def createWriter(out: OutputStream, params: Map[String, Any]): StreamWriter = {
     new DefaultCsvWriter(new BufferedWriter(new OutputStreamWriter(out, encoding)))
   }
 
-  def createWriter(out: Writer): StreamWriter = {
+  def createWriter(out: Writer, params: Map[String, Any]): StreamWriter = {
     new DefaultCsvWriter(out)
   }
 }
