@@ -30,27 +30,28 @@ import org.beangle.data.serialize.io.StreamDriver
 
 abstract class ReferenceSerializer extends AbstractSerializer {
 
-  override def marshal(item: Object, marshaller: Marshaller[Object], context: MarshallingContext): Unit = {
+  override def marshal(item: Any, marshaller: Marshaller[Any], context: MarshallingContext): Unit = {
     val writer = context.writer
     if (marshaller.targetType.scalar) {
       // strings, ints, dates, etc... don't bother using references.
       marshaller.marshal(item, writer, context)
     } else {
       val currentPath = writer.currentPath
-      val existed = context.references.get(item)
+      val objectItem =item.asInstanceOf[AnyRef]
+      val existed = context.references.get(objectItem)
       if (existed != null) {
         val referAttrName = mapper.aliasForSystemAttribute("reference")
         if (referAttrName != null) writer.addAttribute(referAttrName, createReference(currentPath, existed.key, context))
       } else {
         val newReferKey = fireReference(currentPath, item, context)
-        context.references.put(item, new Id(newReferKey, currentPath))
+        context.references.put(objectItem, new Id(newReferKey, currentPath))
         marshaller.marshal(item, writer, context)
       }
     }
   }
 
   protected def createReference(currentPath: Path, existedKey: Object, context: MarshallingContext): String
-  protected def fireReference(currentPath: Path, item: Object, context: MarshallingContext): Object
+  protected def fireReference(currentPath: Path, item: Any, context: MarshallingContext): Object
 }
 
 abstract class ReferenceByIdSerializer extends ReferenceSerializer {
@@ -59,7 +60,7 @@ abstract class ReferenceByIdSerializer extends ReferenceSerializer {
     existedKey.toString
   }
 
-  protected override def fireReference(currentPath: Path, item: Object, context: MarshallingContext): AnyRef = {
+  protected override def fireReference(currentPath: Path, item: Any, context: MarshallingContext): AnyRef = {
     val key = Strings.unCamel(item.getClass().getSimpleName) + "_" + System.identityHashCode(item)
     val attributeName = mapper.aliasForSystemAttribute("id")
     if (attributeName != null) context.writer.addAttribute(attributeName, key.toString())
@@ -76,7 +77,7 @@ abstract class ReferenceByXPathSerializer(val absolutePath: Boolean, val singleN
     return if (singleNode) referencePath.explicit() else referencePath.toString
   }
 
-  protected override def fireReference(currentPath: Path, item: Object, context: MarshallingContext): AnyRef = {
+  protected override def fireReference(currentPath: Path, item: Any, context: MarshallingContext): AnyRef = {
     return currentPath
   }
 }

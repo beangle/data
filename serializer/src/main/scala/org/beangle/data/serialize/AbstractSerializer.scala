@@ -45,8 +45,8 @@ abstract class AbstractSerializer extends StreamSerializer {
     mapper.alias(alias, className)
   }
 
-  override def serialize(obj: AnyRef, out: OutputStream, params: Map[String, Any]): Unit = {
-    val writer = driver.createWriter(out)
+  override def serialize(obj: Any, out: OutputStream, params: Map[String, Any]): Unit = {
+    val writer = driver.createWriter(out,params)
     try {
       serialize(obj, writer, params)
     } finally {
@@ -54,20 +54,20 @@ abstract class AbstractSerializer extends StreamSerializer {
     }
   }
 
-  def serialize(obj: Object): String = {
+  def serialize(obj: Any): String = {
     val writer = new StringWriter()
     serialize(obj, writer, Map.empty[String, Any])
     writer.toString()
   }
 
-  def serialize(obj: Object, params: Map[String, Any]): String = {
+  def serialize(obj: Any, params: Map[String, Any]): String = {
     val writer = new StringWriter()
     serialize(obj, writer, params)
     writer.toString()
   }
 
-  def serialize(obj: Object, out: Writer, params: Map[String, Any]) {
-    val writer = driver.createWriter(out)
+  def serialize(obj: Any, out: Writer, params: Map[String, Any]) {
+    val writer = driver.createWriter(out, params)
     try {
       serialize(obj, writer, params)
     } finally {
@@ -75,7 +75,7 @@ abstract class AbstractSerializer extends StreamSerializer {
     }
   }
 
-  override def serialize(item: Object, writer: StreamWriter, params: Map[String, Any]): Unit = {
+  override def serialize(item: Any, writer: StreamWriter, params: Map[String, Any]): Unit = {
     val context = new MarshallingContext(this, writer, registry, params)
     writer.start(context)
     if (item == null) {
@@ -88,25 +88,26 @@ abstract class AbstractSerializer extends StreamSerializer {
     writer.end(context)
   }
 
-  override def marshal(item: Object, marshaller: Marshaller[Object], context: MarshallingContext): Unit = {
+  override def marshal(item: Any, marshaller: Marshaller[Any], context: MarshallingContext): Unit = {
     val writer = context.writer
     if (marshaller.targetType.scalar) {
       // strings, ints, dates, etc... don't bother using references.
       marshaller.marshal(item, writer, context)
     } else {
-      if (context.currents.contains(item)) {
+      val objectItem = item.asInstanceOf[AnyRef]
+      if (context.currents.contains(objectItem)) {
         val key = Strings.unCamel(item.getClass().getSimpleName) + "_" + System.identityHashCode(item)
         val attributeName = mapper.aliasForSystemAttribute("id")
         if (attributeName != null) context.writer.addAttribute(attributeName, key.toString())
       } else {
-        context.currents += item
+        context.currents += objectItem
         marshaller.marshal(item, writer, context)
-        context.currents -= item
+        context.currents -= objectItem
       }
     }
   }
 
-  override def marshalNull(obj: Object, property: String, context: MarshallingContext): Unit = {
+  override def marshalNull(obj: Any, property: String, context: MarshallingContext): Unit = {
 
   }
 

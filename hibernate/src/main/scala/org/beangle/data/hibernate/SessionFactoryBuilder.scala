@@ -22,6 +22,7 @@ import java.{ util => ju }
 
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
+import org.beangle.data.hibernate.cfg.OverrideConfiguration
 import org.hibernate.{ SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.{ Configuration, NamingStrategy }
@@ -56,14 +57,15 @@ trait ConfigurableSessionFactory {
 
   def ormLocations: Array[_]
 
-  var configurationClass: Class[_ <: Configuration] = _
+  var configurationClass: Class[_ <: Configuration] = classOf[OverrideConfiguration]
 
   var namingStrategy: NamingStrategy = _
 
-  var hibernateProperties: ju.Properties = new ju.Properties
+  var hibernateProperties = new ju.Properties
 
   /**For display informations*/
   var configuration: Configuration = _
 
   var result: SessionFactory = _
+
 }

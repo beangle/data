@@ -31,7 +31,7 @@ trait EntityMetadata {
   /**
    * 根据实体名查找实体类型
    *
-   * @param name a {@link java.lang.String} object.
+   * @param name a String object.
    * @return a {@link org.beangle.data.model.metadata.Type} object.
    */
   def getType(clazz: Class[_]): Option[EntityType] = getType(clazz.getName)

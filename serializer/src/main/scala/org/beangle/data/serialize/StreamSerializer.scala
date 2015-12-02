@@ -25,11 +25,11 @@ import org.beangle.commons.io.Serializer
 
 trait StreamSerializer extends Serializer {
 
-  def serialize(obj: Object, writer: StreamWriter, params: Map[String, Any])
+  def serialize(obj: Any, writer: StreamWriter, params: Map[String, Any])
 
-  def marshalNull(obj: Object, property: String, context: MarshallingContext)
+  def marshalNull(obj: Any, property: String, context: MarshallingContext)
 
-  def marshal(item: Object, marshaller: Marshaller[Object], context: MarshallingContext): Unit
+  def marshal(item: Any, marshaller: Marshaller[Any], context: MarshallingContext): Unit
 
   def hierarchical: Boolean
 }

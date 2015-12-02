@@ -64,7 +64,7 @@ abstract class IdFunctor {
 }
 
 object LongIdFunctor extends IdFunctor {
-  val sql = "{? = call next_id(?)}"
+  val sql = "{? = call next_year_id(?)}"
 
   def gen(jdbc: JdbcCoordinator, year: Int): Number = {
     val st = jdbc.getStatementPreparer().prepareStatement(sql, true).asInstanceOf[CallableStatement]

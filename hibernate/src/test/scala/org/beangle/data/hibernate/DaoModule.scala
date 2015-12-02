@@ -16,18 +16,19 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.hibernate.spring
+package org.beangle.data.hibernate
 
 import org.beangle.commons.inject.bind.{ AbstractBindModule, profile }
-import org.beangle.data.hibernate.{ HibernateEntityDao, HibernateMetadataFactory }
 import org.beangle.data.hibernate.cfg.OverrideConfiguration
 import org.beangle.data.hibernate.spring.web.OpenSessionInViewInterceptor
 import org.springframework.beans.factory.config.PropertiesFactoryBean
 import org.springframework.jdbc.datasource.DriverManagerDataSource
 import org.springframework.jdbc.support.lob.DefaultLobHandler
 import org.springframework.transaction.interceptor.TransactionProxyFactoryBean
+import org.beangle.data.hibernate.spring.LocalSessionFactoryBean
+import org.beangle.data.hibernate.spring.HibernateTransactionManager
 
-object DefaultModule extends AbstractBindModule {
+object DaoModule extends AbstractBindModule {
 
   protected override def binding(): Unit = {
     bind("DataSource.default", classOf[DriverManagerDataSource]).property("driverClassName", "org.h2.Driver")

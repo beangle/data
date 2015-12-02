@@ -218,7 +218,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
             case BOOLEAN | BIT =>
               value match {
                 case b: Boolean => stmt.setBoolean(index, b)
-                case i: Number => stmt.setBoolean(index, i.intValue > 0)
+                case i: Number  => stmt.setBoolean(index, i.intValue > 0)
               }
             case TINYINT | SMALLINT | INTEGER =>
               stmt.setInt(index, value.asInstanceOf[Number].intValue)
@@ -324,21 +324,23 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
     e.setNextException(cause)
     throw e
   }
+
   private def convertToSeq(rs: ResultSet): Seq[Seq[_]] = {
-    val rows = new collection.mutable.ListBuffer[Seq[_]]
     val meta = rs.getMetaData()
     val cols = meta.getColumnCount()
+    val rows = new collection.mutable.ListBuffer[Seq[_]]
     val start = if (meta.getColumnName(1) == "_row_nr_") 1 else 0
     while (rs.next()) {
-      rows += (for (i <- start until cols) yield {
+      val row = new collection.mutable.ArrayBuffer[Any](cols)
+      for (i <- start until cols) {
         var v = rs.getObject(i + 1)
         if (null != v && meta.getColumnType(i + 1) == TIMESTAMP && !v.isInstanceOf[Timestamp]) {
-          if (null != JdbcExecutor.oracleTimestampMethod)
-            v = JdbcExecutor.oracleTimestampMethod.invoke(v)
+          if (null != JdbcExecutor.oracleTimestampMethod) v = JdbcExecutor.oracleTimestampMethod.invoke(v)
           else throw new Exception("Cannot translate " + v.getClass + "timestamp to java.sql.Timestamp")
         }
-        v
-      })
+        row += v
+      }
+      rows += row
     }
     rs.close()
     rows

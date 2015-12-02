@@ -164,6 +164,11 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
     this
   }
 
+  def clearGroups(): this.type = {
+    this.groups = Nil
+    this
+  }
+
   def orderBy(orders: List[Order]): this.type = {
     if (null != orders) {
       if (isNotEmpty(statement)) throw new RuntimeException("cannot add order by to a exists statement.")
