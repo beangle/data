@@ -23,10 +23,9 @@ import org.beangle.data.serialize.io.{ AbstractDriver, StreamWriter }
 import org.beangle.commons.io.BufferedWriter
 
 class DefaultJsonDriver(encoding: String = "UTF-8") extends AbstractDriver(encoding) with JsonDriver {
-  var compressOutput = true
 
-  def createWriter(out: Writer): StreamWriter = {
-    if (compressOutput) new DefaultJsonWriter(new BufferedWriter(out), registry)
-    else new PrettyJsonWriter(new BufferedWriter(out), registry)
+  def createWriter(out: Writer, params: Map[String, Any]): StreamWriter = {
+    if (params.contains("pretty")) new PrettyJsonWriter(new BufferedWriter(out), registry)
+    else new DefaultJsonWriter(new BufferedWriter(out), registry)
   }
 }

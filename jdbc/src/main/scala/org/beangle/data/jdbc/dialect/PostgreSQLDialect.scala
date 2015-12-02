@@ -28,7 +28,7 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
     registerType(LONGVARCHAR, "text")
 
     registerType(BOOLEAN, "boolean")
-    registerType(BIT, "bit")
+    registerType(BIT, "boolean")
     registerType(BIGINT, "int8")
     registerType(SMALLINT, "int2")
     registerType(TINYINT, "int2")

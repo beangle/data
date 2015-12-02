@@ -40,6 +40,6 @@ class JsonpSerializer(val driver: DefaultJsonpDriver, val mapper: Mapper, val re
   extends AbstractSerializer {
 
   override def supportMediaTypes: Seq[MimeType] = {
-    List(MimeTypes.ApplicationJson)
+    List(MimeTypes.ApplicationJavascript)
   }
 }

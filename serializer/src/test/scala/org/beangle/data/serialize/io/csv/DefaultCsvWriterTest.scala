@@ -34,10 +34,10 @@ class DefaultCsvWriterTest extends FunSpec with Matchers {
     it("getAttributes") {
       val serializer = CsvSerializer().asInstanceOf[AbstractSerializer]
       val os = new FileOutputStream("/tmp/a.csv")
-      val writer = serializer.driver.createWriter(os).asInstanceOf[DefaultCsvWriter]
       val params = Map("properties" -> List(
         classOf[Person] -> List("code", "name", "accountMoney1", "bestSkill", "skills", "families", "sidekick", "address"),
         classOf[Skill] -> List("name")))
+      val writer = serializer.driver.createWriter(os, params).asInstanceOf[DefaultCsvWriter]
       val context = new MarshallingContext(serializer, writer, serializer.registry, params)
 
       val personProperties = context.getProperties(classOf[Person])

@@ -32,7 +32,6 @@ object JsonSerializer {
     val mapper = new DefaultMapper
     val registry = new DefaultMarshallerRegistry(mapper)
     driver.registry = registry
-    driver.compressOutput = false
     new JsonSerializer(driver, mapper, registry)
   }
 }
