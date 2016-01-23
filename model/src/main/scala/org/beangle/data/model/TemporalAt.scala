@@ -18,8 +18,7 @@
  */
 package org.beangle.data.model
 
-import java.util.Date
-
+import java.time.ZonedDateTime
 /**
  * 有时效性的实体
  * </p>
@@ -33,10 +32,10 @@ trait TemporalAt {
   /**
    * 获得生效时间
    */
-  var beginAt: Date = _
+  var beginAt: ZonedDateTime = _
 
   /**
    * 获得失效时间
    */
-  var endAt: Date = _
+  var endAt: ZonedDateTime = _
 }

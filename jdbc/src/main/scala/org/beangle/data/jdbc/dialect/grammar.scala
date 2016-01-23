@@ -70,6 +70,9 @@ class TableGrammarBean extends TableGrammar {
 
 trait LimitGrammar {
 
+  /**
+   * @param offset is 0 based 
+   */
   def limit(query: String, offset: Int, limit: Int): Tuple2[String, List[Int]]
 
 }

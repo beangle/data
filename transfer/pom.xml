@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.or">
   <parent>
     <groupId>org.beangle.data</groupId>
-    <artifactId>beangle-data-parent_2.11</artifactId>
+    <artifactId>beangle-data-parent_2.12</artifactId>
     <version>4.3.4-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>beangle-data-transfer_2.11</artifactId>
+  <artifactId>beangle-data-transfer_2.12</artifactId>
   <packaging>jar</packaging>
   <name>Beangle Data Transfer</name>
 
@@ -18,11 +18,11 @@
   <dependencies>
     <dependency>
       <groupId>org.beangle.commons</groupId>
-      <artifactId>beangle-commons-csv_2.11</artifactId>
+      <artifactId>beangle-commons-csv_2.12</artifactId>
     </dependency>
     <dependency>
       <groupId>org.beangle.data</groupId>
-      <artifactId>beangle-data-model_2.11</artifactId>
+      <artifactId>beangle-data-model_2.12</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.poi</groupId>

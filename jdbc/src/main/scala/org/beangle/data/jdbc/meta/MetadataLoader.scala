@@ -147,7 +147,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         val fkName = getName(rs, FKName)
         val column = table.column(rs.getString(FKColumnName))
         val fk = table.getForeignKey(fkName.value) match {
-          case None => table.add(new ForeignKey(table, getName(rs, FKName), column.name))
+          case None       => table.add(new ForeignKey(table, getName(rs, FKName), column.name))
           case Some(oldk) => oldk
         }
         fk.refer(TableRef(dialect, getName(rs, PKTableSchem), getName(rs, PKTableName)), getName(rs, PKColumnName))
@@ -161,7 +161,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
         val indexName = rs.getString(IndexName)
         var idx = table.getIndex(indexName) match {
-          case None => table.add(new Index(Name(indexName), table))
+          case None         => table.add(new Index(Name(indexName), table))
           case Some(oldIdx) => oldIdx
         }
         idx.unique = (rs.getBoolean("NON_UNIQUE") == false)
@@ -171,7 +171,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         //for oracle m_row$$ column
         table.getColumn(columnName) match {
           case Some(column) => idx.addColumn(column.name)
-          case None => idx.addColumn(Name(columnName))
+          case None         => idx.addColumn(Name(columnName))
         }
       }
     }
@@ -204,7 +204,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
             val fkName = rs.getString(FKName)
             val columnName = Name(rs.getString(FKColumnName))
             val fk = table.getForeignKey(fkName) match {
-              case None => table.add(new ForeignKey(table, Name(rs.getString(FKName)), columnName))
+              case None       => table.add(new ForeignKey(table, Name(rs.getString(FKName)), columnName))
               case Some(oldk) => oldk
             }
             fk.refer(TableRef(dialect, getName(rs, PKTableSchem), getName(rs, PKTableName)), getName(rs, PKColumnName))
@@ -227,7 +227,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           completed += 1
         } catch {
           case e: IndexOutOfBoundsException =>
-          case e: Exception => logger.error("Error in convertion ", e)
+          case e: Exception                 => logger.error("Error in convertion ", e)
         }
         nextTableName = buffer.poll()
       }

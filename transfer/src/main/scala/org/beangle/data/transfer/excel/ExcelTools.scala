@@ -20,7 +20,7 @@ package org.beangle.data.transfer.excel;
 
 import java.text.DecimalFormat
 
-import org.apache.poi.hssf.usermodel.{ HSSFCell, HSSFRichTextString, HSSFRow, HSSFWorkbook }
+import org.apache.poi.hssf.usermodel.{ HSSFCell, HSSFRow, HSSFWorkbook }
 import org.beangle.commons.lang.Strings
 
 /**
@@ -28,17 +28,17 @@ import org.beangle.commons.lang.Strings
  *
  * @author chaostone
  */
-class ExcelTools {
+object ExcelTools {
   val numberformat = new DecimalFormat("#0.00");
 
-  def toExcel(datas: Iterable[Array[Object]], propertyShowKeys: String): HSSFWorkbook = {
-    toExcel(new HSSFWorkbook(), "export data", datas, propertyShowKeys)
+  def toExcel(datas: Iterable[Array[_]], propertyShowKeys: String): HSSFWorkbook = {
+    toExcel(new HSSFWorkbook(), "sheet1", datas, propertyShowKeys)
   }
 
   /**
    * 将一个对象数组的集合导出成excel
    */
-  def toExcel(wb: HSSFWorkbook, sheetName: String, datas: Iterable[Array[Object]],
+  def toExcel(wb: HSSFWorkbook, sheetName: String, datas: Iterable[Array[_]],
     propertyShowKeys: String): HSSFWorkbook = {
     val sheet = wb.createSheet(sheetName);
     var row: HSSFRow = null;
@@ -50,7 +50,7 @@ class ExcelTools {
     (0 until pShowKeys.length) foreach { i =>
       cell = row.createCell(i); // 建立新cell
       // cell.setEncoding(HSSFCell.ENCODING_UTF_16);
-      cell.setCellValue(new HSSFRichTextString(pShowKeys(i)));
+      cell.setCellValue(pShowKeys(i));
     }
     // 逐行取数
     var rowId = 1; // 数据行号（从2行开始填充)
@@ -59,7 +59,7 @@ class ExcelTools {
       (0 until objs.length) foreach { j =>
         cell = row.createCell(j); // 建立新cell
         // cell.setEncoding(HSSFCell.ENCODING_UTF_16);
-        cell.setCellValue(new HSSFRichTextString(if (objs(j) == null) "" else objs(j).toString));
+        cell.setCellValue(if (objs(j) == null) "" else objs(j).toString)
       }
       rowId += 1
     }

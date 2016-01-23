@@ -18,7 +18,7 @@
  */
 package org.beangle.data.model
 
-import java.sql.Date
+import java.time.LocalDate
 
 /**
  * 有时效性的实体
@@ -33,11 +33,11 @@ trait TemporalOn {
   /**
    * 起始日期
    */
-  var beginOn: Date = _
+  var beginOn: LocalDate = _
 
   /**
    * 结束日期
    */
-  var endOn: Date = _
+  var endOn: LocalDate = _
 
 }
