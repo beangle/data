@@ -90,6 +90,7 @@ class DatasourceConfig(val driver: String, val dialect: Dialect) {
           case "schema"   => this.schema = new Name(v)
           case "catalog"  => this.catalog = new Name(v)
           case "name"     => this.name = v
+          case "driver"   =>
           case _          => props.put(k, v)
         }
     }
