@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2015, Beangle Software.
+ * Copyright (c) 2005-2016, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,6 @@
  */
 package org.beangle.data.model
 
-import java.time.ZonedDateTime
 /**
  * 有时效性的实体
  * </p>
@@ -32,10 +31,10 @@ trait TemporalAt {
   /**
    * 获得生效时间
    */
-  var beginAt: ZonedDateTime = _
+  var beginAt: java.util.Date = _
 
   /**
    * 获得失效时间
    */
-  var endAt: ZonedDateTime = _
+  var endAt: java.util.Date = _
 }
