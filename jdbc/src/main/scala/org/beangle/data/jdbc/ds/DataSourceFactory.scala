@@ -90,7 +90,7 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
         }
       }
     } else {
-      conf = new DatasourceConfig(parseJson(IOs.readString(is)))
+      conf = new DatasourceConfig(DataSourceUtils.parseJson(IOs.readString(is)))
     }
     conf
   }
@@ -130,26 +130,4 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
     }
   }
 
-  import scala.language.existentials
-  private def parseJson(string: String): collection.mutable.HashMap[String, String] = {
-    val sem = new ScriptEngineManager();
-    val engine = sem.getEngineByName("javascript");
-    val result = new collection.mutable.HashMap[String, String]
-    val iter = engine.eval("result =" + string).asInstanceOf[java.util.Map[_, AnyRef]].entrySet().iterator();
-    while (iter.hasNext()) {
-      val one = iter.next()
-      var value: String = null
-      if (one.getValue.isInstanceOf[java.lang.Double]) {
-        val d = one.getValue.asInstanceOf[java.lang.Double]
-        if (java.lang.Double.compare(d, d.intValue()) > 0) value = d.toString()
-        else value = String.valueOf(d.intValue())
-      } else {
-        value = one.getValue().toString()
-      }
-
-      val key = if (one.getKey().toString() == "maxActive") "maxTotal" else one.getKey().toString();
-      result.put(key, value);
-    }
-    result;
-  }
 }

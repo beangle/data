@@ -36,7 +36,7 @@
  */
 package org.beangle.data.model
 
-import java.util.Date
+import java.time.ZonedDateTime
 
 /**
  * Contain create and update time interface.
@@ -48,6 +48,6 @@ trait Updated {
   /**
    * Updated At
    */
-  var updatedAt: Date = _
+  var updatedAt: ZonedDateTime = _
 
 }

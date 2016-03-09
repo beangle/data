@@ -80,7 +80,7 @@ object JdbcExecutor {
   }
 }
 
-class JdbcExecutor(val dataSource: DataSource) extends Logging {
+class JdbcExecutor(dataSource: DataSource) extends Logging {
 
   import JdbcExecutor._
   var pmdKnownBroken: Boolean = false
@@ -90,7 +90,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
 
   def getConnection(): Connection = dataSource.getConnection()
 
-  def query(sql: String, params: Any*): Seq[Seq[_]] = {
+  def query(sql: String, params: Any*): Seq[Array[Any]] = {
     if (showSql) println("JdbcExecutor:" + sql)
     val conn = getConnection()
     var stmt: PreparedStatement = null
@@ -134,7 +134,7 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
     rows
   }
 
-  def batch(sql: String, datas: Seq[Seq[_]], types: Seq[Int]): Seq[Int] = {
+  def batch(sql: String, datas: Seq[Array[_]], types: Seq[Int]): Seq[Int] = {
     if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
     val conn = getConnection()
@@ -325,20 +325,21 @@ class JdbcExecutor(val dataSource: DataSource) extends Logging {
     throw e
   }
 
-  private def convertToSeq(rs: ResultSet): Seq[Seq[_]] = {
+  private def convertToSeq(rs: ResultSet): Seq[Array[Any]] = {
     val meta = rs.getMetaData()
     val cols = meta.getColumnCount()
-    val rows = new collection.mutable.ListBuffer[Seq[_]]
+    val rows = new collection.mutable.ListBuffer[Array[Any]]
     val start = if (meta.getColumnName(1) == "_row_nr_") 1 else 0
+    val rowlength = cols - start
     while (rs.next()) {
-      val row = new collection.mutable.ArrayBuffer[Any](cols)
+      val row = new Array[Any](rowlength)
       for (i <- start until cols) {
         var v = rs.getObject(i + 1)
         if (null != v && meta.getColumnType(i + 1) == TIMESTAMP && !v.isInstanceOf[Timestamp]) {
           if (null != JdbcExecutor.oracleTimestampMethod) v = JdbcExecutor.oracleTimestampMethod.invoke(v)
           else throw new Exception("Cannot translate " + v.getClass + "timestamp to java.sql.Timestamp")
         }
-        row += v
+        row(i - start) = v
       }
       rows += row
     }

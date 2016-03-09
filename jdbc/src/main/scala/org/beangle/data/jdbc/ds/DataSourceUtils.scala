@@ -23,6 +23,7 @@ import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
 import javax.sql.DataSource
 import org.beangle.data.jdbc.vendor.Vendors
 import org.beangle.commons.lang.reflect.BeanManifest
+import javax.script.ScriptEngineManager
 
 object DataSourceUtils {
 
@@ -60,6 +61,29 @@ object DataSourceUtils {
       Class.forName(Vendors.drivers(driver).className)
     }
     properties
+  }
+
+  import scala.language.existentials
+  protected[ds] def parseJson(string: String): collection.mutable.HashMap[String, String] = {
+    val sem = new ScriptEngineManager();
+    val engine = sem.getEngineByName("javascript");
+    val result = new collection.mutable.HashMap[String, String]
+    val iter = engine.eval("result =" + string).asInstanceOf[java.util.Map[_, AnyRef]].entrySet().iterator();
+    while (iter.hasNext()) {
+      val one = iter.next()
+      var value: String = null
+      if (one.getValue.isInstanceOf[java.lang.Double]) {
+        val d = one.getValue.asInstanceOf[java.lang.Double]
+        if (java.lang.Double.compare(d, d.intValue()) > 0) value = d.toString()
+        else value = String.valueOf(d.intValue())
+      } else {
+        value = one.getValue().toString()
+      }
+
+      val key = if (one.getKey().toString() == "maxActive") "maxTotal" else one.getKey().toString();
+      result.put(key, value);
+    }
+    result;
   }
 }
 
