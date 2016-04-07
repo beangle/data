@@ -30,12 +30,12 @@ object Operation {
   val SaveUpdate = new Type()
   val Remove = new Type()
 
-  def apply(t: Operation.Type, data: AnyRef) = new Operation(t, data)
+  def apply(t: Operation.Type, data: Any) = new Operation(t, data)
 
   class Builder {
     private val operations = new ListBuffer[Operation]
 
-    def saveOrUpdate(entities: Seq[AnyRef]): this.type = {
+    def saveOrUpdate(entities: Iterable[_]): this.type = {
       if (!entities.isEmpty) {
         for (entity <- entities) {
           if (null != entity) operations += Operation(SaveUpdate, entity)
@@ -52,7 +52,7 @@ object Operation {
       this
     }
 
-    def remove(entities: Seq[AnyRef]): this.type = {
+    def remove(entities: Iterable[_]): this.type = {
       if (!entities.isEmpty) {
         for (entity <- entities) {
           if (null != entity) operations += Operation(Remove, entity)
@@ -78,9 +78,9 @@ object Operation {
    * </p>
    *
    * @param entities a {@link java.util.Collection} object.
-   * @return a {@link org.beangle.commons.dao.Operation.Builder} object.
+   * @return a {@link org.beangle.data.dao.Operation.Builder} object.
    */
-  def saveOrUpdate(entities: Seq[_]): Builder = new Builder().saveOrUpdate(entities)
+  def saveOrUpdate(entities: Iterable[_]): Builder = new Builder().saveOrUpdate(entities)
 
   /**
    * <p>
@@ -88,7 +88,7 @@ object Operation {
    * </p>
    *
    * @param entities a {@link java.lang.Object} object.
-   * @return a {@link org.beangle.commons.dao.Operation.Builder} object.
+   * @return a {@link org.beangle.data.dao.Operation.Builder} object.
    */
   def saveOrUpdate(first: AnyRef, entities: AnyRef*): Builder = new Builder().saveOrUpdate(first, entities: _*)
 
@@ -98,9 +98,9 @@ object Operation {
    * </p>
    *
    * @param entities a {@link java.util.Collection} object.
-   * @return a {@link org.beangle.commons.dao.Operation.Builder} object.
+   * @return a {@link org.beangle.data.dao.Operation.Builder} object.
    */
-  def remove(entities: Seq[_]): Builder = new Builder().remove(entities)
+  def remove(entities: Iterable[_]): Builder = new Builder().remove(entities)
 
   /**
    * <p>
@@ -108,11 +108,11 @@ object Operation {
    * </p>
    *
    * @param entities a {@link java.lang.Object} object.
-   * @return a {@link org.beangle.commons.dao.Operation.Builder} object.
+   * @return a {@link org.beangle.data.dao.Operation.Builder} object.
    */
   def remove(first: AnyRef, entities: AnyRef*): Builder = new Builder().remove(first, entities)
 
 }
-class Operation(val t: Operation.Type, val data: AnyRef) {
+class Operation(val t: Operation.Type, val data: Any) {
 
 }
