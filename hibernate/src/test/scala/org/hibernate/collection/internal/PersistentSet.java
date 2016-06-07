@@ -42,8 +42,9 @@ import org.hibernate.type.Type;
  * @see java.util.HashSet
  * @author Gavin King
  */
+@SuppressWarnings({"serial","rawtypes"})
 public class PersistentSet extends AbstractPersistentCollection implements java.util.Set {
-	protected Set set;
+  protected Set set;
 	protected transient List tempList;
 
 	/**
@@ -150,13 +151,11 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public int size() {
 		return readSize() ? getCachedSize() : set.size();
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean isEmpty() {
 		return readSize() ? getCachedSize()==0 : set.isEmpty();
 	}
@@ -170,14 +169,12 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Iterator iterator() {
 		read();
 		return new IteratorProxy( set.iterator() );
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Object[] toArray() {
 		read();
 		return set.toArray();
@@ -191,6 +188,7 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
+	 @SuppressWarnings("unchecked")
 	public boolean add(Object value) {
 		final Boolean exists = isOperationQueueEnabled() ? readElementExistence( value ) : null;
 		if ( exists == null ) {
@@ -291,7 +289,6 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void clear() {
 		if ( isClearQueueEnabled() ) {
 			queueOperation( new Clear() );
@@ -306,7 +303,6 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public String toString() {
 		read();
 		return set.toString();
@@ -327,7 +323,6 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void beginRead() {
 		super.beginRead();
 		tempList = new ArrayList();
@@ -343,13 +338,11 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Iterator entries(CollectionPersister persister) {
 		return set.iterator();
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Serializable disassemble(CollectionPersister persister) throws HibernateException {
 		final Serializable[] result = new Serializable[ set.size() ];
 		final Iterator itr = set.iterator();
@@ -390,7 +383,6 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean needsInserting(Object entry, int i, Type elemType) throws HibernateException {
 		final Object oldValue = ( (java.util.Map) getSnapshot() ).get( entry );
 		// note that it might be better to iterate the snapshot but this is safe,
@@ -400,57 +392,48 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean needsUpdating(Object entry, int i, Type elemType) {
 		return false;
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean isRowUpdatePossible() {
 		return false;
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Object getIndex(Object entry, int i, CollectionPersister persister) {
 		throw new UnsupportedOperationException("Sets don't have indexes");
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Object getElement(Object entry) {
 		return entry;
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Object getSnapshotElement(Object entry, int i) {
 		throw new UnsupportedOperationException("Sets don't support updating by element");
 	}
 
 	@Override
-	@SuppressWarnings({"unchecked", "EqualsWhichDoesntCheckParameterClass"})
 	public boolean equals(Object other) {
 		read();
 		return set.equals( other );
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public int hashCode() {
 		read();
 		return set.hashCode();
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean entryExists(Object key, int i) {
 		return true;
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean isWrapper(Object collection) {
 		return set==collection;
 	}
@@ -504,7 +487,6 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void operate() {
 			set.remove( value );
 		}

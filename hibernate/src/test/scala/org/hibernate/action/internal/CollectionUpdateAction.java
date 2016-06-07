@@ -37,7 +37,8 @@ import org.hibernate.pretty.MessageHelper;
  * The action for updating a collection
  */
 public final class CollectionUpdateAction extends CollectionAction {
-	private final boolean emptySnapshot;
+  private static final long serialVersionUID = 1250492678495130932L;
+  private final boolean emptySnapshot;
 
 	/**
 	 * Constructs a CollectionUpdateAction
