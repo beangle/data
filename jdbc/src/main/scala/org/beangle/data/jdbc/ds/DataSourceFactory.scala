@@ -106,9 +106,14 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   }
 
   private def getURLText(url: String): String = {
-    var conn: URLConnection = null
+    var conn: HttpURLConnection = null
     try {
-      conn = new URL(url).openConnection()
+      conn = new URL(url).openConnection().asInstanceOf[HttpURLConnection]
+      conn.setConnectTimeout(5 * 1000)
+      conn.setReadTimeout(5 * 1000)
+      conn.setRequestMethod("GET")
+      conn.setDoOutput(true)
+
       val in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"))
       var line = in.readLine()
       val stringBuffer = new StringBuffer(255)
