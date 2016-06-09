@@ -20,7 +20,7 @@ package org.beangle.data.dao
 
 import org.beangle.data.model.Entity
 import org.beangle.commons.collection.page.PageLimit
-
+import scala.collection.immutable.Seq
 /**
  * dao 查询辅助类
  *
@@ -47,31 +47,31 @@ trait EntityDao {
   def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[_]): Seq[T]
 
   def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T]
-  
-  /**
-   * save or update entities
-   */
-  def saveOrUpdate[E](first: E, entities: E*)
 
   /**
    * save or update entities
    */
-  def saveOrUpdate[E](entities: Iterable[E])
+  def saveOrUpdate[E](first: E, entities: E*): Unit
+
+  /**
+   * save or update entities
+   */
+  def saveOrUpdate[E](entities: Iterable[E]): Unit
 
   /**
    * remove entities.
    */
-  def remove[E](entities: Iterable[E])
+  def remove[E](entities: Iterable[E]): Unit
 
   /**
    * remove entities.
    */
-  def remove[E](first: E, entities: E*)
+  def remove[E](first: E, entities: E*): Unit
 
   /**
    * remove entities by id
    */
-  def remove[T <: Entity[ID], ID](clazz: Class[T], id: ID, ids: ID*)
+  def remove[T <: Entity[ID], ID](clazz: Class[T], id: ID, ids: ID*): Unit
 
   /**
    * Search by QueryBuilder
@@ -84,9 +84,9 @@ trait EntityDao {
 
   def search[T](query: String, params: Any*): Seq[T]
 
-  def search[T](queryString: String, params: Map[String, Any]): Seq[T]
+  def search[T](queryString: String, params: collection.Map[String, _]): Seq[T]
 
-  def search[T](queryString: String, params: Map[String, Any], limit: PageLimit, cacheable: Boolean): Seq[T]
+  def search[T](queryString: String, params: collection.Map[String, _], limit: PageLimit, cacheable: Boolean): Seq[T]
 
   /**
    * Search Unique Result
@@ -96,23 +96,23 @@ trait EntityDao {
   /**
    * 在同一个session保存、删除
    */
-  def execute(opts: Operation*)
+  def execute(opts: Operation*): Unit
 
   /**
    * 执行一个操作构建者提供的一系列操作
    *
    * @param builder
    */
-  def execute(builder: Operation.Builder)
+  def execute(builder: Operation.Builder): Unit
 
-  def executeUpdate(queryString: String, parameterMap: collection.Map[String, Any]): Int
+  def executeUpdate(queryString: String, parameterMap: collection.Map[String, _]): Int
 
   def executeUpdate(queryString: String, arguments: Any*): Int
 
-  def executeUpdateRepeatly(queryString: String, arguments: Seq[Seq[Any]]): List[Int]
+  def executeUpdateRepeatly(queryString: String, arguments: Iterable[Iterable[_]]): List[Int]
 
   // 容器相关
-  def evict(entity: AnyRef)
+  def evict(entity: AnyRef): Unit
 
   /**
    * Initialize entity whenever session close or open
@@ -127,9 +127,9 @@ trait EntityDao {
 
   def exists(entityName: String, attr: String, value: Any): Boolean
 
-  def duplicate(entityClass: Class[_], id: Any, params: Map[String, Any]): Boolean
+  def duplicate(entityClass: Class[_], id: Any, params: collection.Map[String, _]): Boolean
 
-  def duplicate(entityName: String, id: Any, params: Map[String, Any]): Boolean
+  def duplicate(entityName: String, id: Any, params: collection.Map[String, _]): Boolean
 
   def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, codeName: String, codeValue: Any): Boolean
 }

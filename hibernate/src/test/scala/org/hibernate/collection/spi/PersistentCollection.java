@@ -57,6 +57,7 @@ import org.hibernate.type.Type;
  *
  * @author Gavin King
  */
+@SuppressWarnings("rawtypes")
 public interface PersistentCollection {
   /**
    * Get the owning entity. Note that the owner is only

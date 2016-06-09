@@ -55,15 +55,16 @@ class ForeignerListener(entityDao: EntityDao) extends TransferListener {
   override def onItemFinish(tr: TransferResult) {
     val itermTranfer = transfer.asInstanceOf[AbstractTransfer]
     // 过滤所有外键
-    itermTranfer.attrs foreach { attri => // getAttrs()得到属性,即表的第二行
+    val iter = itermTranfer.attrs.iterator
+    while (iter.hasNext) {
+      val attri = iter.next() // getAttrs()得到属性,即表的第二行
       val processed = itermTranfer.processAttr(attri);
       val foreigerKeyIndex = 0
       val isforeiger = foreigerKeys exists { fk =>
         (processed.endsWith("." + fk))
       }
       if (isforeiger) {
-
-        val codeValue = transfer.curData(attri).toString()
+        val codeValue = transfer.curData(attri).asInstanceOf[String]
         var foreiger: Object = null;
         // 外键的代码是空的
         if (Strings.isNotEmpty(codeValue)) {

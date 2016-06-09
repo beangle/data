@@ -25,46 +25,37 @@ import scala.collection.mutable.ListBuffer
  *
  * @author chaostone
  */
-object Operation {
-  case class Type protected[dao] () {}
-  val SaveUpdate = new Type()
-  val Remove = new Type()
+object Operation extends Enumeration {
 
-  def apply(t: Operation.Type, data: AnyRef) = new Operation(t, data)
+  type Type = Value
+
+  val SaveUpdate, Remove = Value
+
+  def apply(typ: Operation.Type, data: Any) = new Operation(typ, data)
 
   class Builder {
     private val operations = new ListBuffer[Operation]
 
-    def saveOrUpdate(entities: Seq[AnyRef]): this.type = {
-      if (!entities.isEmpty) {
-        for (entity <- entities) {
-          if (null != entity) operations += Operation(SaveUpdate, entity)
+    def saveOrUpdate(entities: AnyRef*): this.type = {
+      for (entity <- entities) {
+        entity match {
+          case null           =>
+          case c: Iterable[_] => c foreach (e => operations += Operation(SaveUpdate, e))
+          case _              => operations += Operation(SaveUpdate, entity)
         }
       }
       this
     }
 
-    def saveOrUpdate(first: AnyRef, entities: AnyRef*): this.type = {
-      operations += Operation(SaveUpdate, first)
+    def remove(entities: AnyRef*): this.type = {
       for (entity <- entities) {
-        if (null != entity) operations += Operation(SaveUpdate, entity)
-      }
-      this
-    }
-
-    def remove(entities: Seq[AnyRef]): this.type = {
-      if (!entities.isEmpty) {
-        for (entity <- entities) {
-          if (null != entity) operations += Operation(Remove, entity)
+        if (null != entity) {
+          entity match {
+            case null           =>
+            case c: Iterable[_] => c foreach (e => operations += Operation(Remove, e))
+            case _              => operations += Operation(Remove, entity)
+          }
         }
-      }
-      this
-    }
-
-    def remove(first: AnyRef, entities: AnyRef*): this.type = {
-      operations += Operation(Remove, first)
-      for (entity <- entities) {
-        if (null != entity) operations += Operation(Remove, entity)
       }
       this
     }
@@ -72,47 +63,11 @@ object Operation {
     def build(): List[Operation] = operations.toList
   }
 
-  /**
-   * <p>
-   * saveOrUpdate.
-   * </p>
-   *
-   * @param entities a {@link java.util.Collection} object.
-   * @return a {@link org.beangle.commons.dao.Operation.Builder} object.
-   */
-  def saveOrUpdate(entities: Seq[_]): Builder = new Builder().saveOrUpdate(entities)
+  def saveOrUpdate(entities: AnyRef*): Builder = new Builder().saveOrUpdate(entities)
 
-  /**
-   * <p>
-   * saveOrUpdate.
-   * </p>
-   *
-   * @param entities a {@link java.lang.Object} object.
-   * @return a {@link org.beangle.commons.dao.Operation.Builder} object.
-   */
-  def saveOrUpdate(first: AnyRef, entities: AnyRef*): Builder = new Builder().saveOrUpdate(first, entities: _*)
-
-  /**
-   * <p>
-   * remove.
-   * </p>
-   *
-   * @param entities a {@link java.util.Collection} object.
-   * @return a {@link org.beangle.commons.dao.Operation.Builder} object.
-   */
-  def remove(entities: Seq[_]): Builder = new Builder().remove(entities)
-
-  /**
-   * <p>
-   * remove.
-   * </p>
-   *
-   * @param entities a {@link java.lang.Object} object.
-   * @return a {@link org.beangle.commons.dao.Operation.Builder} object.
-   */
-  def remove(first: AnyRef, entities: AnyRef*): Builder = new Builder().remove(first, entities)
+  def remove(entities: AnyRef*): Builder = new Builder().remove(entities)
 
 }
-class Operation(val t: Operation.Type, val data: AnyRef) {
+class Operation(val typ: Operation.Type, val data: Any) {
 
 }
