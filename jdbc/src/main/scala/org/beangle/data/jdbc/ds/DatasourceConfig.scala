@@ -22,6 +22,7 @@ import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings.{ isEmpty, isNotEmpty, substringBetween }
 import org.beangle.data.jdbc.dialect.{ Dialect, Name }
 import org.beangle.data.jdbc.vendor.{ DriverInfo, Vendors }
+import org.beangle.commons.lang.Strings
 
 object DatasourceConfig {
 
@@ -40,22 +41,30 @@ object DatasourceConfig {
       else ClassLoaders.load((xml \\ "dialect").text.trim).newInstance().asInstanceOf[Dialect]
 
     val dbconf = new DatasourceConfig(driverName, dialect)
+    if (isNotEmpty(url)) dbconf.props.put("url", url)
 
     if (!(xml \ "@name").isEmpty) dbconf.name = (xml \ "@name").text.trim
     dbconf.user = (xml \\ "user").text.trim
     dbconf.password = (xml \\ "password").text.trim
     dbconf.catalog = dialect.parse((xml \\ "catalog").text.trim)
 
-    addProperty(dbconf, xml, "serverName", "databaseName", "portNumber", "url")
-    (xml \\ "props" \\ "prop").foreach { ele =>
-      dbconf.props.put((ele \ "@name").text, (ele \ "@value").text)
-    }
     var schemaName = (xml \\ "schema").text.trim
     if (isEmpty(schemaName)) {
       schemaName = dialect.defaultSchema
       if (schemaName == "$user") schemaName = dbconf.user
     }
     dbconf.schema = dialect.parse(schemaName)
+
+    (xml \\ "props" \\ "prop").foreach { ele =>
+      dbconf.props.put((ele \ "@name").text, (ele \ "@value").text)
+    }
+
+    val processed = Set("url", "driver", "props", "user", "password", "catalog", "schema")
+    xml \\ "datasource" \ "_" foreach { n =>
+      val label = n.label
+      if (!processed.contains(label) && Strings.isNotEmpty(n.text)) dbconf.props.put(label, n.text)
+    }
+
     dbconf
   }
 
