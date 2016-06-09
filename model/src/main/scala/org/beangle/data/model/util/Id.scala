@@ -18,8 +18,7 @@
  */
 package org.beangle.data.model.util
 
-import org.beangle.commons.lang.functor.NotZero
-import org.beangle.commons.lang.functor.NotEmpty
+import org.beangle.commons.lang.functor.{ NotEmpty, NotZero }
 
 /**
  * @author chaostone

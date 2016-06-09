@@ -36,19 +36,25 @@ object Operation extends Enumeration {
   class Builder {
     private val operations = new ListBuffer[Operation]
 
-    def saveOrUpdate(entities: Iterable[_]): this.type = {
-      if (!entities.isEmpty) {
-        for (entity <- entities) {
-          if (null != entity) operations += Operation(SaveUpdate, entity)
+    def saveOrUpdate(entities: AnyRef*): this.type = {
+      for (entity <- entities) {
+        entity match {
+          case null           =>
+          case c: Iterable[_] => c foreach (e => operations += Operation(SaveUpdate, e))
+          case _              => operations += Operation(SaveUpdate, entity)
         }
       }
       this
     }
 
-    def remove(entities: Iterable[_]): this.type = {
-      if (!entities.isEmpty) {
-        for (entity <- entities) {
-          if (null != entity) operations += Operation(Remove, entity)
+    def remove(entities: AnyRef*): this.type = {
+      for (entity <- entities) {
+        if (null != entity) {
+          entity match {
+            case null           =>
+            case c: Iterable[_] => c foreach (e => operations += Operation(Remove, e))
+            case _              => operations += Operation(Remove, entity)
+          }
         }
       }
       this
@@ -57,11 +63,7 @@ object Operation extends Enumeration {
     def build(): List[Operation] = operations.toList
   }
 
-  def saveOrUpdate(entities: Iterable[_]): Builder = new Builder().saveOrUpdate(entities)
-
   def saveOrUpdate(entities: AnyRef*): Builder = new Builder().saveOrUpdate(entities)
-
-  def remove(entities: Iterable[_]): Builder = new Builder().remove(entities)
 
   def remove(entities: AnyRef*): Builder = new Builder().remove(entities)
 
