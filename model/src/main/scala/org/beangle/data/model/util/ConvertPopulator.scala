@@ -29,22 +29,22 @@ import org.beangle.commons.logging.Logging
 import org.beangle.commons.conversion.Conversion
 import org.beangle.commons.conversion.impl.DefaultConversion
 import org.beangle.commons.lang.reflect.Reflections
-import org.beangle.commons.bean.Properties.{ get, set, copy }
+import org.beangle.commons.bean.Properties
 
 object ConvertPopulator extends Logging {
   val TrimStr = true
 }
 /**
- * <p>
- * ConvertPopulatorBean class.
- * </p>
+ * ConvertPopulator
  *
  * @author chaostone
  */
 import ConvertPopulator._
+import org.beangle.commons.lang.reflect.BeanInfos
 
 class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) extends Populator with Logging {
 
+  val properties = new Properties(BeanInfos.Default, conversion)
   /**
    * Initialize target's attribuate path,Return the last property value and type.
    */
@@ -58,12 +58,12 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
     while (index < attrs.length) {
       val nested = attrs(index)
       try {
-        property = get[Object](propObj, nested)
+        property = properties.get[Object](propObj, nested)
         objtype.getPropertyType(nested) match {
           case Some(t) => {
             if (null == property) {
               property = t.newInstance()
-              set(propObj.asInstanceOf[AnyRef], nested, property)
+              properties.set(propObj.asInstanceOf[AnyRef], nested, property)
             }
             objtype = t
           }
@@ -89,9 +89,9 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
       if (attr.indexOf('.') > -1) {
         val ot = init(target, entityType, Strings.substringBeforeLast(attr, "."))
         val lastAttr = Strings.substringAfterLast(attr, ".")
-        set(ot._1.asInstanceOf[AnyRef], lastAttr, convert(ot._2, lastAttr, value))
+        properties.set(ot._1.asInstanceOf[AnyRef], lastAttr, convert(ot._2, lastAttr, value))
       } else {
-        set(target, attr, convert(entityType, attr, value))
+        properties.set(target, attr, convert(entityType, attr, value))
       }
       return true
     } catch {
@@ -137,7 +137,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
                 if (null == value) {
                   copyValue(entity, parentAttr, null)
                 } else {
-                  val oldValue = get[Object](entity, attr)
+                  val oldValue = properties.get[Object](entity, attr)
                   val newValue = convert(ot._2, foreignKey, value)
                   if (!Objects.equals(oldValue, newValue)) {
                     // 如果外键已经有值
@@ -145,7 +145,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
                       copyValue(entity, parentAttr, null)
                       init(entity, entityType, parentAttr)
                     }
-                    set(entity, attr, newValue)
+                    properties.set(entity, attr, newValue)
                   }
                 }
               } else {
@@ -167,12 +167,12 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
     else {
       t.getPropertyType(attr) match {
         case Some(ty) => conversion.convert(value, ty.returnedClass)
-        case None => throw new RuntimeException("cannot find attribuate type of " + attr + " in " + t.name)
+        case None     => throw new RuntimeException("cannot find attribuate type of " + attr + " in " + t.name)
       }
     }
   }
 
   private def copyValue(target: AnyRef, attr: String, value: Any): Any = {
-    copy(target, attr, value, conversion)
+    properties.copy(target, attr, value)
   }
 }

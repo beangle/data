@@ -27,7 +27,7 @@ import scala.reflect.runtime.{ universe => ru }
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{ ClassLoaders, Primitives, Strings }
 import org.beangle.commons.lang.annotation.value
-import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.bind.Jpas.{ isComponent, isEntity, isMap, isSeq, isSet }
 
@@ -238,6 +238,10 @@ object Binder {
     if (null != tpeName) this.typeName = Some(tpeName)
   }
 
+  /**
+   * @param key 表示是否是一个外键
+   * @return @propertyName @用以区分是否需要采用命名策略再次命名
+   */
   def columnName(propertyName: String, key: Boolean = false): String = {
     val lastDot = propertyName.lastIndexOf(".")
     val columnName = if (lastDot == -1) s"@${propertyName}" else "@" + propertyName.substring(lastDot + 1)
@@ -277,6 +281,11 @@ final class Binder extends Logging {
    * Buildin enum types
    */
   val enumTypes = new mutable.HashMap[String, String]
+
+  /**
+   * Buildin option entity types
+   */
+  val optionEntityTypes = new mutable.HashMap[String, String]
 
   /**
    * Classname.property -> Collection
@@ -333,7 +342,7 @@ final class Binder extends Logging {
   def autobind(cls: Class[_], entityName: String, tpe: ru.Type): Entity = {
     val entity = if (entityName == null) new Entity(cls) else new Entity(cls, entityName)
     if (cls.isAnnotationPresent(classOf[javax.persistence.Entity])) return entity;
-    val manifest = BeanManifest.get(entity.clazz, tpe)
+    val manifest = BeanInfos.get(entity.clazz, tpe)
     manifest.readables foreach {
       case (name, prop) =>
         if (prop.readable & prop.writable) {
@@ -393,7 +402,7 @@ final class Binder extends Logging {
 
   private def bindComponent(name: String, propertyType: Class[_], entity: Entity, tpe: ru.Type): ComponentProperty = {
     val cp = new ComponentProperty(name, propertyType)
-    val manifest = BeanManifest.get(propertyType, tpe)
+    val manifest = BeanInfos.get(propertyType, tpe)
     val ctpe = tpe.member(ru.TermName(name)).asMethod.returnType
     manifest.readables foreach {
       case (name, prop) =>
@@ -428,14 +437,23 @@ final class Binder extends Logging {
       val a = tpe.member(ru.TermName(name)).typeSignatureIn(tpe)
       val innerType = a.resultType.typeArgs.head.toString
       val innerClass = ClassLoaders.load(innerType)
-      val primitiveClass = Primitives.unwrap(innerClass)
-      primitiveClass.getName + "?"
+      if (-1 == innerClass.getName.indexOf('.') || innerClass.getName.startsWith("java.lang")) {
+        Primitives.unwrap(innerClass).getName + "?"
+      } else {
+        if (isEntity(innerClass)) {
+          val typeName = innerClass.getName + "?";
+          optionEntityTypes.put(typeName, innerClass.getName)
+          typeName
+        } else {
+          throw new RuntimeException("Only Supports Option[Enity] and Option[primitive]")
+        }
+      }
     } else if (clazz.isAnnotationPresent(classOf[value])) {
       valueTypes += clazz
       clazz.getName
     } else if (classOf[Enumeration#Value].isAssignableFrom(clazz)) {
-      val typeName = tpe.member(ru.TermName(name)).asMethod.returnType.toString
-      enumTypes.put(typeName, Strings.substringBeforeLast(typeName, "."))
+      val typeName = clazz.getName
+      enumTypes.put(typeName, Strings.substringBeforeLast(typeName, "$"))
       typeName
     } else clazz.getName
   }
@@ -491,14 +509,15 @@ final class Binder extends Logging {
   private def bindId(name: String, propertyType: Class[_], tye: ru.Type): IdProperty = {
     val p = new IdProperty(name, propertyType)
     val column = new Column(columnName(name), false)
-    if (Primitives.isWrapperType(propertyType)) column.nullable = false
+    column.nullable = false
     p.columns += column
     p
   }
 
   private def bindScalar(name: String, propertyType: Class[_], typeName: String): ScalarProperty = {
     val p = new ScalarProperty(name, propertyType)
-    val column = new Column(columnName(name))
+    val key = typeName.contains(".") && typeName.endsWith("?")
+    val column = new Column(columnName(name, key))
     if (propertyType.isPrimitive) column.nullable = false
     if (None == p.typeName) p.typeName = Some(typeName)
     p.columns += column

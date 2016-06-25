@@ -25,7 +25,7 @@ import scala.reflect.runtime.{ universe => ru }
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, ColumnHolder, ComponentProperty, Entity, IdGenerator, Index, ManyToOneProperty, MapProperty, Property, SeqProperty, SimpleKey, ToManyElement, TypeNameHolder }
 import org.beangle.data.model.bind.Mapping.EntityHolder
@@ -384,7 +384,7 @@ abstract class Mapping extends Logging {
     }
 
     if (entity.idGenerator.isEmpty) {
-      val unsaved = BeanManifest.get(cls, null).getPropertyType("id") match {
+      val unsaved = BeanInfos.get(cls, null).getPropertyType("id") match {
         case Some(idtype) => if (idtype.isPrimitive) "0" else "null"
         case None         => "null"
       }
@@ -445,4 +445,3 @@ abstract class Mapping extends Logging {
     binder.addType(forClass.getName, clazz, params)
   }
 }
-

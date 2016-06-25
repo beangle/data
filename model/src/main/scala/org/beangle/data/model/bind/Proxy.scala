@@ -22,7 +22,7 @@ import java.lang.reflect.Method
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{ ClassLoaders, Primitives }
-import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.bind.Jpas.isComponent
@@ -64,7 +64,7 @@ object Proxy extends Logging {
     val javac = new Javac(cct)
     cct.addField(javac.compile("public java.util.Set _lastAccessed;").asInstanceOf[CtField])
 
-    val manifest = BeanManifest.get(clazz)
+    val manifest = BeanInfos.get(clazz)
     val componentTypes = Collections.newMap[String, Class[_]]
     manifest.properties foreach {
       case (name, p) =>
@@ -120,7 +120,7 @@ object Proxy extends Logging {
     cct.addField(javac.compile("public " + classOf[ModelProxy].getName + " _parent;").asInstanceOf[CtField])
     cct.addField(javac.compile("public java.lang.String _path=null;").asInstanceOf[CtField])
 
-    val manifest = BeanManifest.get(clazz)
+    val manifest = BeanInfos.get(clazz)
     val componentTypes = Collections.newMap[String, Class[_]]
     manifest.properties foreach {
       case (name, p) =>

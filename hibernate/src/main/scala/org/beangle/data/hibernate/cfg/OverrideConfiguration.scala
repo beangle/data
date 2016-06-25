@@ -33,8 +33,7 @@ import org.hibernate.DuplicateMappingException
 import org.hibernate.DuplicateMappingException.Type
 import org.hibernate.cfg.{ Configuration, Mappings }
 import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass, SimpleValue }
-import org.beangle.commons.lang.time.HourMinute
-import org.beangle.commons.lang.time.WeekDay._
+
 /**
  * Override Configuration
  */
@@ -232,10 +231,9 @@ private[cfg] object PersistentClassMerger extends Logging {
       field.setAccessible(true)
       field
     } catch {
-      case e: Exception => {
+      case e: Exception =>
         logger.error(s"Cannot access PersistentClass $name field ,Override Mapping will be disabled", e)
         null
-      }
     }
   }
 
@@ -258,7 +256,7 @@ private[cfg] object PersistentClassMerger extends Logging {
     msc.setMappedClass(parent.getMappedClass())
 
     // 2.clear old subclass property
-    val parentClassName=parent.getClassName
+    val parentClassName = parent.getClassName
     parent.setSuperMappedSuperclass(msc)
     parent.setClassName(className)
     parent.setProxyInterfaceName(className)

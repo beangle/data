@@ -19,13 +19,14 @@
 package org.beangle.data.serialize
 
 import org.beangle.commons.activation.MimeTypes
-import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.collection.page.Page
+import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.data.serialize.io.StreamWriter
 import org.beangle.data.serialize.io.csv.{ CsvDriver, DefaultCsvDriver }
 import org.beangle.data.serialize.mapper.{ DefaultMapper, Mapper }
 import org.beangle.data.serialize.marshal.{ DefaultMarshallerRegistry, MarshallerRegistry, MarshallingContext }
+
 import javax.activation.MimeType
-import org.beangle.data.serialize.io.StreamWriter
-import org.beangle.commons.collection.page.Page
 
 object CsvSerializer {
   def apply(): CsvSerializer = {
@@ -43,9 +44,9 @@ final class CsvSerializer(val driver: CsvDriver, val mapper: Mapper, val registr
 
   override def serialize(item: Any, writer: StreamWriter, params: Map[String, Any]): Unit = {
     val datas = item match {
-      case null => null
+      case null          => null
       case page: Page[_] => page.items
-      case _ => item
+      case _             => item
     }
 
     val context = new MarshallingContext(this, writer, registry, params)
@@ -61,9 +62,9 @@ final class CsvSerializer(val driver: CsvDriver, val mapper: Mapper, val registr
   }
 
   override def marshalNull(obj: Any, property: String, context: MarshallingContext): Unit = {
-    val size = context.getProperties(BeanManifest.get(obj.getClass).properties.get(property).get.clazz).size
+    val size = context.getProperties(BeanInfos.get(obj.getClass).properties.get(property).get.clazz).size
     if (size > 0) {
-      (0 until size) foreach ( i =>        context.writer.setValue(""))
+      (0 until size) foreach (i => context.writer.setValue(""))
     } else {
       context.writer.setValue("")
     }

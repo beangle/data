@@ -21,7 +21,7 @@ package org.beangle.data.hibernate.cfg
 import java.{ util => ju }
 import java.lang.reflect.Modifier
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.model.bind.Binder.{ CollectionProperty, Column, ColumnHolder, Component, ComponentProperty, CompositeElement, CompositeKey, Element, Entity, Fetchable, IdProperty, ToManyElement, ManyToOneKey, ManyToOneProperty, MapProperty, Property, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey, TypeNameHolder }
 import org.hibernate.{ FetchMode, MappingException }
 import org.hibernate.cfg.{ CollectionSecondPass, Mappings }
@@ -36,7 +36,7 @@ import org.hibernate.tuple.{ GeneratedValueGeneration, GenerationTiming }
 object HbmConfigBinder {
 
   class CollSecondPass(colp: CollectionProperty, mappings: Mappings, collection: HCollection)
-    extends CollectionSecondPass(mappings, collection, new java.util.HashMap[String, String]) {
+      extends CollectionSecondPass(mappings, collection, new java.util.HashMap[String, String]) {
 
     def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
       bindCollectionSecondPass(colp, collection, entities.asInstanceOf[java.util.Map[String, PersistentClass]], mappings)
@@ -45,7 +45,7 @@ object HbmConfigBinder {
   }
 
   class MapSecondPass(mapp: MapProperty, mappings: Mappings, map: HMap)
-    extends CollSecondPass(mapp, mappings, map) {
+      extends CollSecondPass(mapp, mappings, map) {
     override def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
       bindMapSecondPass(mapp, map, entities.asInstanceOf[java.util.Map[String, PersistentClass]], mappings)
       map.createAllKeys()
@@ -53,7 +53,7 @@ object HbmConfigBinder {
   }
 
   def bindCollectionSecondPass(colp: CollectionProperty, collection: HCollection,
-    entities: java.util.Map[String, PersistentClass], mappings: Mappings): Unit = {
+                               entities: java.util.Map[String, PersistentClass], mappings: Mappings): Unit = {
 
     colp.element foreach { ele =>
       ele match {
@@ -262,7 +262,7 @@ object HbmConfigBinder {
   def setTypeUsingReflection(value: Value, clazz: Class[_], propertyName: String): Unit = {
     value match {
       case sv: SimpleValue =>
-        if (null == sv.getTypeName) BeanManifest.get(clazz).getPropertyType(propertyName) foreach (clz => sv.setTypeName(clz.getName))
+        if (null == sv.getTypeName) BeanInfos.get(clazz).getPropertyType(propertyName) foreach (clz => sv.setTypeName(clz.getName))
       case _ =>
     }
   }
