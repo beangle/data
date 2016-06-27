@@ -339,29 +339,29 @@ final class Binder extends Logging {
     this.enumTypes.clear()
   }
 
-  def autobind(cls: Class[_], entityName: String, tpe: ru.Type): Entity = {
+  def autobind(cls: Class[_], entityName: String, typ: ru.Type): Entity = {
     val entity = if (entityName == null) new Entity(cls) else new Entity(cls, entityName)
     if (cls.isAnnotationPresent(classOf[javax.persistence.Entity])) return entity;
-    val manifest = BeanInfos.get(entity.clazz, tpe)
+    val manifest = BeanInfos.get(entity.clazz, typ)
     manifest.readables foreach {
       case (name, prop) =>
         if (prop.readable & prop.writable) {
           val propType = prop.clazz
           val p =
             if (name == "id") {
-              bindId(name, propType, tpe)
+              bindId(name, propType, typ)
             } else if (isEntity(propType)) {
-              bindManyToOne(name, propType, tpe)
+              bindManyToOne(name, propType, typ)
             } else if (isSeq(propType)) {
-              bindSeq(name, propType, entity, tpe)
+              bindSeq(name, propType, entity, typ)
             } else if (isSet(propType)) {
-              bindSet(name, propType, entity, tpe)
+              bindSet(name, propType, entity, typ)
             } else if (isMap(propType)) {
-              bindMap(name, propType, entity, tpe)
+              bindMap(name, propType, entity, typ)
             } else if (isComponent(propType)) {
-              bindComponent(name, propType, entity, tpe)
+              bindComponent(name, propType, entity, typ)
             } else {
-              bindScalar(name, propType, scalarTypeName(name, propType, tpe))
+              bindScalar(name, propType, scalarTypeName(name, propType, typ))
             }
           entity.properties += (name -> p)
         }
@@ -402,8 +402,8 @@ final class Binder extends Logging {
 
   private def bindComponent(name: String, propertyType: Class[_], entity: Entity, tpe: ru.Type): ComponentProperty = {
     val cp = new ComponentProperty(name, propertyType)
-    val manifest = BeanInfos.get(propertyType, tpe)
     val ctpe = tpe.member(ru.TermName(name)).asMethod.returnType
+    val manifest = BeanInfos.get(propertyType, ctpe)
     manifest.readables foreach {
       case (name, prop) =>
         if (prop.writable) {

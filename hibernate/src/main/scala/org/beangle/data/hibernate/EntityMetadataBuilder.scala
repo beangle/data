@@ -28,6 +28,8 @@ import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
 import java.{ util => ju }
+import org.hibernate.`type`.CustomType
+import org.beangle.data.hibernate.udt.OptionEntityType
 
 //TODO add test by xml or annotation configuration
 class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging {
@@ -76,7 +78,11 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
           propertyTypes.put(pname,
             buildCollectionType(factory, entityManifest.getPropertyType(pname).get, entityName + "." + pname))
         } else {
-          propertyTypes.put(pname, new IdentifierType(entityManifest.getPropertyType(pname).get))
+          if (htype.isInstanceOf[CustomType] && htype.asInstanceOf[CustomType].getUserType.isInstanceOf[OptionEntityType]) {
+            propertyTypes.put(pname, buildEntityType(factory, htype.asInstanceOf[CustomType].getUserType.asInstanceOf[OptionEntityType].entityName))
+          } else {
+            propertyTypes.put(pname, new IdentifierType(entityManifest.getPropertyType(pname).get))
+          }
         }
       }
       propertyTypes.put(cm.getIdentifierPropertyName, new IdentifierType(cm.getIdentifierType.getReturnedClass))

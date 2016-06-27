@@ -33,6 +33,8 @@ class Role(var id: Int) extends Entity[Int] with Coded {
   var expiredOn: java.sql.Date = _
   var updatedAt: java.sql.Timestamp = _
   var s: java.util.Calendar = _
+
+  var creator: Option[User] = _
 }
 
 class ExtendRole(id: Int) extends Role(id) {

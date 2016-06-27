@@ -48,7 +48,7 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
   /**
    * Initialize target's attribuate path,Return the last property value and type.
    */
-  def init(target: Entity[_], t: Type, attr: String): (Any, Type) = {
+  override def init(target: Entity[_], t: Type, attr: String): (Any, Type) = {
     var propObj: Any = target
     var property: Any = null
     var objtype = t
@@ -61,9 +61,13 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
         property = properties.get[Object](propObj, nested)
         objtype.getPropertyType(nested) match {
           case Some(t) => {
-            if (null == property) {
-              property = t.newInstance()
-              properties.set(propObj.asInstanceOf[AnyRef], nested, property)
+            property match {
+              case null | None =>
+                property = t.newInstance()
+                properties.set(propObj.asInstanceOf[AnyRef], nested, property)
+              case Some(p) =>
+                property = p
+              case _ =>
             }
             objtype = t
           }
@@ -84,21 +88,8 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
   /**
    * 安静的拷贝属性，如果属性非法或其他错误则记录日志
    */
-  def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean = {
-    try {
-      if (attr.indexOf('.') > -1) {
-        val ot = init(target, entityType, Strings.substringBeforeLast(attr, "."))
-        val lastAttr = Strings.substringAfterLast(attr, ".")
-        properties.set(ot._1.asInstanceOf[AnyRef], lastAttr, convert(ot._2, lastAttr, value))
-      } else {
-        properties.set(target, attr, convert(entityType, attr, value))
-      }
-      return true
-    } catch {
-      case e: Exception =>
-        logger.warn(s"copy property failure:[class:${entityType.entityName} attr:${attr} value:${value}]:", e)
-        return false
-    }
+  override def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean = {
+    populate(target, entityType, Map(attr -> value)) == 1
   }
 
   /**
@@ -108,58 +99,58 @@ class ConvertPopulator(val conversion: Conversion = DefaultConversion.Instance) 
    * 如果params中的id为null，则将该实体的置为null.<br>
    * 否则新生成一个实体，将其id设为params中指定的值。 空字符串按照null处理
    */
-  def populate(entity: Entity[_], entityType: EntityType, params: collection.Map[String, Any]) {
-    for ((attr, v) <- params) {
-      var value = v
-      if (value.isInstanceOf[String]) {
-        if (Strings.isEmpty(value.asInstanceOf[String])) value = null
-        else if (TrimStr) value = (value.asInstanceOf[String]).trim()
-      }
-      // 主键
-      // if (type.isEntityType() && attr.equals(((EntityType) type).getIdName())) {
-      // set(entity, attr, convert(type, attr, value))
-      // continue
-      // }
-      // 普通属性
-      if (-1 == attr.indexOf('.')) {
-        copyValue(entity, attr, value)
-      } else {
-        val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf('.'))
-        try {
-          val ot = init(entity, entityType, parentAttr)
-          if (null == ot) {
-            logger.error(s"error attr:[$attr] value:[$value]")
-          } else {
-            // 属性也是实体类对象
-            if (ot._2.isEntityType) {
-              val foreignKey = ot._2.asInstanceOf[EntityType].idName
-              if (attr.endsWith("." + foreignKey)) {
-                if (null == value) {
-                  copyValue(entity, parentAttr, null)
-                } else {
-                  val oldValue = properties.get[Object](entity, attr)
-                  val newValue = convert(ot._2, foreignKey, value)
-                  if (!Objects.equals(oldValue, newValue)) {
-                    // 如果外键已经有值
-                    if (null != oldValue) {
-                      copyValue(entity, parentAttr, null)
-                      init(entity, entityType, parentAttr)
+  override def populate(entity: Entity[_], entityType: EntityType, params: collection.Map[String, Any]): Int = {
+    var success = 0
+    params foreach {
+      case (attr, v) =>
+        var value = v
+        if (value.isInstanceOf[String]) {
+          if (Strings.isEmpty(value.asInstanceOf[String])) value = null
+          else if (TrimStr) value = (value.asInstanceOf[String]).trim()
+        }
+        if (-1 == attr.indexOf('.')) {
+          copyValue(entity, attr, value)
+        } else {
+          val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf('.'))
+          try {
+            val ot = init(entity, entityType, parentAttr)
+            if (null == ot) {
+              logger.error(s"error attr:[$attr] value:[$value]")
+            } else {
+              // 属性也是实体类对象
+              if (ot._2.isEntityType) {
+                val foreignKey = ot._2.asInstanceOf[EntityType].idName
+                if (attr.endsWith("." + foreignKey)) {
+                  if (null == value) {
+                    copyValue(entity, parentAttr, null)
+                  } else {
+                    val oldValue = properties.get[Object](entity, attr)
+                    val newValue = convert(ot._2, foreignKey, value)
+                    if (!Objects.equals(oldValue, newValue)) {
+                      // 如果外键已经有值
+                      if (null != oldValue) {
+                        copyValue(entity, parentAttr, null)
+                        init(entity, entityType, parentAttr)
+                      }
+                      properties.set(entity, attr, newValue)
                     }
-                    properties.set(entity, attr, newValue)
                   }
+                } else {
+                  copyValue(entity, attr, value)
                 }
               } else {
                 copyValue(entity, attr, value)
               }
-            } else {
-              copyValue(entity, attr, value)
             }
+          } catch {
+            case e: Exception =>
+              logger.error(s"error attr:[$attr] value:[$value]", e)
+              success -= 1
           }
-        } catch {
-          case e: Exception => logger.error(s"error attr:[$attr] value:[$value]", e)
         }
-      }
+        success += 1
     }
+    success
   }
 
   private def convert(t: Type, attr: String, value: Any): Any = {
