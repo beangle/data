@@ -38,7 +38,9 @@ trait Entity[ID] extends Serializable {
   /**
    * @see java.lang.Object#hashCode()
    */
-  override def hashCode: Int = if (null == id) 629 else id.hashCode()
+  override def hashCode: Int = {
+    if (null == id) 629 else id.hashCode()
+  }
 
   /**
    * <p>
