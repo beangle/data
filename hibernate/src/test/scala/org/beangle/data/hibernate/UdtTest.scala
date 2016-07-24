@@ -26,7 +26,6 @@ import org.beangle.commons.logging.Logging
 import org.beangle.data.hibernate.cfg.{ OverrideConfiguration, RailsNamingStrategy }
 import org.beangle.data.hibernate.naming.RailsNamingPolicy
 import org.beangle.data.hibernate.model.TimeBean
-import org.h2.jdbcx.JdbcDataSource
 import org.hibernate.{ Session, SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.AvailableSettings
@@ -41,23 +40,14 @@ import javax.sql.DataSource
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
-  val configuration = new OverrideConfiguration
-  configuration.setNamingStrategy(new RailsNamingStrategy(new RailsNamingPolicy))
-  val configProperties = configuration.getProperties()
-  configProperties.put(AvailableSettings.DIALECT, classOf[H2Dialect].getName)
-  configProperties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
-  configProperties.put("hibernate.hbm2ddl.auto", "create")
-  configProperties.put("hibernate.show_sql", "true")
+
+  val configuration = Tests.buildConfig()
   configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/hibernate/model/user.hbm.xml"))
   configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/hibernate/model/time.hbm.xml"))
-  configProperties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[SimpleCurrentSessionContext].getName())
-  val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
-  
-  val ds = new JdbcDataSource
-  ds.setUser(properties("h2.username"))
-  ds.setPassword(properties("h2.password"))
-  ds.setUrl(properties("h2.url"))
-  configProperties.put(AvailableSettings.DATASOURCE, ds)
+
+  val configProperties = Tests.buildProperties()
+  configProperties.put(AvailableSettings.DATASOURCE, Tests.buildDs())
+  configuration.setProperties(configProperties)
 
   // do session factory build.
   val serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties).build()
@@ -69,7 +59,6 @@ class UdtTest extends FunSpec with Matchers {
     }
   })
   val sf = configuration.buildSessionFactory(serviceRegistry)
-  val entityDao = new HibernateEntityDao(sf)
 
   describe("Beangle UDT") {
     it("Should support int? and scala collection") {

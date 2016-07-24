@@ -18,7 +18,6 @@
  */
 package org.beangle.data.jdbc.meta
 
-import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.commons.lang.Strings

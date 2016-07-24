@@ -4,6 +4,10 @@
 
 <hibernate-mapping package="org.beangle.data.hibernate.model" default-access="org.beangle.data.hibernate.PropertyAccessor">
 
+    <typedef name="role?" class="org.beangle.data.hibernate.udt.OptionEntityType">
+      <param name="entityClass">org.beangle.data.hibernate.model.Role</param>
+    </typedef>
+    
     <class name="org.beangle.data.hibernate.model.User" >
         <id name="id" unsaved-value="0" type="long" >
           <generator class="native"/>
@@ -49,6 +53,7 @@
         <id name="id" unsaved-value="0" type="integer">
           <generator class="assigned"/>
         </id>
+        <property name="parent" type="role?" column="parent_id"/>
         <property name="name" length="50" unique="true"/>
     </class>
 

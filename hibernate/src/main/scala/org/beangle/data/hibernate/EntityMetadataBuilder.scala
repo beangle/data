@@ -18,7 +18,7 @@
  */
 package org.beangle.data.hibernate
 
-import scala.collection.JavaConversions.asScalaSet
+import scala.collection.JavaConverters
 import scala.collection.mutable
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
@@ -43,7 +43,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
       val classMetadatas = factory.getAllClassMetadata
       val entityCount = entityTypes.size
       val collectionCount = collectionTypes.size
-      for (entry <- classMetadatas.entrySet)
+      for (entry <- JavaConverters.asScalaSet(classMetadatas.entrySet))
         buildEntityType(factory, entry.getValue.getEntityName)
 
       collectionTypes.clear()

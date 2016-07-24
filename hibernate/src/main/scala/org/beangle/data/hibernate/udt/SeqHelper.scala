@@ -23,12 +23,13 @@ import java.{ util => ju }
 import org.hibernate.engine.internal.ForeignKeys
 import org.hibernate.engine.spi.{ SessionImplementor, Status, TypedValue }
 import org.hibernate.internal.util.collections.IdentitySet
+import scala.collection.JavaConverters
 
 private[udt] object SeqHelper {
 
   def getOrphans(oldElements: Iterable[_], currentElements: Iterable[_], entityName: String, session: SessionImplementor): ju.Collection[Any] = {
     // short-circuit(s)
-    if (currentElements.size == 0) return collection.JavaConversions.asJavaCollection(oldElements)
+    if (currentElements.size == 0) return JavaConverters.asJavaCollection(oldElements)
     if (oldElements.size == 0) return ju.Collections.emptyList()
 
     val entityPersister = session.getFactory.getEntityPersister(entityName)

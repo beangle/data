@@ -20,7 +20,7 @@ package org.beangle.data.hibernate.cfg
 
 import java.lang.reflect.Field
 import java.{ util => ju }
-import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
+import scala.collection.JavaConverters.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
@@ -87,13 +87,13 @@ class OverrideConfiguration extends Configuration with Logging {
 
     if (null == namingPolicy || !namingPolicy.multiSchema) return
 
-    for (clazz <- classes.values()) {
+    for (clazz <- collectionAsScalaIterable(classes.values())) {
       namingPolicy.getSchema(clazz.getMappedClass) foreach { schema =>
         clazz.getTable().setSchema(schema)
       }
     }
 
-    for (collection <- collections.values()) {
+    for (collection <- collectionAsScalaIterable(collections.values())) {
       val table = collection.getCollectionTable()
       if (null != table && !collection.isOneToMany) {
         namingPolicy.getSchema(collection.getOwner.getMappedClass) foreach (schema => table.setSchema(schema))
@@ -109,7 +109,7 @@ class OverrideConfiguration extends Configuration with Logging {
     super.secondPassCompile()
     configSchema()
     val hackedEntityNames = new mutable.HashSet[String]
-    for (entry <- classes.entrySet()) {
+    for (entry <- asScalaSet(classes.entrySet)) {
       if (!entry.getKey().equals(entry.getValue().getEntityName())) hackedEntityNames.add(entry.getKey())
     }
     for (entityName <- hackedEntityNames)
@@ -267,7 +267,7 @@ private[cfg] object PersistentClassMerger extends Logging {
     }
     try {
       val declareProperties = declarePropertyField.get(parent).asInstanceOf[java.util.List[Property]]
-      for (p <- declareProperties)
+      for (p <- asScalaBuffer(declareProperties))
         msc.addDeclaredProperty(p)
       subPropertyField.get(parent).asInstanceOf[java.util.List[_]].clear()
       subclassField.get(parent).asInstanceOf[java.util.List[_]].clear()

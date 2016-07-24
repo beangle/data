@@ -18,7 +18,7 @@
  */
 package org.beangle.data.model.bind
 
-import scala.collection.JavaConversions.asScalaSet
+import scala.collection.JavaConverters.asScalaSet
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
@@ -139,9 +139,7 @@ object Mapping {
   object Expression {
     // only apply unique on component properties
     def is(holder: EntityHolder[_], declarations: Seq[Declaration]): Unit = {
-      val lasts = holder.proxy.lastAccessed()
-      import collection.JavaConversions.asScalaSet
-
+      val lasts = asScalaSet(holder.proxy.lastAccessed)
       lasts foreach { property =>
         val p = holder.entity.getProperty(property)
         p match {

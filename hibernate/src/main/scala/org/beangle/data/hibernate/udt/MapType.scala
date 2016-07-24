@@ -20,7 +20,7 @@ package org.beangle.data.hibernate.udt
 
 import java.{ util => ju }
 
-import scala.collection.JavaConversions.asJavaIterator
+import scala.collection.JavaConverters
 import scala.collection.mutable
 
 import org.hibernate.engine.spi.SessionImplementor
@@ -41,7 +41,7 @@ class MapType extends UserCollectionType {
     new PersistentMap(session, collection.asInstanceOf[MMap])
   }
   def getElementsIterator(collection: Object) = {
-    asJavaIterator(collection.asInstanceOf[MMap].iterator)
+    JavaConverters.asJavaIterator(collection.asInstanceOf[MMap].iterator)
   }
 
   def contains(collection: Object, entity: Object) = {

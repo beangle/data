@@ -23,7 +23,7 @@ import java.sql.ResultSet
 import java.{ util => ju }
 
 import scala.Range
-import scala.collection.JavaConversions.asJavaIterator
+import scala.collection.JavaConverters
 import scala.collection.mutable
 
 import org.hibernate.`type`.Type
@@ -34,7 +34,7 @@ import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
 
 class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Object] = null)
-  extends AbstractPersistentCollection(session) with mutable.Map[Object, Object] {
+    extends AbstractPersistentCollection(session) with mutable.Map[Object, Object] {
   type MM = mutable.Map[Object, Object]
   type MHM = mutable.HashMap[Object, Object]
 
@@ -104,7 +104,7 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
         deletes += (if (indexIsFormula) e._2 else e._1)
       }
     }
-    asJavaIterator(deletes.iterator)
+    JavaConverters.asJavaIterator(deletes.iterator)
   }
 
   override def disassemble(persister: CollectionPersister): JSerializable = {
@@ -119,7 +119,7 @@ class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Ob
   }
 
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
-    asJavaIterator(map.iterator)
+    JavaConverters.asJavaIterator(map.iterator)
   }
 
   override def entryExists(entry: Object, i: Int): Boolean = {

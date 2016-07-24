@@ -22,7 +22,7 @@ import java.io.{ Serializable => JSerializable }
 import java.sql.ResultSet
 import java.{ util => ju }
 
-import scala.collection.JavaConversions.asJavaIterator
+import scala.collection.JavaConverters
 import scala.collection.mutable
 import scala.collection.mutable.Buffer
 
@@ -34,7 +34,7 @@ import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
 
 class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = null)
-  extends AbstractPersistentCollection(session) with collection.mutable.Set[Object] {
+    extends AbstractPersistentCollection(session) with collection.mutable.Set[Object] {
 
   protected var tempList: Buffer[Object] = _
 
@@ -103,12 +103,14 @@ class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = 
     val deletes = new mutable.ListBuffer[Object]()
     deletes ++= sn.filterKeys(!set.contains(_)).keys
     deletes ++= set.filter { ele => sn.contains(ele) && elementType.isDirty(ele, sn(ele), getSession()) }
-    asJavaIterator(deletes.iterator)
+    JavaConverters.asJavaIterator(deletes.iterator)
   }
   override def disassemble(persister: CollectionPersister): JSerializable = {
     set.map(ele => persister.getElementType().disassemble(ele, getSession(), null)).toArray.asInstanceOf[Array[JSerializable]]
   }
-  override def entries(persister: CollectionPersister): ju.Iterator[_] = asJavaIterator(set.iterator)
+  override def entries(persister: CollectionPersister): ju.Iterator[_] = {
+    JavaConverters.asJavaIterator(set.iterator)
+  }
 
   override def entryExists(entry: Object, i: Int): Boolean = true
 

@@ -29,7 +29,7 @@ object UserCrudTest {
 
   def testCrud(sf: SessionFactory) {
     val entityDao = new HibernateEntityDao(sf)
-    import scala.collection.JavaConversions._
+    val roles = entityDao.getAll(classOf[User])
     val user = new User(1)
     user.name = new Name
     user.name.first = "Bill"
@@ -39,8 +39,8 @@ object UserCrudTest {
     val role2 = new ExtendRole(2)
     role1.enName = "role1"
     role2.enName = "role2"
-    user.roleSet += role1
-    user.roleSet += role2
+    user.roleSet.add(role1)
+    user.roleSet.add(role2)
     user.roleList.asInstanceOf[ListBuffer[Role]] += role1
     user.age = Some(20)
     user.member = new Member
@@ -74,7 +74,7 @@ object UserCrudTest {
     assert(saved.roleSet.size == 2)
     assert(saved.roleList.size == 1)
     assert(null != saved.member.user)
-    saved.roleSet -= saved.roleSet.head
+    saved.roleSet.remove(saved.roleSet.iterator.next())
     entityDao.saveOrUpdate(saved);
 
     val savedRole = entityDao.get(classOf[Role], role2.id)
