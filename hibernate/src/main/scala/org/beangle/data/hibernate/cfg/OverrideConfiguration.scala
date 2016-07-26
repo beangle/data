@@ -27,7 +27,7 @@ import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.logging.Logging
 import org.beangle.data.hibernate.PropertyAccessor
 import org.beangle.data.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, TableSeqGenerator }
-import org.beangle.data.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, ValueType }
+import org.beangle.data.hibernate.udt._
 import org.beangle.data.hibernate.naming.NamingPolicy
 import org.hibernate.DuplicateMappingException
 import org.hibernate.DuplicateMappingException.Type
@@ -59,7 +59,11 @@ class OverrideConfiguration extends Configuration with Logging {
       ("map", classOf[MapType]), ("byte?", classOf[OptionByteType]),
       ("char?", classOf[OptionCharType]), ("int?", classOf[OptionIntType]),
       ("bool?", classOf[OptionBooleanType]), ("long?", classOf[OptionLongType]),
-      ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType])) foreach {
+      ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType]),
+      ("java.lang.String?", classOf[OptionStringType]),
+      ("java.util.Date?", classOf[OptionJuDateType]),
+      ("java.sql.Date?", classOf[OptionJsDateType]),
+      ("java.sql.Timestamp?", classOf[OptionJsTimestampType])) foreach {
         case (name, clazz) => mappings.addTypeDef(name, clazz.getName, new ju.Properties)
       }
   }

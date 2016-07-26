@@ -27,19 +27,18 @@ import org.beangle.commons.bean.Properties
 import org.beangle.data.model.Entity
 import org.beangle.data.model.bind.Jpas
 import org.hibernate.`type`.AbstractSingleColumnStandardBasicType
-import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, LONG, BOOLEAN }
+import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, LONG, BOOLEAN, STRING, DATE, TIMESTAMP }
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.usertype.{ ParameterizedType, UserType }
 
 object OptionBasicType {
   val java2HibernateTypes: Map[Class[_], AbstractSingleColumnStandardBasicType[_]] =
-    Map((classOf[JChar], CHARACTER),
-      (classOf[JByte], BYTE),
-      (classOf[JBoolean], BOOLEAN),
-      (classOf[JInt], INTEGER),
-      (classOf[JLong], LONG),
-      (classOf[JFloat], FLOAT),
-      (classOf[JDouble], DOUBLE))
+    Map((classOf[JChar], CHARACTER), (classOf[String], STRING),
+      (classOf[JByte], BYTE), (classOf[JBoolean], BOOLEAN),
+      (classOf[JInt], INTEGER), (classOf[JLong], LONG),
+      (classOf[JFloat], FLOAT), (classOf[JDouble], DOUBLE),
+      (classOf[java.util.Date], TIMESTAMP), (classOf[java.sql.Date], DATE),
+      (classOf[java.sql.Timestamp], TIMESTAMP))
 }
 
 abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
@@ -96,6 +95,14 @@ class OptionLongType extends OptionBasicType(classOf[JLong])
 class OptionFloatType extends OptionBasicType(classOf[JFloat])
 
 class OptionDoubleType extends OptionBasicType(classOf[JDouble])
+
+class OptionStringType extends OptionBasicType(classOf[String])
+
+class OptionJuDateType extends OptionBasicType(classOf[java.util.Date])
+
+class OptionJsDateType extends OptionBasicType(classOf[java.sql.Date])
+
+class OptionJsTimestampType extends OptionBasicType(classOf[java.sql.Timestamp])
 
 class OptionEntityType extends UserType with ParameterizedType {
   import OptionBasicType._

@@ -437,15 +437,15 @@ final class Binder extends Logging {
       val a = tpe.member(ru.TermName(name)).typeSignatureIn(tpe)
       val innerType = a.resultType.typeArgs.head.toString
       val innerClass = ClassLoaders.load(innerType)
-      if (-1 == innerClass.getName.indexOf('.') || innerClass.getName.startsWith("java.lang")) {
+      if (-1 == innerClass.getName.indexOf('.') || innerClass.getName.startsWith("java.")) {
         Primitives.unwrap(innerClass).getName + "?"
       } else {
         if (isEntity(innerClass)) {
-          val typeName = innerClass.getName + "?";
+          val typeName = innerClass.getName + "?"
           optionEntityTypes.put(typeName, innerClass.getName)
           typeName
         } else {
-          throw new RuntimeException("Only Supports Option[Enity] and Option[primitive]")
+          throw new RuntimeException("Option[" + innerClass.getName + "] not supported,Only Supports Option[Enity] and Option[primitive]")
         }
       }
     } else if (clazz.isAnnotationPresent(classOf[value])) {
@@ -516,7 +516,11 @@ final class Binder extends Logging {
 
   private def bindScalar(name: String, propertyType: Class[_], typeName: String): ScalarProperty = {
     val p = new ScalarProperty(name, propertyType)
-    val key = typeName.contains(".") && typeName.endsWith("?")
+    val key = if (typeName.contains(".") && typeName.endsWith("?")) {
+      isEntity(ClassLoaders.load(typeName.substring(0, typeName.length - 1)))
+    } else {
+      false
+    }
     val column = new Column(columnName(name, key))
     if (propertyType.isPrimitive) column.nullable = false
     if (None == p.typeName) p.typeName = Some(typeName)
