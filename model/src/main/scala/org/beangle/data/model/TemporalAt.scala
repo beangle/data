@@ -36,5 +36,5 @@ trait TemporalAt {
   /**
    * 获得失效时间
    */
-  var endAt: java.util.Date = _
+  var endAt: Option[java.util.Date] = None
 }

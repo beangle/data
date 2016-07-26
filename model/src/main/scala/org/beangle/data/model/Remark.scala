@@ -20,5 +20,5 @@ package org.beangle.data.model
 
 trait Remark {
 
-  var remark:String =_
+  var remark: Option[String] = None
 }

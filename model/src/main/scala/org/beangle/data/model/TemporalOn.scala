@@ -36,6 +36,6 @@ trait TemporalOn {
   /**
    * 结束日期
    */
-  var endOn: java.sql.Date = _
+  var endOn: Option[java.sql.Date] = None
 
 }
