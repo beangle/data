@@ -522,7 +522,7 @@ final class Binder extends Logging {
       false
     }
     val column = new Column(columnName(name, key))
-    if (propertyType.isPrimitive) column.nullable = false
+    column.nullable = typeName.endsWith("?")
     if (None == p.typeName) p.typeName = Some(typeName)
     p.columns += column
     p
@@ -530,7 +530,7 @@ final class Binder extends Logging {
 
   private def bindManyToOne(name: String, propertyType: Class[_], tye: ru.Type): ManyToOneProperty = {
     val p = new ManyToOneProperty(name, propertyType)
-    val column = new Column(columnName(name, true))
+    val column = new Column(columnName(name, true), false)
     p.targetEntity = propertyType.getName
     p.columns += column
     p

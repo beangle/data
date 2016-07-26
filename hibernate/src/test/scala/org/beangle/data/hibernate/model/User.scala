@@ -31,11 +31,11 @@ class User(var id: Long) extends Entity[Long] {
   var age: Option[Int] = None
   var money: Short = _
   var properties: collection.mutable.Map[String, String] = _
-  var occupy: WeekState = _
-  var weekday: WeekDay = _
+  var occupy: WeekState = new WeekState(0)
+  var weekday: WeekDay = Sun
 
-  var createdOn: java.sql.Date = _
-  var role: Role = _
+  var createdOn = new java.sql.Date(System.currentTimeMillis)
+  var role: Option[Role] = _
   var roleList: collection.mutable.Buffer[Role] = new collection.mutable.ListBuffer[Role]
   var member: Member = _
   var skills: collection.mutable.Map[SkillType, Skill] = _
@@ -60,7 +60,7 @@ class Name extends Component {
 class Member extends Component {
   @scala.beans.BeanProperty
   var user: User = _
-  var granter: Role = _
+  var granter: Option[Role] = None
   var admin: Boolean = _
   var roles: collection.mutable.Set[Role] = _
 }
@@ -76,4 +76,3 @@ abstract class StringIdCodedEntity extends CodedEntity
 class Menu extends StringIdCodedEntity
 
 class Department extends LongId with Hierarchical[Department] with Remark
-

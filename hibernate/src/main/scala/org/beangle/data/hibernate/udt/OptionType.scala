@@ -104,8 +104,12 @@ class OptionJsDateType extends OptionBasicType(classOf[java.sql.Date])
 
 class OptionJsTimestampType extends OptionBasicType(classOf[java.sql.Timestamp])
 
+object OptionEntityType {
+  val EntityClassParamName = "entityClass"
+}
 class OptionEntityType extends UserType with ParameterizedType {
   import OptionBasicType._
+  import OptionEntityType._
 
   var inner: AbstractSingleColumnStandardBasicType[_] = _
 
@@ -114,7 +118,7 @@ class OptionEntityType extends UserType with ParameterizedType {
   var clazz: Class[_] = _
 
   override def setParameterValues(parameters: java.util.Properties) {
-    var entityClass = parameters.getProperty("entityClass")
+    var entityClass = parameters.getProperty(EntityClassParamName)
     clazz = Class.forName(entityClass)
     entityName = Jpas.findEntityName(clazz)
     inner = java2HibernateTypes(Primitives.wrap(BeanInfos.get(clazz).getPropertyType("id").get))
