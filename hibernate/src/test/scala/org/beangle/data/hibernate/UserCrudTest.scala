@@ -66,6 +66,10 @@ object UserCrudTest {
     val list4 = entityDao.search(query4)
     assert(list4.size == 1)
 
+    val query5 = OqlBuilder.from(classOf[Role], "r").where("r.parent.name like :roleName", "Role%")
+    val list5 = entityDao.search(query5)
+    assert(list5.size == 2)
+
     sf.getCurrentSession.flush()
     sf.getCurrentSession.clear()
 
