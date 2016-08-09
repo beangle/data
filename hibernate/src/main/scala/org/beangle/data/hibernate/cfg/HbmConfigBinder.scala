@@ -397,13 +397,14 @@ object HbmConfigBinder {
       case _ =>
     }
 
-    value.createForeignKey
-    if (value.isSimpleValue) {
+    if (value.isSimpleValue && !value.isInstanceOf[ToOne]) {
       val sv = value.asInstanceOf[SimpleValue]
       if (sv.getTypeName == classOf[OptionEntityType].getName) {
         val optionEntityName = sv.getTypeParameters.getProperty(OptionEntityType.EntityClassParamName)
         value.getTable.createForeignKey(null, ju.Collections.singletonList(value.getColumnIterator.next()), optionEntityName)
       }
+    } else {
+      value.createForeignKey
     }
     val prop = new HProperty
     prop.setValue(value)

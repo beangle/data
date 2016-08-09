@@ -144,14 +144,26 @@ object Binder {
     }
   }
 
-  final class ScalarProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder {
+  class ScalarProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder
 
+  final class OptionToOneProperty(name: String, propertyType: Class[_], binder: Binder) extends ScalarProperty(name, propertyType) with ToOneProperty {
+    def targetEntity_=(s: String): Unit = {
+      this.typeName = Some(s + "?")
+      binder.optionEntityTypes.put(s + "?", s)
+    }
+    def targetEntity: String = {
+      this.typeName.get
+    }
   }
 
-  final class IdProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder {
+  final class IdProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder
+
+  trait ToOneProperty {
+    def targetEntity_=(s: String)
+    def targetEntity: String
   }
 
-  final class ManyToOneProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with Fetchable {
+  final class ManyToOneProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with Fetchable with ToOneProperty {
     var targetEntity: String = _
   }
 
@@ -283,7 +295,7 @@ final class Binder extends Logging {
   val enumTypes = new mutable.HashMap[String, String]
 
   /**
-   * Buildin option entity types
+   * Buildin option entity types[classname? -> classname]
    */
   val optionEntityTypes = new mutable.HashMap[String, String]
 
@@ -441,9 +453,7 @@ final class Binder extends Logging {
         Primitives.unwrap(innerClass).getName + "?"
       } else {
         if (isEntity(innerClass)) {
-          val typeName = innerClass.getName + "?"
-          optionEntityTypes.put(typeName, innerClass.getName)
-          typeName
+          innerClass.getName + "?"
         } else {
           throw new RuntimeException("Option[" + innerClass.getName + "] not supported,Only Supports Option[Enity] and Option[primitive]")
         }
@@ -515,12 +525,19 @@ final class Binder extends Logging {
   }
 
   private def bindScalar(name: String, propertyType: Class[_], typeName: String): ScalarProperty = {
-    val p = new ScalarProperty(name, propertyType)
     val key = if (typeName.contains(".") && typeName.endsWith("?")) {
       isEntity(ClassLoaders.load(typeName.substring(0, typeName.length - 1)))
     } else {
       false
     }
+    val p: ScalarProperty =
+      if (key) {
+        val toOne = new OptionToOneProperty(name, propertyType, this)
+        toOne.targetEntity = typeName.substring(0, typeName.length - 1)
+        toOne
+      } else {
+        new ScalarProperty(name, propertyType)
+      }
     val column = new Column(columnName(name, key))
     column.nullable = typeName.endsWith("?")
     if (None == p.typeName) p.typeName = Some(typeName)

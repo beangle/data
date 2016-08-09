@@ -29,6 +29,7 @@ import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, ColumnHolder, ComponentProperty, Entity, IdGenerator, Index, ManyToOneProperty, MapProperty, Property, SeqProperty, SimpleKey, ToManyElement, TypeNameHolder }
 import org.beangle.data.model.bind.Mapping.EntityHolder
+import org.beangle.data.model.bind.Binder.ToOneProperty
 
 object Mapping {
 
@@ -132,7 +133,7 @@ object Mapping {
 
   class Target(clazz: Class[_]) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
-      cast[ManyToOneProperty](property, holder, "target should used on manytoone").targetEntity = clazz.getName
+      cast[ToOneProperty](property, holder, "target should used on manytoone").targetEntity = clazz.getName
     }
   }
 

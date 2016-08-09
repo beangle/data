@@ -31,7 +31,8 @@ object TestMapping2 extends Mapping {
     defaultCache("test_cache_region", "read-write")
 
     bind[Role].on(r => declare(
-      r.name is (notnull, length(112), unique),
+      r.name is (length(112), unique),
+      r.parent is target[Role],
       r.children is (depends("parent"), cacheable))).generator("assigned")
 
     bind[ExtendRole](classOf[Role].getName)
