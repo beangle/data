@@ -33,6 +33,8 @@ import org.beangle.data.model.bind.Binder.ToOneProperty
 
 object Mapping {
 
+  val OrderColumnName = "idx"
+
   trait Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit
   }
@@ -120,7 +122,7 @@ object Mapping {
   class OrderColumn(orderColumn: String) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
       val collp = cast[SeqProperty](property, holder, "order column should used on many2many seq")
-      val col = new Column(if (null != orderColumn) "idx" else orderColumn, false)
+      val col = new Column(if (null != orderColumn) Mapping.OrderColumnName else orderColumn, false)
       collp.index = Some(new Index(col))
     }
   }

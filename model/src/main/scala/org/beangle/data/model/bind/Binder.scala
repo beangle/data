@@ -146,7 +146,8 @@ object Binder {
 
   class ScalarProperty(name: String, propertyType: Class[_]) extends Property(name, propertyType) with TypeNameHolder
 
-  final class OptionToOneProperty(name: String, propertyType: Class[_], binder: Binder) extends ScalarProperty(name, propertyType) with ToOneProperty {
+  final class OptionToOneProperty(name: String, propertyType: Class[_], binder: Binder)
+      extends ScalarProperty(name, propertyType) with ToOneProperty {
     def targetEntity_=(s: String): Unit = {
       this.typeName = Some(s + "?")
       binder.optionEntityTypes.put(s + "?", s)
