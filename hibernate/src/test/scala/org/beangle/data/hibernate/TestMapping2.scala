@@ -23,6 +23,7 @@ import scala.reflect.runtime.universe
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.data.hibernate.model.{ CodedEntity, Department, ExtendRole, Menu, Role, StringIdCodedEntity }
 import org.beangle.data.model.bind.Mapping
+import org.beangle.commons.lang.reflect.ClassInfos
 
 object TestMapping2 extends Mapping {
 
@@ -48,6 +49,6 @@ object TestMapping2 extends Mapping {
 
     bind[Department].on(e => declare(
       e.children is (one2many("parent"))))
-  }
 
+  }
 }
