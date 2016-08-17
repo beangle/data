@@ -18,7 +18,7 @@
  */
 package org.beangle.data.model.bind
 
-import scala.collection.JavaConversions.asScalaSet
+import scala.collection.JavaConverters.asScalaSet
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
@@ -29,8 +29,11 @@ import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.bind.Binder.{ Collection, CollectionProperty, Column, ColumnHolder, ComponentProperty, Entity, IdGenerator, Index, ManyToOneProperty, MapProperty, Property, SeqProperty, SimpleKey, ToManyElement, TypeNameHolder }
 import org.beangle.data.model.bind.Mapping.EntityHolder
+import org.beangle.data.model.bind.Binder.ToOneProperty
 
 object Mapping {
+
+  val OrderColumnName = "idx"
 
   trait Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit
@@ -119,7 +122,7 @@ object Mapping {
   class OrderColumn(orderColumn: String) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
       val collp = cast[SeqProperty](property, holder, "order column should used on many2many seq")
-      val col = new Column(if (null != orderColumn) "idx" else orderColumn, false)
+      val col = new Column(if (null != orderColumn) Mapping.OrderColumnName else orderColumn, false)
       collp.index = Some(new Index(col))
     }
   }
@@ -132,16 +135,14 @@ object Mapping {
 
   class Target(clazz: Class[_]) extends Declaration {
     def apply(holder: EntityHolder[_], property: Property): Unit = {
-      cast[ManyToOneProperty](property, holder, "target should used on manytoone").targetEntity = clazz.getName
+      cast[ToOneProperty](property, holder, "target should used on manytoone").targetEntity = clazz.getName
     }
   }
 
   object Expression {
     // only apply unique on component properties
     def is(holder: EntityHolder[_], declarations: Seq[Declaration]): Unit = {
-      val lasts = holder.proxy.lastAccessed()
-      import collection.JavaConversions.asScalaSet
-
+      val lasts = asScalaSet(holder.proxy.lastAccessed)
       lasts foreach { property =>
         val p = holder.entity.getProperty(property)
         p match {

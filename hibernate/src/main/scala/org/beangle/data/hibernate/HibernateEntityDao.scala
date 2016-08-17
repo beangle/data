@@ -20,7 +20,7 @@ package org.beangle.data.hibernate
 
 import java.io.{ ByteArrayOutputStream, InputStream, Serializable }
 import java.sql.{ Blob, Clob }
-import scala.collection.JavaConversions.{ asScalaBuffer, mapAsJavaMap, seqAsJavaList, asJavaCollection }
+import scala.collection.JavaConverters.{ asScalaBuffer, asJavaCollection }
 import scala.collection.mutable
 import scala.collection.immutable.Seq
 import org.beangle.commons.collection.page.{ Page, PageLimit, SinglePage }
@@ -212,7 +212,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   def find[T <: Entity[_]](clazz: Class[T], parameterMap: collection.Map[String, _]): Seq[T] = {
-    if (clazz == null || parameterMap == null || parameterMap.isEmpty()) { return List.empty }
+    if (clazz == null || parameterMap == null || parameterMap.isEmpty) { return List.empty }
     val hql = new StringBuilder()
     hql.append("select entity from ").append(entityName(clazz)).append(" as entity ").append(" where ")
 
@@ -239,7 +239,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   def count(entityName: String, keyName: String, value: Any): Long = {
     val hql = "select count(*) from " + entityName + " where " + keyName + "=:value"
     val rs = search(hql, Map("value" -> value))
-    if (rs.isEmpty) 0 else rs.get(0).asInstanceOf[Number].longValue
+    if (rs.isEmpty) 0 else rs.head.asInstanceOf[Number].longValue
   }
 
   override def count(entityClass: Class[_], keyName: String, value: Any): Long = {
@@ -274,7 +274,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
         if (i < attrs.size - 1) hql.append(" and ")
       }
     }
-    search(hql.toString, params).get(0).asInstanceOf[Number].longValue
+    search(hql.toString, params).head.asInstanceOf[Number].longValue
   }
 
   override def exists(entityClass: Class[_], attr: String, value: Any): Boolean = {
@@ -351,7 +351,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     if (list.isEmpty) {
       null.asInstanceOf[T]
     } else if (list.size == 1) {
-      list.get(0).asInstanceOf[T]
+      list.head.asInstanceOf[T]
     } else {
       throw new RuntimeException("not unique query" + builder)
     }
@@ -538,7 +538,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   def saveOrUpdate[T <: Entity[_]](entityName: String, entities: Seq[T]): Unit = {
-    if (!entities.isEmpty()) {
+    if (!entities.isEmpty) {
       for (entity <- entities)
         persistEntity(entity, entityName)
     }

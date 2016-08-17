@@ -23,6 +23,7 @@ import scala.reflect.runtime.universe
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.data.hibernate.model.{ CodedEntity, Department, ExtendRole, Menu, Role, StringIdCodedEntity }
 import org.beangle.data.model.bind.Mapping
+import org.beangle.commons.lang.reflect.ClassInfos
 
 object TestMapping2 extends Mapping {
 
@@ -31,7 +32,8 @@ object TestMapping2 extends Mapping {
     defaultCache("test_cache_region", "read-write")
 
     bind[Role].on(r => declare(
-      r.name is (notnull, length(112), unique),
+      r.name is (length(112), unique),
+      r.parent is target[Role],
       r.children is (depends("parent"), cacheable))).generator("assigned")
 
     bind[ExtendRole](classOf[Role].getName)
@@ -47,6 +49,6 @@ object TestMapping2 extends Mapping {
 
     bind[Department].on(e => declare(
       e.children is (one2many("parent"))))
-  }
 
+  }
 }

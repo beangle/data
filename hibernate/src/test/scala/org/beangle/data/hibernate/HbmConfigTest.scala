@@ -30,7 +30,7 @@ import org.beangle.data.hibernate.naming.RailsNamingPolicy
 import org.beangle.data.jdbc.ds.DataSourceUtils
 import org.beangle.data.model.meta.EntityType
 import org.beangle.data.model.util.ConvertPopulator
-import org.hibernate.cfg.AvailableSettings
+
 import org.hibernate.dialect.H2Dialect
 import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
@@ -41,24 +41,17 @@ import javax.sql.DataSource
 @RunWith(classOf[JUnitRunner])
 class HbmConfigTest extends FunSpec with Matchers {
 
-  val properties = new ju.Properties
-  properties.put(AvailableSettings.DIALECT, classOf[H2Dialect].getName)
-  properties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
-  properties.put("hibernate.hbm2ddl.auto", "create")
-  properties.put("hibernate.show_sql", "true")
-  properties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[SimpleCurrentSessionContext].getName())
-
-  val configuration = new OverrideConfiguration
+  val configuration = Tests.buildConfig()
   configuration.setInterceptor(new TestInterceptor)
-  val builder = new ConfigurationBuilder(configuration, properties)
-  val namingPolicy = new RailsNamingPolicy
+  val builder = new ConfigurationBuilder(configuration, Tests.buildProperties())
   val ormLocations = List(ClassLoaders.getResource("META-INF/beangle/orm.xml"))
+  val namingPolicy = new RailsNamingPolicy
   ormLocations foreach (url => namingPolicy.addConfig(url))
   builder.namingStrategy = new RailsNamingStrategy(namingPolicy)
   builder.ormLocations = ormLocations
   builder.build()
-  val dbprops = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass))
-  val ds: DataSource = DataSourceUtils.build("h2", dbprops("h2.username"), dbprops("h2.password"), Map("url" -> dbprops("h2.url")))
+
+  val ds = Tests.buildDs()
   val sf = new SessionFactoryBuilder(ds, configuration).build()
   val entityDao = new HibernateEntityDao(sf)
 
