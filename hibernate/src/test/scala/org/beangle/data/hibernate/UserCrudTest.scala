@@ -18,10 +18,10 @@
  */
 package org.beangle.data.hibernate
 
-import scala.collection.JavaConversions.asScalaSet
 import scala.collection.mutable.ListBuffer
 
 import org.beangle.commons.lang.time.WeekState
+import org.beangle.data.dao.OqlBuilder
 import org.beangle.data.hibernate.model.{ ExtendRole, Member, Name, Role, User }
 import org.hibernate.SessionFactory
 
@@ -29,7 +29,7 @@ object UserCrudTest {
 
   def testCrud(sf: SessionFactory) {
     val entityDao = new HibernateEntityDao(sf)
-    import scala.collection.JavaConversions._
+    val roles = entityDao.getAll(classOf[User])
     val user = new User(1)
     user.name = new Name
     user.name.first = "Bill"
@@ -37,25 +37,56 @@ object UserCrudTest {
     user.createdOn = new java.sql.Date(System.currentTimeMillis())
     val role1 = new ExtendRole(1)
     val role2 = new ExtendRole(2)
-    user.roleSet += role1
-    user.roleSet += role2
+    role1.enName = "role1"
+    role2.enName = "role2"
+    user.roleSet.add(role1)
+    user.roleSet.add(role2)
     user.roleList.asInstanceOf[ListBuffer[Role]] += role1
     user.age = Some(20)
     user.member = new Member
     user.properties = new collection.mutable.HashMap[String, String]
     user.properties.put("address", "some street")
     user.occupy = new WeekState(2)
+    role2.parent = Some(role1)
     entityDao.saveOrUpdate(role1, role2, user)
+
+    val query = OqlBuilder.from(classOf[Role], "r").where("r.parent = :parent", Some(role1))
+    val list = entityDao.search(query)
+    assert(list.size == 1)
+
+    val query2 = OqlBuilder.from(classOf[Role], "r").where("r.parent is null")
+    val list2 = entityDao.search(query2)
+    assert(list2.size == 1)
+
+    val query3 = OqlBuilder.from(classOf[User], "u").where("u.age = :age", 20)
+    val list3 = entityDao.search(query3)
+    assert(list3.size == 1)
+
+    val query4 = OqlBuilder.from(classOf[Role], "r").where("exists(from " + classOf[Role].getName + " r2 where r2=r.parent)")
+    val list4 = entityDao.search(query4)
+    assert(list4.size == 1)
+
+    val query5 = OqlBuilder.from(classOf[Role], "r").where("r.parent.name like :roleName", "Role%")
+    val list5 = entityDao.search(query5)
+    assert(list5.size == 2)
+
     sf.getCurrentSession.flush()
     sf.getCurrentSession.clear()
 
-    val saved = entityDao.get(classOf[User], user.id).asInstanceOf[User]
+    val saved = entityDao.get(classOf[User], user.id)
     assert(saved.properties.size == 1)
     assert(saved.roleSet.size == 2)
     assert(saved.roleList.size == 1)
-    assert(null!=saved.member.user)
-    saved.roleSet -= saved.roleSet.head
+    assert(null != saved.member.user)
+    saved.roleSet.remove(saved.roleSet.iterator.next())
     entityDao.saveOrUpdate(saved);
+
+    val savedRole = entityDao.get(classOf[Role], role2.id)
+    assert(savedRole.parent != null)
+    assert(savedRole.parent.isDefined)
+    assert(savedRole.parent.get.id == role1.id)
+    assert(savedRole.parent.get.asInstanceOf[ExtendRole].enName == "role1")
+
     sf.getCurrentSession.flush()
     sf.getCurrentSession.close()
   }

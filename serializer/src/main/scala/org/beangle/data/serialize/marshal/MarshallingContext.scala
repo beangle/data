@@ -22,7 +22,7 @@ import scala.collection.mutable
 import scala.language.existentials
 
 import org.beangle.commons.collection.{ IdentityMap, IdentitySet }
-import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.serialize.StreamSerializer
 import org.beangle.data.serialize.io.{ Path, StreamWriter }
 
@@ -44,7 +44,7 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
       propertyMap ++= properties
     } else {
       properties foreach { tuple =>
-        val getters = BeanManifest.get(tuple._1).readables
+        val getters = BeanInfos.get(tuple._1).readables
         val filted = new collection.mutable.ListBuffer[String]
         tuple._2 foreach { p =>
           getters.get(p) match {
@@ -72,7 +72,7 @@ class MarshallingContext(val serializer: StreamSerializer, val writer: StreamWri
         if (registry.lookup(clazz).targetType == Type.Object) {
           val p = searchProperties(clazz)
           if (null == p) {
-            val readables = BeanManifest.get(clazz).readables
+            val readables = BeanInfos.get(clazz).readables
             val bp =
               if (readables.contains("id") && null != elementType && elementType != clazz) {
                 List("id")

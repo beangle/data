@@ -19,13 +19,11 @@
 package org.beangle.data.model
 
 /**
- * <p>
  * Coded interface.
- * </p>
  *
  * @author chaostone
  */
 trait Coded {
 
-  var code: String = _ 
+  var code: String = _
 }

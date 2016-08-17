@@ -22,6 +22,7 @@ import java.sql.{ DatabaseMetaData, ResultSet, Statement }
 import java.util.StringTokenizer
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable
+import scala.collection.JavaConverters
 import org.beangle.commons.lang.Strings.{ lowerCase, replace, upperCase }
 import org.beangle.commons.lang.ThreadTasks
 import org.beangle.commons.lang.time.Stopwatch
@@ -114,7 +115,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       if (null == dialect.metadataGrammar) {
         logger.info("Loading primary key,foreign key and index.")
         val tableNames = new ConcurrentLinkedQueue[String]
-        tableNames.addAll(collection.JavaConversions.asJavaCollection(tables.keySet.toList.sortWith(_ < _)))
+        tableNames.addAll(JavaConverters.asJavaCollection(tables.keySet.toList.sortWith(_ < _)))
         ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
       } else {
         batchLoadExtra(newSchema, dialect.metadataGrammar)

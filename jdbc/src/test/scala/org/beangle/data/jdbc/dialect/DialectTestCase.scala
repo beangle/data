@@ -18,8 +18,6 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import java.util.Map
-import scala.collection.JavaConversions.{ asScalaSet, mutableMapAsJavaMap }
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.meta.{ Schema, Table }
 import org.junit.runner.RunWith
@@ -32,8 +30,8 @@ class DialectTestCase extends FlatSpec with Matchers with Logging {
   protected var schema: Schema = _
 
   protected def listTableAndSequences = {
-    val tables: Map[String, Table] = schema.tables
-    for (name <- tables.keySet()) {
+    val tables = schema.tables
+    for (name <- tables.keySet) {
       logger.info(s"table $name")
     }
 

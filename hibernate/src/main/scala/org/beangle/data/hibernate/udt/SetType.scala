@@ -20,7 +20,7 @@ package org.beangle.data.hibernate.udt
 
 import java.{ util => ju }
 
-import scala.collection.JavaConversions.asJavaIterator
+import scala.collection.JavaConverters
 import scala.collection.mutable
 
 import org.hibernate.engine.spi.SessionImplementor
@@ -41,7 +41,7 @@ class SetType extends UserCollectionType {
   }
 
   override def getElementsIterator(collection: Object) = {
-    asJavaIterator(collection.asInstanceOf[MSet].iterator)
+    JavaConverters.asJavaIterator(collection.asInstanceOf[MSet].iterator)
   }
 
   override def contains(collection: Object, entity: Object) = {

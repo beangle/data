@@ -23,7 +23,7 @@ import java.sql.ResultSet
 import java.{ util => ju }
 
 import scala.Range
-import scala.collection.JavaConversions.asJavaIterator
+import scala.collection.JavaConverters
 import scala.collection.mutable.{ Buffer, ListBuffer }
 
 import org.hibernate.`type`.Type
@@ -34,7 +34,7 @@ import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
 
 class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null)
-  extends AbstractPersistentCollection(session) with collection.mutable.Buffer[Object] {
+    extends AbstractPersistentCollection(session) with collection.mutable.Buffer[Object] {
 
   if (null != list) {
     setInitialized()
@@ -90,7 +90,7 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
   }
 
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
-    asJavaIterator(list.iterator)
+    JavaConverters.asJavaIterator(list.iterator)
   }
 
   override def disassemble(persister: CollectionPersister): JSerializable = {

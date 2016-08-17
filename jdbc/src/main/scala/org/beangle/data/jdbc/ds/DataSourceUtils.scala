@@ -19,11 +19,16 @@
 package org.beangle.data.jdbc.ds
 
 import java.util.Properties
-import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
-import javax.sql.DataSource
+
+import scala.language.existentials
+
+import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.jdbc.vendor.Vendors
-import org.beangle.commons.lang.reflect.BeanManifest
+
+import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
+
 import javax.script.ScriptEngineManager
+import javax.sql.DataSource
 
 object DataSourceUtils {
 
@@ -42,7 +47,7 @@ object DataSourceUtils {
 
   private def buildProperties(driver: String, username: String, password: String, props: collection.Map[String, String]): Properties = {
     val properties = new Properties
-    val writables = BeanManifest.load(classOf[HikariConfig]).getWritableProperties()
+    val writables = new BeanInfos().get(classOf[HikariConfig]).getWritableProperties()
 
     props.foreach { e =>
       var key = if (e._1 == "url") "jdbcUrl" else e._1
@@ -63,7 +68,6 @@ object DataSourceUtils {
     properties
   }
 
-  import scala.language.existentials
   protected[ds] def parseJson(string: String): collection.mutable.HashMap[String, String] = {
     val sem = new ScriptEngineManager();
     val engine = sem.getEngineByName("javascript");
@@ -86,4 +90,3 @@ object DataSourceUtils {
     result;
   }
 }
-

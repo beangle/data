@@ -20,7 +20,7 @@ package org.beangle.data.serialize.marshal
 
 import org.beangle.commons.collection.page.Page
 import org.beangle.commons.lang.Primitives
-import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.serialize.io.StreamWriter
 import org.beangle.data.serialize.mapper.Mapper
 import org.beangle.data.serialize.marshal.Type.Type
@@ -30,7 +30,7 @@ class PageMarshaller(val mapper: Mapper) extends Marshaller[Page[Object]] {
   def marshal(source: Page[Object], writer: StreamWriter, context: MarshallingContext): Unit = {
     val sourceType = source.getClass
     val properties = context.getProperties(sourceType)
-    val getters = BeanManifest.get(sourceType).readables
+    val getters = BeanInfos.get(sourceType).readables
     properties foreach { property =>
       val itemType = Primitives.wrap(getters(property).clazz)
       writer.startNode(mapper.serializedMember(source.getClass, property), itemType)

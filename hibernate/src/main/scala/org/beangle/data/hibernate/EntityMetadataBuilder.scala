@@ -18,16 +18,18 @@
  */
 package org.beangle.data.hibernate
 
-import scala.collection.JavaConversions.asScalaSet
+import scala.collection.JavaConverters
 import scala.collection.mutable
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
+import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.model.meta.{ CollectionType, ComponentType, DefaultEntityMetadata, EntityMetadata, EntityType, IdentifierType, Type }
 import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }
 import java.{ util => ju }
-import org.beangle.commons.lang.reflect.BeanManifest
+import org.hibernate.`type`.CustomType
+import org.beangle.data.hibernate.udt.OptionEntityType
 
 //TODO add test by xml or annotation configuration
 class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging {
@@ -41,7 +43,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
       val classMetadatas = factory.getAllClassMetadata
       val entityCount = entityTypes.size
       val collectionCount = collectionTypes.size
-      for (entry <- classMetadatas.entrySet)
+      for (entry <- JavaConverters.asScalaSet(classMetadatas.entrySet))
         buildEntityType(factory, entry.getValue.getEntityName)
 
       collectionTypes.clear()
@@ -62,7 +64,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
         logger.error(s"Cannot find classMetadata for $entityName")
         return null
       }
-      val entityManifest = BeanManifest.get(cm.getMappedClass)
+      val entityManifest = BeanInfos.get(cm.getMappedClass)
       entityType = new EntityType(cm.getMappedClass, cm.getEntityName, cm.getIdentifierPropertyName)
       entityTypes.put(cm.getEntityName, entityType)
       val propertyTypes = new mutable.HashMap[String, Type]
@@ -76,7 +78,11 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
           propertyTypes.put(pname,
             buildCollectionType(factory, entityManifest.getPropertyType(pname).get, entityName + "." + pname))
         } else {
-          propertyTypes.put(pname, new IdentifierType(entityManifest.getPropertyType(pname).get))
+          if (htype.isInstanceOf[CustomType] && htype.asInstanceOf[CustomType].getUserType.isInstanceOf[OptionEntityType]) {
+            propertyTypes.put(pname, buildEntityType(factory, htype.asInstanceOf[CustomType].getUserType.asInstanceOf[OptionEntityType].entityName))
+          } else {
+            propertyTypes.put(pname, new IdentifierType(entityManifest.getPropertyType(pname).get))
+          }
         }
       }
       propertyTypes.put(cm.getIdentifierPropertyName, new IdentifierType(cm.getIdentifierType.getReturnedClass))
@@ -110,7 +116,7 @@ class EntityMetadataBuilder(factories: Iterable[SessionFactory]) extends Logging
       val hcType = cm.getPropertyType(propertyName).asInstanceOf[htype.ComponentType]
       val propertyNames = hcType.getPropertyNames
 
-      val comManifest = BeanManifest.get(hcType.getReturnedClass)
+      val comManifest = BeanInfos.get(hcType.getReturnedClass)
       val propertyTypes = new mutable.HashMap[String, Type]
       var j = 0
       while (j < propertyNames.length) {

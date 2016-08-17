@@ -21,9 +21,7 @@ package org.beangle.data.model.util
 import org.beangle.data.model.meta._
 import org.beangle.data.model._
 /**
- * <p>
  * Populator interface.
- * </p>
  *
  * @author chaostone
  */
@@ -31,10 +29,10 @@ trait Populator {
   /**
    * populate.
    */
-  def populate(target: Entity[_], entityType: EntityType, params: collection.Map[String, Any])
+  def populate(target: Entity[_], entityType: EntityType, params: collection.Map[String, Any]): Int
 
   /**
-   * @return true when success populate.
+   *
    */
   def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean
 

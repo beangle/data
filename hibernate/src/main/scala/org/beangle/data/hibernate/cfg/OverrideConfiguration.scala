@@ -20,21 +20,20 @@ package org.beangle.data.hibernate.cfg
 
 import java.lang.reflect.Field
 import java.{ util => ju }
-import scala.collection.JavaConversions.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
+import scala.collection.JavaConverters.{ asScalaBuffer, asScalaSet, collectionAsScalaIterable }
 import scala.collection.mutable
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.logging.Logging
 import org.beangle.data.hibernate.PropertyAccessor
 import org.beangle.data.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, TableSeqGenerator }
-import org.beangle.data.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionLongType, SeqType, SetType, ValueType }
+import org.beangle.data.hibernate.udt._
 import org.beangle.data.hibernate.naming.NamingPolicy
 import org.hibernate.DuplicateMappingException
 import org.hibernate.DuplicateMappingException.Type
 import org.hibernate.cfg.{ Configuration, Mappings }
 import org.hibernate.mapping.{ Collection, IdGenerator, MappedSuperclass, PersistentClass, Property, RootClass, SimpleValue }
-import org.beangle.commons.lang.time.HourMinute
-import org.beangle.commons.lang.time.WeekDay._
+
 /**
  * Override Configuration
  */
@@ -60,7 +59,11 @@ class OverrideConfiguration extends Configuration with Logging {
       ("map", classOf[MapType]), ("byte?", classOf[OptionByteType]),
       ("char?", classOf[OptionCharType]), ("int?", classOf[OptionIntType]),
       ("bool?", classOf[OptionBooleanType]), ("long?", classOf[OptionLongType]),
-      ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType])) foreach {
+      ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType]),
+      ("java.lang.String?", classOf[OptionStringType]),
+      ("java.util.Date?", classOf[OptionJuDateType]),
+      ("java.sql.Date?", classOf[OptionJsDateType]),
+      ("java.sql.Timestamp?", classOf[OptionJsTimestampType])) foreach {
         case (name, clazz) => mappings.addTypeDef(name, clazz.getName, new ju.Properties)
       }
   }
@@ -88,13 +91,13 @@ class OverrideConfiguration extends Configuration with Logging {
 
     if (null == namingPolicy || !namingPolicy.multiSchema) return
 
-    for (clazz <- classes.values()) {
+    for (clazz <- collectionAsScalaIterable(classes.values())) {
       namingPolicy.getSchema(clazz.getMappedClass) foreach { schema =>
         clazz.getTable().setSchema(schema)
       }
     }
 
-    for (collection <- collections.values()) {
+    for (collection <- collectionAsScalaIterable(collections.values())) {
       val table = collection.getCollectionTable()
       if (null != table && !collection.isOneToMany) {
         namingPolicy.getSchema(collection.getOwner.getMappedClass) foreach (schema => table.setSchema(schema))
@@ -110,7 +113,7 @@ class OverrideConfiguration extends Configuration with Logging {
     super.secondPassCompile()
     configSchema()
     val hackedEntityNames = new mutable.HashSet[String]
-    for (entry <- classes.entrySet()) {
+    for (entry <- asScalaSet(classes.entrySet)) {
       if (!entry.getKey().equals(entry.getValue().getEntityName())) hackedEntityNames.add(entry.getKey())
     }
     for (entityName <- hackedEntityNames)
@@ -232,10 +235,9 @@ private[cfg] object PersistentClassMerger extends Logging {
       field.setAccessible(true)
       field
     } catch {
-      case e: Exception => {
+      case e: Exception =>
         logger.error(s"Cannot access PersistentClass $name field ,Override Mapping will be disabled", e)
         null
-      }
     }
   }
 
@@ -258,7 +260,7 @@ private[cfg] object PersistentClassMerger extends Logging {
     msc.setMappedClass(parent.getMappedClass())
 
     // 2.clear old subclass property
-    val parentClassName=parent.getClassName
+    val parentClassName = parent.getClassName
     parent.setSuperMappedSuperclass(msc)
     parent.setClassName(className)
     parent.setProxyInterfaceName(className)
@@ -269,7 +271,7 @@ private[cfg] object PersistentClassMerger extends Logging {
     }
     try {
       val declareProperties = declarePropertyField.get(parent).asInstanceOf[java.util.List[Property]]
-      for (p <- declareProperties)
+      for (p <- asScalaBuffer(declareProperties))
         msc.addDeclaredProperty(p)
       subPropertyField.get(parent).asInstanceOf[java.util.List[_]].clear()
       subclassField.get(parent).asInstanceOf[java.util.List[_]].clear()

@@ -44,7 +44,7 @@ object Hierarchicals {
   }
 
   /**
-   * 加载字节点
+   * 加载子节点
    *
    * @param node
    * @param children
@@ -83,9 +83,7 @@ object Hierarchicals {
   }
 
   /**
-   * [p]
    * tag.
-   * [/p]
    *
    * @param datas a {@link java.util.List} object.
    * @param property a String object.
@@ -96,9 +94,11 @@ object Hierarchicals {
     val sortedMap = new mutable.HashMap[T, String]
     for (de <- datas) {
       var myId = String.valueOf(Properties.get[Any](de, property)) + "_"
-      if (null != de.parent && sortedMap.contains(de.parent)) {
-        myId = String.valueOf(sortedMap.get(de.parent) + myId)
-        if (!myId.endsWith("_")) myId += "_"
+      de.parent foreach { p =>
+        if (sortedMap.contains(p)) {
+          myId = String.valueOf(sortedMap.get(p) + myId)
+          if (!myId.endsWith("_")) myId += "_"
+        }
       }
       updatedTagFor(myId, de, sortedMap)
       sortedMap.put(de, myId)
@@ -128,7 +128,7 @@ object Hierarchicals {
   def getRoots[T <: Hierarchical[T]](nodes: Seq[T]): Seq[T] = {
     val roots = new mutable.ListBuffer[T]
     for (m <- nodes)
-      if (null == m.parent || !nodes.contains(m.parent)) roots += m
+      if (None == m.parent || !nodes.contains(m.parent.get)) roots += m
     roots
   }
 
@@ -142,7 +142,7 @@ object Hierarchicals {
     var curNode = node
     while (null != curNode && !path.contains(curNode)) {
       path = curNode :: path
-      curNode = curNode.parent
+      curNode = curNode.parent.getOrElse(null.asInstanceOf[T])
     }
     path
   }
@@ -161,10 +161,10 @@ object Hierarchicals {
     val parents = new mutable.HashSet[T]
     for (n <- nodes) {
       var node = n
-      while (null != node.parent && !parents.contains(node.parent)
-        && !Objects.equals(node.parent, toRoot)) {
-        parents.add(node.parent)
-        node = node.parent
+      while (None != node.parent && !parents.contains(node.parent.get)
+        && !Objects.equals(node.parent.get, toRoot)) {
+        parents.add(node.parent.get)
+        node = node.parent.get
       }
     }
     nodes ++= parents
@@ -175,23 +175,26 @@ object Hierarchicals {
       if (Numbers.toInt(node.indexno) != index) shiftCode(node, sibling, index)
       else Seq.empty
     } else {
-      if (null != node.parent) node.parent.children -= node
-      node.parent = null.asInstanceOf[T]
+      node.parent foreach { p => p.children -= node }
+      node.parent = None
       shiftCode(node, sibling, index)
     }
   }
 
+  /**
+   * 将节点移动到给定位置
+   * implementation:
+   *   由于级联保存的原因，不要更改原有上级节点和目标上级节点的children属性
+   */
   def move[T <: Hierarchical[T]](node: T, location: T, index: Int): Iterable[T] = {
     var sibling: Buffer[T] = location.children
     sibling.sorted
     sibling -= node
-
-    if (node.parent == location) {
+    if (node.parent == Option(location)) {
       if (Numbers.toInt(node.indexno) != index) shiftCode(node, sibling, index)
       else Seq.empty
     } else {
-      if (null != node.parent) node.parent.children -= node
-      node.parent = location
+      node.parent = Option(location)
       shiftCode(node, sibling, index)
     }
   }
@@ -213,21 +216,21 @@ object Hierarchicals {
   private def generateCode[T <: Hierarchical[T]](node: T, indexno: String, nodes: collection.mutable.Set[T]): Unit = {
     nodes.add(node)
     if (null != indexno) genIndexno(node, indexno) else genIndexno(node)
-
     if (null != node.children) {
-      node.children foreach { m =>
-        generateCode(m, null, nodes)
-      }
+      node.children foreach (m => generateCode(m, null, nodes))
     }
   }
 
   private def genIndexno[T <: Hierarchical[T]](node: T, indexno: String): Unit = {
-    if (null == node.parent) node.indexno = indexno
-    else node.indexno = Strings.concat(node.parent.indexno, ".", indexno)
+    node.parent match {
+      case Some(p) => node.indexno = Strings.concat(p.indexno, ".", indexno)
+      case None    => node.indexno = indexno
+    }
   }
 
   private def genIndexno[T <: Hierarchical[T]](node: T) {
-    if (null != node.parent)
-      node.indexno = Strings.concat(node.parent.indexno, ".", String.valueOf(node.lastindex));
+    node.parent foreach { p =>
+      node.indexno = Strings.concat(p.indexno, ".", String.valueOf(node.lastindex))
+    }
   }
 }

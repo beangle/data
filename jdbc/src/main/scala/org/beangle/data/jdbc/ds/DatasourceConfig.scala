@@ -60,11 +60,11 @@ object DatasourceConfig {
     }
 
     val processed = Set("url", "driver", "props", "user", "password", "catalog", "schema")
-    xml \\ "datasource" \ "_" foreach { n =>
+    val dbNodeName = if ((xml \\ "datasource").isEmpty) "db" else "datasource";
+    xml \\ dbNodeName \ "_" foreach { n =>
       val label = n.label
       if (!processed.contains(label) && Strings.isNotEmpty(n.text)) dbconf.props.put(label, n.text)
     }
-
     dbconf
   }
 

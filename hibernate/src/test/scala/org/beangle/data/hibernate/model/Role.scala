@@ -27,15 +27,17 @@ class Role(var id: Int) extends Entity[Int] with Coded {
 
   def this() = this(0)
 
-  var parent: Role = _
+  var parent: Option[Role] = _
   var children = Collections.newBuffer[Role]
-  var createdAt: java.util.Date = _
-  var expiredOn: java.sql.Date = _
-  var updatedAt: java.sql.Timestamp = _
-  var s: java.util.Calendar = _
+  var createdAt: java.util.Date = new java.util.Date(System.currentTimeMillis)
+  var expiredOn: java.sql.Date = new java.sql.Date(System.currentTimeMillis)
+  var updatedAt: java.sql.Timestamp = new java.sql.Timestamp(System.currentTimeMillis)
+  var s: java.util.Calendar = java.util.Calendar.getInstance
+
+  var creator: Option[User] = _
 }
 
 class ExtendRole(id: Int) extends Role(id) {
-  var enName: String = _
+  var enName: String = "role" + id
   def this() = this(0)
 }

@@ -24,7 +24,7 @@ import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.{ Charsets, ClassLoaders, Primitives }
 import org.beangle.commons.lang.Strings.isBlank
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.commons.lang.reflect.BeanManifest
+import org.beangle.commons.lang.reflect.{ BeanInfos, BeanInfo }
 import org.beangle.data.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration }
 import org.hibernate.`type`.{ BasicType, Type }
 import org.hibernate.mapping.{ Component, Property, RootClass }
@@ -53,7 +53,7 @@ class HbmLint {
     while (iterpc.hasNext) {
       val pc = iterpc.next
       val clazz = pc.getMappedClass
-      val meta = BeanManifest.get(clazz)
+      val meta = BeanInfos.get(clazz)
       if (isBlank(packageName) || clazz.getPackage.getName.startsWith(packageName)) {
         if (pc.isInstanceOf[RootClass]) {
           checkProperty(clazz, meta, pc.getIdentifierProperty, writer)
@@ -73,7 +73,7 @@ class HbmLint {
     }
   }
 
-  private def checkProperty(clazz: Class[_], meta: BeanManifest, p: Property, writer: Writer): Unit = {
+  private def checkProperty(clazz: Class[_], meta: BeanInfo, p: Property, writer: Writer): Unit = {
     if (p.getColumnSpan == 1) {
       meta.getPropertyType(p.getName) match {
         case Some(ptype) =>
@@ -105,7 +105,7 @@ class HbmLint {
       val pc = p.getValue.asInstanceOf[Component]
       val componentClass = pc.getComponentClass
       val cpi = pc.getPropertyIterator
-      val pcMeta = BeanManifest.get(componentClass)
+      val pcMeta = BeanInfos.get(componentClass)
       while (cpi.hasNext) {
         checkProperty(clazz, pcMeta, cpi.next.asInstanceOf[Property], writer)
       }

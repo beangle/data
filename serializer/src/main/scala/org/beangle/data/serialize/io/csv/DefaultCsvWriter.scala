@@ -19,11 +19,12 @@
 package org.beangle.data.serialize.io.csv
 
 import java.io.Writer
-import org.beangle.data.serialize.io.{ AbstractWriter, StreamWriter }
-import org.beangle.data.serialize.marshal.MarshallingContext
+
 import scala.collection.mutable.ListBuffer
-import org.beangle.commons.lang.reflect.BeanManifest
-import org.beangle.data.serialize.marshal.Type
+
+import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.data.serialize.io.AbstractWriter
+import org.beangle.data.serialize.marshal.MarshallingContext
 
 class DefaultCsvWriter(out: Writer) extends AbstractWriter {
   val innerWriter = new org.beangle.commons.csv.CsvWriter(out)
@@ -70,7 +71,7 @@ class DefaultCsvWriter(out: Writer) extends AbstractWriter {
   def getProperties(context: MarshallingContext): Array[String] = {
     val propertyNames = new ListBuffer[String]
     if (null != context.elementType) {
-      val manifest = BeanManifest.get(context.elementType)
+      val manifest = BeanInfos.get(context.elementType)
       val processed = new collection.mutable.HashSet[Class[_]]
       processed += context.elementType
       for (name <- context.getProperties(context.elementType)) {
@@ -81,7 +82,7 @@ class DefaultCsvWriter(out: Writer) extends AbstractWriter {
   }
 
   private def addAttribute(prefix: String, name: String, clazz: Class[_], names: ListBuffer[String],
-    context: MarshallingContext, processed: collection.mutable.HashSet[Class[_]]): Unit = {
+                           context: MarshallingContext, processed: collection.mutable.HashSet[Class[_]]): Unit = {
     if (processed.contains(clazz)) {
       names += (prefix + name)
       return
@@ -90,7 +91,7 @@ class DefaultCsvWriter(out: Writer) extends AbstractWriter {
     if (properties.isEmpty) {
       names += (prefix + name)
     } else {
-      val manifest = BeanManifest.get(clazz)
+      val manifest = BeanInfos.get(clazz)
       processed += clazz
       properties foreach { n =>
         addAttribute(prefix + name + ".", n, manifest.getPropertyType(n).get, names, context, processed)
