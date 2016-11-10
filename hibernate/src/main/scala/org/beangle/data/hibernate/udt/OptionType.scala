@@ -69,7 +69,9 @@ abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
 
   def isMutable = false
 
-  def equals(x: Object, y: Object) = x.equals(y)
+  def equals(x: Object, y: Object) ={
+    Objects.equals(x, y)
+  }
 
   def hashCode(x: Object) = x.hashCode
 
