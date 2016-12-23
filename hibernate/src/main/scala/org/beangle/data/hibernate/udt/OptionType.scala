@@ -21,13 +21,13 @@ package org.beangle.data.hibernate.udt
 import java.io.{ Serializable => JSerializable }
 import java.sql.{ PreparedStatement, ResultSet }
 
-import org.beangle.commons.lang.{ JChar, JByte, JBoolean, JInt, JLong, JFloat, JDouble, Primitives, Objects }
+import org.beangle.commons.lang.{ JChar, JByte, JBoolean, JInt, JShort, JLong, JFloat, JDouble, Primitives, Objects }
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.bean.Properties
 import org.beangle.data.model.Entity
 import org.beangle.data.model.bind.Jpas
 import org.hibernate.`type`.AbstractSingleColumnStandardBasicType
-import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, LONG, BOOLEAN, STRING, DATE, TIMESTAMP }
+import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, SHORT, LONG, BOOLEAN, STRING, DATE, TIMESTAMP }
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.usertype.{ ParameterizedType, UserType }
 
@@ -35,7 +35,7 @@ object OptionBasicType {
   val java2HibernateTypes: Map[Class[_], AbstractSingleColumnStandardBasicType[_]] =
     Map((classOf[JChar], CHARACTER), (classOf[String], STRING),
       (classOf[JByte], BYTE), (classOf[JBoolean], BOOLEAN),
-      (classOf[JInt], INTEGER), (classOf[JLong], LONG),
+      (classOf[JInt], INTEGER), (classOf[JShort], SHORT), (classOf[JLong], LONG),
       (classOf[JFloat], FLOAT), (classOf[JDouble], DOUBLE),
       (classOf[java.util.Date], TIMESTAMP), (classOf[java.sql.Date], DATE),
       (classOf[java.sql.Timestamp], TIMESTAMP))
@@ -69,7 +69,7 @@ abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
 
   def isMutable = false
 
-  def equals(x: Object, y: Object) ={
+  def equals(x: Object, y: Object) = {
     Objects.equals(x, y)
   }
 
@@ -87,6 +87,8 @@ abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
 class OptionCharType extends OptionBasicType(classOf[JChar])
 
 class OptionByteType extends OptionBasicType(classOf[JByte])
+
+class OptionShortType extends OptionBasicType(classOf[JShort])
 
 class OptionIntType extends OptionBasicType(classOf[JInt])
 

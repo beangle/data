@@ -58,6 +58,7 @@ class OverrideConfiguration extends Configuration with Logging {
     Map(("seq", classOf[SeqType]), ("set", classOf[SetType]),
       ("map", classOf[MapType]), ("byte?", classOf[OptionByteType]),
       ("char?", classOf[OptionCharType]), ("int?", classOf[OptionIntType]),
+      ("short?", classOf[OptionShortType]),
       ("bool?", classOf[OptionBooleanType]), ("long?", classOf[OptionLongType]),
       ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType]),
       ("java.lang.String?", classOf[OptionStringType]),
