@@ -26,7 +26,7 @@ import org.beangle.commons.lang.{ ClassLoaders, Locales, Strings }
 import org.beangle.commons.lang.Strings.{ isBlank, split, substringAfter, substringAfterLast, substringBeforeLast }
 import org.beangle.commons.lang.SystemInfo
 import org.beangle.commons.logging.Logging
-import org.beangle.commons.i18n.Messages
+import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration }
 import org.hibernate.cfg.AvailableSettings.{ DEFAULT_CATALOG, DEFAULT_SCHEMA, DIALECT }
 import org.hibernate.cfg.Configuration

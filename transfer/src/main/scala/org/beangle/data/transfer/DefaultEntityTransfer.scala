@@ -18,7 +18,7 @@
  */
 package org.beangle.data.transfer
 
-import org.beangle.data.model.meta.EntityType
+import org.beangle.commons.model.meta.EntityType
 
 object DefaultEntityTransfer {
 

@@ -16,13 +16,25 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.hibernate.model
+package org.beangle.commons.dbf.core
 
-import org.beangle.commons.model.Named
-import org.beangle.commons.model.annotation.code
-import org.beangle.commons.model.IntId
+object DataType extends Enumeration {
+  class DataType(val v: Byte) extends Val {
+    def this(c: Char) {
+      this((c & 0xff).asInstanceOf[Byte])
+    }
+    override def toString = {
+      String.valueOf(v.asInstanceOf[Char])
+    }
+  }
 
-@code("school")
-class IdType extends IntId with Coded with Named {
+  val Char = new DataType('C')
+  val Date = new DataType('D')
+  val Float = new DataType('F')
+  val Logical = new DataType('L')
+  val Numeric = new DataType('N')
 
+  def valueOf(bv: Byte): DataType = {
+    values.find(p => p.asInstanceOf[DataType].v == bv).getOrElse(null).asInstanceOf[DataType]
+  }
 }

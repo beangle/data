@@ -18,8 +18,8 @@
  */
 package org.beangle.data.hibernate.model
 
-import org.beangle.data.model.{ Named, YearId }
-import org.beangle.data.model.{ IntId, LongId }
+import org.beangle.commons.model.{ Named, YearId }
+import org.beangle.commons.model.{ IntId, LongId }
 
 class LongIdResource extends LongId with Named {
 

@@ -21,7 +21,7 @@ package org.beangle.data.hibernate.id
 import java.{ util => ju }
 
 import org.beangle.commons.lang.{ Chars, Numbers }
-import org.beangle.data.model.Coded
+import org.beangle.commons.model.Coded
 import org.hibernate.`type`.{ IntegerType, LongType, ShortType, Type }
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.spi.SessionImplementor
@@ -41,9 +41,9 @@ class CodeStyleGenerator extends IdentifierGenerator with Configurable {
     obj match {
       case coded: Coded =>
         var result = identifierType match {
-          case lt: LongType => Numbers.convert2Long(coded.code, null)
+          case lt: LongType    => Numbers.convert2Long(coded.code, null)
           case it: IntegerType => Numbers.convert2Int(coded.code, null)
-          case st: ShortType => Numbers.convert2Short(coded.code, null)
+          case st: ShortType   => Numbers.convert2Short(coded.code, null)
         }
         if (null == result) {
           val code = coded.code
@@ -57,9 +57,9 @@ class CodeStyleGenerator extends IdentifierGenerator with Configurable {
             }
           }
           result = identifierType match {
-            case lt: LongType => Numbers.convert2Long(builder.toString)
+            case lt: LongType    => Numbers.convert2Long(builder.toString)
             case it: IntegerType => Numbers.convert2Int(builder.toString)
-            case st: ShortType => Numbers.convert2Short(builder.toString)
+            case st: ShortType   => Numbers.convert2Short(builder.toString)
           }
         }
         result

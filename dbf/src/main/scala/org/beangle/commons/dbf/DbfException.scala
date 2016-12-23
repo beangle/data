@@ -16,13 +16,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.hibernate.model
+package org.beangle.commons.dbf
 
-import org.beangle.commons.model.Named
-import org.beangle.commons.model.annotation.code
-import org.beangle.commons.model.IntId
+class DbfException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
 
-@code("school")
-class IdType extends IntId with Coded with Named {
-
+  def this(message: String) {
+    this(message, null);
+  }
+  def this(cause: Throwable) {
+    this(null, cause)
+  }
 }

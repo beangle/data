@@ -18,7 +18,7 @@
  */
 package org.beangle.data.hibernate.naming
 
-import org.beangle.data.model.annotation.code
+import org.beangle.commons.model.annotation.code
 
 @code("nation")
 class NationBean {

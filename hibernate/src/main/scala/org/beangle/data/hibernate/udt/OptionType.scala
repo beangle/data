@@ -24,8 +24,8 @@ import java.sql.{ PreparedStatement, ResultSet }
 import org.beangle.commons.lang.{ JChar, JByte, JBoolean, JInt, JShort, JLong, JFloat, JDouble, Primitives, Objects }
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.bean.Properties
-import org.beangle.data.model.Entity
-import org.beangle.data.model.bind.Jpas
+import org.beangle.commons.model.Entity
+import org.beangle.commons.model.bind.Jpas
 import org.hibernate.`type`.AbstractSingleColumnStandardBasicType
 import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, SHORT, LONG, BOOLEAN, STRING, DATE, TIMESTAMP }
 import org.hibernate.engine.spi.SessionImplementor

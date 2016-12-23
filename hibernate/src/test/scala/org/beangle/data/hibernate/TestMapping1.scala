@@ -23,7 +23,7 @@ import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.hibernate.udt.ValueType
 import org.beangle.data.hibernate.model.{ Coded, IntIdResource, LongDateIdResource, LongIdResource, Skill, SkillType, User }
-import org.beangle.data.model.bind.Mapping
+import org.beangle.commons.model.bind.Mapping
 import org.beangle.commons.lang.time.WeekDay
 import org.beangle.data.hibernate.model.Profile
 

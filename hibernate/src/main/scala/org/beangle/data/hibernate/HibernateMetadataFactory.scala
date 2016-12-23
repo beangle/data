@@ -19,9 +19,9 @@
 package org.beangle.data.hibernate
 
 import org.beangle.commons.bean.Factory
-import org.beangle.commons.inject.{ Container, ContainerListener }
+import org.beangle.commons.cdi.{ Container, ContainerListener }
 import org.beangle.commons.lang.annotation.description
-import org.beangle.data.model.meta.EntityMetadata
+import org.beangle.commons.model.meta.EntityMetadata
 import org.hibernate.SessionFactory
 
 @description("基于Hibernate提供的元信息工厂")

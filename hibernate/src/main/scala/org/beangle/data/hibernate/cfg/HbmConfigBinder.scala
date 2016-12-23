@@ -22,8 +22,8 @@ import java.{ util => ju }
 import java.lang.reflect.Modifier
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.data.model.bind.Binder.{ CollectionProperty, Column, ColumnHolder, Component, ComponentProperty, CompositeElement, CompositeKey, Element, Entity, Fetchable, IdProperty, ToManyElement, ManyToOneKey, ManyToOneProperty, MapProperty, Property, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey, TypeNameHolder }
-import org.beangle.data.model.bind.Jpas
+import org.beangle.commons.model.bind.Binder.{ CollectionProperty, Column, ColumnHolder, Component, ComponentProperty, CompositeElement, CompositeKey, Element, Entity, Fetchable, IdProperty, ToManyElement, ManyToOneKey, ManyToOneProperty, MapProperty, Property, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey, TypeNameHolder }
+import org.beangle.commons.model.bind.Jpas
 import org.beangle.data.hibernate.udt.OptionEntityType
 import org.hibernate.{ FetchMode, MappingException }
 import org.hibernate.cfg.{ CollectionSecondPass, Mappings }

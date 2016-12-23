@@ -21,7 +21,7 @@ package org.beangle.data.hibernate
 import scala.collection.mutable.ListBuffer
 
 import org.beangle.commons.lang.time.WeekState
-import org.beangle.data.dao.OqlBuilder
+import org.beangle.commons.dao.OqlBuilder
 import org.beangle.data.hibernate.model.{ ExtendRole, Member, Name, Role, User }
 import org.hibernate.SessionFactory
 

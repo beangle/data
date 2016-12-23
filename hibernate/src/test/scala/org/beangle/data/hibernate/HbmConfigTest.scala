@@ -28,8 +28,8 @@ import org.beangle.data.hibernate.cfg.{ ConfigurationBuilder, OverrideConfigurat
 import org.beangle.data.hibernate.model.{ ExtendRole, Role, User }
 import org.beangle.data.hibernate.naming.RailsNamingPolicy
 import org.beangle.data.jdbc.ds.DataSourceUtils
-import org.beangle.data.model.meta.EntityType
-import org.beangle.data.model.util.ConvertPopulator
+import org.beangle.commons.model.meta.EntityType
+import org.beangle.commons.model.util.ConvertPopulator
 
 import org.hibernate.dialect.H2Dialect
 import org.junit.runner.RunWith

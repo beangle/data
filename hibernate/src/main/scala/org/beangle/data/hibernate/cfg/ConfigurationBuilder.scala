@@ -26,9 +26,9 @@ import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.logging.Logging
 import org.beangle.data.hibernate.naming.RailsNamingPolicy
 import org.beangle.data.hibernate.udt.{ EnumType, OptionEntityType, ValueType }
-import org.beangle.data.model.bind.Binder
-import org.beangle.data.model.bind.Binder.TypeDef
-import org.beangle.data.model.bind.Mapping
+import org.beangle.commons.model.bind.Binder
+import org.beangle.commons.model.bind.Binder.TypeDef
+import org.beangle.commons.model.bind.Mapping
 import org.hibernate.cfg.{ AvailableSettings, Configuration, Mappings, NamingStrategy }
 
 import javax.persistence.Entity

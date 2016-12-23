@@ -13,7 +13,7 @@
 
   <modules>
     <module>jdbc</module>
-    <module>model</module>
+    <module>dbf</module>
     <module>hibernate</module>
     <module>serializer</module>
     <module>transfer</module>
@@ -38,8 +38,7 @@
   </scm>
 
   <properties>
-    <commons.version>4.5.5</commons.version>
-    <cdi.version>0.0.9</cdi.version>
+    <commons.version>4.6.0</commons.version>
     <spring.version>4.0.4.RELEASE</spring.version>
     <HikariCP.version>2.5.1</HikariCP.version>
   </properties>
@@ -49,11 +48,6 @@
       <dependency>
         <groupId>org.beangle.commons</groupId>
         <artifactId>beangle-commons-core_2.12</artifactId>
-        <version>${commons.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.beangle.commons</groupId>
-        <artifactId>beangle-commons-i18n_2.12</artifactId>
         <version>${commons.version}</version>
       </dependency>
       <dependency>
@@ -72,14 +66,14 @@
         <version>${commons.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.beangle.cdi</groupId>
-        <artifactId>beangle-cdi-spring_2.12</artifactId>
-        <version>${cdi.version}</version>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-cdi_2.12</artifactId>
+        <version>${commons.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.beangle.data</groupId>
-        <artifactId>beangle-data-model_2.12</artifactId>
-        <version>${project.version}</version>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-model_2.12</artifactId>
+        <version>${commons.version}</version>
       </dependency>
       <dependency>
         <groupId>org.beangle.data</groupId>

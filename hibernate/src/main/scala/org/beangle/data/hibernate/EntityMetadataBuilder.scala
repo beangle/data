@@ -23,7 +23,7 @@ import scala.collection.mutable
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.data.model.meta.{ CollectionType, ComponentType, DefaultEntityMetadata, EntityMetadata, EntityType, IdentifierType, Type }
+import org.beangle.commons.model.meta.{ CollectionType, ComponentType, DefaultEntityMetadata, EntityMetadata, EntityType, IdentifierType, Type }
 import org.hibernate.SessionFactory
 import org.hibernate.`type`.{ MapType, SetType }
 import org.hibernate.{ `type` => htype }

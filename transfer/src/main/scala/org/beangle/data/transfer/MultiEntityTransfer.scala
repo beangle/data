@@ -20,8 +20,8 @@ package org.beangle.data.transfer
 
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
-import org.beangle.data.model.Entity
-import org.beangle.data.model.meta.EntityType
+import org.beangle.commons.model.Entity
+import org.beangle.commons.model.meta.EntityType
 
 /**
  * MultiEntityImporter class.

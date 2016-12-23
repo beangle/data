@@ -16,13 +16,27 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.hibernate.model
+package org.beangle.commons.dbf;
 
-import org.beangle.commons.model.Named
-import org.beangle.commons.model.annotation.code
-import org.beangle.commons.model.IntId
+import org.junit.runner.RunWith
+import org.scalatest.FunSpec
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.Matchers
+import java.io.File
+import java.nio.charset.Charset
 
-@code("school")
-class IdType extends IntId with Coded with Named {
+@RunWith(classOf[JUnitRunner])
+class ReaderTest extends FunSpec with Matchers {
 
+  describe("Reader") {
+    it("readinfo") {
+      val fileName = "/home/chaostone/buf/XL_2013_10.dbf"
+      val in = new File(fileName)
+      if (in.exists) {
+        println(Reader.readInfo(in))
+        val csv = new File(fileName.replace("dbf", "csv"))
+        Reader.writeToCsv(in, csv, Charset.forName("GB18030"))
+      }
+    }
+  }
 }

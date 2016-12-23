@@ -18,7 +18,7 @@
  */
 package org.beangle.data.hibernate.model
 
-import org.beangle.data.model.Entity
+import org.beangle.commons.model.Entity
 import org.beangle.commons.collection.Collections
 
 class Role(var id: Int) extends Entity[Int] with Coded {

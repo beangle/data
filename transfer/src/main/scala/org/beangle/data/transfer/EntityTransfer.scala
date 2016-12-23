@@ -19,9 +19,9 @@
 package org.beangle.data.transfer
 
 import java.util.Set
-import org.beangle.data.model.util.Populator
+import org.beangle.commons.model.util.Populator
 import org.beangle.data.transfer.io.ItemReader
-import org.beangle.data.model.meta.EntityMetadata
+import org.beangle.commons.model.meta.EntityMetadata
 
 /**
  * EntityImporter interface.
