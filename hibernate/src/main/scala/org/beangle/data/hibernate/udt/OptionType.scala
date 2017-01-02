@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -69,19 +69,29 @@ abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
 
   def isMutable = false
 
-  def equals(x: Object, y: Object) = {
+  def equals(x: Object, y: Object): Boolean = {
     Objects.equals(x, y)
   }
 
-  def hashCode(x: Object) = x.hashCode
+  def hashCode(x: Object): Int = {
+    x.hashCode
+  }
 
-  def deepCopy(value: Object) = value
+  def deepCopy(value: Object): Object = {
+    value
+  }
 
-  def replace(original: Object, target: Object, owner: Object) = original
+  def replace(original: Object, target: Object, owner: Object): Object = {
+    original
+  }
 
-  def disassemble(value: Object) = value.asInstanceOf[JSerializable]
+  def disassemble(value: Object): JSerializable = {
+    value.asInstanceOf[JSerializable]
+  }
 
-  def assemble(cached: JSerializable, owner: Object): Object = cached.asInstanceOf[Object]
+  def assemble(cached: JSerializable, owner: Object): Object = {
+    cached.asInstanceOf[Object]
+  }
 }
 
 class OptionCharType extends OptionBasicType(classOf[JChar])
