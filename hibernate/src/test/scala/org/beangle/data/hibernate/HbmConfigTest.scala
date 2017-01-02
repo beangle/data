@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -28,8 +28,8 @@ import org.beangle.data.hibernate.cfg.{ ConfigurationBuilder, OverrideConfigurat
 import org.beangle.data.hibernate.model.{ ExtendRole, Role, User }
 import org.beangle.data.hibernate.naming.RailsNamingPolicy
 import org.beangle.data.jdbc.ds.DataSourceUtils
-import org.beangle.data.model.meta.EntityType
-import org.beangle.data.model.util.ConvertPopulator
+import org.beangle.commons.model.meta.EntityType
+import org.beangle.commons.model.util.ConvertPopulator
 
 import org.hibernate.dialect.H2Dialect
 import org.junit.runner.RunWith

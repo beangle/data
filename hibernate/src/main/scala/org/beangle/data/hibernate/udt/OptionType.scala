@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -21,13 +21,13 @@ package org.beangle.data.hibernate.udt
 import java.io.{ Serializable => JSerializable }
 import java.sql.{ PreparedStatement, ResultSet }
 
-import org.beangle.commons.lang.{ JChar, JByte, JBoolean, JInt, JLong, JFloat, JDouble, Primitives, Objects }
+import org.beangle.commons.lang.{ JChar, JByte, JBoolean, JInt, JShort, JLong, JFloat, JDouble, Primitives, Objects }
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.bean.Properties
-import org.beangle.data.model.Entity
-import org.beangle.data.model.bind.Jpas
+import org.beangle.commons.model.Entity
+import org.beangle.commons.model.bind.Jpas
 import org.hibernate.`type`.AbstractSingleColumnStandardBasicType
-import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, LONG, BOOLEAN, STRING, DATE, TIMESTAMP }
+import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, SHORT, LONG, BOOLEAN, STRING, DATE, TIMESTAMP }
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.usertype.{ ParameterizedType, UserType }
 
@@ -35,7 +35,7 @@ object OptionBasicType {
   val java2HibernateTypes: Map[Class[_], AbstractSingleColumnStandardBasicType[_]] =
     Map((classOf[JChar], CHARACTER), (classOf[String], STRING),
       (classOf[JByte], BYTE), (classOf[JBoolean], BOOLEAN),
-      (classOf[JInt], INTEGER), (classOf[JLong], LONG),
+      (classOf[JInt], INTEGER), (classOf[JShort], SHORT), (classOf[JLong], LONG),
       (classOf[JFloat], FLOAT), (classOf[JDouble], DOUBLE),
       (classOf[java.util.Date], TIMESTAMP), (classOf[java.sql.Date], DATE),
       (classOf[java.sql.Timestamp], TIMESTAMP))
@@ -69,22 +69,36 @@ abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
 
   def isMutable = false
 
-  def equals(x: Object, y: Object) = x.equals(y)
+  def equals(x: Object, y: Object): Boolean = {
+    Objects.equals(x, y)
+  }
 
-  def hashCode(x: Object) = x.hashCode
+  def hashCode(x: Object): Int = {
+    x.hashCode
+  }
 
-  def deepCopy(value: Object) = value
+  def deepCopy(value: Object): Object = {
+    value
+  }
 
-  def replace(original: Object, target: Object, owner: Object) = original
+  def replace(original: Object, target: Object, owner: Object): Object = {
+    original
+  }
 
-  def disassemble(value: Object) = value.asInstanceOf[JSerializable]
+  def disassemble(value: Object): JSerializable = {
+    value.asInstanceOf[JSerializable]
+  }
 
-  def assemble(cached: JSerializable, owner: Object): Object = cached.asInstanceOf[Object]
+  def assemble(cached: JSerializable, owner: Object): Object = {
+    cached.asInstanceOf[Object]
+  }
 }
 
 class OptionCharType extends OptionBasicType(classOf[JChar])
 
 class OptionByteType extends OptionBasicType(classOf[JByte])
+
+class OptionShortType extends OptionBasicType(classOf[JShort])
 
 class OptionIntType extends OptionBasicType(classOf[JInt])
 

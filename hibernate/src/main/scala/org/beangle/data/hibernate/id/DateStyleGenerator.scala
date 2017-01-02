@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +23,7 @@ import java.{ util => ju }
 
 import org.beangle.commons.lang.JLong
 import org.beangle.data.hibernate.naming.NamingPolicy
-import org.beangle.data.model.YearId
+import org.beangle.commons.model.YearId
 import org.hibernate.`type`.{ IntegerType, LongType, Type }
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.jdbc.spi.JdbcCoordinator
