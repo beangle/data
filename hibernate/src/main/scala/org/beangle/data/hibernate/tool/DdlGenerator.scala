@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -26,7 +26,7 @@ import org.beangle.commons.lang.{ ClassLoaders, Locales, Strings }
 import org.beangle.commons.lang.Strings.{ isBlank, split, substringAfter, substringAfterLast, substringBeforeLast }
 import org.beangle.commons.lang.SystemInfo
 import org.beangle.commons.logging.Logging
-import org.beangle.commons.i18n.Messages
+import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration }
 import org.hibernate.cfg.AvailableSettings.{ DEFAULT_CATALOG, DEFAULT_SCHEMA, DIALECT }
 import org.hibernate.cfg.Configuration

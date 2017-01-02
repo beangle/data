@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -20,8 +20,8 @@ package org.beangle.data.transfer
 
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
-import org.beangle.data.model.Entity
-import org.beangle.data.model.meta.EntityType
+import org.beangle.commons.model.Entity
+import org.beangle.commons.model.meta.EntityType
 
 /**
  * MultiEntityImporter class.

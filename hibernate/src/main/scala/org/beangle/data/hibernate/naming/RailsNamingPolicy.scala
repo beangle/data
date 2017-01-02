@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -20,7 +20,7 @@ package org.beangle.data.hibernate.naming
 
 import java.io.IOException
 import java.net.URL
-import org.beangle.commons.inject.Resources
+import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings.{ isNotEmpty, rightPad, substringBeforeLast, unCamel }
 import org.beangle.commons.logging.Logging
@@ -297,5 +297,3 @@ class RailsNamingPolicy extends NamingPolicy with Logging {
     var prefix: String = _
   }
 }
-
-

@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,7 @@
  */
 package org.beangle.data.hibernate.model
 
-import org.beangle.data.model.IntId
+import org.beangle.commons.model.IntId
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.commons.lang.time.HourMinute
 import org.beangle.commons.lang.time.WeekDay

@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@ package org.beangle.data.hibernate
 import scala.collection.mutable.ListBuffer
 
 import org.beangle.commons.lang.time.WeekState
-import org.beangle.data.dao.OqlBuilder
+import org.beangle.commons.dao.OqlBuilder
 import org.beangle.data.hibernate.model.{ ExtendRole, Member, Name, Role, User }
 import org.hibernate.SessionFactory
 

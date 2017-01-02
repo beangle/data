@@ -1,7 +1,7 @@
 /*
  * Beangle, Agile Development Scaffold and Toolkit
  *
- * Copyright (c) 2005-2016, Beangle Software.
+ * Copyright (c) 2005-2017, Beangle Software.
  *
  * Beangle is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -22,7 +22,7 @@ import scala.reflect.runtime.universe
 
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.data.hibernate.model.{ CodedEntity, Department, ExtendRole, Menu, Role, StringIdCodedEntity }
-import org.beangle.data.model.bind.Mapping
+import org.beangle.commons.model.bind.Mapping
 import org.beangle.commons.lang.reflect.ClassInfos
 
 object TestMapping2 extends Mapping {
