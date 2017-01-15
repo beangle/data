@@ -30,23 +30,28 @@ import java.{ util => ju }
 object PropertyAccessor {
 
   def createSetter(theClass: Class[_], propertyName: String): Setter = {
-    BeanInfos.get(theClass).getSetter(propertyName) match {
-      case Some(m) => new BasicSetter(theClass, m, propertyName)
+    BeanInfos.get(theClass).properties.get(propertyName) match {
+      case Some(p) => new BasicSetter(theClass, p.setter.get, propertyName, p.typeinfo.optional)
       case None    => throw new PropertyNotFoundException("Could not find a setter for " + propertyName + " in class " + theClass.getName())
     }
   }
 
   def createGetter(theClass: Class[_], propertyName: String): Getter = {
     BeanInfos.get(theClass).properties.get(propertyName) match {
-      case Some(p) => new BasicGetter(theClass, p.getter.get, p.clazz, propertyName)
+      case Some(p) => new BasicGetter(theClass, p.getter.get, p.clazz, propertyName, p.typeinfo.optional)
       case None    => throw new PropertyNotFoundException("Could not find a getter for " + propertyName + " in class " + theClass.getName())
     }
   }
 
-  final class BasicSetter(val clazz: Class[_], val method: Method, val propertyName: String) extends Setter {
+  final class BasicSetter(val clazz: Class[_], val method: Method, val propertyName: String, optional: Boolean) extends Setter {
     def set(target: Object, value: Object, factory: SessionFactoryImplementor) {
       try {
-        method.invoke(target, value)
+        val arg = if (optional) {
+          if (value.isInstanceOf[Option[_]]) value else Option(value)
+        } else {
+          value
+        }
+        method.invoke(target, arg)
       } catch {
         case npe: NullPointerException =>
           if (value == null && method.getParameterTypes()(0).isPrimitive) {
@@ -63,7 +68,6 @@ object PropertyAccessor {
             val expectedType = method.getParameterTypes()(0)
             throw new PropertySetterAccessException(iae, clazz, propertyName, expectedType, target, value.getClass);
           }
-
         case e: Exception => Throwables.propagate(e)
       }
     }
@@ -77,12 +81,21 @@ object PropertyAccessor {
     override def toString(): String = "BasicSetter(" + clazz.getName() + '.' + propertyName + ')'
   }
 
-  final class BasicGetter(val clazz: Class[_], val method: Method, val returnType: Class[_], val propertyName: String) extends Getter {
+  final class BasicGetter(val clazz: Class[_], val method: Method, val returnType: Class[_], val propertyName: String, optional: Boolean) extends Getter {
     def get(target: Object): Object = {
-      try {
-        return method.invoke(target)
-      } catch {
-        case e: Exception => Throwables.propagate(e)
+      val result = target match {
+        case None    => null
+        case Some(t) => method.invoke(t)
+        case _       => method.invoke(target)
+      }
+      if (optional) {
+        result match {
+          case null    => null
+          case None    => null
+          case Some(r) => r.asInstanceOf[AnyRef]
+        }
+      } else {
+        result
       }
     }
 

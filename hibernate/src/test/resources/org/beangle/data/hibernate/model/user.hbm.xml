@@ -3,10 +3,6 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 
 <hibernate-mapping package="org.beangle.data.hibernate.model" default-access="org.beangle.data.hibernate.PropertyAccessor">
-
-    <typedef name="role?" class="org.beangle.data.hibernate.udt.OptionEntityType">
-      <param name="entityClass">org.beangle.data.hibernate.model.Role</param>
-    </typedef>
     
     <class name="org.beangle.data.hibernate.model.User" >
         <id name="id" unsaved-value="0" type="long" >
@@ -33,7 +29,7 @@
         </map>
         <component name="member" class="Member">
           <parent name="user"/>
-          <property name="granter" type="role?"/>
+          <many-to-one name="granter" entity-name="org.beangle.data.hibernate.model.User" />
           <property name="admin" not-null="true"/>
           <set name="roles" table="users_roles" collection-type="set">
             <key column="user_id"/>
@@ -53,7 +49,7 @@
         <id name="id" unsaved-value="0" type="integer">
           <generator class="assigned"/>
         </id>
-        <property name="parent" type="role?" column="parent_id"/>
+        <many-to-one name="parent" column="parent_id" entity-name="org.beangle.data.hibernate.model.Role" />
         <property name="name" length="50" unique="true"/>
     </class>
 
