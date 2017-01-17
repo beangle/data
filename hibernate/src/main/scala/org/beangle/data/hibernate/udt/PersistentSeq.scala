@@ -75,7 +75,6 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     list eq collection
   }
 
-  //FIXME
   override def readFrom(rs: ResultSet, persister: CollectionPersister, descriptor: CollectionAliases, owner: Object): Object = {
     val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases(), getSession())
     if (null == descriptor.getSuffixedIndexAliases()) {
@@ -83,8 +82,8 @@ class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null
     } else {
       val index = persister.readIndex(rs, descriptor.getSuffixedIndexAliases(), getSession()).asInstanceOf[Integer].intValue()
       //pad with nulls from the current last element up to the new index
-      Range(list.size, index) foreach { i => list.insert(i, null) }
-      list.insert(index, element)
+      Range(list.size, index + 1) foreach (i => list.insert(i, null))
+      list(index) = element
     }
     element
   }
