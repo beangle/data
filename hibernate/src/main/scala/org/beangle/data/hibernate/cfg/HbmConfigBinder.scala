@@ -24,7 +24,6 @@ import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.model.bind.Binder.{ CollectionProperty, Column, ColumnHolder, Component, ComponentProperty, CompositeElement, CompositeKey, Element, Entity, Fetchable, IdProperty, ToManyElement, ManyToOneKey, ManyToOneProperty, MapProperty, Property, ScalarProperty, SeqProperty, SetProperty, SimpleElement, SimpleKey, TypeNameHolder }
 import org.beangle.commons.model.bind.Jpas
-import org.beangle.data.hibernate.udt.OptionEntityType
 import org.hibernate.{ FetchMode, MappingException }
 import org.hibernate.cfg.{ CollectionSecondPass, Mappings }
 import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, IDENTIFIER_NORMALIZER, SCHEMA }
@@ -397,15 +396,7 @@ object HbmConfigBinder {
       case _ =>
     }
 
-    if (value.isSimpleValue && !value.isInstanceOf[ToOne]) {
-      val sv = value.asInstanceOf[SimpleValue]
-      if (sv.getTypeName == classOf[OptionEntityType].getName) {
-        val optionEntityName = sv.getTypeParameters.getProperty(OptionEntityType.EntityClassParamName)
-        value.getTable.createForeignKey(null, ju.Collections.singletonList(value.getColumnIterator.next()), optionEntityName)
-      }
-    } else {
-      value.createForeignKey
-    }
+    value.createForeignKey
     val prop = new HProperty
     prop.setValue(value)
     bindProperty(pm, prop, mappings)

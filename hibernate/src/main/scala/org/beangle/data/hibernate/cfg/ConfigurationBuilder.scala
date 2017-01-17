@@ -25,7 +25,7 @@ import org.beangle.commons.io.{ IOs, ResourcePatternResolver }
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.logging.Logging
 import org.beangle.data.hibernate.naming.RailsNamingPolicy
-import org.beangle.data.hibernate.udt.{ EnumType, OptionEntityType, ValueType }
+import org.beangle.data.hibernate.udt.{ EnumType, ValueType }
 import org.beangle.commons.model.bind.Binder
 import org.beangle.commons.model.bind.Binder.TypeDef
 import org.beangle.commons.model.bind.Mapping
@@ -126,7 +126,6 @@ class ConfigurationBuilder(val configuration: Configuration, val properties: ju.
         types ++= binder.types
         binder.valueTypes foreach (t => types += (t.getName -> new TypeDef(classOf[ValueType].getName, Map("valueClass" -> t.getName))))
         binder.enumTypes foreach (t => types += (t._1 -> new TypeDef(classOf[EnumType].getName, Map("enumClass" -> t._2))))
-        binder.optionEntityTypes foreach (t => types += (t._1 -> new TypeDef(classOf[OptionEntityType].getName, Map("entityClass" -> t._2))))
         types foreach {
           case (m, t) =>
             val p = new ju.Properties
