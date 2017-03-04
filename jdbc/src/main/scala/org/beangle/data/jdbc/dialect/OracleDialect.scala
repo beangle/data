@@ -19,45 +19,9 @@
 package org.beangle.data.jdbc.dialect
 
 import java.sql.Types._
+import org.beangle.commons.jdbc.Engines
 
-class OracleDialect() extends AbstractDialect("[10.1)") {
-
-  registerKeywords(List("resource", "level"));
-
-  protected override def registerType() = {
-    registerType(CHAR, "char($l)");
-    registerType(VARCHAR, "varchar2($l)")
-    registerType(VARCHAR, 4000, "varchar2($l)");
-    registerType(LONGVARCHAR, "long");
-
-    registerType(BOOLEAN, "number(1,0)");
-    registerType(BIT, "number(1,0)");
-    registerType(SMALLINT, "number(5,0)");
-    registerType(TINYINT, "number(3,0)");
-    registerType(INTEGER, "number(10,0)");
-    registerType(BIGINT, "number(19,0)");
-
-    registerType(FLOAT, "float");
-    registerType(REAL, "float");
-    registerType(DOUBLE, "double precision");
-
-    registerType(DECIMAL, "number($p,$s)");
-    registerType(NUMERIC, "number($p,$s)");
-    registerType(NUMERIC, 38, "number($p,$s)");
-    registerType(NUMERIC, Int.MaxValue, "number(38,$s)");
-
-    registerType(DATE, "date");
-    registerType(TIME, "date");
-    registerType(TIMESTAMP, "date");
-
-    registerType(BINARY, "raw");
-    registerType(VARBINARY, 2000, "raw($l)");
-    registerType(VARBINARY, "long raw");
-    registerType(LONGVARBINARY, "long raw");
-
-    registerType(BLOB, "blob");
-    registerType(CLOB, "clob");
-  }
+class OracleDialect() extends AbstractDialect(Engines.Oracle, "[10.1)") {
 
   override def limitGrammar: LimitGrammar = {
 
@@ -129,9 +93,5 @@ class OracleDialect() extends AbstractDialect("[10.1)") {
         " from user_indexes idx,user_ind_columns col where col.index_name=idx.index_name" +
         " and idx.table_owner=':schema'" +
         " order by idx.table_name,col.column_position")
-  }
-
-  override def storeCase: StoreCase.Value = {
-    StoreCase.Upper
   }
 }

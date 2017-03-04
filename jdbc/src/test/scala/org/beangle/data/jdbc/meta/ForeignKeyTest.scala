@@ -24,8 +24,14 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import org.junit.runner.RunWith
-import org.beangle.data.jdbc.dialect.Name
 import org.beangle.data.jdbc.dialect.PostgreSQLDialect
+import org.beangle.commons.jdbc.ForeignKey
+import org.beangle.commons.jdbc.Database
+import org.beangle.commons.jdbc.Table
+import org.beangle.commons.jdbc.Identifier
+import org.beangle.commons.jdbc.PrimaryKey
+import org.beangle.commons.jdbc.Engines
+import org.beangle.data.jdbc.dialect.SQL
 
 @RunWith(classOf[JUnitRunner])
 class ForeignKeyTest extends FlatSpec with Matchers {
@@ -33,21 +39,23 @@ class ForeignKeyTest extends FlatSpec with Matchers {
   "fk alter sql" should "corret" in {
     val tableA = buildTable()
     val fk = tableA.foreignKeys.head
-    fk.alterSql
+    SQL.alterTableAddforeignKey(fk, new OracleDialect)
   }
 
   "drop table " should "corret" in {
     val tableA = buildTable()
     val pgdialect = new PostgreSQLDialect()
-    tableA.attach(pgdialect)
-    tableA.schema = Name("lowercase_a")
+    tableA.attach(pgdialect.engine)
+    tableA.schema.name = Identifier("lowercase_a")
     println(pgdialect.tableGrammar.dropCascade(tableA.qualifiedName))
     val fk = tableA.foreignKeys.head
     //assert(fk.alterSql == "alter table lowercase_a.\"SYS_TABLEA\" add constraInt \"FKXYZ\" foreign key (\"FKID\") references \"PUBLIC\".\"SYS_TABLE\" (\"ID\")")
   }
 
   "toLowerCase " should "correct" in {
-    val tableA = buildTable
+    val database = new Database(Engines.PostgreSQL)
+    val schema = database.getOrCreateSchema("public")
+    val tableA = buildTable.clone(schema)
     val pgdialect = new PostgreSQLDialect()
     tableA.toCase(true)
     assert(tableA.foreignKeys.size == 1)
@@ -56,11 +64,11 @@ class ForeignKeyTest extends FlatSpec with Matchers {
     assert(head.columns.size == 1)
     assert(head.columns.head.value == "fkid")
 
-    assert(head.referencedTable.schema.value == "public")
+    assert(head.referencedTable.schema.name.value == "public")
     assert(head.referencedTable.name.value == "sys_table")
 
-    head.referencedTable.name = Name(head.referencedTable.name.value, true)
-    tableA.attach(pgdialect)
+    head.referencedTable.name = Identifier(head.referencedTable.name.value, true)
+    tableA.attach(pgdialect.engine)
 
     assert(head.name.value == "fkxyz")
     assert(head.columns.size == 1)
@@ -70,16 +78,16 @@ class ForeignKeyTest extends FlatSpec with Matchers {
 
   def buildTable(): Table = {
     val dialect = new OracleDialect()
-    val table = new Table(Name("PUBLIC"), Name("SYS_TABLE"))
+    val database = new Database(Engines.Oracle)
+    val schema = database.getOrCreateSchema("public")
+    val table = new Table(schema, Identifier("SYS_TABLE"))
     val pk = new PrimaryKey(table, "PK", "ID")
-    table.dialect = dialect
-    table.primaryKey = pk
+    table.primaryKey = Some(pk)
 
-    val tableA = new Table(Name("PUBLIC"), Name("SYS_TABLEA"))
-    tableA.dialect = dialect
-    val fk = new ForeignKey(tableA, Name("FKXYZ"), Name("FKID"))
+    val tableA = new Table(schema, Identifier("SYS_TABLEA"))
+    val fk = new ForeignKey(tableA, Identifier("FKXYZ"), Identifier("FKID"))
     tableA.add(fk)
-    fk.refer(table, Name("ID"))
+    fk.refer(table, Identifier("ID"))
     tableA
   }
 

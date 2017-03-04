@@ -21,13 +21,16 @@ package org.beangle.data.jdbc.meta
 import org.junit.runner.RunWith
 import org.scalatest.{ FlatSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
-import org.beangle.data.jdbc.dialect.Name
+import org.beangle.commons.jdbc.Identifier
+import org.beangle.commons.jdbc.PrimaryKey
+import org.beangle.data.jdbc.dialect.SQL
+import org.beangle.data.jdbc.dialect.OracleDialect
 
 @RunWith(classOf[JUnitRunner])
 class PrimaryKeyTest extends FlatSpec with Matchers {
 
   def testSqlConstraintString = {
-    val pk = new PrimaryKey(null, Name("pk_sometable"), Name("id"))
-    assert(pk.constraintSql == "primary key (id)")
+    val pk = new PrimaryKey(null, Identifier("pk_sometable"), Identifier("id"))
+    assert(SQL.primaryKeySql(pk, new OracleDialect) == "primary key (id)")
   }
 }

@@ -22,8 +22,7 @@ import java.sql.CallableStatement
 import java.{ util => ju }
 
 import org.beangle.commons.lang.JLong
-import org.beangle.data.hibernate.naming.NamingPolicy
-import org.beangle.commons.model.YearId
+import org.beangle.commons.model.pojo.YearId
 import org.hibernate.`type`.{ IntegerType, LongType, Type }
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.jdbc.spi.JdbcCoordinator
@@ -31,6 +30,10 @@ import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.id.{ Configurable, IdentifierGenerator }
 import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, SCHEMA, TABLE }
 import org.hibernate.mapping.Table
+import org.hibernate.jdbc.AbstractReturningWork
+import java.sql.Connection
+import org.hibernate.resource.transaction.spi.TransactionCoordinator
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 
 /**
  * Id generator based on function or procedure
@@ -50,50 +53,59 @@ class DateStyleGenerator extends IdentifierGenerator with Configurable {
     }
   }
 
-  def generate(session: SessionImplementor, obj: Object): java.io.Serializable = {
+  override def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {
     val year = obj match {
       case yearObj: YearId => yearObj.year
       case _               => ju.Calendar.getInstance().get(ju.Calendar.YEAR)
     }
-    func.gen(session.getTransactionCoordinator.getJdbcCoordinator, year)
+    func.gen(session.getTransactionCoordinator, year)
   }
 }
 
 abstract class IdFunctor {
-  def gen(jdbc: JdbcCoordinator, year: Int): Number
+  def gen(jdbc: TransactionCoordinator, year: Int): Number
 }
 
 object LongIdFunctor extends IdFunctor {
   val sql = "{? = call next_year_id(?)}"
-
-  def gen(jdbc: JdbcCoordinator, year: Int): Number = {
-    val st = jdbc.getStatementPreparer().prepareStatement(sql, true).asInstanceOf[CallableStatement]
-    try {
-      st.registerOutParameter(1, java.sql.Types.BIGINT)
-      st.setInt(2, year)
-      st.execute()
-      val id = new JLong(st.getLong(1))
-      id
-    } finally {
-      jdbc.release(st)
-    }
+  def gen(jdbc: TransactionCoordinator, year: Int): Number = {
+    jdbc.createIsolationDelegate().delegateWork(
+      new AbstractReturningWork[Number]() {
+        def execute(connection: Connection): Number = {
+          val st = connection.prepareCall(sql)
+          try {
+            st.registerOutParameter(1, java.sql.Types.BIGINT)
+            st.setInt(2, year)
+            st.execute()
+            val id = new JLong(st.getLong(1))
+            id
+          } finally {
+            st.close()
+          }
+        }
+      }, true)
   }
 }
 
 class IntYearIdFunctor(tableName: String) extends IdFunctor {
   val sql = "{? = call next_id(?,?)}"
 
-  def gen(jdbc: JdbcCoordinator, year: Int): Number = {
-    val st = jdbc.getStatementPreparer().prepareStatement(sql, true).asInstanceOf[CallableStatement]
-    try {
-      st.registerOutParameter(1, java.sql.Types.BIGINT)
-      st.setString(2, tableName)
-      st.setInt(3, year)
-      st.execute()
-      val id = Integer.valueOf(st.getLong(1).asInstanceOf[Int])
-      id
-    } finally {
-      jdbc.release(st)
-    }
+  def gen(jdbc: TransactionCoordinator, year: Int): Number = {
+    jdbc.createIsolationDelegate().delegateWork(
+      new AbstractReturningWork[Number]() {
+        def execute(connection: Connection): Number = {
+          val st = connection.prepareCall(sql)
+          try {
+            st.registerOutParameter(1, java.sql.Types.BIGINT)
+            st.setString(2, tableName)
+            st.setInt(3, year)
+            st.execute()
+            val id = Integer.valueOf(st.getLong(1).asInstanceOf[Int])
+            id
+          } finally {
+            st.close()
+          }
+        }
+      }, true)
   }
 }

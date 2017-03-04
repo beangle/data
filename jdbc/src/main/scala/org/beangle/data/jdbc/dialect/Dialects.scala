@@ -42,10 +42,10 @@ object Dialects {
   register(Vendors.db2, new DB2Dialect)
   register(Vendors.derby, new DerbyDialect)
   register(Vendors.h2, new H2Dialect)
-  register(Vendors.hsql, new HSQL2Dialect)
+  register(Vendors.hsql, new HSQLDialect)
   register(Vendors.mysql, new MySQLDialect)
   register(Vendors.postgresql, new PostgreSQLDialect)
-  register(Vendors.sqlserver, new SQLServer2008Dialect, new SQLServer2005Dialect, new SQLServerDialect)
+  register(Vendors.sqlserver, new SQLServerDialect)
 
   private def printPad(name: String) { print(Strings.rightPad(name, 17, ' ')) }
 
@@ -60,7 +60,7 @@ object Dialects {
       "BINARY", "VARBINARY", "LONGVARBINARY", "BLOB", "CLOB")
 
     val dialects = Array(new OracleDialect, new H2Dialect, new MySQLDialect, new PostgreSQLDialect,
-      new SQLServer2005Dialect, new DB2Dialect)
+      new SQLServerDialect, new DB2Dialect)
 
     printPad("Type/Dialect")
     for (dialect <- dialects) {
@@ -73,7 +73,7 @@ object Dialects {
       for (dialect <- dialects) {
         val typeName =
           try {
-            dialect.typeNames.get(types(i))
+            dialect.engine.typeNames.get(types(i))
           } catch {
             case e: Exception => "error"
           }

@@ -28,7 +28,16 @@ import org.beangle.commons.lang.ThreadTasks
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.dialect.{ Dialect, MetadataGrammar, SequenceGrammar }
-import org.beangle.data.jdbc.dialect.Name
+import org.beangle.commons.jdbc.Identifier
+import org.beangle.commons.jdbc.Sequence
+import org.beangle.commons.jdbc.Column
+import org.beangle.commons.jdbc.Table
+import org.beangle.commons.jdbc.PrimaryKey
+import org.beangle.commons.jdbc.ForeignKey
+import org.beangle.commons.jdbc.Index
+import org.beangle.commons.jdbc.TableRef
+import org.beangle.commons.jdbc.Schema
+import org.beangle.commons.jdbc.SqlType
 
 object MetadataColumns {
   val TableName = "TABLE_NAME"
@@ -56,27 +65,27 @@ object MetadataColumns {
   val Remarks = "REMARKS"
 }
 
-class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends Logging {
+class MetadataLoader(schema: Schema, initDialect: Dialect, initMeta: DatabaseMetaData) extends Logging {
   import MetadataColumns._
 
   val dialect: Dialect = initDialect
   val meta: DatabaseMetaData = initMeta
   val tables = new mutable.HashMap[String, Table]
 
-  def loadTables(catalog: Name, schema: Name, extras: Boolean): Set[Table] = {
+  def loadTables(extras: Boolean): Unit = {
     val TYPES: Array[String] = Array("TABLE")
-    val newCatalog = if (null == catalog) null else catalog.qualified(dialect)
-    val newSchema = schema.qualified(dialect)
+    val newCatalog = if (None == schema.catalog) null else schema.catalog.get.toLiteral(dialect.engine)
+    val newSchema = schema.name.toLiteral(dialect.engine)
 
     val sw = new Stopwatch(true)
     var rs = meta.getTables(newCatalog, newSchema, null, TYPES)
     while (rs.next()) {
       val tableName = rs.getString(TableName)
       if (!tableName.startsWith("BIN$")) {
-        val table = new Table(rs.getString(TableSchema), rs.getString(TableName))
-        table.dialect = dialect
-        table.comment = rs.getString(Remarks)
-        tables.put(Table.qualify(table.schema.value, table.name.value), table)
+        val mySchema = schema.database.getOrCreateSchema(rs.getString(TableSchema))
+        val table = new Table(mySchema, rs.getString(TableName))
+        table.comment = Option(rs.getString(Remarks))
+        tables.put(Table.qualify(table.schema, table.name), table)
       }
     }
     rs.close()
@@ -91,13 +100,13 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
       val colName = rs.getString(ColumnName)
       if (null != colName) {
         getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
-          val col = new Column(Name(rs.getString(ColumnName)), rs.getInt(DataType))
-          col.position = rs.getInt(OrdinalPosition)
-          col.size = rs.getInt(ColumnSize)
-          col.scale = rs.getShort(DecimalDigits)
-          col.nullable = "yes".equalsIgnoreCase(rs.getString(IsNullable))
-          col.typeName = new StringTokenizer(rs.getString(TypeName), "() ").nextToken()
-          col.comment = rs.getString(Remarks)
+          val length = rs.getInt(ColumnSize)
+          val scale = rs.getInt(DecimalDigits)
+          val sqlType = new SqlType(rs.getInt(DataType), new StringTokenizer(rs.getString(TypeName), "() ").nextToken(), length, scale)
+          val nullable = "yes".equalsIgnoreCase(rs.getString(IsNullable))
+          val col = new Column(Identifier(rs.getString(ColumnName)), sqlType, nullable)
+          //          col.position = rs.getInt(OrdinalPosition)
+          col.comment = Option(rs.getString(Remarks))
           table.add(col)
           cols += 1
         }
@@ -118,51 +127,52 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         tableNames.addAll(JavaConverters.asJavaCollection(tables.keySet.toList.sortWith(_ < _)))
         ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
       } else {
-        batchLoadExtra(newSchema, dialect.metadataGrammar)
+        batchLoadExtra(schema, dialect.metadataGrammar)
       }
     }
-    tables.values.toSet
   }
 
-  private def batchLoadExtra(schema: String, grammar: MetadataGrammar) {
+  private def batchLoadExtra(schema: Schema, grammar: MetadataGrammar) {
     val sw = new Stopwatch(true)
     var rs: ResultSet = null
+    val schemaName = schema.name.toLiteral(dialect.engine)
     // load primary key
-    rs = meta.getConnection().createStatement().executeQuery(grammar.primaryKeysql.replace(":schema", schema))
+    rs = meta.getConnection().createStatement().executeQuery(grammar.primaryKeysql.replace(":schema", schemaName))
     while (rs.next()) {
+
       getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
         val colname = rs.getString(ColumnName)
-        val pkName = getName(rs, PKName)
-        if (null == table.primaryKey) {
-          table.primaryKey = new PrimaryKey(table, pkName, table.column(colname).name)
-        } else {
-          table.primaryKey.addColumn(table.column(colname))
+        val pkName = getIdentifier(rs, PKName)
+        table.primaryKey match {
+          case None     => table.primaryKey = Some(new PrimaryKey(table, pkName, table.column(colname).name))
+          case Some(pk) => pk.addColumn(table.column(colname))
         }
       }
     }
     rs.close()
     // load imported key
-    rs = meta.getConnection().createStatement().executeQuery(grammar.importedKeySql.replace(":schema", schema))
+    rs = meta.getConnection().createStatement().executeQuery(grammar.importedKeySql.replace(":schema", schemaName))
     while (rs.next()) {
       getTable(rs.getString(FKTabkeSchem), rs.getString(FKTableName)) foreach { table =>
-        val fkName = getName(rs, FKName)
+        val fkName = getIdentifier(rs, FKName)
         val column = table.column(rs.getString(FKColumnName))
         val fk = table.getForeignKey(fkName.value) match {
-          case None       => table.add(new ForeignKey(table, getName(rs, FKName), column.name))
+          case None       => table.add(new ForeignKey(table, getIdentifier(rs, FKName), column.name))
           case Some(oldk) => oldk
         }
-        fk.refer(TableRef(dialect, getName(rs, PKTableSchem), getName(rs, PKTableName)), getName(rs, PKColumnName))
+        val pkSchema = schema.database.getOrCreateSchema(getIdentifier(rs, PKTableSchem))
+        fk.refer(TableRef(pkSchema, getIdentifier(rs, PKTableName)), getIdentifier(rs, PKColumnName))
         fk.cascadeDelete = (rs.getInt(DeleteRule) != 3)
       }
     }
     rs.close()
     // load index
-    rs = meta.getConnection().createStatement().executeQuery(grammar.indexInfoSql.replace(":schema", schema))
+    rs = meta.getConnection().createStatement().executeQuery(grammar.indexInfoSql.replace(":schema", schemaName))
     while (rs.next()) {
       getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
         val indexName = rs.getString(IndexName)
         var idx = table.getIndex(indexName) match {
-          case None         => table.add(new Index(Name(indexName), table))
+          case None         => table.add(new Index(table, Identifier(indexName)))
           case Some(oldIdx) => oldIdx
         }
         idx.unique = (rs.getBoolean("NON_UNIQUE") == false)
@@ -172,7 +182,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         //for oracle m_row$$ column
         table.getColumn(columnName) match {
           case Some(column) => idx.addColumn(column.name)
-          case None         => idx.addColumn(Name(columnName))
+          case None         => idx.addColumn(Identifier(columnName))
         }
       }
     }
@@ -190,41 +200,43 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           logger.info(s"Loading ${table.qualifiedName}...")
           // load primary key
           var rs: ResultSet = null
-          rs = meta.getPrimaryKeys(null, table.schema.value, table.name.value)
+          rs = meta.getPrimaryKeys(null, table.schema.name.value, table.name.value)
           var pk: PrimaryKey = null
           while (rs.next()) {
-            val colnameName = Name(rs.getString(ColumnName))
-            if (null == pk) pk = new PrimaryKey(table, Name(rs.getString(PKName)), colnameName)
+            val colnameName = Identifier(rs.getString(ColumnName))
+            if (null == pk) pk = new PrimaryKey(table, Identifier(rs.getString(PKName)), colnameName)
             else pk.addColumn(colnameName)
           }
-          if (null != pk) table.primaryKey = pk
+          if (null != pk) table.primaryKey = Some(pk)
           rs.close()
           // load imported key
-          rs = meta.getImportedKeys(null, table.schema.value, table.name.value)
+          rs = meta.getImportedKeys(null, table.schema.name.value, table.name.value)
           while (rs.next()) {
             val fkName = rs.getString(FKName)
-            val columnName = Name(rs.getString(FKColumnName))
+            val columnName = Identifier(rs.getString(FKColumnName))
             val fk = table.getForeignKey(fkName) match {
-              case None       => table.add(new ForeignKey(table, Name(rs.getString(FKName)), columnName))
+              case None       => table.add(new ForeignKey(table, Identifier(rs.getString(FKName)), columnName))
               case Some(oldk) => oldk
             }
-            fk.refer(TableRef(dialect, getName(rs, PKTableSchem), getName(rs, PKTableName)), getName(rs, PKColumnName))
+            val pkSchema = schema.database.getOrCreateSchema(getIdentifier(rs, PKTableSchem))
+            fk.refer(TableRef(pkSchema, getIdentifier(rs, PKTableName)), getIdentifier(rs, PKColumnName))
             fk.cascadeDelete = (rs.getInt(DeleteRule) != 3)
           }
           rs.close()
           // load index
-          rs = meta.getIndexInfo(null, table.schema.value, table.name.value, false, true)
+          rs = meta.getIndexInfo(null, table.schema.name.value, table.name.value, false, true)
           while (rs.next()) {
             val index = rs.getString(IndexName)
             if (index != null) {
-              val info = table.getIndex(index).getOrElse(table.add(new Index(getName(rs, IndexName), table)))
+              val info = table.getIndex(index).getOrElse(table.add(new Index(table, getIdentifier(rs, IndexName))))
               info.unique = (rs.getBoolean("NON_UNIQUE") == false)
               val ascOrDesc = rs.getString("ASC_OR_DESC")
               if (null != ascOrDesc) info.ascOrDesc = Some("A" == ascOrDesc)
-              info.addColumn(getName(rs, ColumnName))
+              info.addColumn(getIdentifier(rs, ColumnName))
             }
           }
           rs.close()
+          table.schema.tables.put(Table.qualify(table.schema, table.name), table)
           completed += 1
         } catch {
           case e: IndexOutOfBoundsException =>
@@ -236,12 +248,12 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
     }
   }
 
-  def loadSequences(schema: Name): Set[Sequence] = {
+  def loadSequences(): Unit = {
     val sequences = new mutable.HashSet[Sequence]
     val ss: SequenceGrammar = dialect.sequenceGrammar
-    if (null == ss) return Set.empty
+    if (null == ss) return
     var sql: String = ss.querySequenceSql
-    sql = replace(sql, ":schema", schema.qualified(dialect))
+    sql = replace(sql, ":schema", schema.name.toLiteral(dialect.engine))
     if (sql != null) {
       var statement: Statement = null
       var rs: ResultSet = null
@@ -253,8 +265,7 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
           columnNames.add(rs.getMetaData().getColumnLabel(i).toLowerCase())
         }
         while (rs.next()) {
-          val sequence = new Sequence(getName(rs, "sequence_name"), schema)
-          sequence.dialect = dialect
+          val sequence = new Sequence(schema, getIdentifier(rs, "sequence_name"))
           if (columnNames.contains("current_value")) {
             sequence.current = java.lang.Long.valueOf(rs.getString("current_value")).longValue
           } else if (columnNames.contains("next_value")) {
@@ -277,14 +288,15 @@ class MetadataLoader(initDialect: Dialect, initMeta: DatabaseMetaData) extends L
         if (statement != null) statement.close()
       }
     }
-    sequences.toSet
+    schema.sequences ++= sequences
   }
 
-  private def getName(rs: ResultSet, columnName: String): Name = {
-    Name(rs.getString(columnName))
+  private def getIdentifier(rs: ResultSet, columnName: String): Identifier = {
+    Identifier(rs.getString(columnName))
   }
 
-  private def getTable(schema: String, name: String): Option[Table] = {
-    tables.get(Table.qualify(schema, name))
+  private def getTable(schemaName: String, name: String): Option[Table] = {
+    val tableSchema = schema.database.getOrCreateSchema(schemaName)
+    tables.get(Table.qualify(tableSchema, Identifier(name)))
   }
 }

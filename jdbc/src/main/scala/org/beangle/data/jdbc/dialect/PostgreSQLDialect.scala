@@ -19,44 +19,9 @@
 package org.beangle.data.jdbc.dialect
 
 import java.sql.Types._
+import org.beangle.commons.jdbc.Engines
 
-class PostgreSQLDialect extends AbstractDialect("[8.4)") {
-
-  protected override def registerType() = {
-    registerType(CHAR, "char($l)")
-    registerType(VARCHAR, "varchar($l)")
-    registerType(LONGVARCHAR, "text")
-
-    registerType(BOOLEAN, "boolean")
-    registerType(BIT, "boolean")
-    registerType(BIGINT, "int8")
-    registerType(SMALLINT, "int2")
-    registerType(TINYINT, "int2")
-    registerType(INTEGER, "int4")
-
-    registerType(FLOAT, "float4")
-    registerType(REAL, "float4")
-    registerType(DOUBLE, "float8")
-
-    registerType(DECIMAL, "numeric($p, $s)")
-    registerType(DECIMAL, 1, "boolean")
-    registerType(DECIMAL, 10, "integer")
-    registerType(DECIMAL, 19, "bigint")
-    registerType(NUMERIC, 1000, "numeric($p, $s)")
-    registerType(NUMERIC, Int.MaxValue, "numeric(1000, $s)")
-    registerType(NUMERIC, "numeric($p, $s)")
-
-    registerType(DATE, "date")
-    registerType(TIME, "time")
-    registerType(TIMESTAMP, "timestamp")
-
-    registerType(BINARY, "bytea")
-    registerType(VARBINARY, "bytea")
-    registerType(LONGVARBINARY, "bytea")
-
-    registerType(CLOB, "text")
-    registerType(BLOB, "oid")
-  }
+class PostgreSQLDialect extends AbstractDialect(Engines.PostgreSQL, "[8.4)") {
 
   override def sequenceGrammar = {
     val ss = new SequenceGrammar()
@@ -77,22 +42,5 @@ class PostgreSQLDialect extends AbstractDialect("[8.4)") {
 
   override def defaultSchema: String = {
     "public"
-  }
-
-  override def translate(typeCode: Int, size: Int, scale: Int): Tuple2[Int, String] = {
-    if (typeCode == DECIMAL) {
-      size match {
-        case 1  => (BOOLEAN, "boolean")
-        case 5  => (SMALLINT, "int2")
-        case 10 => (INTEGER, "int4")
-        case 19 => (BIGINT, "int8")
-        case _  => super.translate(typeCode, size, scale)
-      }
-
-    } else super.translate(typeCode, size, scale)
-  }
-
-  override def storeCase: StoreCase.Value = {
-    StoreCase.Lower
   }
 }

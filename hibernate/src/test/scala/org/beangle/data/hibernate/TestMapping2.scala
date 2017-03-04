@@ -22,7 +22,7 @@ import scala.reflect.runtime.universe
 
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.data.hibernate.model.{ CodedEntity, Department, ExtendRole, Menu, Role, StringIdCodedEntity }
-import org.beangle.commons.model.bind.Mapping
+import org.beangle.commons.orm.Mapping
 import org.beangle.commons.lang.reflect.ClassInfos
 
 object TestMapping2 extends Mapping {

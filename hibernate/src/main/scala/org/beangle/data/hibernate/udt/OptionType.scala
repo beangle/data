@@ -25,7 +25,7 @@ import org.beangle.commons.lang.{ JChar, JByte, JBoolean, JInt, JShort, JLong, J
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.model.Entity
-import org.beangle.commons.model.bind.Jpas
+import org.beangle.commons.orm.Jpas
 import org.hibernate.`type`.AbstractSingleColumnStandardBasicType
 import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, SHORT, LONG, BOOLEAN, STRING, DATE, TIMESTAMP }
 import org.hibernate.engine.spi.SessionImplementor
@@ -117,4 +117,3 @@ class OptionJuDateType extends OptionBasicType(classOf[java.util.Date])
 class OptionJsDateType extends OptionBasicType(classOf[java.sql.Date])
 
 class OptionJsTimestampType extends OptionBasicType(classOf[java.sql.Timestamp])
-

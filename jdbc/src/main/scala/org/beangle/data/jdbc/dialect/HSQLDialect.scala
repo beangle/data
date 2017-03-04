@@ -18,39 +18,9 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import java.sql.Types._
+import org.beangle.commons.jdbc.Engines
 
-class HSQL2Dialect extends AbstractDialect("[2.0.0,)") {
-
-  protected override def registerType() = {
-    registerType(CHAR, "char($l)")
-    registerType(VARCHAR, "varchar($l)")
-    registerType(LONGVARCHAR, "longvarchar")
-
-    registerType(BOOLEAN, "Boolean")
-    registerType(BIT, "bit")
-    registerType(INTEGER, "integer")
-    registerType(SMALLINT, "smallint")
-    registerType(TINYINT, "tinyint")
-    registerType(BIGINT, "bigint")
-
-    registerType(DOUBLE, "double")
-    registerType(FLOAT, "float")
-
-    registerType(DECIMAL, "decimal")
-    registerType(NUMERIC, "numeric")
-
-    registerType(DATE, "date")
-    registerType(TIME, "time")
-    registerType(TIMESTAMP, "timestamp")
-
-    registerType(BINARY, "binary")
-    registerType(VARBINARY, "varbinary($l)")
-    registerType(LONGVARBINARY, "longvarbinary")
-    // HSQL has no Blob/Clob support .... but just put these here for now!
-    registerType(BLOB, "longvarbinary")
-    registerType(CLOB, "longvarchar")
-  }
+class HSQLDialect extends AbstractDialect(Engines.HSQL, "[2.0.0,)") {
 
   override def sequenceGrammar = {
     val ss = new SequenceGrammar()
@@ -62,9 +32,11 @@ class HSQL2Dialect extends AbstractDialect("[2.0.0,)") {
     ss
   }
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} offset ? limit ?", false)
+  override def limitGrammar: LimitGrammar = {
+    new LimitGrammarBean("{} limit ?", "{} offset ? limit ?", false)
+  }
 
-  override def tableGrammar = {
+  override def tableGrammar: TableGrammar = {
     val bean = new TableGrammarBean()
     bean.columnComent = " comment '{}'"
     bean
@@ -74,7 +46,4 @@ class HSQL2Dialect extends AbstractDialect("[2.0.0,)") {
     "PUBLIC"
   }
 
-  override def storeCase: StoreCase.Value = {
-    StoreCase.Upper
-  }
 }

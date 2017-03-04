@@ -24,8 +24,11 @@ import org.beangle.commons.lang.Throwables
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.hibernate.{ PropertyAccessException, PropertyNotFoundException, PropertySetterAccessException }
 import org.hibernate.engine.spi.{ SessionFactoryImplementor, SessionImplementor }
-import org.hibernate.property.{ BasicPropertyAccessor, Getter, Setter }
 import java.{ util => ju }
+import org.hibernate.property.access.spi.Getter
+import org.hibernate.property.access.spi.Setter
+import org.hibernate.property.access.spi.PropertyAccessStrategy
+import org.hibernate.property.access.spi.PropertyAccess
 
 object PropertyAccessor {
 
@@ -117,10 +120,21 @@ object PropertyAccessor {
   }
 }
 
-class PropertyAccessor extends BasicPropertyAccessor {
+class BeanglePropertyAccessStrategy extends PropertyAccessStrategy {
 
-  override def getSetter(theClass: Class[_], propertyName: String): Setter = PropertyAccessor.createSetter(theClass, propertyName)
+  override def buildPropertyAccess(theClass: Class[_], propertyName: String): PropertyAccess = {
+    new BeanglePropertyAccessBasicImpl(this, PropertyAccessor.createGetter(theClass, propertyName),
+      PropertyAccessor.createSetter(theClass, propertyName))
+  }
 
-  override def getGetter(theClass: Class[_], propertyName: String): Getter = PropertyAccessor.createGetter(theClass, propertyName)
+}
 
+class BeanglePropertyAccessBasicImpl(strategy: PropertyAccessStrategy, getter: Getter, setter: Setter)
+    extends PropertyAccess {
+  override def getPropertyAccessStrategy(): PropertyAccessStrategy = {
+    strategy
+  }
+  override def getGetter: Getter = getter
+
+  override def getSetter: Setter = setter
 }

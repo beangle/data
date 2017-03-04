@@ -32,7 +32,7 @@ private[udt] object SeqHelper {
     if (currentElements.size == 0) return JavaConverters.asJavaCollection(oldElements)
     if (oldElements.size == 0) return ju.Collections.emptyList()
 
-    val entityPersister = session.getFactory.getEntityPersister(entityName)
+    val entityPersister = session.getSessionFactory.getMetamodel().entityPersister(entityName)
     val idType = entityPersister.getIdentifierType()
 
     // create the collection holding the Orphans

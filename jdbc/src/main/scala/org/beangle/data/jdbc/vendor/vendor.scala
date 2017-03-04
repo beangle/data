@@ -18,7 +18,7 @@
  */
 package org.beangle.data.jdbc.vendor
 
-import org.beangle.data.jdbc.dialect.{ DB2Dialect, DerbyDialect, Dialect, H2Dialect, HSQL2Dialect, MySQLDialect, OracleDialect, PostgreSQLDialect, SQLServer2008Dialect }
+import org.beangle.data.jdbc.dialect.{ DB2Dialect, DerbyDialect, Dialect, H2Dialect, HSQLDialect, MySQLDialect, OracleDialect, PostgreSQLDialect, SQLServerDialect }
 
 object Vendors {
 
@@ -51,11 +51,11 @@ object Vendors {
   val derby = Vendor("Apache Derby", new DerbyDialect, Driver("derby", "org.apache.derby.jdbc.ClientDataSource", "org.apache.derby.jdbc.ClientDriver",
     "[<subsubprotocol>:][<database_name>][;<attribute>=<value>]*"))
 
-  val hsql = Vendor("HSQL Database Engine", new HSQL2Dialect, Driver("hsqldb", "org.hsqldb.jdbc.JDBCDataSource", "org.hsqldb.jdbcDriver", "hsql://<host>:<port>",
+  val hsql = Vendor("HSQL Database Engine", new HSQLDialect, Driver("hsqldb", "org.hsqldb.jdbc.JDBCDataSource", "org.hsqldb.jdbcDriver", "hsql://<host>:<port>",
     "file:<path>", "hsqls://<host>:<port>", "http://<host>:<port>", "https://<host>:<port>", "res:<database_name>"))
 
   //default port 1433
-  val sqlserver = Vendor("Microsoft SQL Server", new SQLServer2008Dialect,
+  val sqlserver = Vendor("Microsoft SQL Server", new SQLServerDialect,
     Driver("sqlserver", "com.microsoft.sqlserver.jdbc.SQLServerDataSource", "com.microsoft.sqlserver.jdbc.SQLServerDriver", "//<server_name>:<port>"),
     Driver("jtds", "net.sourceforge.jtds.jdbcx.JtdsDataSource", "net.sourceforge.jtds.jdbc.Driver", "sqlserver://<server_name>:<port>/<database_name>"))
 
