@@ -85,8 +85,28 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
   import JdbcExecutor._
   var pmdKnownBroken: Boolean = false
   var showSql = false
-  def queryForInt(sql: String): Int = query(sql).head.head.asInstanceOf[Number].intValue
-  def queryForLong(sql: String): Long = query(sql).head.head.asInstanceOf[Number].longValue
+
+  def unique[T](sql: String, params: Any*): Option[T] = {
+    val rs = query(sql)
+    if (rs.isEmpty) None
+    else Some(rs.head.head.asInstanceOf[T])
+  }
+
+  def queryForInt(sql: String): Option[Int] = {
+    val num: Option[Number] = unique(sql)
+    num match {
+      case Some(n) => Some(n.intValue)
+      case None    => None
+    }
+  }
+
+  def queryForLong(sql: String): Option[Long] = {
+    val num: Option[Number] = unique(sql)
+    num match {
+      case Some(n) => Some(n.longValue)
+      case None    => None
+    }
+  }
 
   def getConnection(): Connection = dataSource.getConnection()
 
