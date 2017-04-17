@@ -26,6 +26,8 @@ import org.hibernate.`type`.{ IntegerType, LongType, ShortType, Type }
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.id.{ Configurable, IdentifierGenerator }
+import org.hibernate.service.ServiceRegistry
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 
 /**
  * Id generator based on function or procedure
@@ -33,11 +35,11 @@ import org.hibernate.id.{ Configurable, IdentifierGenerator }
 class CodeStyleGenerator extends IdentifierGenerator with Configurable {
   var identifierType: Type = _
 
-  override def configure(t: Type, params: ju.Properties, dialect: Dialect) {
+  override def configure(t: Type, params: ju.Properties, sr: ServiceRegistry) {
     this.identifierType = t;
   }
 
-  def generate(session: SessionImplementor, obj: Object): java.io.Serializable = {
+  override def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {
     obj match {
       case coded: Coded =>
         var result = identifierType match {

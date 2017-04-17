@@ -32,8 +32,9 @@ import org.hibernate.collection.internal.AbstractPersistentCollection.{ DelayedO
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 
-class PersistentMap(session: SessionImplementor, var map: mutable.Map[Object, Object] = null)
+class PersistentMap(session: SharedSessionContractImplementor, var map: mutable.Map[Object, Object] = null)
     extends AbstractPersistentCollection(session) with mutable.Map[Object, Object] {
   type MM = mutable.Map[Object, Object]
   type MHM = mutable.HashMap[Object, Object]

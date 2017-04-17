@@ -20,35 +20,39 @@ package org.beangle.data.hibernate.spring
 
 import org.beangle.commons.bean.{ Factory, Initializing }
 import org.beangle.commons.lang.annotation.description
-import org.beangle.data.hibernate.SessionFactoryBuilder
+import org.beangle.data.hibernate.ConfigurationBuilder
 import org.hibernate.SessionFactory
 import org.hibernate.cfg.AvailableSettings
 import org.springframework.core.io.Resource
+import java.{ util => ju }
 
 import javax.sql.DataSource
+import org.beangle.commons.model.meta.Domain
 
 @description("构建Hibernate的会话工厂")
-class LocalSessionFactoryBuilder(val dataSource: DataSource) extends Factory[SessionFactory]
+class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory]
     with Initializing {
 
   var configLocations: Array[Resource] = Array.empty
 
   var ormLocations: Array[Resource] = Array.empty
 
+  var properties = new ju.Properties
+
   var result: SessionFactory = _
 
+  var domain: Domain = _
+
   def init() {
-    val sfb = new SessionFactoryBuilder(dataSource)
+    val cfgb = new ConfigurationBuilder(dataSource)
     //  provide the Beangle managed Session as context
-    sfb.configLocations = configLocations.map(l => l.getURL())
-    sfb.ormLocations = ormLocations.map(l => l.getURL())
-    sfb.buildConfig()
-    //    val namingPolicy = new RailsNamingPolicy()
-    //    for (resource <- cfgBuilder.ormLocations) namingPolicy.addConfig(resource)
-    //    cfgBuilder.namingStrategy = namingStrategy
-    val config = sfb.buildConfig()
-    config.getProperties().put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[BeangleSessionContext].getName)
-    result = sfb.result()
+    cfgb.configLocations = configLocations.map(l => l.getURL())
+    cfgb.ormLocations = ormLocations.map(l => l.getURL())
+    properties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[BeangleSessionContext].getName)
+    cfgb.properties = properties
+    val config = cfgb.build()
+    domain = cfgb.domain
+    result = config.buildSessionFactory()
   }
 
 }

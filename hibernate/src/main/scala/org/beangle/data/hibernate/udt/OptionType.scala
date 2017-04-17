@@ -30,6 +30,7 @@ import org.hibernate.`type`.AbstractSingleColumnStandardBasicType
 import org.hibernate.`type`.StandardBasicTypes.{ BYTE, CHARACTER, DOUBLE, FLOAT, INTEGER, SHORT, LONG, BOOLEAN, STRING, DATE, TIMESTAMP }
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.usertype.{ ParameterizedType, UserType }
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 
 object OptionBasicType {
   val java2HibernateTypes: Map[Class[_], AbstractSingleColumnStandardBasicType[_]] =
@@ -52,12 +53,12 @@ abstract class OptionBasicType[T](clazz: Class[T]) extends UserType {
 
   def returnedClass = classOf[Option[T]]
 
-  final def nullSafeGet(rs: ResultSet, names: Array[String], session: SessionImplementor, owner: Object): AnyRef = {
+  final override def nullSafeGet(rs: ResultSet, names: Array[String], session: SharedSessionContractImplementor, owner: Object): AnyRef = {
     val x = inner.nullSafeGet(rs, names, session, owner)
     if (x == null) None else Some(x)
   }
 
-  final def nullSafeSet(ps: PreparedStatement, value: Object, index: Int, session: SessionImplementor): Unit = {
+  final override def nullSafeSet(ps: PreparedStatement, value: Object, index: Int, session: SharedSessionContractImplementor): Unit = {
     val v = value match {
       case null    => null
       case None    => null

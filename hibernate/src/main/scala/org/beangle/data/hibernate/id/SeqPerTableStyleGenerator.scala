@@ -56,19 +56,10 @@ class SeqPerTableStyleGenerator extends SequenceStyleGenerator with Logging {
       val tableName = params.getProperty(TABLE)
       seqName = if (null != tableName) sequencePrefix + tableName else DEF_SEQUENCE_NAME
     }
-
-    if (seqName.indexOf('.') < 0) {
-      val entityName = params.getProperty(IdentifierGenerator.ENTITY_NAME)
-      if (null != entityName && null != NamingPolicy.Instance) {
-        val schema = NamingPolicy.Instance.getSchema(entityName).getOrElse(params.getProperty(SCHEMA))
-        seqName = Table.qualify(dialect.quote(params.getProperty(CATALOG)), dialect.quote(schema), dialect.quote(seqName))
-      }
-    }
-    seqName
-
+    val schema = params.getProperty(SCHEMA)
     new QualifiedNameParser.NameParts(
-      catalog,
-      schema,
-      jdbcEnv.getIdentifierHelper().toIdentifier(sequenceName));
+      null,
+      jdbcEnv.getIdentifierHelper().toIdentifier(schema),
+      jdbcEnv.getIdentifierHelper().toIdentifier(seqName));
   }
 }

@@ -26,8 +26,9 @@ import org.beangle.data.hibernate.model.{ Coded, IntIdResource, LongDateIdResour
 import org.beangle.commons.orm.Mapping
 import org.beangle.commons.lang.time.WeekDay
 import org.beangle.data.hibernate.model.Profile
+import org.beangle.commons.orm.MappingModule
 
-object TestMapping1 extends Mapping {
+object TestMapping1 extends MappingModule {
 
   def binding(): Unit = {
     defaultIdGenerator("table_sequence")

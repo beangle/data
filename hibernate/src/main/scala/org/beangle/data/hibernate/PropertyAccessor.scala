@@ -29,6 +29,7 @@ import org.hibernate.property.access.spi.Getter
 import org.hibernate.property.access.spi.Setter
 import org.hibernate.property.access.spi.PropertyAccessStrategy
 import org.hibernate.property.access.spi.PropertyAccess
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 
 object PropertyAccessor {
 
@@ -102,7 +103,7 @@ object PropertyAccessor {
       }
     }
 
-    def getForInsert(target: Object, mergeMap: ju.Map[_, _], session: SessionImplementor): Object = {
+    def getForInsert(target: Object, mergeMap: ju.Map[_, _], session: SharedSessionContractImplementor): Object = {
       return get(target)
     }
 
@@ -120,16 +121,16 @@ object PropertyAccessor {
   }
 }
 
-class BeanglePropertyAccessStrategy extends PropertyAccessStrategy {
+class ScalaPropertyAccessStrategy extends PropertyAccessStrategy {
 
   override def buildPropertyAccess(theClass: Class[_], propertyName: String): PropertyAccess = {
-    new BeanglePropertyAccessBasicImpl(this, PropertyAccessor.createGetter(theClass, propertyName),
+    new ScalaPropertyAccessBasicImpl(this, PropertyAccessor.createGetter(theClass, propertyName),
       PropertyAccessor.createSetter(theClass, propertyName))
   }
 
 }
 
-class BeanglePropertyAccessBasicImpl(strategy: PropertyAccessStrategy, getter: Getter, setter: Setter)
+class ScalaPropertyAccessBasicImpl(strategy: PropertyAccessStrategy, getter: Getter, setter: Setter)
     extends PropertyAccess {
   override def getPropertyAccessStrategy(): PropertyAccessStrategy = {
     strategy

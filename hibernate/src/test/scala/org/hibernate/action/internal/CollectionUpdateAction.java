@@ -1,20 +1,8 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkit
+ * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2005-2017, Beangle Software.
- *
- * Beangle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Beangle is distributed in the hope that it will be useful.
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
+ * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
+ * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
 package org.hibernate.action.internal;
 
@@ -23,7 +11,7 @@ import java.io.Serializable;
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.collection.spi.PersistentCollection;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.PostCollectionUpdateEvent;
@@ -37,8 +25,7 @@ import org.hibernate.pretty.MessageHelper;
  * The action for updating a collection
  */
 public final class CollectionUpdateAction extends CollectionAction {
-  private static final long serialVersionUID = 1250492678495130932L;
-  private final boolean emptySnapshot;
+	private final boolean emptySnapshot;
 
 	/**
 	 * Constructs a CollectionUpdateAction
@@ -54,7 +41,7 @@ public final class CollectionUpdateAction extends CollectionAction {
 				final CollectionPersister persister,
 				final Serializable id,
 				final boolean emptySnapshot,
-				final SessionImplementor session) {
+				final SharedSessionContractImplementor session) {
 		super( persister, collection, id, session );
 		this.emptySnapshot = emptySnapshot;
 	}
@@ -62,7 +49,7 @@ public final class CollectionUpdateAction extends CollectionAction {
 	@Override
 	public void execute() throws HibernateException {
 		final Serializable id = getKey();
-		final SessionImplementor session = getSession();
+		final SharedSessionContractImplementor session = getSession();
 		final CollectionPersister persister = getPersister();
 		final PersistentCollection collection = getCollection();
 		final boolean affectedByFilters = persister.isAffectedByEnabledFilters( session );
@@ -103,7 +90,7 @@ public final class CollectionUpdateAction extends CollectionAction {
 		postUpdate();
 
 		if ( getSession().getFactory().getStatistics().isStatisticsEnabled() ) {
-			getSession().getFactory().getStatisticsImplementor().updateCollection( getPersister().getRole() );
+			getSession().getFactory().getStatistics().updateCollection( getPersister().getRole() );
 		}
 	}
 	
@@ -137,10 +124,3 @@ public final class CollectionUpdateAction extends CollectionAction {
 		}
 	}
 }
-
-
-
-
-
-
-

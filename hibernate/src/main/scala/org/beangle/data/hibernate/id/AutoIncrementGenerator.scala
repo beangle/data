@@ -32,6 +32,8 @@ import org.beangle.commons.orm.NamingPolicy
 import org.hibernate.service.ServiceRegistry
 import org.hibernate.jdbc.AbstractReturningWork
 import java.sql.Connection
+import org.beangle.data.hibernate.cfg.MappingService
+import org.beangle.commons.lang.Strings
 
 class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
   var identifierType: Type = _
@@ -40,8 +42,10 @@ class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
 
   override def configure(t: Type, params: ju.Properties, serviceRegistry: ServiceRegistry) {
     this.identifierType = t
-    val schema = NamingPolicy.Instance.getSchema(params.getProperty(IdentifierGenerator.ENTITY_NAME)).getOrElse(params.getProperty(SCHEMA))
-    tableName = Table.qualify(dialect.quote(params.getProperty(CATALOG)), dialect.quote(schema), dialect.quote(params.getProperty(TABLE)))
+    val em = serviceRegistry.getService(classOf[MappingService]).mappings.entityMappings(params.getProperty(IdentifierGenerator.ENTITY_NAME))
+    val ownerSchema = em.table.schema.name.toString
+    val schema = if (Strings.isEmpty(ownerSchema)) params.getProperty(SCHEMA) else ownerSchema
+    tableName = Table.qualify(null, schema, params.getProperty(TABLE))
   }
 
   def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {

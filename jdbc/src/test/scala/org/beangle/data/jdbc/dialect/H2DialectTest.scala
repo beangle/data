@@ -33,7 +33,10 @@ import org.beangle.data.jdbc.meta.MetadataLoader
 @RunWith(classOf[JUnitRunner])
 class H2DialectTest extends DialectTestCase {
 
-  val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties"))
+  val properties = ClassLoaders.getResource("db.properties") match {
+    case Some(r) => IOs.readJavaProperties(r)
+    case None    => Map.empty[String, String]
+  }
 
   println(ClassLoaders.getResource("db.properties"))
   "h2 " should "load tables and sequences" in {

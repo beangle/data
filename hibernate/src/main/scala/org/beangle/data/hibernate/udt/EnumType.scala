@@ -24,6 +24,7 @@ import java.{ util => ju }
 
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.usertype.{ ParameterizedType, UserType }
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 
 class EnumType extends UserType with ParameterizedType {
 
@@ -42,7 +43,7 @@ class EnumType extends UserType with ParameterizedType {
 
   override def hashCode(x: Object) = x.hashCode()
 
-  override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SessionImplementor, owner: Object): Object = {
+  override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SharedSessionContractImplementor, owner: Object): Object = {
     if (ordinal) {
       val value = resultSet.getInt(names(0))
       if (resultSet.wasNull()) null
@@ -54,7 +55,7 @@ class EnumType extends UserType with ParameterizedType {
     }
   }
 
-  override def nullSafeSet(statement: PreparedStatement, value: Object, index: Int, session: SessionImplementor): Unit = {
+  override def nullSafeSet(statement: PreparedStatement, value: Object, index: Int, session: SharedSessionContractImplementor): Unit = {
     if (ordinal) {
       if (value == null) {
         statement.setNull(index, Types.INTEGER)

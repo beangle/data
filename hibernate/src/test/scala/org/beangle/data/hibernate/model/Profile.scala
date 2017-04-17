@@ -19,7 +19,7 @@
 package org.beangle.data.hibernate.model
 
 import org.beangle.commons.model.LongId
-import org.beangle.commons.model.Named
+import org.beangle.commons.model.pojo.Named
 
 /**
  * @author chaostone

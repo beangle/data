@@ -34,6 +34,9 @@ import org.hibernate.jdbc.AbstractReturningWork
 import java.sql.Connection
 import org.hibernate.resource.transaction.spi.TransactionCoordinator
 import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.service.ServiceRegistry
+import org.beangle.data.hibernate.cfg.MappingService
+import org.beangle.commons.lang.Strings
 
 /**
  * Id generator based on function or procedure
@@ -42,13 +45,16 @@ class DateStyleGenerator extends IdentifierGenerator with Configurable {
 
   var func: IdFunctor = _
 
-  override def configure(t: Type, params: ju.Properties, dialect: Dialect) {
+  override def configure(t: Type, params: ju.Properties, serviceRegistry: ServiceRegistry) {
     t match {
       case longType: LongType =>
         func = LongIdFunctor
       case intType: IntegerType =>
-        val schema = NamingPolicy.Instance.getSchema(params.getProperty(IdentifierGenerator.ENTITY_NAME)).getOrElse(params.getProperty(SCHEMA))
-        val tableName = Table.qualify(dialect.quote(params.getProperty(CATALOG)), dialect.quote(schema), dialect.quote(params.getProperty(TABLE)))
+        val em = serviceRegistry.getService(classOf[MappingService]).mappings.entityMappings(params.getProperty(IdentifierGenerator.ENTITY_NAME))
+        val ownerSchema = em.table.schema.name.toString
+        val schema = if (Strings.isEmpty(ownerSchema)) params.getProperty(SCHEMA) else ownerSchema
+
+        val tableName = Table.qualify(params.getProperty(CATALOG), schema, params.getProperty(TABLE))
         func = new IntYearIdFunctor(tableName)
     }
   }

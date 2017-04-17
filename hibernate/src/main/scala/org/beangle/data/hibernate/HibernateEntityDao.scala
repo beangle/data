@@ -39,6 +39,7 @@ import org.hibernate.proxy.HibernateProxy
 import QuerySupport.{ doCount, doFind, list, setParameters }
 import org.beangle.commons.collection.Wrappers
 import org.beangle.commons.model.meta.Domain
+import org.beangle.commons.bean.Initializing
 
 object QuerySupport {
 
@@ -146,21 +147,31 @@ object QuerySupport {
  * @author chaostone
  */
 @description("基于Hibernate提供的通用实体DAO")
-class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao with Logging {
+class HibernateEntityDao(val sessionFactory: SessionFactory, domain: Domain) extends EntityDao with Logging {
   import QuerySupport._
 
-  val domain: Domain = new DomainBuilder(List(sessionFactory)).build()
+  def this(sf: SessionFactory, df: DomainsFactory) {
+    this(sf, df.domains(sf))
+  }
 
   protected def currentSession: Session = {
     sessionFactory.getCurrentSession()
   }
 
+  protected def entityNameOf(clazz: Class[_]): String = {
+    println(domain.getEntity(clazz), clazz)
+    domain.getEntity(clazz) match {
+      case Some(e) => e.entityName
+      case None    => clazz.getName
+    }
+  }
+
   override def get[T <: Entity[ID], ID](clazz: Class[T], id: ID): T = {
-    (find(domain.getEntity(clazz).get.entityName, id).orNull).asInstanceOf[T]
+    (find(entityNameOf(clazz), id).orNull).asInstanceOf[T]
   }
 
   override def getAll[T](clazz: Class[T]): Seq[T] = {
-    val hql = "from " + domain.getEntity(clazz).orNull.entityName
+    val hql = "from " + entityNameOf(clazz)
     val query = currentSession.createQuery(hql)
     query.setCacheable(true)
     asScalaBuffer(query.list()).toList.asInstanceOf[List[T]]
@@ -180,15 +191,15 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   override def find[T <: Entity[ID], ID](clazz: Class[T], id: ID): Option[T] = {
-    find[T, ID](domain.getEntity(clazz).get.entityName, id)
+    find[T, ID](entityNameOf(clazz), id)
   }
 
-  override def find[T <: Entity[ID], ID](entityClass: Class[T], ids: Iterable[ID]): Seq[T] = {
-    findBy(domain.getEntity(entityClass).get.entityName, "id", ids)
+  override def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T] = {
+    findBy(entityNameOf(clazz), "id", ids)
   }
 
-  override def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[_]): Seq[T] = {
-    findBy(domain.getEntity(entityClass).get.entityName, keyName, values)
+  override def findBy[T <: Entity[_]](clazz: Class[T], keyName: String, values: Iterable[_]): Seq[T] = {
+    findBy(entityNameOf(clazz), keyName, values)
   }
 
   override def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T] = {
@@ -219,7 +230,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   def find[T <: Entity[_]](clazz: Class[T], parameterMap: collection.Map[String, _]): Seq[T] = {
     if (clazz == null || parameterMap == null || parameterMap.isEmpty) { return List.empty }
     val hql = new StringBuilder()
-    hql.append("select entity from ").append(entityName(clazz)).append(" as entity ").append(" where ")
+    hql.append("select entity from ").append(entityNameOf(clazz)).append(" as entity ").append(" where ")
 
     val m = new mutable.HashMap[String, Any]
     // 变量编号
@@ -294,8 +305,8 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     count(entityClass, attrs, values, null) > 0
   }
 
-  override def duplicate(entityClass: Class[_], id: Any, params: collection.Map[String, _]): Boolean = {
-    duplicate(domain.getEntity(entityClass).get.entityName, id, params)
+  override def duplicate(clazz: Class[_], id: Any, params: collection.Map[String, _]): Boolean = {
+    duplicate(entityNameOf(clazz), id, params)
   }
 
   override def duplicate(entityName: String, id: Any, params: collection.Map[String, _]): Boolean = {
@@ -444,14 +455,14 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   def removeBy(clazz: Class[_], attr: String, values: Iterable[_]): Boolean = {
     if (clazz == null || Strings.isEmpty(attr) || values.size == 0) return false
     val hql = new StringBuilder()
-    hql.append("delete from ").append(entityName(clazz)).append(" where ").append(attr).append(" in (:ids)")
+    hql.append("delete from ").append(entityNameOf(clazz)).append(" where ").append(attr).append(" in (:ids)")
     executeUpdate(hql.toString(), Map("ids" -> values)) > 0
   }
 
   def remove(clazz: Class[_], keyMap: collection.Map[String, _]): Boolean = {
     if (clazz == null || keyMap == null || keyMap.isEmpty) return false
     val hql = new StringBuilder()
-    hql.append("delete from ").append(entityName(clazz)).append(" where ")
+    hql.append("delete from ").append(entityNameOf(clazz)).append(" where ")
     val params = new mutable.HashMap[String, Any]
     for ((keyName, keyValue) <- keyMap) {
       val paramName = keyName.replace('.', '_')
@@ -525,7 +536,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     entity match {
       case hp: HibernateProxy => session.update(hp)
       case e: Entity[_] =>
-        val en = if (null == entityName) this.entityName(entity.getClass) else entityName
+        val en = if (null == entityName) entityNameOf(entity.getClass) else entityName
         if (null == e.id) {
           session.save(en, entity)
         } else {
@@ -537,7 +548,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
           }
         }
       case _ =>
-        val en = if (null == entityName) this.entityName(entity.getClass) else entityName
+        val en = if (null == entityName) entityNameOf(entity.getClass) else entityName
         session.saveOrUpdate(en, entity)
     }
   }
@@ -566,7 +577,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   def batchUpdate(entityClass: Class[_], attr: String, values: Iterable[_], updateParams: scala.collection.Map[String, _]): Int = {
     if (values.isEmpty || updateParams.isEmpty) return 0
     val hql = new StringBuilder()
-    hql.append("update ").append(entityName(entityClass)).append(" set ")
+    hql.append("update ").append(entityNameOf(entityClass)).append(" set ")
     val newParams = new mutable.HashMap[String, Any]
     for ((parameterName, value) <- updateParams; if (null != parameterName)) {
       val locateParamName = Strings.replace(parameterName, ".", "_")
@@ -591,13 +602,6 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
 
   def createClob(str: String): Clob = {
     Hibernate.getLobCreator(currentSession).createClob(str)
-  }
-
-  protected def entityName(clazz: Class[_]): String = {
-    domain.getEntity(clazz) match {
-      case Some(e) => e.entityName
-      case None    => throw new RuntimeException(s"Cannot find ${clazz.getName} entity")
-    }
   }
 
   def isCollectionType(clazz: Class[_]): Boolean = {

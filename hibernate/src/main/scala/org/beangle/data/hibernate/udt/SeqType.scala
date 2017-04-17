@@ -23,20 +23,21 @@ import java.{ util => ju }
 import scala.collection.JavaConverters
 import scala.collection.mutable.{ Buffer, ListBuffer }
 
-import org.hibernate.engine.spi.SessionImplementor
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
+import org.hibernate.collection.spi.PersistentCollection
 
 /**
  * Mutable Seq Type
  */
 class SeqType extends UserCollectionType {
 
-  override def instantiate(session: SessionImplementor, persister: CollectionPersister) = {
+  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection = {
     new PersistentSeq(session)
   }
 
-  override def wrap(session: SessionImplementor, collection: Object) = {
+  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection = {
     new PersistentSeq(session, collection.asInstanceOf[Buffer[Object]])
   }
 
@@ -52,7 +53,8 @@ class SeqType extends UserCollectionType {
     Integer.valueOf(collection.asInstanceOf[Buffer[Object]].indexOf(entity))
   }
 
-  override def replaceElements(original: Object, target: Object, persister: CollectionPersister, owner: Object, copyCache: ju.Map[_, _], session: SessionImplementor) = {
+  override def replaceElements(original: Object, target: Object, persister: CollectionPersister,
+                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor) = {
     val targetSeq = target.asInstanceOf[Buffer[Any]]
     targetSeq.clear()
     targetSeq ++= original.asInstanceOf[Seq[Any]]

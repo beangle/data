@@ -23,8 +23,6 @@ import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.time.{ HourMinute, WeekDay, WeekState }
 import org.beangle.commons.logging.Logging
-import org.beangle.data.hibernate.cfg.{ OverrideConfiguration, RailsNamingStrategy }
-import org.beangle.data.hibernate.naming.RailsNamingPolicy
 import org.beangle.data.hibernate.model.TimeBean
 import org.hibernate.{ Session, SessionFactory, SessionFactoryObserver }
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
@@ -37,13 +35,15 @@ import org.scalatest.{ FunSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
 
 import javax.sql.DataSource
+import org.hibernate.cfg.Configuration
+import org.beangle.commons.model.meta.ImmutableDomain
 
 @RunWith(classOf[JUnitRunner])
 class UdtTest extends FunSpec with Matchers {
 
-  val configuration = Tests.buildConfig()
-  configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/hibernate/model/user.hbm.xml"))
-  configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/hibernate/model/time.hbm.xml"))
+  val configuration = new Configuration
+  configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/hibernate/model/user.hbm.xml").get)
+  configuration.addInputStream(ClassLoaders.getResourceAsStream("org/beangle/data/hibernate/model/time.hbm.xml").get)
 
   val configProperties = Tests.buildProperties()
   configProperties.put(AvailableSettings.DATASOURCE, Tests.buildDs())
@@ -62,7 +62,7 @@ class UdtTest extends FunSpec with Matchers {
 
   describe("Beangle UDT") {
     it("Should support int? and scala collection") {
-      UserCrudTest.testCrud(sf)
+      UserCrudTest.testCrud(sf, ImmutableDomain.empty)
     }
     it("Support user defined time ") {
       val s = sf.openSession()

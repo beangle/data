@@ -18,7 +18,9 @@
  */
 package org.beangle.data.hibernate.naming
 
+import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.orm.cfg.Profiles
 import org.beangle.data.hibernate.model.IdType
 import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
@@ -30,19 +32,17 @@ class RailsNamingPolicyTest extends FunSpec with Matchers {
   describe("RailsNamingPolicy") {
     it("Get Module") {
       System.setProperty("jpa_prefix", "j_")
-      val policy = new RailsNamingPolicy
-      for (resource <- ClassLoaders.getResources("META-INF/beangle/orm.xml"))
-        policy.addConfig(resource)
-      val module = policy.getProfile(classOf[NationBean])
+      val profiles = new Profiles(new Resources(None, ClassLoaders.getResources("META-INF/beangle/orm.xml"), None))
+      val module = profiles.getProfile(classOf[NationBean])
       assert(module.isDefined)
       assert(module.get.schema == Some("j_naming"))
-      assert(policy.getPrefix(classOf[NationBean]) == "gb_")
+      assert(profiles.getPrefix(classOf[NationBean]) == "gb_")
 
-      val daoModule = policy.getProfile(classOf[SchoolBean])
+      val daoModule = profiles.getProfile(classOf[SchoolBean])
       assert(daoModule.isDefined)
       assert(daoModule.get.parent.packageName == "org.beangle.data.hibernate")
 
-      assert(policy.getSchema(classOf[IdType]) == Some("school"))
+      assert(profiles.getSchema(classOf[IdType]) == Some("school"))
     }
   }
 }

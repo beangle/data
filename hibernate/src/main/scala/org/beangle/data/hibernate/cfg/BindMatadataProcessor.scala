@@ -24,11 +24,13 @@ import java.{ util => ju }
 import org.beangle.commons.jdbc.Column
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.data.hibernate.BeanglePropertyAccessStrategy
+import org.beangle.commons.model.meta.{ BasicType, EntityType, PluralProperty, Property }
+import org.beangle.commons.orm.{ BasicTypeMapping, CollectionMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapMapping, Mappings, PluralMapping, PropertyMapping, SimpleColumn, SingularMapping, TypeDef }
+import org.beangle.data.hibernate.ScalaPropertyAccessStrategy
 import org.beangle.data.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, SeqPerTableStyleGenerator }
 import org.beangle.data.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionJsDateType, OptionJsTimestampType, OptionJuDateType, OptionLongType, OptionShortType, OptionStringType, SeqType, SetType, ValueType }
 import org.hibernate.{ FetchMode, MappingException }
-import org.hibernate.boot.internal.MetadataBuildingContextRootImpl
+import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.model.TypeDefinition
 import org.hibernate.boot.model.naming.{ Identifier, ObjectNameNormalizer }
 import org.hibernate.boot.model.source.spi.MetadataSourceProcessor
@@ -45,25 +47,15 @@ import org.hibernate.mapping.Collection.{ DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_K
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
 import org.hibernate.property.access.spi.PropertyAccessStrategy
 import org.hibernate.tuple.{ GeneratedValueGeneration, GenerationTiming }
-import org.jboss.jandex.IndexView
-import org.beangle.commons.orm.IdGenerator
-import org.beangle.commons.model.meta.PluralProperty
-import org.beangle.commons.model.meta.EntityType
-import org.beangle.commons.orm.CollectionMapping
-import org.beangle.commons.orm.MapMapping
-import org.beangle.commons.orm.EmbeddableElementMapping
-import org.beangle.commons.orm._
-import org.beangle.commons.model.meta.Property
-import org.beangle.commons.model.meta.Type
 
 /**
  * Hibernate Bind Metadadta processor.
  */
-class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
-                            context: MetadataBuildingContextRootImpl,
-                            jandexView: IndexView) extends MetadataSourceProcessor {
+class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataBuildingContext) extends MetadataSourceProcessor {
 
   private val metadata: InFlightMetadataCollector = context.getMetadataCollector
+
+  private val mappings = metadataSources.getServiceRegistry.getService(classOf[MappingService]).mappings
 
   private val objectNameNormalizer = new ObjectNameNormalizer() {
     protected override def getBuildingContext(): MetadataBuildingContext = {
@@ -80,8 +72,8 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
   private var globalIdGenerator: IdGenerator = _
 
   override def prepare() {
-    val strategySelector = bindMetadataSources.getServiceRegistry.getService(classOf[StrategySelector])
-    strategySelector.registerStrategyImplementor(classOf[PropertyAccessStrategy], "scala", classOf[BeanglePropertyAccessStrategy])
+    val strategySelector = metadataSources.getServiceRegistry.getService(classOf[StrategySelector])
+    strategySelector.registerStrategyImplementor(classOf[PropertyAccessStrategy], "scala", classOf[ScalaPropertyAccessStrategy])
   }
 
   /**
@@ -91,8 +83,7 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
   override def processTypeDefinitions() {
     val cls = context.getBuildingOptions().getServiceRegistry().getService(classOf[ClassLoaderService])
 
-    Map(("seq", classOf[SeqType]), ("set", classOf[SetType]),
-      ("map", classOf[MapType]), ("byte?", classOf[OptionByteType]),
+    Map(("byte?", classOf[OptionByteType]),
       ("char?", classOf[OptionCharType]), ("int?", classOf[OptionIntType]),
       ("short?", classOf[OptionShortType]),
       ("bool?", classOf[OptionBooleanType]), ("long?", classOf[OptionLongType]),
@@ -103,15 +94,14 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
       ("java.sql.Timestamp?", classOf[OptionJsTimestampType])) foreach {
         case (name, clazz) =>
           val p = new ju.HashMap[String, String]
-          val definition = new TypeDefinition(name, clazz, null, p)
+          val definition = new TypeDefinition(name, clazz, Array(name), p)
           context.getMetadataCollector.addTypeDefinition(definition)
       }
 
     val types = new collection.mutable.HashMap[String, TypeDef]
-    val binder = bindMetadataSources.mappings
-    types ++= binder.types
-    binder.valueTypes foreach (t => types += (t.getName -> new TypeDef(classOf[ValueType].getName, Map("valueClass" -> t.getName))))
-    binder.enumTypes foreach (t => types += (t._1 -> new TypeDef(classOf[EnumType].getName, Map("enumClass" -> t._2))))
+    types ++= mappings.types
+    mappings.valueTypes foreach (t => types += (t.getName -> new TypeDef(classOf[ValueType].getName, Map("valueClass" -> t.getName))))
+    mappings.enumTypes foreach (t => types += (t._1 -> new TypeDef(classOf[EnumType].getName, Map("enumClass" -> t._2))))
 
     types foreach {
       case (m, t) =>
@@ -127,6 +117,10 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
   }
 
   override def processNamedQueries() {
+
+  }
+
+  override def processAuxiliaryDatabaseObjectDefinitions() {
 
   }
 
@@ -152,8 +146,7 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
   }
 
   override def processEntityHierarchies(processedEntityNames: java.util.Set[String]) {
-    val binder = bindMetadataSources.mappings
-    for ((name, definition) <- binder.entityMappings) {
+    for ((name, definition) <- mappings.entityMappings) {
       val clazz = definition.clazz
       val rc = bindClass(definition)
 
@@ -165,8 +158,8 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
       }
     }
 
-    for (definition <- binder.collections if (null != definition.cacheUsage)) {
-      val role = binder.getMapping(definition.clazz).entityName + "." + definition.property
+    for (definition <- mappings.collections if (null != definition.cacheUsage)) {
+      val role = mappings.getMapping(definition.clazz).entityName + "." + definition.property
       val region = if (null == definition.cacheRegion) role else definition.cacheRegion
       val cb = metadata.getCollectionBinding(role)
       cb.setCacheConcurrencyStrategy(definition.cacheUsage)
@@ -176,15 +169,12 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
   }
 
   override def postProcessEntityHierarchies() {
-
   }
 
   override def processResultSetMappings() {
-
   }
 
   override def finishUp() {
-
   }
 
   class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: CollectionMapping)
@@ -204,7 +194,7 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
     }
   }
 
-  def bindClass(em: EntityMapping): RootClass = {
+  def bindClass(em: EntityTypeMapping): RootClass = {
     val entity = new RootClass(context)
     entity.setEntityName(em.entityName)
     entity.setJpaEntityName(em.entityName)
@@ -225,29 +215,29 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
       case (propertyName, p) =>
         var value: Value = null
         p match {
-          case m21: SingularMapping =>
-            m21.property match{
-              case  et:EntityType=>
-              case
+          case sm: SingularMapping =>
+            sm.mapping match {
+              case btm: BasicTypeMapping =>
+                sm.property.propertyType match {
+                  case et: EntityType =>
+                    value = bindManyToOne(new HManyToOne(metadata, table), propertyName, et.entityName, btm.columns, sm)
+                  case _ =>
+                    if (sm.property.name == "id") {
+                      bindSimpleId(em, entity, propertyName, sm)
+                      entity.createPrimaryKey
+                    } else {
+                      value = bindSimpleValue(new SimpleValue(metadata, table), propertyName, sm, btm.typ.clazz.getName)
+                    }
+                }
+              case etm: EmbeddableTypeMapping =>
+                val subpath = qualify(em.entityName, propertyName)
+                value = new HComponent(metadata, entity)
+                bindComponent(value.asInstanceOf[HComponent], etm, subpath, false)
             }
-            val toOneProperty = p.property.asInstanceOf[AssociationProperty]
-            value = bindManyToOne(new HManyToOne(metadata, table), propertyName, toOneProperty.entity.entityName, m21.columns, m21)
           case colp: PluralMapping[_] =>
             val hcol = createCollection(colp, entity)
             metadata.addCollectionBinding(bindCollection(entity, em.entityName + "." + propertyName, colp, hcol))
             value = hcol
-          case cp: ComponentMapping =>
-            val subpath = qualify(em.entityName, propertyName);
-            value = new HComponent(metadata, entity);
-            bindComponent(value.asInstanceOf[HComponent], cp, cp.property.asInstanceOf[EmbeddableProperty], subpath, false)
-          case sp: BasicMapping =>
-            //FIXME
-            if (sp.property.name == "id") {
-              bindSimpleId(em, entity, propertyName, sp)
-              entity.createPrimaryKey
-            } else {
-              value = bindSimpleValue(new SimpleValue(metadata, table), propertyName, sp, sp)
-            }
         }
 
         if (value != null) {
@@ -263,11 +253,12 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
     if (!entity.useDynamicUpdate && entity.getTable().getColumnSpan() >= minColumnEnableDynaUpdate) {
       entity.setDynamicUpdate(true)
     }
+    assert(null != entity.getIdentifier, s"${entity.getEntityName} requires identifier.")
     metadata.addEntityBinding(entity)
     entity
   }
 
-  private def bindSimpleId(em: EntityMapping, entity: RootClass, idName: String, idp: BasicMapping): Unit = {
+  private def bindSimpleId(em: EntityTypeMapping, entity: RootClass, idName: String, idp: SingularMapping): Unit = {
     val id = new SimpleValue(metadata, entity.getTable)
     entity.setIdentifier(id)
     bindColumns(idp.columns, id, idName)
@@ -283,30 +274,33 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
   def bindCollectionSecondPass(colp: PluralMapping[_], collection: HCollection,
                                entities: java.util.Map[String, PersistentClass]): Unit = {
     val pp = colp.property.asInstanceOf[PluralProperty]
-    colp.element match {
-      case o2m: EntityElementMapping if (o2m.one2many) =>
-        val oneToMany = collection.getElement.asInstanceOf[HOneToMany]
-        val assocClass = oneToMany.getReferencedEntityName
-        val entity = entities.get(assocClass)
-        if (entity == null) throw new MappingException("Association references unmapped class: " + assocClass)
-        oneToMany.setAssociatedClass(entity)
-        collection.setCollectionTable(entity.getTable)
-
-        collection.setInverse(true)
-      case m2m: EntityElementMapping if (m2m.many2many) =>
-        val refElemType = pp.element.asInstanceOf[EntityType]
-        val element = bindManyToOne(new HManyToOne(metadata, collection.getCollectionTable), DEFAULT_ELEMENT_COLUMN_NAME,
-          refElemType.entityName, m2m.columns)
-        collection.setElement(element)
-      //        bindManyToManySubelements( collection, subnode )
-      case compositeElem: EmbeddableElementMapping =>
-        val element = new HComponent(metadata, collection)
-        collection.setElement(element)
-        bindComponent(element, compositeElem, pp.element, collection.getRole + ".element", false)
-      case e: BasicElementMapping =>
-        val elt = new SimpleValue(metadata, collection.getCollectionTable)
-        collection.setElement(elt)
-        bindSimpleValue(elt, DEFAULT_ELEMENT_COLUMN_NAME, e, e)
+    pp.element match {
+      case et: EntityType =>
+        if (colp.one2many) {
+          val oneToMany = collection.getElement.asInstanceOf[HOneToMany]
+          val assocClass = oneToMany.getReferencedEntityName
+          val entity = entities.get(assocClass)
+          if (entity == null) throw new MappingException("Association references unmapped class: " + assocClass)
+          oneToMany.setAssociatedClass(entity)
+          collection.setCollectionTable(entity.getTable)
+          collection.setInverse(true)
+        } else {
+          val element = bindManyToOne(new HManyToOne(metadata, collection.getCollectionTable), DEFAULT_ELEMENT_COLUMN_NAME,
+            et.entityName, colp.element.asInstanceOf[BasicTypeMapping].columns)
+          collection.setElement(element)
+          //        bindManyToManySubelements( collection, subnode )
+        }
+      case _ =>
+        colp.element match {
+          case compositeElem: EmbeddableTypeMapping =>
+            val element = new HComponent(metadata, collection)
+            collection.setElement(element)
+            bindComponent(element, compositeElem, collection.getRole + ".element", false)
+          case e: BasicTypeMapping =>
+            val elt = new SimpleValue(metadata, collection.getCollectionTable)
+            collection.setElement(elt)
+            bindSimpleValue(elt, DEFAULT_ELEMENT_COLUMN_NAME, e, e.typ.clazz.getName)
+        }
     }
 
     val keyElem = new SimpleColumn(colp.ownerColumn)
@@ -317,14 +311,13 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
 
     val key = new DependantValue(metadata, collection.getCollectionTable, keyVal)
     key.setCascadeDeleteEnabled(false)
-    bindSimpleValue(key, DEFAULT_KEY_COLUMN_NAME, keyElem, keyElem)
+    bindSimpleValue(key, DEFAULT_KEY_COLUMN_NAME, keyElem, collection.getOwner.getIdentifier.getType.getName)
     collection.setKey(key)
 
     colp.index foreach { idx =>
       val index = new SimpleColumn(idx)
       val list = collection.asInstanceOf[HList]
-      val iv = bindSimpleValue(new SimpleValue(metadata, collection.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, index, index)
-      iv.setTypeName("integer")
+      val iv = bindSimpleValue(new SimpleValue(metadata, collection.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, index, "integer")
       list.setIndex(iv)
     }
 
@@ -348,14 +341,17 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
     bindCollectionSecondPass(mapp, map, entities)
 
     mapp.key match {
-      case sk: BasicElementMapping =>
-        map.setIndex(bindSimpleValue(new SimpleValue(metadata, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, sk, sk))
-      case ck: EmbeddableElementMapping =>
-        map.setIndex(bindComponent(new HComponent(metadata, map), ck, mapp.property.key, map.getRole + ".index", map.isOneToMany))
-      case ck: EntityElementMapping =>
-        val elemType = mapp.property.element.asInstanceOf[EntityType]
-        map.setIndex(bindManyToOne(new HManyToOne(metadata, map.getCollectionTable),
-          DEFAULT_INDEX_COLUMN_NAME, elemType.entityName, ck.columns))
+      case sk: BasicTypeMapping =>
+        mapp.property.key match {
+          case bt: BasicType =>
+            map.setIndex(bindSimpleValue(new SimpleValue(metadata, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, sk, bt.clazz.getName))
+          case et: EntityType =>
+            val elemType = mapp.property.element.asInstanceOf[EntityType]
+            map.setIndex(bindManyToOne(new HManyToOne(metadata, map.getCollectionTable),
+              DEFAULT_INDEX_COLUMN_NAME, elemType.entityName, sk.columns))
+        }
+      case ck: EmbeddableTypeMapping =>
+        map.setIndex(bindComponent(new HComponent(metadata, map), ck, map.getRole + ".index", map.isOneToMany))
     }
 
     if (map.isOneToMany && !map.getKey.isNullable && !map.isInverse) {
@@ -372,37 +368,31 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
     }
   }
 
-  private def bindSimpleValue(value: SimpleValue, name: String, colHolder: ColumnHolder, typeHolder: TypeNameHolder): SimpleValue = {
-    typeHolder.typeName foreach { typeName =>
-      val typeDef = value.getMetadata.getTypeDefinition(typeName)
-      if (null == typeDef) {
-        value.setTypeName(typeName)
-      } else {
-        value.setTypeName(typeDef.getTypeImplementorClass.getName)
-        val p = new ju.Properties
-        p.putAll(typeDef.getParameters)
-        value.setTypeParameters(p)
-      }
-    }
+  private def bindSimpleValue(value: SimpleValue, name: String, colHolder: ColumnHolder, typeName: String): SimpleValue = {
+    if (null != typeName) value.setTypeName(typeName)
     bindColumns(colHolder.columns, value, name)
     value
   }
 
+  /**
+   * FIXME NamingStrategy?
+   */
   private def nameColumn(cm: Column, propertyPath: String): Tuple2[Identifier, String] = {
-    val physicalNamingStrategy = metadata.getMetadataBuildingOptions.getPhysicalNamingStrategy
+    //    val physicalNamingStrategy = metadata.getMetadataBuildingOptions.getPhysicalNamingStrategy
     val database = metadata.getDatabase
     var logicalName: Identifier = null
-    if (null == cm.name) logicalName = database.toIdentifier(propertyPath)
-    else if (cm.name.value.charAt(0) == '@') {
-      logicalName = database.toIdentifier(cm.name.value.substring(1))
+    if (null == cm.name) {
+      logicalName = database.toIdentifier(propertyPath)
+    } else {
+      logicalName = database.toIdentifier(cm.name.value)
     }
-    val physicalName = physicalNamingStrategy.toPhysicalColumnName(
-      logicalName,
-      database.getJdbcEnvironment())
-    (logicalName, physicalName.render(database.getDialect))
+    //    val physicalName = physicalNamingStrategy.toPhysicalColumnName(
+    //      logicalName,
+    //      database.getJdbcEnvironment())
+    (logicalName, logicalName.render(database.getDialect))
   }
 
-  private def bindColumns(cms: Seq[Column], simpleValue: SimpleValue, propertyPath: String): Unit = {
+  private def bindColumns(cms: Iterable[Column], simpleValue: SimpleValue, propertyPath: String): Unit = {
     val table = simpleValue.getTable
     var count = 0
     for (cm <- cms) {
@@ -428,20 +418,24 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
   }
 
   def bindColumn(cm: Column, column: HColumn) {
-    cm.sqlType.length foreach (v => column.setLength(v))
-    cm.sqlType.length foreach (v => column.setPrecision(v))
-    cm.sqlType.scale foreach (v => column.setScale(v))
+    val sqlType = cm.sqlType
+    column.setSqlTypeCode(sqlType.code)
+    column.setLength(sqlType.length.getOrElse(0))
+    column.setPrecision(sqlType.precision.getOrElse(0))
+    column.setScale(sqlType.scale.getOrElse(0))
     column.setNullable(cm.nullable)
     column.setUnique(cm.unique)
     cm.defaultValue foreach (v => column.setDefaultValue(v))
-    column.setSqlTypeCode(cm.sqlType.code)
   }
 
-  def bindManyToOne(manyToOne: HManyToOne, name: String, entityName: String, cols: Seq[Column], fetchable: Fetchable = null): HManyToOne = {
+  def bindManyToOne(manyToOne: HManyToOne, name: String, entityName: String, cols: Iterable[Column], fetchable: Fetchable = null): HManyToOne = {
     bindColumns(cols, manyToOne, name)
     if (null != fetchable) initOuterJoinFetchSetting(manyToOne, fetchable)
     manyToOne.setReferencedEntityName(entityName)
     manyToOne.setReferenceToPrimaryKey(true)
+    mappings.entities.get(entityName).foreach { et =>
+      manyToOne.setTypeName(et.id.clazz.getName)
+    }
     manyToOne
   }
 
@@ -453,7 +447,7 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
     col.setLazy(false)
   }
 
-  def makeIdentifier(em: EntityMapping, sv: SimpleValue): Unit = {
+  def makeIdentifier(em: EntityTypeMapping, sv: SimpleValue): Unit = {
     if (null == globalIdGenerator && em.idGenerator == null) throw new RuntimeException("Cannot find id generator for entity " + em.entityName)
     val idgenerator = if (null != globalIdGenerator) globalIdGenerator else em.idGenerator
     sv.setIdentifierGeneratorStrategy(idgenerator.name)
@@ -521,11 +515,11 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
     }
   }
 
-  def bindComponent(component: HComponent, comp: Nested, typ: Type, path: String, isEmbedded: Boolean): HComponent = {
+  def bindComponent(component: HComponent, comp: EmbeddableTypeMapping, path: String, isEmbedded: Boolean): HComponent = {
     component.setEmbedded(isEmbedded)
     component.setRoleName(path)
 
-    component.setComponentClassName(typ.clazz.getName)
+    component.setComponentClassName(comp.typ.clazz.getName)
     if (isEmbedded) {
       if (component.getOwner.hasPojoRepresentation) component.setComponentClassName(component.getOwner.getClassName)
       else component.setDynamic(true)
@@ -539,18 +533,25 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
         val relativePath =
           if (isEmbedded) propertyName
           else subpath.substring(component.getOwner.getEntityName.length + 1)
+
         p match {
-          case m21: AssociationMapping =>
-            value = bindManyToOne(new HManyToOne(metadata, component.getTable), propertyName, m21.property.entity.entityName, m21.columns, m21)
           case colp: PluralMapping[_] =>
             val hcol = createCollection(colp, component.getOwner)
             metadata.addCollectionBinding(bindCollection(component.getOwner, subpath, colp, hcol))
             value = hcol
-          case sp: BasicMapping =>
-            value = bindSimpleValue(new SimpleValue(metadata, component.getTable), relativePath, sp, sp)
-          case cp: ComponentMapping =>
-            value = new HComponent(metadata, component)
-            bindComponent(value.asInstanceOf[HComponent], cp, cp.property.asInstanceOf[EmbeddableProperty], subpath, isEmbedded)
+          case sm: SingularMapping =>
+            sm.mapping match {
+              case btm: BasicTypeMapping =>
+                sm.property.propertyType match {
+                  case et: EntityType =>
+                    value = bindManyToOne(new HManyToOne(metadata, component.getTable), propertyName, et.entityName, sm.columns, sm)
+                  case _ =>
+                    value = bindSimpleValue(new SimpleValue(metadata, component.getTable), relativePath, sm, sm.property.propertyType.clazz.getName)
+                }
+              case etm: EmbeddableTypeMapping =>
+                value = new HComponent(metadata, component)
+                bindComponent(value.asInstanceOf[HComponent], etm, subpath, isEmbedded)
+            }
         }
         if (value != null) {
           val property = createProperty(value, propertyName, ClassLoaders.load(component.getComponentClassName), p)
@@ -558,15 +559,26 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
         }
     }
 
-    comp match {
-      case cp: ComponentMapping if (cp.unique) =>
-        val iter = component.getColumnIterator
-        val cols = new java.util.ArrayList[HColumn]
-        while (iter.hasNext) cols.add(iter.next.asInstanceOf[HColumn])
-        component.getOwner.getTable.createUniqueKey(cols)
-      case _ =>
-    }
+    //    comp match {
+    //      case cp: ComponentMapping if (cp.unique) =>
+    //        val iter = component.getColumnIterator
+    //        val cols = new java.util.ArrayList[HColumn]
+    //        while (iter.hasNext) cols.add(iter.next.asInstanceOf[HColumn])
+    //        component.getOwner.getTable.createUniqueKey(cols)
+    //      case _ =>
+    //    }
     component
+  }
+
+  private def setPluralTypeName(pm: PluralMapping[_], coll: HCollection): Unit = {
+    val p = pm.property.asInstanceOf[PluralProperty]
+    if (classOf[collection.Set[_]].isAssignableFrom(p.clazz)) {
+      coll.setTypeName(classOf[SetType].getName)
+    } else if (classOf[collection.Seq[_]].isAssignableFrom(p.clazz)) {
+      coll.setTypeName(classOf[SeqType].getName)
+    } else if (classOf[collection.Map[_, _]].isAssignableFrom(p.clazz)) {
+      coll.setTypeName(classOf[MapType].getName)
+    }
   }
 
   def bindCollection(entity: PersistentClass, role: String, cp: PluralMapping[_], coll: HCollection): HCollection = {
@@ -575,16 +587,7 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
     cp.where foreach (v => coll.setWhere(v))
     cp.batchSize foreach (v => coll.setBatchSize(v))
 
-    cp.typeName foreach { typeName =>
-      val typeDef = metadata.getTypeDefinition(typeName)
-      if (typeDef != null) {
-        coll.setTypeName(typeDef.getTypeImplementorClass.getName)
-        coll.setTypeParameters(typeDef.getParameters)
-      } else {
-        coll.setTypeName(typeName)
-      }
-    }
-
+    setPluralTypeName(cp, coll)
     initOuterJoinFetchSetting(coll, cp)
     if (Some("subselect") == cp.fetch) {
       coll.setSubselectLoadable(true)
@@ -592,20 +595,19 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
     }
     coll.setLazy(true)
     val collectionName = Strings.substringAfterLast(role, ".")
-    cp.element match {
-      case o2m: EntityElementMapping if o2m.one2many =>
+    cp.property.asInstanceOf[PluralProperty].element match {
+      case et: EntityType if cp.one2many =>
         val oneToMany = new HOneToMany(metadata, coll.getOwner)
         coll.setElement(oneToMany)
-        val refEntityName = cp.property.asInstanceOf[AssociationProperty].entity.entityName
-        oneToMany.setReferencedEntityName(refEntityName)
-      case ele: ElementMapping =>
+        oneToMany.setReferencedEntityName(et.entityName)
+      case _ =>
         val tableName = cp.table match {
           case Some(t) => t
           case None =>
             val ownerTable = coll.getOwner.getTable
             ownerTable.getName + "_" + unqualify(collectionName)
         }
-        val table = metadata.addTable(cp.schema.orNull, null, tableName, cp.subselect.orNull, false)
+        val table = metadata.addTable(coll.getOwner.getTable.getSchema, null, tableName, cp.subselect.orNull, false)
         coll.setCollectionTable(table)
     }
 
@@ -647,7 +649,8 @@ class BindMatadataProcessor(bindMetadataSources: BindMetadataSources,
 
   def bindProperty(propertyName: String, pm: PropertyMapping[_], property: HProperty): Unit = {
     property.setName(propertyName)
-    property.setPropertyAccessorName(pm.access.getOrElse(context.getMappingDefaults.getImplicitPropertyAccessorName))
+    //property.setPropertyAccessorName(pm.access.getOrElse(context.getMappingDefaults.getImplicitPropertyAccessorName))
+    property.setPropertyAccessorName("scala")
     property.setCascade(pm.cascade.getOrElse(context.getMappingDefaults.getImplicitCascadeStyleName))
     property.setUpdateable(pm.updateable)
     property.setInsertable(pm.insertable)

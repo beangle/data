@@ -74,7 +74,9 @@ object SessionUtils extends Logging {
     holder
   }
 
-  def currentSession(factory: SessionFactory): SessionHolder = getResource(factory).asInstanceOf[SessionHolder]
+  def currentSession(factory: SessionFactory): SessionHolder = {
+    getResource(factory).asInstanceOf[SessionHolder]
+  }
 
   def closeSession(factory: SessionFactory) {
     try {
@@ -85,7 +87,7 @@ object SessionUtils extends Logging {
       }
     } catch {
       case ex: HibernateException => logger.debug("Could not close Hibernate Session", ex)
-      case e: Throwable => logger.debug("Unexpected exception on closing Hibernate Session", e)
+      case e: Throwable           => logger.debug("Unexpected exception on closing Hibernate Session", e)
     }
   }
 
@@ -96,7 +98,7 @@ object SessionUtils extends Logging {
       session.close()
     } catch {
       case ex: HibernateException => logger.debug("Could not close Hibernate Session", ex)
-      case e: Throwable => logger.debug("Unexpected exception on closing Hibernate Session", e)
+      case e: Throwable           => logger.debug("Unexpected exception on closing Hibernate Session", e)
     }
   }
 

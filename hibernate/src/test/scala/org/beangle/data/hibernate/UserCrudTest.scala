@@ -24,11 +24,12 @@ import org.beangle.commons.lang.time.WeekState
 import org.beangle.commons.dao.OqlBuilder
 import org.beangle.data.hibernate.model.{ ExtendRole, Member, Name, Role, User }
 import org.hibernate.SessionFactory
+import org.beangle.commons.model.meta.Domain
 
 object UserCrudTest {
 
-  def testCrud(sf: SessionFactory) {
-    val entityDao = new HibernateEntityDao(sf)
+  def testCrud(sf: SessionFactory, domain: Domain) {
+    val entityDao = new HibernateEntityDao(sf, domain)
     val roles = entityDao.getAll(classOf[User])
     val user = new User(1)
     user.name = new Name

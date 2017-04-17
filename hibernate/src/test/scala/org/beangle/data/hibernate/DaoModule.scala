@@ -18,17 +18,15 @@
  */
 package org.beangle.data.hibernate
 
-import org.beangle.commons.cdi.bind.{ AbstractBindModule, profile }
-import org.beangle.data.hibernate.cfg.OverrideConfiguration
+import org.beangle.commons.cdi.bind.BindModule
+import org.beangle.data.hibernate.spring.{ HibernateTransactionManager, LocalSessionFactoryBean }
 import org.beangle.data.hibernate.spring.web.OpenSessionInViewInterceptor
 import org.springframework.beans.factory.config.PropertiesFactoryBean
 import org.springframework.jdbc.datasource.DriverManagerDataSource
 import org.springframework.jdbc.support.lob.DefaultLobHandler
 import org.springframework.transaction.interceptor.TransactionProxyFactoryBean
-import org.beangle.data.hibernate.spring.LocalSessionFactoryBean
-import org.beangle.data.hibernate.spring.HibernateTransactionManager
 
-object DaoModule extends AbstractBindModule {
+object DaoModule extends BindModule {
 
   protected override def binding(): Unit = {
     bind("DataSource.default", classOf[DriverManagerDataSource]).property("driverClassName", "org.h2.Driver")
@@ -48,11 +46,10 @@ object DaoModule extends AbstractBindModule {
         //net.sf.ehcache.configurationResourceName
         "hibernate.cache.region.factory_class=org.hibernate.cache.EhCacheRegionFactory",
         "hibernate.cache.use_second_level_cache=true", "hibernate.cache.use_query_cache=true",
-        "hibernate.query.substitutions=true 1, false 0, yes 'Y', no 'N'", "hibernate.show_sql=false"))
+        "hibernate.query.substitutions=true 1, false 0, yes 'Y', no 'N'", "hibernate.show_sql=true"))
       .description("Hibernate配置信息")
 
     bind("SessionFactory.default", classOf[LocalSessionFactoryBean])
-      .property("configurationClass", classOf[OverrideConfiguration].getName)
       .property("hibernateProperties", ref("HibernateConfig.default"))
       .property("configLocations", "classpath*:META-INF/hibernate.cfg.xml")
       .property("ormLocations", "classpath*:META-INF/beangle/orm.xml").primary
@@ -65,8 +62,6 @@ object DaoModule extends AbstractBindModule {
         "batch*=PROPAGATION_REQUIRED", "execute*=PROPAGATION_REQUIRED", "remove*=PROPAGATION_REQUIRED",
         "create*=PROPAGATION_REQUIRED", "init*=PROPAGATION_REQUIRED", "authorize*=PROPAGATION_REQUIRED",
         "*=PROPAGATION_REQUIRED,readOnly")).primary
-
-    bind("EntityMetadata.hibernate", classOf[HibernateMetadataFactory])
 
     bind("EntityDao.hibernate", classOf[TransactionProxyFactoryBean]).proxy("target", classOf[HibernateEntityDao])
       .parent("TransactionProxy.template").primary().description("基于Hibernate提供的通用DAO")
