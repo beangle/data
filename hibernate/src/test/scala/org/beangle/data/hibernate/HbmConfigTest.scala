@@ -50,6 +50,10 @@ class HbmConfigTest extends FunSpec with Matchers {
   builder.ormLocations = resouces.toArray
   builder.properties.put("hibernate.show_sql", "true")
   builder.properties.put("hibernate.hbm2ddl.auto", "create")
+  builder.properties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
+  builder.properties.put("hibernate.cache.use_second_level_cache", "false")
+  builder.properties.put("hibernate.cache.use_query_cache", "true")
+  builder.properties.put("hibernate.ejb.metamodel.population", "disabled")
   builder.init()
 
   val domain = builder.domain

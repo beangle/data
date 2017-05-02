@@ -36,7 +36,7 @@ object SessionUtils extends Logging {
 
   def getDataSource(factory: SessionFactory): DataSource = {
     val factoryImpl = factory.asInstanceOf[SessionFactoryImplementor]
-    if (MultiTenancyStrategy.NONE == factoryImpl.getSettings().getMultiTenancyStrategy()) {
+    if (MultiTenancyStrategy.NONE == factoryImpl.getSessionFactoryOptions().getMultiTenancyStrategy()) {
       factoryImpl.getServiceRegistry.getService(classOf[ConnectionProvider]).unwrap(classOf[DataSource])
     } else {
       factoryImpl.getServiceRegistry.getService(classOf[MultiTenantConnectionProvider]).unwrap(classOf[DataSource])
@@ -67,7 +67,7 @@ object SessionUtils extends Logging {
     var session: Session = null
     if (null == holder) {
       session = factory.openSession()
-      session.setFlushMode(FlushMode.MANUAL)
+      session.setHibernateFlushMode(FlushMode.MANUAL)
       holder = new SessionHolder(session)
       if (isEnableBinding(factory)) bindResource(factory, holder)
     }

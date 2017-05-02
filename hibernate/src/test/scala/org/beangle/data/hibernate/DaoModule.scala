@@ -44,7 +44,7 @@ object DaoModule extends BindModule {
         "hibernate.jdbc.batch_versioned_data=true", "hibernate.jdbc.use_streams_for_binary=true",
         "hibernate.jdbc.use_get_generated_keys=true",
         //net.sf.ehcache.configurationResourceName
-        "hibernate.cache.region.factory_class=org.hibernate.cache.EhCacheRegionFactory",
+        "hibernate.cache.region.factory_class=org.hibernate.cache.ehcache.EhCacheRegionFactory",
         "hibernate.cache.use_second_level_cache=true", "hibernate.cache.use_query_cache=true",
         "hibernate.query.substitutions=true 1, false 0, yes 'Y', no 'N'", "hibernate.show_sql=true"))
       .description("Hibernate配置信息")

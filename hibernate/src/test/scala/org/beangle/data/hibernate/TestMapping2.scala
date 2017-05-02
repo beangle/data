@@ -29,7 +29,7 @@ import org.beangle.commons.orm.MappingModule
 object TestMapping2 extends MappingModule {
 
   def binding(): Unit = {
-    defaultIdGenerator("table_sequence")
+    defaultIdGenerator("seq_per_table")
     defaultCache("test_cache_region", "read-write")
 
     bind[Role].on(r => declare(

@@ -45,21 +45,25 @@ class TableTest extends FlatSpec with Matchers {
 
   "create sql" should "like this" in {
     val table = new Table(test, "USER")
-    val column = new Column("NAME", oracle.sqlType(Types.VARCHAR, 30))
+    val column = new Column("NAME", oracle.toType(Types.VARCHAR, 30))
     column.comment = Some("login name")
+    column.nullable = false
     table.add(column)
-    val pkColumn = new Column("ID", oracle.sqlType(Types.DECIMAL, 19))
+    val pkColumn = new Column("ID", oracle.toType(Types.DECIMAL, 19))
+    pkColumn.nullable = false
     val pk = new PrimaryKey(table, "pk", "ID")
     table.add(pkColumn)
     table.primaryKey = Some(pk)
-    val boolCol = new Column("ENABLED", oracle.sqlType(Types.DECIMAL, 1))
+    val boolCol = new Column("ENABLED", oracle.toType(Types.DECIMAL, 1))
+    boolCol.nullable = false
     table.add(boolCol)
 
-    val ageCol = new Column("AGE", oracle.sqlType(Types.DECIMAL, 10))
+    val ageCol = new Column("AGE", oracle.toType(Types.DECIMAL, 10))
+    ageCol.nullable = false
     table.add(ageCol)
 
     table.attach(Engines.PostgreSQL)
-    assert("create table \"TEST\".\"USER\" (\"NAME\" varchar(30) not null, \"ID\" int8 not null, \"ENABLED\" boolean not null, \"AGE\" int4 not null," +
+    assert("create table TEST.\"USER\" (\"NAME\" varchar(30) not null, \"ID\" int8 not null, \"ENABLED\" boolean not null, \"AGE\" int4 not null," +
       " primary key (\"ID\"))" == SQL.createTable(table, new PostgreSQLDialect()))
   }
 

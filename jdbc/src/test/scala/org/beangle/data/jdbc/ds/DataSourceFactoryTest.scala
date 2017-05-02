@@ -32,7 +32,7 @@ class DataSourceFactoryTest extends FlatSpec with Matchers {
 
   "DataSourceFactory " should "build a datasource" in {
     val factory = new DataSourceFactory()
-    factory.url = ClassLoaders.getResource("datasources.xml").toString()
+    factory.url = ClassLoaders.getResource("datasources.xml").get.toString
     factory.name = "h2"
     factory.init()
     factory.result.getConnection

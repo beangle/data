@@ -36,7 +36,7 @@ object Tests {
     properties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
     properties.put("hibernate.hbm2ddl.auto", "create")
     properties.put("hibernate.show_sql", "true")
-    properties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[SimpleCurrentSessionContext].getName())
+    properties.put("hibernate.ejb.metamodel.population", "disabled")
     properties
   }
 

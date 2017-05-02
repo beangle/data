@@ -22,11 +22,10 @@ import java.{ util => ju }
 
 import scala.collection.{ JavaConverters, mutable }
 
-import org.hibernate.engine.spi.{ SessionImplementor, SharedSessionContractImplementor }
+import org.hibernate.collection.spi.PersistentCollection
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
-import org.hibernate.collection.internal.PersistentMap
-import org.hibernate.collection.spi.PersistentCollection
 
 /**
  * Mutable Map Type
@@ -35,14 +34,13 @@ class MapType extends UserCollectionType {
   type MMap = mutable.Map[Object, Object]
 
   override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection = {
-    //new PersistentMap(session)
-    null.asInstanceOf[PersistentCollection]
+    new PersistentMap(session)
   }
 
   override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection = {
-    //new PersistentMap(session, collection.asInstanceOf[MMap])
-    null.asInstanceOf[PersistentCollection]
+    new PersistentMap(session, collection.asInstanceOf[MMap])
   }
+
   def getElementsIterator(collection: Object) = {
     JavaConverters.asJavaIterator(collection.asInstanceOf[MMap].iterator)
   }

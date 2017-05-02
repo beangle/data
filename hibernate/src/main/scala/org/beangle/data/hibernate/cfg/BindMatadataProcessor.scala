@@ -369,7 +369,15 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
   }
 
   private def bindSimpleValue(value: SimpleValue, name: String, colHolder: ColumnHolder, typeName: String): SimpleValue = {
-    if (null != typeName) value.setTypeName(typeName)
+    if (null != typeName) {
+      val td = metadata.getTypeDefinition(typeName)
+      if (null != td) {
+        value.setTypeName(td.getTypeImplementorClass.getName)
+        value.setTypeParameters(td.getParametersAsProperties)
+      } else {
+        value.setTypeName(typeName)
+      }
+    }
     bindColumns(colHolder.columns, value, name)
     value
   }
@@ -378,7 +386,6 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
    * FIXME NamingStrategy?
    */
   private def nameColumn(cm: Column, propertyPath: String): Tuple2[Identifier, String] = {
-    //    val physicalNamingStrategy = metadata.getMetadataBuildingOptions.getPhysicalNamingStrategy
     val database = metadata.getDatabase
     var logicalName: Identifier = null
     if (null == cm.name) {
@@ -386,9 +393,6 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     } else {
       logicalName = database.toIdentifier(cm.name.value)
     }
-    //    val physicalName = physicalNamingStrategy.toPhysicalColumnName(
-    //      logicalName,
-    //      database.getJdbcEnvironment())
     (logicalName, logicalName.render(database.getDialect))
   }
 
@@ -524,7 +528,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
       if (component.getOwner.hasPojoRepresentation) component.setComponentClassName(component.getOwner.getClassName)
       else component.setDynamic(true)
     }
-    comp.parentName foreach (pp => component.setParentProperty(pp))
+    comp.typ.parentName foreach (pp => component.setParentProperty(pp))
 
     comp.properties foreach {
       case (propertyName, p) =>
