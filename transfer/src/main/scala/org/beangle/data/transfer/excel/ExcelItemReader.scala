@@ -26,6 +26,7 @@ import org.apache.poi.ss.usermodel.{ Cell, DateUtil }
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.io.{ ItemReader, TransferFormat }
+import org.apache.poi.ss.usermodel.CellType
 
 object ExcelItemReader {
   val DEFAULT_HEADINDEX = 0
@@ -141,22 +142,22 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
    */
   def getCellValue(cell: HSSFCell): Object = {
     if ((cell == null)) return null;
-    cell.getCellType match {
-      case Cell.CELL_TYPE_BLANK  => null
-      case Cell.CELL_TYPE_STRING => Strings.trim(cell.getRichStringCellValue().getString());
-      case Cell.CELL_TYPE_NUMERIC =>
+    cell.getCellTypeEnum match {
+      case CellType.BLANK  => null
+      case CellType.STRING => Strings.trim(cell.getRichStringCellValue().getString());
+      case CellType.NUMERIC =>
         if (DateUtil.isCellDateFormatted(cell)) {
           cell.getDateCellValue();
         } else {
           ExcelItemReader.numberFormat.format(cell.getNumericCellValue());
         }
-      case Cell.CELL_TYPE_BOOLEAN => if (cell.getBooleanCellValue()) java.lang.Boolean.TRUE else java.lang.Boolean.FALSE
-      case _                      => null
+      case CellType.BOOLEAN => if (cell.getBooleanCellValue()) java.lang.Boolean.TRUE else java.lang.Boolean.FALSE
+      case _                => null
     }
   }
 
   override def format: TransferFormat.Value = {
-    TransferFormat.Xls;
+    TransferFormat.Xls
   }
 
   override def close(): Unit = {
