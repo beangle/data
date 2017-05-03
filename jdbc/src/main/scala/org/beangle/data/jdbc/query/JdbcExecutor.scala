@@ -231,7 +231,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
           val sqltype = sqltypes(i)
           sqltype match {
             case CHAR | VARCHAR =>
-              stmt.setString(index, value.asInstanceOf[String]);
+              stmt.setString(index, value.asInstanceOf[String])
             case LONGVARCHAR =>
               stmt.setCharacterStream(index, new StringReader(value.asInstanceOf[String]))
 

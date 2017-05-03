@@ -65,11 +65,9 @@ object MetadataColumns {
   val Remarks = "REMARKS"
 }
 
-class MetadataLoader(schema: Schema, initDialect: Dialect, initMeta: DatabaseMetaData) extends Logging {
+class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) extends Logging {
   import MetadataColumns._
 
-  val dialect: Dialect = initDialect
-  val meta: DatabaseMetaData = initMeta
   val tables = new mutable.HashMap[String, Table]
 
   def loadTables(extras: Boolean): Unit = {
@@ -130,6 +128,7 @@ class MetadataLoader(schema: Schema, initDialect: Dialect, initMeta: DatabaseMet
         batchLoadExtra(schema, dialect.metadataGrammar)
       }
     }
+    tables foreach { case (k, t) => schema.tables.put(t.name, t) }
   }
 
   private def batchLoadExtra(schema: Schema, grammar: MetadataGrammar) {
@@ -236,7 +235,6 @@ class MetadataLoader(schema: Schema, initDialect: Dialect, initMeta: DatabaseMet
             }
           }
           rs.close()
-          table.schema.tables.put(Table.qualify(table.schema, table.name), table)
           completed += 1
         } catch {
           case e: IndexOutOfBoundsException =>
