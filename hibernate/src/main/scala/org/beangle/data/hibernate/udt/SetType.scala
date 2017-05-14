@@ -26,18 +26,21 @@ import scala.collection.mutable
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
+import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.collection.spi.PersistentCollection
+
 /**
  * Mutable Set Type
  */
 class SetType extends UserCollectionType {
   type MSet = mutable.Set[Object]
 
-  override def instantiate(session: SessionImplementor, persister: CollectionPersister) = {
+  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection = {
     new PersistentSet(session)
   }
 
-  override def wrap(session: SessionImplementor, collection: Object) = {
-    new PersistentSet(session, collection.asInstanceOf[MSet]);
+  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection = {
+    new PersistentSet(session, collection.asInstanceOf[MSet])
   }
 
   override def getElementsIterator(collection: Object) = {
@@ -50,7 +53,8 @@ class SetType extends UserCollectionType {
 
   override def indexOf(collection: Object, entity: Object): Object = null
 
-  override def replaceElements(original: Object, target: Object, persister: CollectionPersister, owner: Object, copyCache: ju.Map[_, _], session: SessionImplementor) = {
+  override def replaceElements(original: Object, target: Object, persister: CollectionPersister,
+                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor) = {
     val targetSeq = target.asInstanceOf[MSet]
     targetSeq.clear()
     targetSeq ++= original.asInstanceOf[Seq[Object]]

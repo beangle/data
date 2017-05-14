@@ -18,11 +18,10 @@
  */
 package org.beangle.data.hibernate.model
 
-import org.beangle.commons.lang.annotation.beta
+import org.beangle.commons.lang.time.WeekDay.{ Sun, WeekDay }
 import org.beangle.commons.lang.time.WeekState
-import org.beangle.commons.model.{ Component, Entity, Hierarchical, LongId, StringId }
-import org.beangle.commons.lang.time.WeekDay._
-import org.beangle.commons.model.Remark
+import org.beangle.commons.model.{ Component, Entity, LongId, StringId }
+import org.beangle.commons.model.pojo.{ Hierarchical, Remark }
 
 class User(var id: Long) extends Entity[Long] {
   def this() = this(0)

@@ -32,8 +32,9 @@ import org.hibernate.collection.internal.AbstractPersistentCollection.{ DelayedO
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 
-class PersistentSeq(session: SessionImplementor, var list: Buffer[Object] = null)
+class PersistentSeq(session: SharedSessionContractImplementor, var list: Buffer[Object] = null)
     extends AbstractPersistentCollection(session) with collection.mutable.Buffer[Object] {
 
   if (null != list) {

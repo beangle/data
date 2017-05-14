@@ -24,11 +24,14 @@ import org.beangle.commons.lang.time.WeekState
 import org.beangle.commons.dao.OqlBuilder
 import org.beangle.data.hibernate.model.{ ExtendRole, Member, Name, Role, User }
 import org.hibernate.SessionFactory
+import org.beangle.commons.model.meta.Domain
 
 object UserCrudTest {
 
-  def testCrud(sf: SessionFactory) {
-    val entityDao = new HibernateEntityDao(sf)
+  def testCrud(sf: SessionFactory, domain: Domain) {
+    val entityDao = new HibernateEntityDao(sf, domain)
+    val session = sf.getCurrentSession
+    val transaction = session.beginTransaction()
     val roles = entityDao.getAll(classOf[User])
     val user = new User(1)
     user.name = new Name
@@ -79,8 +82,8 @@ object UserCrudTest {
     val list5 = entityDao.search(query5)
     assert(list5.size == 1)
 
-    sf.getCurrentSession.flush()
-    sf.getCurrentSession.clear()
+    session.flush()
+    session.clear()
 
     val saved = entityDao.get(classOf[User], user.id)
     assert(saved.properties.size == 1)
@@ -96,7 +99,9 @@ object UserCrudTest {
     assert(savedRole.parent.get.id == role1.id)
     assert(savedRole.parent.get.asInstanceOf[ExtendRole].enName == "role1")
 
-    sf.getCurrentSession.flush()
-    sf.getCurrentSession.close()
+    session.flush()
+    transaction.commit()
+
+    session.close()
   }
 }

@@ -19,8 +19,9 @@
 package org.beangle.data.jdbc.dialect
 
 import java.sql.Types
+import org.beangle.commons.jdbc.Engines
 
-class DB2Dialect extends AbstractDialect("[8.0]") {
+class DB2Dialect extends AbstractDialect(Engines.DB2, "[8.0]") {
 
   override def sequenceGrammar = {
     val ss = new SequenceGrammar()
@@ -29,34 +30,6 @@ class DB2Dialect extends AbstractDialect("[8.0]") {
     ss.dropSql = "drop sequence :name restrict"
     ss.selectNextValSql = "nextval for :name"
     ss
-  }
-
-  protected override def registerType() = {
-    registerType(Types.BOOLEAN, "smallint")
-    registerType(Types.BIT, "smallint")
-    registerType(Types.DECIMAL, "bigint")
-    registerType(Types.BIGINT, "bigint")
-    registerType(Types.SMALLINT, "smallint")
-    registerType(Types.TINYINT, "smallint")
-    registerType(Types.INTEGER, "integer")
-
-    registerType(Types.CHAR, "char($l)")
-    registerType(Types.VARCHAR, "varchar($l)")
-
-    registerType(Types.FLOAT, "float")
-    registerType(Types.DOUBLE, "double")
-    registerType(Types.DATE, "date")
-    registerType(Types.TIME, "time")
-    registerType(Types.TIMESTAMP, "timestamp")
-    registerType(Types.NUMERIC, "numeric($p,$s)")
-
-    registerType(Types.BINARY, "varchar($l) for bit data")
-    registerType(Types.VARBINARY, "varchar($l) for bit data")
-    registerType(Types.LONGVARCHAR, "long varchar")
-    registerType(Types.LONGVARBINARY, "long varchar for bit data")
-
-    registerType(Types.BLOB, "blob($l)")
-    registerType(Types.CLOB, "clob($l)")
   }
 
   /**
@@ -92,9 +65,5 @@ class DB2Dialect extends AbstractDialect("[8.0]") {
   }
 
   override def defaultSchema: String = null
-
-  override def storeCase: StoreCase.Value = {
-    StoreCase.Mixed
-  }
 
 }

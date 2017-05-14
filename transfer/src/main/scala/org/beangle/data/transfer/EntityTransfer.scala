@@ -21,21 +21,21 @@ package org.beangle.data.transfer
 import java.util.Set
 import org.beangle.commons.model.util.Populator
 import org.beangle.data.transfer.io.ItemReader
-import org.beangle.commons.model.meta.EntityMetadata
+import org.beangle.commons.model.meta.Domain
 
 /**
  * EntityImporter interface.
- * 
+ *
  * @author chaostone
  */
 trait EntityTransfer extends Transfer {
 
-  def foreignerKeys:collection.Set[String]
+  def foreignerKeys: collection.Set[String]
 
-  def addForeignedKeys( foreignerKey:String)
+  def addForeignedKeys(foreignerKey: String)
 
-  var populator :Populator=_
-  
-  var entityMetadata:EntityMetadata=_
+  var populator: Populator = _
+
+  var domain: Domain = _
 
 }

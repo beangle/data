@@ -41,7 +41,7 @@ class DefaultEntityTransfer(val entityClass: Class[_]) extends MultiEntityTransf
   }
 
   def getEntityClass: Class[_] = {
-    return entityTypes(alias).entityClass
+    return entityTypes(alias).clazz
   }
 
   def getEntityName(): String = {

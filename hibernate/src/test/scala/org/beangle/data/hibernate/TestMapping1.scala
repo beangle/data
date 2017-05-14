@@ -23,14 +23,15 @@ import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.hibernate.udt.ValueType
 import org.beangle.data.hibernate.model.{ Coded, IntIdResource, LongDateIdResource, LongIdResource, Skill, SkillType, User }
-import org.beangle.commons.model.bind.Mapping
+import org.beangle.commons.orm.Mapping
 import org.beangle.commons.lang.time.WeekDay
 import org.beangle.data.hibernate.model.Profile
+import org.beangle.commons.orm.MappingModule
 
-object TestMapping1 extends Mapping {
+object TestMapping1 extends MappingModule {
 
   def binding(): Unit = {
-    defaultIdGenerator("table_sequence")
+    defaultIdGenerator("seq_per_table")
     defaultCache("test_cache_region", "read-write")
 
     bind[LongIdResource]

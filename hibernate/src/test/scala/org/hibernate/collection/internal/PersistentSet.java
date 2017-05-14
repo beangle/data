@@ -1,20 +1,8 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkit
+ * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2005-2017, Beangle Software.
- *
- * Beangle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Beangle is distributed in the hope that it will be useful.
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
+ * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
+ * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
 package org.hibernate.collection.internal;
 
@@ -29,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.CollectionAliases;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.type.Type;
@@ -42,9 +30,8 @@ import org.hibernate.type.Type;
  * @see java.util.HashSet
  * @author Gavin King
  */
-@SuppressWarnings({"serial","rawtypes"})
 public class PersistentSet extends AbstractPersistentCollection implements java.util.Set {
-  protected Set set;
+	protected Set set;
 	protected transient List tempList;
 
 	/**
@@ -63,7 +50,7 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	 *
 	 * @param session The session to which this set will belong.
 	 */
-	public PersistentSet(SessionImplementor session) {
+	public PersistentSet(SharedSessionContractImplementor session) {
 		super( session );
 	}
 
@@ -74,7 +61,7 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	 * @param session The session to which this set will belong.
 	 * @param set The underlying set data.
 	 */
-	public PersistentSet(SessionImplementor session, java.util.Set set) {
+	public PersistentSet(SharedSessionContractImplementor session, java.util.Set set) {
 		super( session );
 		// Sets can be just a view of a part of another collection.
 		// do we need to copy it to be sure it won't be changing
@@ -151,11 +138,13 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public int size() {
 		return readSize() ? getCachedSize() : set.size();
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public boolean isEmpty() {
 		return readSize() ? getCachedSize()==0 : set.isEmpty();
 	}
@@ -169,12 +158,14 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Iterator iterator() {
 		read();
 		return new IteratorProxy( set.iterator() );
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Object[] toArray() {
 		read();
 		return set.toArray();
@@ -188,7 +179,6 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
-	 @SuppressWarnings("unchecked")
 	public boolean add(Object value) {
 		final Boolean exists = isOperationQueueEnabled() ? readElementExistence( value ) : null;
 		if ( exists == null ) {
@@ -289,6 +279,7 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void clear() {
 		if ( isClearQueueEnabled() ) {
 			queueOperation( new Clear() );
@@ -303,6 +294,7 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public String toString() {
 		read();
 		return set.toString();
@@ -323,6 +315,7 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void beginRead() {
 		super.beginRead();
 		tempList = new ArrayList();
@@ -338,11 +331,13 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Iterator entries(CollectionPersister persister) {
 		return set.iterator();
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Serializable disassemble(CollectionPersister persister) throws HibernateException {
 		final Serializable[] result = new Serializable[ set.size() ];
 		final Iterator itr = set.iterator();
@@ -383,6 +378,7 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public boolean needsInserting(Object entry, int i, Type elemType) throws HibernateException {
 		final Object oldValue = ( (java.util.Map) getSnapshot() ).get( entry );
 		// note that it might be better to iterate the snapshot but this is safe,
@@ -392,48 +388,57 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public boolean needsUpdating(Object entry, int i, Type elemType) {
 		return false;
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public boolean isRowUpdatePossible() {
 		return false;
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Object getIndex(Object entry, int i, CollectionPersister persister) {
 		throw new UnsupportedOperationException("Sets don't have indexes");
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Object getElement(Object entry) {
 		return entry;
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Object getSnapshotElement(Object entry, int i) {
 		throw new UnsupportedOperationException("Sets don't support updating by element");
 	}
 
 	@Override
+	@SuppressWarnings({"unchecked", "EqualsWhichDoesntCheckParameterClass"})
 	public boolean equals(Object other) {
 		read();
 		return set.equals( other );
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public int hashCode() {
 		read();
 		return set.hashCode();
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public boolean entryExists(Object key, int i) {
 		return true;
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public boolean isWrapper(Object collection) {
 		return set==collection;
 	}
@@ -455,50 +460,29 @@ public class PersistentSet extends AbstractPersistentCollection implements java.
 		}
 	}
 
-	final class SimpleAdd implements DelayedOperation {
-		private Object value;
-		
-		public SimpleAdd(Object value) {
-			this.value = value;
+	final class SimpleAdd extends AbstractValueDelayedOperation {
+
+		public SimpleAdd(Object addedValue) {
+			super( addedValue, null );
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
 		public void operate() {
-			set.add( value );
-		}
-
-		@Override
-		public Object getAddedInstance() {
-			return value;
-		}
-
-		@Override
-		public Object getOrphan() {
-			return null;
+			set.add( getAddedInstance() );
 		}
 	}
 
-	final class SimpleRemove implements DelayedOperation {
-		private Object value;
-		
-		public SimpleRemove(Object value) {
-			this.value = value;
+	final class SimpleRemove extends AbstractValueDelayedOperation {
+
+		public SimpleRemove(Object orphan) {
+			super( null, orphan );
 		}
 
 		@Override
+		@SuppressWarnings("unchecked")
 		public void operate() {
-			set.remove( value );
-		}
-
-		@Override
-		public Object getAddedInstance() {
-			return null;
-		}
-
-		@Override
-		public Object getOrphan() {
-			return value;
+			set.remove( getOrphan() );
 		}
 	}
 }

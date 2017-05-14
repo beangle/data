@@ -24,9 +24,7 @@ import java.util.{ Calendar, Date }
 
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.hibernate.cfg.{ ConfigurationBuilder, OverrideConfiguration, RailsNamingStrategy }
 import org.beangle.data.hibernate.model.{ ExtendRole, Role, User }
-import org.beangle.data.hibernate.naming.RailsNamingPolicy
 import org.beangle.data.jdbc.ds.DataSourceUtils
 import org.beangle.commons.model.meta.EntityType
 import org.beangle.commons.model.util.ConvertPopulator
@@ -37,38 +35,47 @@ import org.scalatest.{ FunSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
 
 import javax.sql.DataSource
+import org.beangle.commons.model.meta.SingularProperty
+import org.beangle.data.hibernate.spring.LocalSessionFactoryBean
+import org.springframework.core.io.UrlResource
+import org.beangle.data.hibernate.spring.SessionUtils
 
 @RunWith(classOf[JUnitRunner])
 class HbmConfigTest extends FunSpec with Matchers {
 
-  val configuration = Tests.buildConfig()
-  configuration.setInterceptor(new TestInterceptor)
-  val builder = new ConfigurationBuilder(configuration, Tests.buildProperties())
-  val ormLocations = List(ClassLoaders.getResource("META-INF/beangle/orm.xml"))
-  val namingPolicy = new RailsNamingPolicy
-  ormLocations foreach (url => namingPolicy.addConfig(url))
-  builder.namingStrategy = new RailsNamingStrategy(namingPolicy)
-  builder.ormLocations = ormLocations
-  builder.build()
-
+  val ormLocations = ClassLoaders.getResource("META-INF/beangle/orm.xml").toList
+  val resouces = ormLocations map (url => new UrlResource(url.toURI))
   val ds = Tests.buildDs()
-  val sf = new SessionFactoryBuilder(ds, configuration).build()
-  val entityDao = new HibernateEntityDao(sf)
+  val builder = new LocalSessionFactoryBean(ds)
+  builder.ormLocations = resouces.toArray
+  builder.properties.put("hibernate.show_sql", "true")
+  builder.properties.put("hibernate.hbm2ddl.auto", "create")
+  builder.properties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
+  builder.properties.put("hibernate.cache.use_second_level_cache", "false")
+  builder.properties.put("hibernate.cache.use_query_cache", "true")
+  builder.properties.put("hibernate.ejb.metamodel.population", "disabled")
+  builder.init()
 
-  val metadata = entityDao.metadata
-  val roleMetaOption = metadata.getType(classOf[Role])
-  val userMetaOption = metadata.getType(classOf[User])
+  val domain = builder.domain
+  val sf = builder.result
+  val entityDao = new HibernateEntityDao(sf, builder.domain)
+
+  SessionUtils.enableBinding(sf)
+  SessionUtils.openSession(sf)
+
+  val roleMetaOption = domain.getEntity(classOf[Role])
+  val userMetaOption = domain.getEntity(classOf[User])
 
   it("Should support int? and scala collection") {
-    UserCrudTest.testCrud(sf)
+    UserCrudTest.testCrud(sf, domain)
   }
 
   it("Role's parent is entityType") {
     assert(None != roleMetaOption)
-    val parentMeta = roleMetaOption.get.getPropertyType("parent")
+    val parentMeta = roleMetaOption.get.getProperty("parent")
     assert(None != parentMeta)
-    assert(parentMeta.get.isEntityType)
-    assert(parentMeta.get.asInstanceOf[EntityType].entityClass == classOf[ExtendRole])
+    assert(parentMeta.get.isInstanceOf[SingularProperty])
+    assert(parentMeta.get.asInstanceOf[SingularProperty].propertyType.clazz == classOf[ExtendRole])
   }
 
   it("populate to option entity") {
@@ -106,14 +113,13 @@ class HbmConfigTest extends FunSpec with Matchers {
   }
 
   it("get java.sql.Date on Role.expiredOn") {
-    val entityMeta = new EntityMetadataBuilder(List(sf)).build()
-    val roleMeta = entityMeta.getType(classOf[Role])
+    val roleMeta = domain.getEntity(classOf[Role])
     assert(None != roleMeta)
     roleMeta.foreach { rm =>
-      assert(classOf[java.sql.Timestamp] == rm.getPropertyType("updatedAt").get.returnedClass)
-      assert(classOf[java.util.Date] == rm.getPropertyType("createdAt").get.returnedClass)
-      assert(classOf[java.util.Calendar] == rm.getPropertyType("s").get.returnedClass)
-      assert(classOf[java.sql.Date] == rm.getPropertyType("expiredOn").get.returnedClass)
+      assert(classOf[java.sql.Timestamp] == rm.getProperty("updatedAt").get.clazz)
+      assert(classOf[java.util.Date] == rm.getProperty("createdAt").get.clazz)
+      assert(classOf[java.util.Calendar] == rm.getProperty("s").get.clazz)
+      assert(classOf[java.sql.Date] == rm.getProperty("expiredOn").get.clazz)
     }
   }
 }

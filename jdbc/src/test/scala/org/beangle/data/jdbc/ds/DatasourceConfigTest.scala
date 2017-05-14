@@ -31,7 +31,7 @@ import org.beangle.commons.collection.Properties
 @RunWith(classOf[JUnitRunner])
 class DatasourceConfigTest extends FlatSpec with Matchers {
   "DatasourceConfig " should "build a correct orace datasource" in {
-    (XML.load(ClassLoaders.getResource("datasources.xml")) \ "datasource") foreach { ds =>
+    (XML.load(ClassLoaders.getResource("datasources.xml").get) \ "datasource") foreach { ds =>
       val config = DatasourceConfig.build(ds)
       if (config.name == "tigre") assert(config.props.contains("driverType"))
     }

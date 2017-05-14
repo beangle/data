@@ -20,9 +20,10 @@ package org.beangle.data.jdbc.ds
 
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings.{ isEmpty, isNotEmpty, substringBetween }
-import org.beangle.data.jdbc.dialect.{ Dialect, Name }
+import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.data.jdbc.vendor.{ DriverInfo, Vendors }
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.jdbc.Identifier
 
 object DatasourceConfig {
 
@@ -46,14 +47,14 @@ object DatasourceConfig {
     if (!(xml \ "@name").isEmpty) dbconf.name = (xml \ "@name").text.trim
     dbconf.user = (xml \\ "user").text.trim
     dbconf.password = (xml \\ "password").text.trim
-    dbconf.catalog = dialect.parse((xml \\ "catalog").text.trim)
+    dbconf.catalog = dialect.engine.toIdentifier((xml \\ "catalog").text.trim)
 
     var schemaName = (xml \\ "schema").text.trim
     if (isEmpty(schemaName)) {
       schemaName = dialect.defaultSchema
       if (schemaName == "$user") schemaName = dbconf.user
     }
-    dbconf.schema = dialect.parse(schemaName)
+    dbconf.schema = dialect.engine.toIdentifier(schemaName)
 
     (xml \\ "props" \\ "prop").foreach { ele =>
       dbconf.props.put((ele \ "@name").text, (ele \ "@value").text)
@@ -86,8 +87,8 @@ class DatasourceConfig(val driver: String, val dialect: Dialect) {
   var password: String = _
 
   var props = new collection.mutable.HashMap[String, String]
-  var schema: Name = _
-  var catalog: Name = _
+  var schema: Identifier = _
+  var catalog: Identifier = _
 
   def this(data: collection.Map[String, String]) {
     this(data("driver"), Vendors.drivers(data("driver")).vendor.dialect)
@@ -96,8 +97,8 @@ class DatasourceConfig(val driver: String, val dialect: Dialect) {
         k match {
           case "user"     => this.user = v
           case "password" => this.password = v
-          case "schema"   => this.schema = new Name(v)
-          case "catalog"  => this.catalog = new Name(v)
+          case "schema"   => this.schema = Identifier(v)
+          case "catalog"  => this.catalog = Identifier(v)
           case "name"     => this.name = v
           case "driver"   =>
           case _          => props.put(k, v)

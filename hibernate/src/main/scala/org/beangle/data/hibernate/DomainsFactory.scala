@@ -21,15 +21,23 @@ package org.beangle.data.hibernate
 import org.beangle.commons.bean.Factory
 import org.beangle.commons.cdi.{ Container, ContainerListener }
 import org.beangle.commons.lang.annotation.description
-import org.beangle.commons.model.meta.EntityMetadata
 import org.hibernate.SessionFactory
+import org.beangle.commons.model.meta.Domain
+import org.beangle.data.hibernate.cfg.MappingService
+import org.beangle.commons.collection.Collections
 
 @description("基于Hibernate提供的元信息工厂")
-class HibernateMetadataFactory extends Factory[EntityMetadata] with ContainerListener {
+class DomainsFactory extends ContainerListener {
 
-  var result: EntityMetadata = null
+  val domains = Collections.newMap[SessionFactory, Domain]
 
   override def onStarted(container: Container): Unit = {
-    result = new EntityMetadataBuilder(container.getBeans(classOf[SessionFactory]).values).build()
+    val factories = container.getBeans(classOf[SessionFactory]).values
+    factories foreach { f =>
+      val ms = f.getSessionFactoryOptions.getServiceRegistry.getService(classOf[MappingService])
+      if (null != ms) {
+        domains.put(f, ms.mappings.buildDomain())
+      }
+    }
   }
 }

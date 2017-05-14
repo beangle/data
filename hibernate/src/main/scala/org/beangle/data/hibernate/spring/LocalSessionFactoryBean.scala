@@ -20,41 +20,39 @@ package org.beangle.data.hibernate.spring
 
 import org.beangle.commons.bean.{ Factory, Initializing }
 import org.beangle.commons.lang.annotation.description
-import org.beangle.commons.lang.reflect.Reflections
-import org.beangle.data.hibernate.{ ConfigurableSessionFactory, SessionFactoryBuilder }
-import org.beangle.data.hibernate.cfg.{ ConfigurationBuilder, RailsNamingStrategy }
-import org.beangle.data.hibernate.naming.RailsNamingPolicy
+import org.beangle.data.hibernate.ConfigurationBuilder
 import org.hibernate.SessionFactory
-import org.hibernate.cfg.AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS
-import org.hibernate.cfg.Configuration
+import org.hibernate.cfg.AvailableSettings
 import org.springframework.core.io.Resource
+import java.{ util => ju }
+
 import javax.sql.DataSource
+import org.beangle.commons.model.meta.Domain
 
 @description("构建Hibernate的会话工厂")
 class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory]
-    with Initializing with ConfigurableSessionFactory {
+    with Initializing {
 
   var configLocations: Array[Resource] = Array.empty
 
   var ormLocations: Array[Resource] = Array.empty
 
-  var enableRailsNamingStrategoy: Boolean = true
+  var properties = new ju.Properties
+
+  var result: SessionFactory = _
+
+  var domain: Domain = _
 
   def init() {
-    configuration = if (null != configurationClass) Reflections.newInstance(this.configurationClass) else new Configuration
+    val cfgb = new ConfigurationBuilder(dataSource)
     //  provide the Beangle managed Session as context
-    configuration.getProperties.put(CURRENT_SESSION_CONTEXT_CLASS, classOf[BeangleSessionContext].getName)
-    val cfgBuilder = new ConfigurationBuilder(configuration, hibernateProperties)
-    cfgBuilder.configLocations = configLocations.map(l => l.getURL())
-    cfgBuilder.ormLocations = ormLocations.map(l => l.getURL())
-    if (enableRailsNamingStrategoy && null == namingStrategy) {
-      val namingPolicy = new RailsNamingPolicy()
-      for (resource <- cfgBuilder.ormLocations) namingPolicy.addConfig(resource)
-      this.namingStrategy = new RailsNamingStrategy(namingPolicy)
-    }
-    cfgBuilder.namingStrategy = namingStrategy
-    cfgBuilder.build()
-    result = new SessionFactoryBuilder(dataSource, configuration).build()
+    cfgb.configLocations = configLocations.map(l => l.getURL())
+    cfgb.ormLocations = ormLocations.map(l => l.getURL())
+    properties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[BeangleSessionContext].getName)
+    cfgb.properties = properties
+    val config = cfgb.build()
+    domain = cfgb.domain
+    result = config.buildSessionFactory()
   }
 
 }

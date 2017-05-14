@@ -19,41 +19,72 @@
 package org.beangle.data.jdbc.dialect
 
 import java.sql.Types._
+import org.beangle.commons.jdbc.Engines
 
-class SQLServerDialect(version: String) extends AbstractTransactSQLDialect(version) {
+class SQLServerDialect(version: String) extends AbstractDialect(Engines.SQLServer, version) {
+
+  val SELECT: String = "select"
+  val FROM: String = "from"
+  val DISTINCT: String = "distinct"
 
   def this() {
-    this("(,2000]")
+    this("[2005,2012)")
   }
 
-  protected override def registerType() = {
-    super.registerType()
-    registerType(LONGVARCHAR, "text")
-
-    registerType(BIT, "bit")
-
-    registerType(DATE, "datetime")
-    registerType(TIME, "datetime")
-    registerType(TIMESTAMP, "datetime")
-
-    registerType(VARBINARY, "image")
-    registerType(VARBINARY, 8000, "varbinary($l)")
-    registerType(LONGVARBINARY, "image")
+  override def defaultSchema: String = {
+    "dbo"
   }
-
-  override def limitGrammar: LimitGrammar = null
   override def sequenceGrammar: SequenceGrammar = null
 
-  override def openQuote: Char = {
-    '['
+  override def limitGrammar: LimitGrammar = {
+    class SqlServerLimitGrammar extends LimitGrammar {
+      override def limit(querySql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
+        val sb: StringBuilder = new StringBuilder(querySql)
+
+        val orderByIndex: Int = querySql.toLowerCase().indexOf("order by")
+        var orderby: CharSequence = "ORDER BY CURRENT_TIMESTAMP";
+        if (orderByIndex > 0) orderby = sb.subSequence(orderByIndex, sb.length())
+
+        // Delete the order by clause at the end of the query
+        if (orderByIndex > 0) {
+          sb.delete(orderByIndex, orderByIndex + orderby.length())
+        }
+
+        // HHH-5715 bug fix
+        replaceDistinctWithGroupBy(sb)
+
+        insertRowNumberFunction(sb, orderby)
+
+        // Wrap the query within a with statement:
+        sb.insert(0, "WITH query AS (").append(") SELECT * FROM query ")
+        sb.append("WHERE _row_nr_ BETWEEN ? AND ?")
+
+        (sb.toString(), List(offset + 1, offset + limit))
+      }
+    }
+    new SqlServerLimitGrammar
   }
 
-  override def closeQuote: Char = {
-    ']'
+  protected def replaceDistinctWithGroupBy(sql: StringBuilder) = {
+    val distinctIndex = sql.indexOf(DISTINCT)
+    if (distinctIndex > 0) {
+      sql.delete(distinctIndex, distinctIndex + DISTINCT.length() + 1)
+      sql.append(" group by").append(getSelectFieldsWithoutAliases(sql))
+    }
   }
 
-  //FIXME
-  override def storeCase: StoreCase.Value = {
-    StoreCase.Mixed
+  protected def insertRowNumberFunction(sql: StringBuilder, orderby: CharSequence) {
+    // Find the end of the select statement
+    val selectEndIndex = sql.indexOf(SELECT) + SELECT.length()
+    // Insert after the select statement the row_number() function:
+    sql.insert(selectEndIndex, " ROW_NUMBER() OVER (" + orderby + ") as _row_nr_,")
   }
+
+  protected def getSelectFieldsWithoutAliases(sql: StringBuilder) = {
+    val select = sql.substring(sql.indexOf(SELECT) + SELECT.length(), sql.indexOf(FROM))
+    // Strip the as clauses
+    stripAliases(select)
+  }
+
+  protected def stripAliases(str: String) = str.replaceAll("\\sas[^,]+(,?)", "$1")
 }

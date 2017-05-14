@@ -22,13 +22,14 @@ import scala.reflect.runtime.universe
 
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.data.hibernate.model.{ CodedEntity, Department, ExtendRole, Menu, Role, StringIdCodedEntity }
-import org.beangle.commons.model.bind.Mapping
+import org.beangle.commons.orm.Mapping
 import org.beangle.commons.lang.reflect.ClassInfos
+import org.beangle.commons.orm.MappingModule
 
-object TestMapping2 extends Mapping {
+object TestMapping2 extends MappingModule {
 
   def binding(): Unit = {
-    defaultIdGenerator("table_sequence")
+    defaultIdGenerator("seq_per_table")
     defaultCache("test_cache_region", "read-write")
 
     bind[Role].on(r => declare(

@@ -97,7 +97,7 @@ class ForeignerListener(entityDao: EntityDao) extends TransferListener {
           }
           val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf("."));
           val entityTransfer = transfer.asInstanceOf[MultiEntityTransfer]
-          entityTransfer.populator.populate(entity.asInstanceOf[Entity[_]], entityTransfer.entityMetadata.getType(entity.getClass).get, parentAttr, foreiger);
+          entityTransfer.populator.populate(entity.asInstanceOf[Entity[_]], entityTransfer.domain.getEntity(entity.getClass).get, parentAttr, foreiger);
         }
       }
     }

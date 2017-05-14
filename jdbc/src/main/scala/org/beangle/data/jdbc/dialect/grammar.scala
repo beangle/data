@@ -19,6 +19,12 @@
 package org.beangle.data.jdbc.dialect
 
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.jdbc.Sequence
+import org.beangle.commons.jdbc.PrimaryKey
+import org.beangle.commons.jdbc.ForeignKey
+import org.beangle.commons.jdbc.Column
+import org.beangle.commons.jdbc.Table
+import org.beangle.commons.jdbc.Index
 
 trait TableGrammar {
 
@@ -40,7 +46,6 @@ trait TableGrammar {
 }
 
 class TableGrammarBean extends TableGrammar {
-
   var nullColumnString: String = ""
   var tableComment: String = null
   var columnComent: String = null
@@ -65,13 +70,12 @@ class TableGrammarBean extends TableGrammar {
   }
 
   def dropCascade(table: String) = Strings.replace(dropSql, "{}", table)
-
 }
 
 trait LimitGrammar {
 
   /**
-   * @param offset is 0 based 
+   * @param offset is 0 based
    */
   def limit(query: String, offset: Int, limit: Int): Tuple2[String, List[Int]]
 
@@ -92,19 +96,12 @@ class LimitGrammarBean(pattern: String, offsetPattern: String, val bindInReverse
   }
 }
 
-/**
- * sequence grammar
- * @author chaostone
- *
- */
 class SequenceGrammar {
-
   var createSql: String = "create sequence :name start with :start increment by :increment :cycle"
   var dropSql: String = "drop sequence :name"
   var nextValSql: String = null
   var selectNextValSql: String = null
   var querySequenceSql: String = null
-
 }
 
 class MetadataGrammar(val primaryKeysql: String, val importedKeySql: String, val indexInfoSql: String) {

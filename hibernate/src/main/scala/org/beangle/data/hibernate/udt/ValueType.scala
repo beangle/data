@@ -25,6 +25,7 @@ import java.{ util => ju }
 
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.usertype.{ ParameterizedType, UserType }
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 
 object ValueType {
   val types = Map[Class[_], Int]((classOf[Short], Types.SMALLINT), (classOf[Int], Types.INTEGER),
@@ -93,11 +94,11 @@ class ValueType extends UserType with ParameterizedType {
     x.hashCode()
   }
 
-  override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SessionImplementor, owner: Object): Object = {
+  override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SharedSessionContractImplementor, owner: Object): Object = {
     valueMapper.newInstance(constructor, resultSet, names(0))
   }
 
-  override def nullSafeSet(statement: PreparedStatement, value: Object, index: Int, session: SessionImplementor): Unit = {
+  override def nullSafeSet(statement: PreparedStatement, value: Object, index: Int, session: SharedSessionContractImplementor): Unit = {
     if (value == null) {
       statement.setNull(index, sqlTypes(0))
     } else {

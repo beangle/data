@@ -27,39 +27,52 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.beangle.data.jdbc.dialect.OracleDialect
+import org.beangle.commons.jdbc.Table
+import org.beangle.commons.jdbc.Database
+import org.beangle.commons.jdbc.Engines
+import org.beangle.data.jdbc.dialect.SQL
+import org.beangle.commons.jdbc.Column
+import org.beangle.commons.jdbc.PrimaryKey
+import org.beangle.commons.jdbc.SqlType
 
 @RunWith(classOf[JUnitRunner])
 class TableTest extends FlatSpec with Matchers {
 
-  val dialect =
+  val oracle = Engines.Oracle
+  val oracleDb = new Database(oracle)
+  val test = oracleDb.getOrCreateSchema("TEST")
+  val public = oracleDb.getOrCreateSchema("PUBLIC")
 
-    "create sql" should "like this" in {
-      val table = new Table("TEST", "USER")
-      val column = new Column("NAME", Types.VARCHAR)
-      column.comment = "login name"
-      column.size = 30
-      table.add(column)
-      val pkColumn = new Column("ID", Types.DECIMAL)
-      pkColumn.size = 19
-      val pk = new PrimaryKey(table, "pk", "ID")
-      table.add(pkColumn)
-      table.primaryKey = pk
-      val boolCol = new Column("ENABLED", Types.DECIMAL)
-      boolCol.size = 1
-      table.add(boolCol)
+  "create sql" should "like this" in {
+    val table = new Table(test, "USER")
+    val column = new Column("NAME", oracle.toType(Types.VARCHAR, 30))
+    column.comment = Some("login name")
+    column.nullable = false
+    table.add(column)
+    val pkColumn = new Column("ID", oracle.toType(Types.DECIMAL, 19))
+    pkColumn.nullable = false
+    val pk = new PrimaryKey(table, "pk", "ID")
+    table.add(pkColumn)
+    table.primaryKey = Some(pk)
+    val boolCol = new Column("ENABLED", oracle.toType(Types.DECIMAL, 1))
+    boolCol.nullable = false
+    table.add(boolCol)
 
-      val ageCol = new Column("AGE", Types.DECIMAL)
-      ageCol.size = 10
-      table.add(ageCol)
+    val ageCol = new Column("AGE", oracle.toType(Types.DECIMAL, 10))
+    ageCol.nullable = false
+    table.add(ageCol)
 
-      table.attach(new PostgreSQLDialect())
-      assert("create table \"TEST\".\"USER\" (\"NAME\" varchar(30) not null, \"ID\" int8 not null, \"ENABLED\" boolean not null, \"AGE\" int4 not null," +
-        " primary key (\"ID\"))" == table.createSql)
-    }
+    table.attach(Engines.PostgreSQL)
+    assert("create table TEST.\"USER\" (\"NAME\" varchar(30) not null, \"ID\" int8 not null, \"ENABLED\" boolean not null, \"AGE\" int4 not null," +
+      " primary key (\"ID\"))" == SQL.createTable(table, new PostgreSQLDialect()))
+  }
 
   "lowercase " should "corrent" in {
-    val table = new Table("PUBLIC", "USER")
-    val cloned = table.clone(new PostgreSQLDialect())
+    val table = new Table(public, "USER")
+    val database = new Database(Engines.PostgreSQL)
+    val test = database.getOrCreateSchema("TEST")
+
+    val cloned = table.clone(test)
     (cloned == table) should be(false)
     cloned.toCase(true)
     table.name.value should equal("USER")

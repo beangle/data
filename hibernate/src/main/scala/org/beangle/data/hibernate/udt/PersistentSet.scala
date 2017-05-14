@@ -32,8 +32,9 @@ import org.hibernate.collection.internal.AbstractPersistentCollection.DelayedOpe
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 
-class PersistentSet(session: SessionImplementor, var set: mutable.Set[Object] = null)
+class PersistentSet(session: SharedSessionContractImplementor, var set: mutable.Set[Object] = null)
     extends AbstractPersistentCollection(session) with collection.mutable.Set[Object] {
 
   protected var tempList: Buffer[Object] = _

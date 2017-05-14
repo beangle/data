@@ -21,12 +21,13 @@ package org.beangle.data.hibernate.spring
 import org.beangle.commons.lang.annotation.description
 import org.hibernate.{ ConnectionReleaseMode, FlushMode, HibernateException, Session, SessionFactory, Transaction }
 import org.hibernate.engine.spi.SessionImplementor
-import org.hibernate.engine.transaction.spi.TransactionContext
 import org.springframework.jdbc.datasource.{ ConnectionHolder, DataSourceUtils, JdbcTransactionObjectSupport }
 import org.springframework.transaction.{ CannotCreateTransactionException, IllegalTransactionStateException, InvalidIsolationLevelException, TransactionDefinition, TransactionSystemException }
 import org.springframework.transaction.support.{ AbstractPlatformTransactionManager, DefaultTransactionStatus, ResourceTransactionManager }
 import org.springframework.transaction.support.TransactionSynchronizationManager.{ bindResource, getResource, hasResource, unbindResource }
 import javax.sql.DataSource
+import org.hibernate.SharedSessionContract
+
 /**
  * Simplify HibernateTransactionManager in spring-orm bundle.
  * Just add SessionUtils.isEnableThreadBinding() support in doGetTranscation
@@ -80,11 +81,11 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
           throw new InvalidIsolationLevelException("HibernateTransactionManager is not allowed to support custom isolation levels.")
       }
       // Just set to NEVER in case of a new Session for this transaction.
-      if (definition.isReadOnly() && txObject.isNewSession) session.setFlushMode(FlushMode.MANUAL)
+      if (definition.isReadOnly() && txObject.isNewSession) session.setHibernateFlushMode(FlushMode.MANUAL)
       if (!definition.isReadOnly() && !txObject.isNewSession) {
-        val flushMode = session.getFlushMode()
-        if (session.getFlushMode == FlushMode.MANUAL) {
-          session.setFlushMode(FlushMode.AUTO)
+        val flushMode = session.getHibernateFlushMode()
+        if (session.getHibernateFlushMode == FlushMode.MANUAL) {
+          session.setHibernateFlushMode(FlushMode.AUTO)
           txObject.sessionHolder.previousFlushMode = flushMode
         }
       }
@@ -92,7 +93,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
       var hibTx: Transaction = null
       val timeout = determineTimeout(definition)
       if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
-        hibTx = session.getTransaction()
+        hibTx = session.asInstanceOf[SharedSessionContract].getTransaction()
         hibTx.setTimeout(timeout)
         hibTx.begin()
       } else {
@@ -146,7 +147,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
       txObject.sessionHolder.transaction.commit()
     } catch {
       case ex: org.hibernate.TransactionException => throw new TransactionSystemException("Could not commit transaction", ex)
-      case ex2: HibernateException => throw ex2
+      case ex2: HibernateException                => throw ex2
     }
   }
 
@@ -156,7 +157,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
       txObject.sessionHolder.transaction.rollback()
     } catch {
       case ex: org.hibernate.TransactionException => throw new TransactionSystemException("Could not roll back transaction", ex)
-      case ex2: HibernateException => throw ex2
+      case ex2: HibernateException                => throw ex2
     } finally {
       if (!txObject.isNewSession) txObject.sessionHolder.session.clear()
     }
@@ -185,17 +186,19 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
     if (txObject.isNewSession) {
       SessionUtils.closeSession(session)
     } else {
-      if (holder.previousFlushMode != null) session.setFlushMode(holder.previousFlushMode)
+      if (holder.previousFlushMode != null) session.setHibernateFlushMode(holder.previousFlushMode)
       session.disconnect()
     }
     holder.clear()
   }
 
-  protected def isSameConnectionForEntireSession(session: Session): Boolean = session match {
-    case tc: TransactionContext => ConnectionReleaseMode.ON_CLOSE == tc.getConnectionReleaseMode
-    case _ => true
+  protected def isSameConnectionForEntireSession(session: Session): Boolean = {
+    session match {
+      case tc: SessionImplementor =>
+        ConnectionReleaseMode.ON_CLOSE == tc.getJdbcSessionContext.getPhysicalConnectionHandlingMode.getReleaseMode;
+      case _ => true
+    }
   }
-
   /**
    * Hibernate transaction object, representing a SessionHolder.
    * Used as transaction object by HibernateTransactionManager.

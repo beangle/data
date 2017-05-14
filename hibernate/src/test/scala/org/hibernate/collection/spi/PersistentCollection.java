@@ -1,20 +1,8 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkit
+ * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2005-2017, Beangle Software.
- *
- * Beangle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Beangle is distributed in the hope that it will be useful.
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
+ * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
+ * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
 package org.hibernate.collection.spi;
 
@@ -25,7 +13,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.CollectionAliases;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.type.Type;
@@ -57,401 +45,400 @@ import org.hibernate.type.Type;
  *
  * @author Gavin King
  */
-@SuppressWarnings("rawtypes")
 public interface PersistentCollection {
-  /**
-   * Get the owning entity. Note that the owner is only
-   * set during the flush cycle, and when a new collection
-   * wrapper is created while loading an entity.
-   *
-   * @return The owner
-   */
-  public Object getOwner();
+	/**
+	 * Get the owning entity. Note that the owner is only
+	 * set during the flush cycle, and when a new collection
+	 * wrapper is created while loading an entity.
+	 *
+	 * @return The owner
+	 */
+	Object getOwner();
 
-  /**
-   * Set the reference to the owning entity
-   *
-   * @param entity The owner
-   */
-  public void setOwner(Object entity);
+	/**
+	 * Set the reference to the owning entity
+	 *
+	 * @param entity The owner
+	 */
+	void setOwner(Object entity);
 
-  /**
-   * Is the collection empty? (don't try to initialize the collection)
-   *
-   * @return {@code false} if the collection is non-empty; {@code true} otherwise.
-   */
-  public boolean isCollectionEmpty();
+	/**
+	 * Is the collection empty? (don't try to initialize the collection)
+	 *
+	 * @return {@code false} if the collection is non-empty; {@code true} otherwise.
+	 */
+	boolean isCollectionEmpty();
 
-  /**
-   * After flushing, re-init snapshot state.
-   *
-   * @param key The collection instance key (fk value).
-   * @param role The collection role
-   * @param snapshot The snapshot state
-   */
-  public void setSnapshot(Serializable key, String role, Serializable snapshot);
+	/**
+	 * After flushing, re-init snapshot state.
+	 *
+	 * @param key The collection instance key (fk value).
+	 * @param role The collection role
+	 * @param snapshot The snapshot state
+	 */
+	void setSnapshot(Serializable key, String role, Serializable snapshot);
 
-  /**
-   * After flushing, clear any "queued" additions, since the
-   * database state is now synchronized with the memory state.
-   */
-  public void postAction();
-  
-  /**
-   * Return the user-visible collection (or array) instance
-   *
-   * @return The underlying collection/array
-   */
-  public Object getValue();
+	/**
+	 * After flushing, clear any "queued" additions, since the
+	 * database state is now synchronized with the memory state.
+	 */
+	void postAction();
+	
+	/**
+	 * Return the user-visible collection (or array) instance
+	 *
+	 * @return The underlying collection/array
+	 */
+	Object getValue();
 
-  /**
-   * Called just before reading any rows from the JDBC result set
-   */
-  public void beginRead();
+	/**
+	 * Called just beforeQuery reading any rows from the JDBC result set
+	 */
+	void beginRead();
 
-  /**
-   * Called after reading all rows from the JDBC result set
-   *
-   * @return Whether to end the read.
-   */
-  public boolean endRead();
-  
-  /**
-   * Called after initializing from cache
-   *
-   * @return ??
-   */
-  public boolean afterInitialize();
+	/**
+	 * Called afterQuery reading all rows from the JDBC result set
+	 *
+	 * @return Whether to end the read.
+	 */
+	boolean endRead();
+	
+	/**
+	 * Called afterQuery initializing from cache
+	 *
+	 * @return ??
+	 */
+	boolean afterInitialize();
 
-  /**
-   * Could the application possibly have a direct reference to
-   * the underlying collection implementation?
-   *
-   * @return {@code true} indicates that the application might have access to the underlying collection/array.
-   */
-  public boolean isDirectlyAccessible();
+	/**
+	 * Could the application possibly have a direct reference to
+	 * the underlying collection implementation?
+	 *
+	 * @return {@code true} indicates that the application might have access to the underlying collection/array.
+	 */
+	boolean isDirectlyAccessible();
 
-  /**
-   * Disassociate this collection from the given session.
-   *
-   * @param currentSession The session we are disassociating from.  Used for validations.
-   *
-   * @return true if this was currently associated with the given session
-   */
-  public boolean unsetSession(SessionImplementor currentSession);
+	/**
+	 * Disassociate this collection from the given session.
+	 *
+	 * @param currentSession The session we are disassociating from.  Used for validations.
+	 *
+	 * @return true if this was currently associated with the given session
+	 */
+	boolean unsetSession(SharedSessionContractImplementor currentSession);
 
-  /**
-   * Associate the collection with the given session.
-   *
-   * @param session The session to associate with
-   *
-   * @return false if the collection was already associated with the session
-   *
-   * @throws HibernateException if the collection was already associated
-   * with another open session
-   */
-  public boolean setCurrentSession(SessionImplementor session) throws HibernateException;
+	/**
+	 * Associate the collection with the given session.
+	 *
+	 * @param session The session to associate with
+	 *
+	 * @return false if the collection was already associated with the session
+	 *
+	 * @throws HibernateException if the collection was already associated
+	 * with another open session
+	 */
+	boolean setCurrentSession(SharedSessionContractImplementor session) throws HibernateException;
 
-  /**
-   * Read the state of the collection from a disassembled cached value
-   *
-   * @param persister The collection persister
-   * @param disassembled The disassembled cached state
-   * @param owner The collection owner
-   */
-  public void initializeFromCache(CollectionPersister persister, Serializable disassembled, Object owner);
+	/**
+	 * Read the state of the collection from a disassembled cached value
+	 *
+	 * @param persister The collection persister
+	 * @param disassembled The disassembled cached state
+	 * @param owner The collection owner
+	 */
+	void initializeFromCache(CollectionPersister persister, Serializable disassembled, Object owner);
 
-  /**
-   * Iterate all collection entries, during update of the database
-   *
-   * @param persister The collection persister.
-   *
-   * @return The iterator
-   */
-  public Iterator entries(CollectionPersister persister);
+	/**
+	 * Iterate all collection entries, during update of the database
+	 *
+	 * @param persister The collection persister.
+	 *
+	 * @return The iterator
+	 */
+	Iterator entries(CollectionPersister persister);
 
-  /**
-   * Read a row from the JDBC result set
-   *
-   * @param rs The JDBC ResultSet
-   * @param role The collection role
-   * @param descriptor The aliases used for the columns making up the collection
-   * @param owner The collection owner
-   *
-   * @return The read object
-   *
-   * @throws HibernateException Generally indicates a problem resolving data read from the ResultSet
-   * @throws SQLException Indicates a problem accessing the ResultSet
-   */
-  public Object readFrom(ResultSet rs, CollectionPersister role, CollectionAliases descriptor, Object owner)
-      throws HibernateException, SQLException;
+	/**
+	 * Read a row from the JDBC result set
+	 *
+	 * @param rs The JDBC ResultSet
+	 * @param role The collection role
+	 * @param descriptor The aliases used for the columns making up the collection
+	 * @param owner The collection owner
+	 *
+	 * @return The read object
+	 *
+	 * @throws HibernateException Generally indicates a problem resolving data read from the ResultSet
+	 * @throws SQLException Indicates a problem accessing the ResultSet
+	 */
+	Object readFrom(ResultSet rs, CollectionPersister role, CollectionAliases descriptor, Object owner)
+			throws HibernateException, SQLException;
 
-  /**
-   * Get the identifier of the given collection entry.  This refers to the collection identifier, not the
-   * identifier of the (possibly) entity elements.  This is only valid for invocation on the
-   * {@code idbag} collection.
-   *
-   * @param entry The collection entry/element
-   * @param i The assumed identifier (?)
-   *
-   * @return The identifier value
-   */
-  public Object getIdentifier(Object entry, int i);
-  
-  /**
-   * Get the index of the given collection entry
-   *
-   * @param entry The collection entry/element
-   * @param i The assumed index
-   * @param persister it was more elegant before we added this...
-   *
-   * @return The index value
-   */
-  public Object getIndex(Object entry, int i, CollectionPersister persister);
-  
-  /**
-   * Get the value of the given collection entry.  Generally the given entry parameter value will just be returned.
-   * Might get a different value for a duplicate entries in a Set.
-   *
-   * @param entry The object instance for which to get the collection element instance.
-   *
-   * @return The corresponding object that is part of the collection elements.
-   */
-  public Object getElement(Object entry);
-  
-  /**
-   * Get the snapshot value of the given collection entry
-   *
-   * @param entry The entry
-   * @param i The index
-   *
-   * @return The snapshot state for that element
-   */
-  public Object getSnapshotElement(Object entry, int i);
+	/**
+	 * Get the identifier of the given collection entry.  This refers to the collection identifier, not the
+	 * identifier of the (possibly) entity elements.  This is only valid for invocation on the
+	 * {@code idbag} collection.
+	 *
+	 * @param entry The collection entry/element
+	 * @param i The assumed identifier (?)
+	 *
+	 * @return The identifier value
+	 */
+	Object getIdentifier(Object entry, int i);
+	
+	/**
+	 * Get the index of the given collection entry
+	 *
+	 * @param entry The collection entry/element
+	 * @param i The assumed index
+	 * @param persister it was more elegant beforeQuery we added this...
+	 *
+	 * @return The index value
+	 */
+	Object getIndex(Object entry, int i, CollectionPersister persister);
+	
+	/**
+	 * Get the value of the given collection entry.  Generally the given entry parameter value will just be returned.
+	 * Might get a different value for a duplicate entries in a Set.
+	 *
+	 * @param entry The object instance for which to get the collection element instance.
+	 *
+	 * @return The corresponding object that is part of the collection elements.
+	 */
+	Object getElement(Object entry);
+	
+	/**
+	 * Get the snapshot value of the given collection entry
+	 *
+	 * @param entry The entry
+	 * @param i The index
+	 *
+	 * @return The snapshot state for that element
+	 */
+	Object getSnapshotElement(Object entry, int i);
 
-  /**
-   * Called before any elements are read into the collection,
-   * allowing appropriate initializations to occur.
-   *
-   * @param persister The underlying collection persister.
-   * @param anticipatedSize The anticipated size of the collection after initialization is complete.
-   */
-  public void beforeInitialize(CollectionPersister persister, int anticipatedSize);
+	/**
+	 * Called beforeQuery any elements are read into the collection,
+	 * allowing appropriate initializations to occur.
+	 *
+	 * @param persister The underlying collection persister.
+	 * @param anticipatedSize The anticipated size of the collection afterQuery initialization is complete.
+	 */
+	void beforeInitialize(CollectionPersister persister, int anticipatedSize);
 
-  /**
-   * Does the current state exactly match the snapshot?
-   *
-   * @param persister The collection persister
-   *
-   * @return {@code true} if the current state and the snapshot state match.
-   *
-   */
-  public boolean equalsSnapshot(CollectionPersister persister);
+	/**
+	 * Does the current state exactly match the snapshot?
+	 *
+	 * @param persister The collection persister
+	 *
+	 * @return {@code true} if the current state and the snapshot state match.
+	 *
+	 */
+	boolean equalsSnapshot(CollectionPersister persister);
 
-  /**
-   * Is the snapshot empty?
-   *
-   * @param snapshot The snapshot to check
-   *
-   * @return {@code true} if the given snapshot is empty
-   */
-  public boolean isSnapshotEmpty(Serializable snapshot);
-  
-  /**
-   * Disassemble the collection to get it ready for the cache
-   *
-   * @param persister The collection persister
-   *
-   * @return The disassembled state
-   */
-  public Serializable disassemble(CollectionPersister persister) ;
+	/**
+	 * Is the snapshot empty?
+	 *
+	 * @param snapshot The snapshot to check
+	 *
+	 * @return {@code true} if the given snapshot is empty
+	 */
+	boolean isSnapshotEmpty(Serializable snapshot);
+	
+	/**
+	 * Disassemble the collection to get it ready for the cache
+	 *
+	 * @param persister The collection persister
+	 *
+	 * @return The disassembled state
+	 */
+	Serializable disassemble(CollectionPersister persister) ;
 
-  /**
-   * Do we need to completely recreate this collection when it changes?
-   *
-   * @param persister The collection persister
-   *
-   * @return {@code true} if a change requires a recreate.
-   */
-  public boolean needsRecreate(CollectionPersister persister);
+	/**
+	 * Do we need to completely recreate this collection when it changes?
+	 *
+	 * @param persister The collection persister
+	 *
+	 * @return {@code true} if a change requires a recreate.
+	 */
+	boolean needsRecreate(CollectionPersister persister);
 
-  /**
-   * Return a new snapshot of the current state of the collection
-   *
-   * @param persister The collection persister
-   *
-   * @return The snapshot
-   */
-  public Serializable getSnapshot(CollectionPersister persister);
+	/**
+	 * Return a new snapshot of the current state of the collection
+	 *
+	 * @param persister The collection persister
+	 *
+	 * @return The snapshot
+	 */
+	Serializable getSnapshot(CollectionPersister persister);
 
-  /**
-   * To be called internally by the session, forcing immediate initialization.
-   */
-  public void forceInitialization();
+	/**
+	 * To be called internally by the session, forcing immediate initialization.
+	 */
+	void forceInitialization();
 
-  /**
-   * Does the given element/entry exist in the collection?
-   *
-   * @param entry The object to check if it exists as a collection element
-   * @param i Unused
-   *
-   * @return {@code true} if the given entry is a collection element
-   */
-  public boolean entryExists(Object entry, int i);
+	/**
+	 * Does the given element/entry exist in the collection?
+	 *
+	 * @param entry The object to check if it exists as a collection element
+	 * @param i Unused
+	 *
+	 * @return {@code true} if the given entry is a collection element
+	 */
+	boolean entryExists(Object entry, int i);
 
-  /**
-   * Do we need to insert this element?
-   *
-   * @param entry The collection element to check
-   * @param i The index (for indexed collections)
-   * @param elemType The type for the element
-   *
-   * @return {@code true} if the element needs inserting
-   */
-  public boolean needsInserting(Object entry, int i, Type elemType);
+	/**
+	 * Do we need to insert this element?
+	 *
+	 * @param entry The collection element to check
+	 * @param i The index (for indexed collections)
+	 * @param elemType The type for the element
+	 *
+	 * @return {@code true} if the element needs inserting
+	 */
+	boolean needsInserting(Object entry, int i, Type elemType);
 
-  /**
-   * Do we need to update this element?
-   *
-   * @param entry The collection element to check
-   * @param i The index (for indexed collections)
-   * @param elemType The type for the element
-   *
-   * @return {@code true} if the element needs updating
-   */
-  public boolean needsUpdating(Object entry, int i, Type elemType);
+	/**
+	 * Do we need to update this element?
+	 *
+	 * @param entry The collection element to check
+	 * @param i The index (for indexed collections)
+	 * @param elemType The type for the element
+	 *
+	 * @return {@code true} if the element needs updating
+	 */
+	boolean needsUpdating(Object entry, int i, Type elemType);
 
-  /**
-   * Can each element in the collection be mapped unequivocally to a single row in the database?  Generally
-   * bags and sets are the only collections that cannot be.
-   *
-   * @return {@code true} if the row for each element is known
-   */
-  public boolean isRowUpdatePossible();
+	/**
+	 * Can each element in the collection be mapped unequivocally to a single row in the database?  Generally
+	 * bags and sets are the only collections that cannot be.
+	 *
+	 * @return {@code true} if the row for each element is known
+	 */
+	boolean isRowUpdatePossible();
 
-  /**
-   * Get all the elements that need deleting
-   *
-   * @param persister The collection persister
-   * @param indexIsFormula For indexed collections, tells whether the index is a formula (calculated value) mapping
-   *
-   * @return An iterator over the elements to delete
-   */
-  public Iterator getDeletes(CollectionPersister persister, boolean indexIsFormula);
+	/**
+	 * Get all the elements that need deleting
+	 *
+	 * @param persister The collection persister
+	 * @param indexIsFormula For indexed collections, tells whether the index is a formula (calculated value) mapping
+	 *
+	 * @return An iterator over the elements to delete
+	 */
+	Iterator getDeletes(CollectionPersister persister, boolean indexIsFormula);
 
-  /**
-   * Is this the wrapper for the given collection instance?
-   *
-   * @param collection The collection to check whether this is wrapping it
-   *
-   * @return  {@code true} if this is a wrapper around that given collection instance.
-   */
-  public boolean isWrapper(Object collection);
+	/**
+	 * Is this the wrapper for the given collection instance?
+	 *
+	 * @param collection The collection to check whether this is wrapping it
+	 *
+	 * @return  {@code true} if this is a wrapper around that given collection instance.
+	 */
+	boolean isWrapper(Object collection);
 
-  /**
-   * Is this instance initialized?
-   *
-   * @return Was this collection initialized?  Or is its data still not (fully) loaded?
-   */
-  public boolean wasInitialized();
+	/**
+	 * Is this instance initialized?
+	 *
+	 * @return Was this collection initialized?  Or is its data still not (fully) loaded?
+	 */
+	boolean wasInitialized();
 
-  /**
-   * Does this instance have any "queued" operations?
-   *
-   * @return {@code true} indicates there are pending, queued, delayed operations
-   */
-  public boolean hasQueuedOperations();
+	/**
+	 * Does this instance have any "queued" operations?
+	 *
+	 * @return {@code true} indicates there are pending, queued, delayed operations
+	 */
+	boolean hasQueuedOperations();
 
-  /**
-   * Iterator over the "queued" additions
-   *
-   * @return The iterator
-   */
-  public Iterator queuedAdditionIterator();
-  
-  /**
-   * Get the "queued" orphans
-   *
-   * @param entityName The name of the entity that makes up the elements
-   *
-   * @return The orphaned elements
-   */
-  public Collection getQueuedOrphans(String entityName);
-  
-  /**
-   * Get the current collection key value
-   *
-   * @return the current collection key value
-   */
-  public Serializable getKey();
-  
-  /**
-   * Get the current role name
-   *
-   * @return the collection role name
-   */
-  public String getRole();
-  
-  /**
-   * Is the collection unreferenced?
-   *
-   * @return {@code true} if the collection is no longer referenced by an owner
-   */
-  public boolean isUnreferenced();
-  
-  /**
-   * Is the collection dirty? Note that this is only
-   * reliable during the flush cycle, after the 
-   * collection elements are dirty checked against
-   * the snapshot.
-   *
-   * @return {@code true} if the collection is dirty
-   */
-  public boolean isDirty();
-  
-  /**
-   * Clear the dirty flag, after flushing changes
-   * to the database.
-   */
-  public void clearDirty();
-  
-  /**
-   * Get the snapshot cached by the collection instance
-   *
-   * @return The internally stored snapshot state
-   */
-  public Serializable getStoredSnapshot();
-  
-  /**
-   * Mark the collection as dirty
-   */
-  public void dirty();
-  
-  /**
-   * Called before inserting rows, to ensure that any surrogate keys
-   * are fully generated
-   *
-   * @param persister The collection persister
-   */
-  public void preInsert(CollectionPersister persister);
+	/**
+	 * Iterator over the "queued" additions
+	 *
+	 * @return The iterator
+	 */
+	Iterator queuedAdditionIterator();
+	
+	/**
+	 * Get the "queued" orphans
+	 *
+	 * @param entityName The name of the entity that makes up the elements
+	 *
+	 * @return The orphaned elements
+	 */
+	Collection getQueuedOrphans(String entityName);
+	
+	/**
+	 * Get the current collection key value
+	 *
+	 * @return the current collection key value
+	 */
+	Serializable getKey();
+	
+	/**
+	 * Get the current role name
+	 *
+	 * @return the collection role name
+	 */
+	String getRole();
+	
+	/**
+	 * Is the collection unreferenced?
+	 *
+	 * @return {@code true} if the collection is no longer referenced by an owner
+	 */
+	boolean isUnreferenced();
+	
+	/**
+	 * Is the collection dirty? Note that this is only
+	 * reliable during the flush cycle, afterQuery the
+	 * collection elements are dirty checked against
+	 * the snapshot.
+	 *
+	 * @return {@code true} if the collection is dirty
+	 */
+	boolean isDirty();
+	
+	/**
+	 * Clear the dirty flag, afterQuery flushing changes
+	 * to the database.
+	 */
+	void clearDirty();
+	
+	/**
+	 * Get the snapshot cached by the collection instance
+	 *
+	 * @return The internally stored snapshot state
+	 */
+	Serializable getStoredSnapshot();
+	
+	/**
+	 * Mark the collection as dirty
+	 */
+	void dirty();
+	
+	/**
+	 * Called beforeQuery inserting rows, to ensure that any surrogate keys
+	 * are fully generated
+	 *
+	 * @param persister The collection persister
+	 */
+	void preInsert(CollectionPersister persister);
 
-  /**
-   * Called after inserting a row, to fetch the natively generated id
-   *
-   * @param persister The collection persister
-   * @param entry The collection element just inserted
-   * @param i The element position/index
-   */
-  public void afterRowInsert(CollectionPersister persister, Object entry, int i);
+	/**
+	 * Called afterQuery inserting a row, to fetch the natively generated id
+	 *
+	 * @param persister The collection persister
+	 * @param entry The collection element just inserted
+	 * @param i The element position/index
+	 */
+	void afterRowInsert(CollectionPersister persister, Object entry, int i);
 
-  /**
-   * get all "orphaned" elements
-   *
-   * @param snapshot The snapshot state
-   * @param entityName The name of the entity that are the elements of the collection
-   *
-   * @return The orphans
-   */
-  public Collection getOrphans(Serializable snapshot, String entityName);
-  
+	/**
+	 * get all "orphaned" elements
+	 *
+	 * @param snapshot The snapshot state
+	 * @param entityName The name of the entity that are the elements of the collection
+	 *
+	 * @return The orphans
+	 */
+	Collection getOrphans(Serializable snapshot, String entityName);
+	
 }

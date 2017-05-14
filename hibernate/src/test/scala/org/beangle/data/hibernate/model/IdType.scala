@@ -18,9 +18,9 @@
  */
 package org.beangle.data.hibernate.model
 
-import org.beangle.commons.model.Named
-import org.beangle.commons.model.annotation.code
 import org.beangle.commons.model.IntId
+import org.beangle.commons.model.annotation.code
+import org.beangle.commons.model.pojo.Named
 
 @code("school")
 class IdType extends IntId with Coded with Named {

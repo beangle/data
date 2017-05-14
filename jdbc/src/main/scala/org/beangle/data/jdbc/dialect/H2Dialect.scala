@@ -19,36 +19,10 @@
 package org.beangle.data.jdbc.dialect
 
 import java.sql.Types._
+import org.beangle.commons.jdbc.Engines
 
-class H2Dialect extends AbstractDialect("[1.3,)") {
+class H2Dialect extends AbstractDialect(Engines.H2, "[1.3,)") {
 
-  protected override def registerType() = {
-    registerType(CHAR, "char($l)")
-    registerType(VARCHAR, "varchar($l)")
-    registerType(LONGVARCHAR, "longvarchar")
-
-    registerType(BOOLEAN, "Boolean")
-    registerType(BIT, "bit")
-    registerType(INTEGER, "integer")
-    registerType(SMALLINT, "smallint")
-    registerType(TINYINT, "tinyint")
-    registerType(BIGINT, "bigint")
-    registerType(DECIMAL, "decimal")
-    registerType(DOUBLE, "double")
-    registerType(FLOAT, "float")
-    registerType(NUMERIC, "numeric")
-
-    registerType(DATE, "date")
-    registerType(TIME, "time")
-    registerType(TIMESTAMP, "timestamp")
-
-    registerType(BINARY, "binary")
-    registerType(VARBINARY, "varbinary($l)")
-    registerType(LONGVARBINARY, "longvarbinary")
-    // HSQL has no Blob/Clob support .... but just put these here for now!
-    registerType(BLOB, "longvarbinary")
-    registerType(CLOB, "longvarchar")
-  }
   override def sequenceGrammar = {
     val ss = new SequenceGrammar()
     ss.querySequenceSql = "select sequence_name,current_value,increment,cache from information_schema.sequences where sequence_schema=':schema'"
@@ -71,7 +45,4 @@ class H2Dialect extends AbstractDialect("[1.3,)") {
     "PUBLIC"
   }
 
-  override def storeCase: StoreCase.Value = {
-    StoreCase.Upper
-  }
 }

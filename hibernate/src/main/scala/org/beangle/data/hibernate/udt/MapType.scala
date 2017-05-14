@@ -20,10 +20,10 @@ package org.beangle.data.hibernate.udt
 
 import java.{ util => ju }
 
-import scala.collection.JavaConverters
-import scala.collection.mutable
+import scala.collection.{ JavaConverters, mutable }
 
-import org.hibernate.engine.spi.SessionImplementor
+import org.hibernate.collection.spi.PersistentCollection
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
 
@@ -33,13 +33,14 @@ import org.hibernate.usertype.UserCollectionType
 class MapType extends UserCollectionType {
   type MMap = mutable.Map[Object, Object]
 
-  def instantiate(session: SessionImplementor, persister: CollectionPersister) = {
+  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection = {
     new PersistentMap(session)
   }
 
-  def wrap(session: SessionImplementor, collection: Object) = {
+  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection = {
     new PersistentMap(session, collection.asInstanceOf[MMap])
   }
+
   def getElementsIterator(collection: Object) = {
     JavaConverters.asJavaIterator(collection.asInstanceOf[MMap].iterator)
   }
@@ -50,7 +51,8 @@ class MapType extends UserCollectionType {
 
   def indexOf(collection: Object, entity: Object): Object = null
 
-  def replaceElements(original: Object, target: Object, persister: CollectionPersister, owner: Object, copyCache: ju.Map[_, _], session: SessionImplementor) = {
+  def replaceElements(original: Object, target: Object, persister: CollectionPersister,
+                      owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor) = {
     val targetSeq = target.asInstanceOf[MMap]
     targetSeq.clear()
     targetSeq ++= original.asInstanceOf[MMap]

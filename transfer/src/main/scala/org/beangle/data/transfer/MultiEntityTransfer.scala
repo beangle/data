@@ -58,7 +58,7 @@ class MultiEntityTransfer extends AbstractTransfer with EntityTransfer with Logg
         val entity = getCurrent(key);
         val attr = processAttr(key);
         val entityName = getEntityName(key);
-        val etype = entityMetadata.getType(entityName).get
+        val etype = domain.getEntity(entityName).get
         populateValue(entity.asInstanceOf[Entity[_]], etype, attr, value);
       }
     }
@@ -96,11 +96,11 @@ class MultiEntityTransfer extends AbstractTransfer with EntityTransfer with Logg
   }
 
   override def processAttr(attr: String): String = {
-    return Strings.substringAfter(attr, ".");
+    Strings.substringAfter(attr, ".")
   }
 
   protected def getEntityClass(attr: String): Class[_] = {
-    return getEntityType(attr).entityClass;
+    getEntityType(attr).clazz
   }
 
   protected def getEntityType(attr: String): EntityType = {
@@ -109,14 +109,14 @@ class MultiEntityTransfer extends AbstractTransfer with EntityTransfer with Logg
   }
 
   def addEntity(alias: String, entityClass: Class[_]) {
-    entityMetadata.getType(entityClass) match {
+    domain.getEntity(entityClass) match {
       case Some(entityType) => entityTypes.put(alias, entityType)
       case None             => throw new RuntimeException("cannot find entity type for " + entityClass);
     }
   }
 
   def addEntity(alias: String, entityName: String): Unit = {
-    entityMetadata.getType(entityName) match {
+    domain.getEntity(entityName) match {
       case Some(entityType) => entityTypes.put(alias, entityType)
       case None             => throw new RuntimeException("cannot find entity type for " + entityName)
     }

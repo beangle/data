@@ -20,26 +20,34 @@ package org.beangle.data.jdbc.dialect
 
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.jdbc.meta.Schema
 import org.beangle.data.jdbc.ds.DataSourceUtils
 import org.junit.runner.RunWith
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
+import org.beangle.commons.jdbc.Engines
+import org.beangle.commons.jdbc.Database
+import org.beangle.commons.jdbc.Schema
+import org.beangle.commons.jdbc.Identifier
+import org.beangle.data.jdbc.meta.MetadataLoader
 
 @RunWith(classOf[JUnitRunner])
 class H2DialectTest extends DialectTestCase {
 
-  val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties"))
+  val properties = ClassLoaders.getResource("db.properties") match {
+    case Some(r) => IOs.readJavaProperties(r)
+    case None    => Map.empty[String, String]
+  }
 
   println(ClassLoaders.getResource("db.properties"))
   "h2 " should "load tables and sequences" in {
-    val ds: DataSource = DataSourceUtils.build("h2", properties("h2.username"), properties("h2.password"), Map("url"->properties("h2.url")))
+    val ds: DataSource = DataSourceUtils.build("h2", properties("h2.username"), properties("h2.password"), Map("url" -> properties("h2.url")))
 
     val meta = ds.getConnection().getMetaData()
-    schema = new Schema(new H2Dialect(), null, Name("PUBLIC"))
-    schema.loadTables(meta, false)
-    schema.loadSequences(meta)
+    val database = new Database(Engines.H2)
+    schema = database.getOrCreateSchema(Identifier("PUBLIC"))
+    val loader = new MetadataLoader(schema, new H2Dialect, meta)
+    loader.loadTables(false)
+    loader.loadSequences()
     listTableAndSequences
-
   }
 }
