@@ -67,7 +67,7 @@ public interface PersistentCollection {
 	 *
 	 * @return {@code false} if the collection is non-empty; {@code true} otherwise.
 	 */
-	boolean isCollectionEmpty(); 
+	boolean isCollectionEmpty();
 
 	/**
 	 * After flushing, re-init snapshot state.
