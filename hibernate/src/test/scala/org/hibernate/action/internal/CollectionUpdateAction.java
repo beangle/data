@@ -54,14 +54,15 @@ public final class CollectionUpdateAction extends CollectionAction {
 		final PersistentCollection collection = getCollection();
 		final boolean affectedByFilters = persister.isAffectedByEnabledFilters( session );
 
-		preUpdate(); 
-		if ( !collection.wasInitialized() ) { 
+		preUpdate();
+
+		if ( !collection.wasInitialized() ) {
 			if ( !collection.hasQueuedOperations() ) {
 				throw new AssertionFailure( "no queued adds" );
 			}
 			//do nothing - we only need to notify the cache... 
 		}
-		else if ( !affectedByFilters && collection.isCollectionEmpty() ) {
+		else if ( !affectedByFilters && collection.isCollectionEmpty()) {
 			if ( !emptySnapshot ) {
 				persister.remove( id, session );
 			}
