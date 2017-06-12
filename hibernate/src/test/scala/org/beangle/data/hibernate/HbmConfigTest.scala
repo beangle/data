@@ -56,9 +56,9 @@ class HbmConfigTest extends FunSpec with Matchers {
   builder.properties.put("hibernate.ejb.metamodel.population", "disabled")
   builder.init()
 
-  val domain = builder.domain
   val sf = builder.result
-  val entityDao = new HibernateEntityDao(sf, builder.domain)
+  val domain = DomainFactory.build(sf)
+  val entityDao = new HibernateEntityDao(sf, domain)
 
   SessionUtils.enableBinding(sf)
   SessionUtils.openSession(sf)

@@ -28,13 +28,13 @@ import org.beangle.commons.collection.Collections
 import org.beangle.commons.model.meta.ImmutableDomain
 import org.beangle.commons.model.meta.EntityType
 
-@description("基于Hibernate提供的元信息工厂")
-class DomainFactory extends ContainerListener with Factory[Domain] {
+object DomainFactory {
 
-  var result: Domain = _
+  def build(factory: SessionFactory): Domain = {
+    build(List(factory))
+  }
 
-  override def onStarted(container: Container): Unit = {
-    val factories = container.getBeans(classOf[SessionFactory]).values
+  def build(factories: Iterable[SessionFactory]): Domain = {
     var entities = Collections.newSet[EntityType]
     factories foreach { f =>
       val ms = f.getSessionFactoryOptions.getServiceRegistry.getService(classOf[MappingService])
@@ -42,7 +42,16 @@ class DomainFactory extends ContainerListener with Factory[Domain] {
         entities ++= ms.mappings.entities.values
       }
     }
-    result = ImmutableDomain(entities)
+    ImmutableDomain(entities)
+  }
+}
+@description("基于Hibernate提供的元信息工厂")
+class DomainFactory extends ContainerListener with Factory[Domain] {
+
+  var result: Domain = _
+
+  override def onStarted(container: Container): Unit = {
+    result = DomainFactory.build(container.getBeans(classOf[SessionFactory]).values)
   }
 
 }

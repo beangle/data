@@ -41,8 +41,6 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
 
   var result: SessionFactory = _
 
-  var domain: Domain = _
-
   def init() {
     val cfgb = new ConfigurationBuilder(dataSource)
     //  provide the Beangle managed Session as context
