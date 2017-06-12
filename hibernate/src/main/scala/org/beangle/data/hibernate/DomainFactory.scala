@@ -25,19 +25,24 @@ import org.hibernate.SessionFactory
 import org.beangle.commons.model.meta.Domain
 import org.beangle.data.hibernate.cfg.MappingService
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.model.meta.ImmutableDomain
+import org.beangle.commons.model.meta.EntityType
 
 @description("基于Hibernate提供的元信息工厂")
-class DomainsFactory extends ContainerListener {
+class DomainFactory extends ContainerListener with Factory[Domain] {
 
-  val domains = Collections.newMap[SessionFactory, Domain]
+  var result: Domain = _
 
   override def onStarted(container: Container): Unit = {
     val factories = container.getBeans(classOf[SessionFactory]).values
+    var entities = Collections.newSet[EntityType]
     factories foreach { f =>
       val ms = f.getSessionFactoryOptions.getServiceRegistry.getService(classOf[MappingService])
       if (null != ms) {
-        domains.put(f, ms.mappings.buildDomain())
+        entities ++= ms.mappings.entities.values
       }
     }
+    result = ImmutableDomain(entities)
   }
+
 }

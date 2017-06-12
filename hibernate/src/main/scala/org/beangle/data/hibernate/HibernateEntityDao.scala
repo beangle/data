@@ -147,19 +147,14 @@ object QuerySupport {
  * @author chaostone
  */
 @description("基于Hibernate提供的通用实体DAO")
-class HibernateEntityDao(val sessionFactory: SessionFactory, domain: Domain) extends EntityDao with Logging {
+class HibernateEntityDao(val sessionFactory: SessionFactory, val domain: Domain) extends EntityDao with Logging {
   import QuerySupport._
-
-  def this(sf: SessionFactory, df: DomainsFactory) {
-    this(sf, df.domains(sf))
-  }
 
   protected def currentSession: Session = {
     sessionFactory.getCurrentSession()
   }
 
   protected def entityNameOf(clazz: Class[_]): String = {
-    println(domain.getEntity(clazz), clazz)
     domain.getEntity(clazz) match {
       case Some(e) => e.entityName
       case None    => clazz.getName

@@ -56,8 +56,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
 
   var dbEngine: Option[String] = None
 
-  var domain: Domain = _
-
   /**
    * Import System properties and disable jdbc metadata lookup
    */
@@ -127,7 +125,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
     }
     val mappings = new Mappings(new Database(engine), ormLocations.toList)
     mappings.autobind()
-    domain = mappings.buildDomain()
     mappings
   }
 

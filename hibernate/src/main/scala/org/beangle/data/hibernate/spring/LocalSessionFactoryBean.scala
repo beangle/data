@@ -51,7 +51,6 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
     properties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[BeangleSessionContext].getName)
     cfgb.properties = properties
     val config = cfgb.build()
-    domain = cfgb.domain
     result = config.buildSessionFactory()
   }
 
