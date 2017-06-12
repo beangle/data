@@ -21,7 +21,7 @@ package org.beangle.data.hibernate.id
 import java.{ util => ju }
 
 import org.beangle.commons.lang.{ Chars, Numbers }
-import org.beangle.commons.model.pojo.Coded
+import org.beangle.data.model.pojo.Coded
 import org.hibernate.`type`.{ IntegerType, LongType, ShortType, Type }
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.spi.SessionImplementor

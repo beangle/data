@@ -18,7 +18,7 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.beangle.commons.jdbc.Engines
+import org.beangle.data.jdbc.meta.Engines
 
 class HSQLDialect extends AbstractDialect(Engines.HSQL, "[2.0.0,)") {
 

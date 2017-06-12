@@ -26,8 +26,8 @@ import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.hibernate.model.{ ExtendRole, Role, User }
 import org.beangle.data.jdbc.ds.DataSourceUtils
-import org.beangle.commons.model.meta.EntityType
-import org.beangle.commons.model.util.ConvertPopulator
+import org.beangle.data.model.meta.EntityType
+import org.beangle.data.model.util.ConvertPopulator
 
 import org.hibernate.dialect.H2Dialect
 import org.junit.runner.RunWith
@@ -35,7 +35,7 @@ import org.scalatest.{ FunSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
 
 import javax.sql.DataSource
-import org.beangle.commons.model.meta.SingularProperty
+import org.beangle.data.model.meta.SingularProperty
 import org.beangle.data.hibernate.spring.LocalSessionFactoryBean
 import org.springframework.core.io.UrlResource
 import org.beangle.data.hibernate.spring.SessionUtils

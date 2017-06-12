@@ -21,7 +21,7 @@ package org.beangle.data.jdbc.dialect
 import java.sql.Types
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Chars
-import org.beangle.commons.jdbc.Engine
+import org.beangle.data.jdbc.meta.Engine
 
 trait Dialect {
 

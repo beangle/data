@@ -28,16 +28,6 @@ import org.beangle.commons.lang.ThreadTasks
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.dialect.{ Dialect, MetadataGrammar, SequenceGrammar }
-import org.beangle.commons.jdbc.Identifier
-import org.beangle.commons.jdbc.Sequence
-import org.beangle.commons.jdbc.Column
-import org.beangle.commons.jdbc.Table
-import org.beangle.commons.jdbc.PrimaryKey
-import org.beangle.commons.jdbc.ForeignKey
-import org.beangle.commons.jdbc.Index
-import org.beangle.commons.jdbc.TableRef
-import org.beangle.commons.jdbc.Schema
-import org.beangle.commons.jdbc.SqlType
 
 object MetadataColumns {
   val TableName = "TABLE_NAME"

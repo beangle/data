@@ -19,12 +19,12 @@
 package org.beangle.data.jdbc.dialect
 
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.jdbc.Sequence
-import org.beangle.commons.jdbc.PrimaryKey
-import org.beangle.commons.jdbc.ForeignKey
-import org.beangle.commons.jdbc.Column
-import org.beangle.commons.jdbc.Table
-import org.beangle.commons.jdbc.Index
+import org.beangle.data.jdbc.meta.Sequence
+import org.beangle.data.jdbc.meta.PrimaryKey
+import org.beangle.data.jdbc.meta.ForeignKey
+import org.beangle.data.jdbc.meta.Column
+import org.beangle.data.jdbc.meta.Table
+import org.beangle.data.jdbc.meta.Index
 
 trait TableGrammar {
 

@@ -27,7 +27,7 @@ import org.springframework.core.io.Resource
 import java.{ util => ju }
 
 import javax.sql.DataSource
-import org.beangle.commons.model.meta.Domain
+import org.beangle.data.model.meta.Domain
 
 @description("构建Hibernate的会话工厂")
 class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory]

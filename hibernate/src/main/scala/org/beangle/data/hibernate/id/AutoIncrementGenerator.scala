@@ -28,7 +28,7 @@ import org.hibernate.mapping.Table
 import org.hibernate.engine.jdbc.spi.JdbcCoordinator
 import java.sql.CallableStatement
 import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.beangle.commons.orm.NamingPolicy
+import org.beangle.data.orm.NamingPolicy
 import org.hibernate.service.ServiceRegistry
 import org.hibernate.jdbc.AbstractReturningWork
 import java.sql.Connection

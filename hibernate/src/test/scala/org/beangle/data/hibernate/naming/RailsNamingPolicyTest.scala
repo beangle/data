@@ -20,7 +20,7 @@ package org.beangle.data.hibernate.naming
 
 import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.orm.cfg.Profiles
+import org.beangle.data.orm.cfg.Profiles
 import org.beangle.data.hibernate.model.IdType
 import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }

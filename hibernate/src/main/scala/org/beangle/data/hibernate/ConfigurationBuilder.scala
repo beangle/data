@@ -23,9 +23,9 @@ import java.{ util => ju }
 
 import org.beangle.commons.bean.Factory
 import org.beangle.commons.io.ResourcePatternResolver
-import org.beangle.commons.jdbc.{ Database, Engines }
+import org.beangle.data.jdbc.meta.{ Database, Engines }
 import org.beangle.commons.logging.Logging
-import org.beangle.commons.orm.Mappings
+import org.beangle.data.orm.Mappings
 import org.beangle.data.hibernate.cfg.MappingService
 import org.hibernate.SessionFactory
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
@@ -33,7 +33,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.{ AvailableSettings, Configuration }
 
 import javax.sql.DataSource
-import org.beangle.commons.model.meta.Domain
+import org.beangle.data.model.meta.Domain
 import org.hibernate.boot.MetadataSources
 
 object ConfigurationBuilder {

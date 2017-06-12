@@ -19,14 +19,14 @@
 package org.beangle.data.hibernate
 
 import org.beangle.commons.bean.Factory
-import org.beangle.commons.cdi.{ Container, ContainerListener }
+import org.beangle.cdi.{ Container, ContainerListener }
 import org.beangle.commons.lang.annotation.description
 import org.hibernate.SessionFactory
-import org.beangle.commons.model.meta.Domain
+import org.beangle.data.model.meta.Domain
 import org.beangle.data.hibernate.cfg.MappingService
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.model.meta.ImmutableDomain
-import org.beangle.commons.model.meta.EntityType
+import org.beangle.data.model.meta.ImmutableDomain
+import org.beangle.data.model.meta.EntityType
 
 object DomainFactory {
 
