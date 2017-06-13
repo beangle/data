@@ -39,8 +39,8 @@
   </scm>
 
   <properties>
-    <commons.version>5.0.0.M2</commons.version>
-    <cdi.version>0.0.10-SNAPSHOT</cdi.version>
+    <commons.version>5.0.0.M3</commons.version>
+    <cdi.version>0.0.10</cdi.version>
     <spring.version>4.3.8.RELEASE</spring.version>
     <HikariCP.version>2.6.1</HikariCP.version>
     <jpa.version>1.0.0.Final</jpa.version>
@@ -73,6 +73,11 @@
       <dependency>
         <groupId>org.beangle.cdi</groupId>
         <artifactId>beangle-cdi-api_2.12</artifactId>
+        <version>${cdi.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.beangle.cdi</groupId>
+        <artifactId>beangle-cdi-spring_2.12</artifactId>
         <version>${cdi.version}</version>
       </dependency>
       <dependency>
