@@ -76,9 +76,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
 
   protected def customProperties(): Unit = {
     // 2. disable metadata lookup
-    // configuration.getProperties.put("hibernate.classLoader.application", beanClassLoader)
-    // Disable JdbcServicesImpl magic behaviour except declare explicitly,
-    // for it will slow startup performance. And it just consult medata's ddl semantic, which is seldom used.
     val useJdbcMetaName = "hibernate.temp.use_jdbc_metadata_defaults"
     if (properties.containsKey(AvailableSettings.DIALECT) && !properties.containsKey(useJdbcMetaName)) {
       properties.put(useJdbcMetaName, "false")
@@ -87,9 +84,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
     }
     if (dataSource != null) properties.put(AvailableSettings.DATASOURCE, dataSource)
     properties.put("hibernate.connection.handling_mode", "DELAYED_ACQUISITION_AND_HOLD");
-
-    //    if (!classLoaders.isEmpty)
-    //      config.getProperties.put(AvailableSettings.CLASSLOADERS, collection.JavaConverters.asJavaCollection(classLoaders))
   }
 
   def build(): Configuration = {
