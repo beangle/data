@@ -24,10 +24,10 @@ import org.beangle.data.jdbc.ds.DataSourceUtils
 import org.junit.runner.RunWith
 import javax.sql.DataSource
 import org.scalatest.junit.JUnitRunner
-import org.beangle.commons.jdbc.Engines
-import org.beangle.commons.jdbc.Database
-import org.beangle.commons.jdbc.Schema
-import org.beangle.commons.jdbc.Identifier
+import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.meta.Database
+import org.beangle.data.jdbc.meta.Schema
+import org.beangle.data.jdbc.meta.Identifier
 import org.beangle.data.jdbc.meta.MetadataLoader
 
 @RunWith(classOf[JUnitRunner])

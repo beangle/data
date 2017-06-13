@@ -25,12 +25,6 @@ import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import org.junit.runner.RunWith
 import org.beangle.data.jdbc.dialect.PostgreSQLDialect
-import org.beangle.commons.jdbc.ForeignKey
-import org.beangle.commons.jdbc.Database
-import org.beangle.commons.jdbc.Table
-import org.beangle.commons.jdbc.Identifier
-import org.beangle.commons.jdbc.PrimaryKey
-import org.beangle.commons.jdbc.Engines
 import org.beangle.data.jdbc.dialect.SQL
 
 @RunWith(classOf[JUnitRunner])

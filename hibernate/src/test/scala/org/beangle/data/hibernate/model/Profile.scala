@@ -18,8 +18,8 @@
  */
 package org.beangle.data.hibernate.model
 
-import org.beangle.commons.model.LongId
-import org.beangle.commons.model.pojo.Named
+import org.beangle.data.model.LongId
+import org.beangle.data.model.pojo.Named
 
 /**
  * @author chaostone

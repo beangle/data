@@ -23,7 +23,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.Matchers
 import org.scalatest.FunSpec
 import org.beangle.data.hibernate.naming.NationBean
-import org.beangle.commons.dao.OqlBuilder
+import org.beangle.data.dao.OqlBuilder
 
 @RunWith(classOf[JUnitRunner])
 class OqlBuilderTest extends FunSpec with Matchers {

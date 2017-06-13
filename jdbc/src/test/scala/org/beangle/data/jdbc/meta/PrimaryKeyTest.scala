@@ -21,8 +21,6 @@ package org.beangle.data.jdbc.meta
 import org.junit.runner.RunWith
 import org.scalatest.{ FlatSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
-import org.beangle.commons.jdbc.Identifier
-import org.beangle.commons.jdbc.PrimaryKey
 import org.beangle.data.jdbc.dialect.SQL
 import org.beangle.data.jdbc.dialect.OracleDialect
 

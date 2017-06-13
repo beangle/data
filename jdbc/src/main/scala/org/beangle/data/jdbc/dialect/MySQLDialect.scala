@@ -20,7 +20,7 @@ package org.beangle.data.jdbc.dialect
 
 import java.sql.Types._
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.jdbc.Engines
+import org.beangle.data.jdbc.meta.Engines
 
 class MySQLDialect extends AbstractDialect(Engines.MySQL, "[5.0,)") {
 

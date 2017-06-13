@@ -18,8 +18,8 @@
  */
 package org.beangle.data.hibernate.model
 
-import org.beangle.commons.model.{ IntId, LongId }
-import org.beangle.commons.model.pojo.{ Named, YearId }
+import org.beangle.data.model.{ IntId, LongId }
+import org.beangle.data.model.pojo.{ Named, YearId }
 
 class LongIdResource extends LongId with Named {
 

@@ -20,10 +20,10 @@ package org.beangle.data.jdbc.ds
 
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings.{ isEmpty, isNotEmpty, substringBetween }
+import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.data.jdbc.vendor.{ DriverInfo, Vendors }
-import org.beangle.commons.lang.Strings
-import org.beangle.commons.jdbc.Identifier
+import org.beangle.data.jdbc.meta.Identifier
 
 object DatasourceConfig {
 

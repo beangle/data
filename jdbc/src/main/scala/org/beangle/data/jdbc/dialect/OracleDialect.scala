@@ -19,7 +19,7 @@
 package org.beangle.data.jdbc.dialect
 
 import java.sql.Types._
-import org.beangle.commons.jdbc.Engines
+import org.beangle.data.jdbc.meta.Engines
 
 class OracleDialect() extends AbstractDialect(Engines.Oracle, "[10.1)") {
 

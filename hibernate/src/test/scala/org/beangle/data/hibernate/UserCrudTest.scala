@@ -21,10 +21,10 @@ package org.beangle.data.hibernate
 import scala.collection.mutable.ListBuffer
 
 import org.beangle.commons.lang.time.WeekState
-import org.beangle.commons.dao.OqlBuilder
+import org.beangle.data.dao.OqlBuilder
 import org.beangle.data.hibernate.model.{ ExtendRole, Member, Name, Role, User }
 import org.hibernate.SessionFactory
-import org.beangle.commons.model.meta.Domain
+import org.beangle.data.model.meta.Domain
 
 object UserCrudTest {
 
