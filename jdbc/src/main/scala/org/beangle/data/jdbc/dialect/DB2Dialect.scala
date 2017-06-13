@@ -19,7 +19,7 @@
 package org.beangle.data.jdbc.dialect
 
 import java.sql.Types
-import org.beangle.commons.jdbc.Engines
+import org.beangle.data.jdbc.meta.Engines
 
 class DB2Dialect extends AbstractDialect(Engines.DB2, "[8.0]") {
 

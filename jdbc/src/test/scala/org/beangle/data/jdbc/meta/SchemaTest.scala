@@ -23,9 +23,6 @@ import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.FunSpec
 import org.beangle.data.jdbc.dialect.OracleDialect
-import org.beangle.commons.jdbc.Engines
-import org.beangle.commons.jdbc.Database
-import org.beangle.commons.jdbc.Table
 
 @RunWith(classOf[JUnitRunner])
 class SchemaTest extends FunSpec with Matchers {

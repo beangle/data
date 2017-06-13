@@ -27,13 +27,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.beangle.data.jdbc.dialect.OracleDialect
-import org.beangle.commons.jdbc.Table
-import org.beangle.commons.jdbc.Database
-import org.beangle.commons.jdbc.Engines
 import org.beangle.data.jdbc.dialect.SQL
-import org.beangle.commons.jdbc.Column
-import org.beangle.commons.jdbc.PrimaryKey
-import org.beangle.commons.jdbc.SqlType
 
 @RunWith(classOf[JUnitRunner])
 class TableTest extends FlatSpec with Matchers {

@@ -22,7 +22,7 @@ import java.sql.CallableStatement
 import java.{ util => ju }
 
 import org.beangle.commons.lang.JLong
-import org.beangle.commons.model.pojo.YearId
+import org.beangle.data.model.pojo.YearId
 import org.hibernate.`type`.{ IntegerType, LongType, Type }
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.jdbc.spi.JdbcCoordinator

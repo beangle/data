@@ -22,7 +22,7 @@ import org.beangle.commons.logging.Logging
 import org.junit.runner.RunWith
 import org.scalatest.{ FlatSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
-import org.beangle.commons.jdbc.Schema
+import org.beangle.data.jdbc.meta.Schema
 
 @RunWith(classOf[JUnitRunner])
 class DialectTestCase extends FlatSpec with Matchers with Logging {

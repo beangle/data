@@ -18,7 +18,7 @@
  */
 package org.beangle.data.hibernate
 
-import org.beangle.commons.cdi.bind.BindModule
+import org.beangle.cdi.bind.BindModule
 import org.beangle.data.hibernate.spring.{ HibernateTransactionManager, LocalSessionFactoryBean }
 import org.beangle.data.hibernate.spring.web.OpenSessionInViewInterceptor
 import org.springframework.beans.factory.config.PropertiesFactoryBean

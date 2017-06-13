@@ -18,7 +18,7 @@
  */
 package org.beangle.data.hibernate.model
 
-import org.beangle.commons.model.IntId
+import org.beangle.data.model.IntId
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.commons.lang.time.HourMinute
 import org.beangle.commons.lang.time.WeekDay

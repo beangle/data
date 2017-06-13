@@ -27,8 +27,8 @@ import org.beangle.commons.collection.page.{ Page, PageLimit, SinglePage }
 import org.beangle.commons.lang.{ Assert, Strings }
 import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
-import org.beangle.commons.model.Entity
-import org.beangle.commons.dao.{ Condition, EntityDao, LimitQuery, Operation, Query => BQuery, QueryBuilder, OqlBuilder }
+import org.beangle.data.model.Entity
+import org.beangle.data.dao.{ Condition, EntityDao, LimitQuery, Operation, Query => BQuery, QueryBuilder, OqlBuilder }
 import org.hibernate.{ Hibernate }
 import org.hibernate.query.{ Query, NativeQuery }
 import org.hibernate.{ Session, SessionFactory }
@@ -38,7 +38,7 @@ import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.proxy.HibernateProxy
 import QuerySupport.{ doCount, doFind, list, setParameters }
 import org.beangle.commons.collection.Wrappers
-import org.beangle.commons.model.meta.Domain
+import org.beangle.data.model.meta.Domain
 import org.beangle.commons.bean.Initializing
 
 object QuerySupport {
@@ -147,19 +147,14 @@ object QuerySupport {
  * @author chaostone
  */
 @description("基于Hibernate提供的通用实体DAO")
-class HibernateEntityDao(val sessionFactory: SessionFactory, domain: Domain) extends EntityDao with Logging {
+class HibernateEntityDao(val sessionFactory: SessionFactory, val domain: Domain) extends EntityDao with Logging {
   import QuerySupport._
-
-  def this(sf: SessionFactory, df: DomainsFactory) {
-    this(sf, df.domains(sf))
-  }
 
   protected def currentSession: Session = {
     sessionFactory.getCurrentSession()
   }
 
   protected def entityNameOf(clazz: Class[_]): String = {
-    println(domain.getEntity(clazz), clazz)
     domain.getEntity(clazz) match {
       case Some(e) => e.entityName
       case None    => clazz.getName

@@ -23,9 +23,9 @@ import java.{ util => ju }
 
 import org.beangle.commons.bean.Factory
 import org.beangle.commons.io.ResourcePatternResolver
-import org.beangle.commons.jdbc.{ Database, Engines }
+import org.beangle.data.jdbc.meta.{ Database, Engines }
 import org.beangle.commons.logging.Logging
-import org.beangle.commons.orm.Mappings
+import org.beangle.data.orm.Mappings
 import org.beangle.data.hibernate.cfg.MappingService
 import org.hibernate.SessionFactory
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
@@ -33,7 +33,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.{ AvailableSettings, Configuration }
 
 import javax.sql.DataSource
-import org.beangle.commons.model.meta.Domain
+import org.beangle.data.model.meta.Domain
 import org.hibernate.boot.MetadataSources
 
 object ConfigurationBuilder {
@@ -56,8 +56,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
 
   var dbEngine: Option[String] = None
 
-  var domain: Domain = _
-
   /**
    * Import System properties and disable jdbc metadata lookup
    */
@@ -78,9 +76,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
 
   protected def customProperties(): Unit = {
     // 2. disable metadata lookup
-    // configuration.getProperties.put("hibernate.classLoader.application", beanClassLoader)
-    // Disable JdbcServicesImpl magic behaviour except declare explicitly,
-    // for it will slow startup performance. And it just consult medata's ddl semantic, which is seldom used.
     val useJdbcMetaName = "hibernate.temp.use_jdbc_metadata_defaults"
     if (properties.containsKey(AvailableSettings.DIALECT) && !properties.containsKey(useJdbcMetaName)) {
       properties.put(useJdbcMetaName, "false")
@@ -89,9 +84,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
     }
     if (dataSource != null) properties.put(AvailableSettings.DATASOURCE, dataSource)
     properties.put("hibernate.connection.handling_mode", "DELAYED_ACQUISITION_AND_HOLD");
-
-    //    if (!classLoaders.isEmpty)
-    //      config.getProperties.put(AvailableSettings.CLASSLOADERS, collection.JavaConverters.asJavaCollection(classLoaders))
   }
 
   def build(): Configuration = {
@@ -127,7 +119,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
     }
     val mappings = new Mappings(new Database(engine), ormLocations.toList)
     mappings.autobind()
-    domain = mappings.buildDomain()
     mappings
   }
 

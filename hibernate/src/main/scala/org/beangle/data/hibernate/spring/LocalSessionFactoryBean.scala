@@ -27,7 +27,7 @@ import org.springframework.core.io.Resource
 import java.{ util => ju }
 
 import javax.sql.DataSource
-import org.beangle.commons.model.meta.Domain
+import org.beangle.data.model.meta.Domain
 
 @description("构建Hibernate的会话工厂")
 class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory]
@@ -41,8 +41,6 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
 
   var result: SessionFactory = _
 
-  var domain: Domain = _
-
   def init() {
     val cfgb = new ConfigurationBuilder(dataSource)
     //  provide the Beangle managed Session as context
@@ -51,7 +49,6 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
     properties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[BeangleSessionContext].getName)
     cfgb.properties = properties
     val config = cfgb.build()
-    domain = cfgb.domain
     result = config.buildSessionFactory()
   }
 

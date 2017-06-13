@@ -21,11 +21,11 @@ package org.beangle.data.hibernate.cfg
 import java.lang.reflect.Modifier
 import java.{ util => ju }
 
-import org.beangle.commons.jdbc.Column
+import org.beangle.data.jdbc.meta.Column
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.commons.model.meta.{ BasicType, EntityType, PluralProperty, Property }
-import org.beangle.commons.orm.{ BasicTypeMapping, CollectionMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapMapping, Mappings, PluralMapping, PropertyMapping, SimpleColumn, SingularMapping, TypeDef }
+import org.beangle.data.model.meta.{ BasicType, EntityType, PluralProperty, Property }
+import org.beangle.data.orm.{ BasicTypeMapping, CollectionMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapMapping, Mappings, PluralMapping, PropertyMapping, SimpleColumn, SingularMapping, TypeDef }
 import org.beangle.data.hibernate.ScalaPropertyAccessStrategy
 import org.beangle.data.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, SeqPerTableStyleGenerator }
 import org.beangle.data.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionJsDateType, OptionJsTimestampType, OptionJuDateType, OptionLongType, OptionShortType, OptionStringType, SeqType, SetType, ValueType }

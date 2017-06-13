@@ -23,10 +23,10 @@ import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.hibernate.udt.ValueType
 import org.beangle.data.hibernate.model.{ Coded, IntIdResource, LongDateIdResource, LongIdResource, Skill, SkillType, User }
-import org.beangle.commons.orm.Mapping
+import org.beangle.data.orm.Mapping
 import org.beangle.commons.lang.time.WeekDay
 import org.beangle.data.hibernate.model.Profile
-import org.beangle.commons.orm.MappingModule
+import org.beangle.data.orm.MappingModule
 
 object TestMapping1 extends MappingModule {
 
