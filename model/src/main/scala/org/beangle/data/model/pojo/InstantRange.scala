@@ -18,16 +18,16 @@
  */
 package org.beangle.data.model.pojo
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 trait DateTimeRange {
   /**
    * 起始日期
    */
-  var beginAt: LocalDateTime = _
+  var beginAt: Instant = _
 
   /**
    * 结束日期
    */
-  var endAt: LocalDateTime = _
+  var endAt: Instant = _
 }

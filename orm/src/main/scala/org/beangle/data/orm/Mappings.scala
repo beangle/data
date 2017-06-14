@@ -26,14 +26,14 @@ import scala.reflect.runtime.{ universe => ru }
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.config.Resources
-import org.beangle.data.jdbc.meta.{ Column, DBScripts, Database }
-import org.beangle.commons.lang.{ ClassLoaders, Primitives, Strings }
+import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.lang.annotation.{ beta, value }
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
+import org.beangle.data.jdbc.meta.{ Column, Database }
 import org.beangle.data.model.{ IntId, LongId, ShortId, StringId }
-import org.beangle.data.model.meta.{ BasicType, Domain }
-import org.beangle.data.model.meta.{ ImmutableDomain, SingularProperty, Type }
+import org.beangle.data.model.meta.{ SingularProperty, Type }
+import org.beangle.data.model.meta.BasicType
 import org.beangle.data.model.meta.Domain.{ CollectionPropertyImpl, EmbeddableTypeImpl, EntityTypeImpl, MapPropertyImpl, MutableStructType, SingularPropertyImpl }
 import org.beangle.data.orm.Jpas.{ isComponent, isEntity, isMap, isSeq, isSet }
 import org.beangle.data.orm.cfg.Profiles
@@ -112,9 +112,6 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     entityMappings --= notEntities.keys
   }
 
-  def generateSql(pattern: String): DBScripts = {
-    null
-  }
   /**
    * support features
    * <li> buildin primary type will be not null
