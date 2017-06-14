@@ -20,7 +20,7 @@ package org.beangle.data.model.pojo
 
 import java.time.Instant
 
-trait DateTimeRange {
+trait InstantRange {
   /**
    * 起始日期
    */
