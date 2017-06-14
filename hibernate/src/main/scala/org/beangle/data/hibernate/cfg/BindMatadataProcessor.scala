@@ -272,7 +272,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
   }
 
   def bindCollectionSecondPass(colp: PluralMapping[_], collection: HCollection,
-                               entities: java.util.Map[String, PersistentClass]): Unit = {
+    entities: java.util.Map[String, PersistentClass]): Unit = {
     val pp = colp.property.asInstanceOf[PluralProperty]
     pp.element match {
       case et: EntityType =>
@@ -346,9 +346,9 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
           case bt: BasicType =>
             map.setIndex(bindSimpleValue(new SimpleValue(metadata, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, sk, bt.clazz.getName))
           case et: EntityType =>
-            val elemType = mapp.property.element.asInstanceOf[EntityType]
+            val kt = mapp.property.key.asInstanceOf[EntityType]
             map.setIndex(bindManyToOne(new HManyToOne(metadata, map.getCollectionTable),
-              DEFAULT_INDEX_COLUMN_NAME, elemType.entityName, sk.columns))
+              DEFAULT_INDEX_COLUMN_NAME, kt.entityName, sk.columns))
         }
       case ck: EmbeddableTypeMapping =>
         map.setIndex(bindComponent(new HComponent(metadata, map), ck, map.getRole + ".index", map.isOneToMany))
@@ -446,7 +446,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
   def initOuterJoinFetchSetting(col: HFetchable, seqp: Fetchable): Unit = {
     seqp.fetch match {
       case Some(fetch) => col.setFetchMode(if ("join" == fetch) FetchMode.JOIN else FetchMode.SELECT)
-      case None        => col.setFetchMode(FetchMode.DEFAULT)
+      case None => col.setFetchMode(FetchMode.DEFAULT)
     }
     col.setLazy(false)
   }
@@ -473,7 +473,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     sv.getTable.setIdentifierValue(sv)
     idgenerator.nullValue match {
       case Some(v) => sv.setNullValue(v)
-      case None    => sv.setNullValue(if ("assigned" == sv.getIdentifierGeneratorStrategy) "undefined" else null)
+      case None => sv.setNullValue(if ("assigned" == sv.getIdentifierGeneratorStrategy) "undefined" else null)
     }
   }
 
@@ -616,7 +616,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
 
     cp.sort match {
-      case None       => coll.setSorted(false)
+      case None => coll.setSorted(false)
       case Some(sort) => coll.setSorted(true); if (sort != "natural") coll.setComparatorClassName(sort)
     }
 

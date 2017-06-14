@@ -1,7 +1,5 @@
 package org.beangle.data.orm
 
-import java.io.FileWriter
-import javax.persistence.ManyToOne
 import org.beangle.data.jdbc.meta.DBScripts
 import org.beangle.data.jdbc.meta.Column
 import org.beangle.data.jdbc.meta.ForeignKey

@@ -83,7 +83,8 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
       properties.put(useJdbcMetaName, "true")
     }
     if (dataSource != null) properties.put(AvailableSettings.DATASOURCE, dataSource)
-    properties.put("hibernate.connection.handling_mode", "DELAYED_ACQUISITION_AND_HOLD");
+    properties.put("hibernate.connection.handling_mode", "DELAYED_ACQUISITION_AND_HOLD")
+    properties.put("hibernate.ejb.metamodel.population", "disabled")
   }
 
   def build(): Configuration = {

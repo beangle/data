@@ -27,6 +27,9 @@ import org.beangle.commons.collection.page.{ Page, PageLimit, SinglePage }
 import org.beangle.commons.lang.{ Assert, Strings }
 import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
+import org.beangle.commons.collection.Wrappers
+import org.beangle.commons.bean.Initializing
+import org.beangle.data.model.meta.Domain
 import org.beangle.data.model.Entity
 import org.beangle.data.dao.{ Condition, EntityDao, LimitQuery, Operation, Query => BQuery, QueryBuilder, OqlBuilder }
 import org.hibernate.{ Hibernate }
@@ -37,9 +40,6 @@ import org.hibernate.engine.jdbc.StreamUtils
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.proxy.HibernateProxy
 import QuerySupport.{ doCount, doFind, list, setParameters }
-import org.beangle.commons.collection.Wrappers
-import org.beangle.data.model.meta.Domain
-import org.beangle.commons.bean.Initializing
 
 object QuerySupport {
 
@@ -147,7 +147,8 @@ object QuerySupport {
  * @author chaostone
  */
 @description("基于Hibernate提供的通用实体DAO")
-class HibernateEntityDao(val sessionFactory: SessionFactory, val domain: Domain) extends EntityDao with Logging {
+class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao with Logging {
+  val domain = DomainFactory.build(sessionFactory)
   import QuerySupport._
 
   protected def currentSession: Session = {

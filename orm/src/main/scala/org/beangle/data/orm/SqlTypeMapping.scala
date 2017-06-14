@@ -54,6 +54,10 @@ class DefaultSqlTypeMapping(engine: Engine) {
     class2Types.put(classOf[java.sql.Timestamp], Types.TIMESTAMP)
     class2Types.put(classOf[java.util.Date], Types.TIMESTAMP)
     class2Types.put(classOf[java.util.Calendar], Types.TIMESTAMP)
+    class2Types.put(classOf[java.time.Instant], Types.TIMESTAMP)
+    class2Types.put(classOf[java.time.LocalDate], Types.DATE)
+    class2Types.put(classOf[java.time.LocalDateTime], Types.TIMESTAMP)
+    class2Types.put(classOf[java.time.ZonedDateTime], Types.TIMESTAMP)
     class2Types.put(classOf[WeekState], Types.BIGINT)
   }
 
