@@ -57,9 +57,9 @@ class HbmConfigTest extends FunSpec with Matchers {
   builder.init()
 
   val sf = builder.result
-  val domain = DomainFactory.build(sf)
-  val entityDao = new HibernateEntityDao(sf, domain)
-
+  
+  val entityDao = new HibernateEntityDao(sf)
+  val domain = entityDao.domain
   SessionUtils.enableBinding(sf)
   SessionUtils.openSession(sf)
 
@@ -67,7 +67,7 @@ class HbmConfigTest extends FunSpec with Matchers {
   val userMetaOption = domain.getEntity(classOf[User])
 
   it("Should support int? and scala collection") {
-    UserCrudTest.testCrud(sf, domain)
+    UserCrudTest.testCrud(sf)
   }
 
   it("Role's parent is entityType") {

@@ -20,6 +20,7 @@ package org.beangle.data.orm
 
 import org.beangle.data.model.LongId
 import org.beangle.data.model.Component
+import java.time.Instant
 
 /**
  * @author chaostone
@@ -27,6 +28,8 @@ import org.beangle.data.model.Component
 class TestUser extends LongId {
 
   var member: NamedMember = _
+
+  var updatedAt: Instant = _
 }
 
 class NamedMember extends Component {

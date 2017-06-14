@@ -43,14 +43,13 @@ object DaoModule extends BindModule {
         "hibernate.jdbc.fetch_size=8", "hibernate.jdbc.batch_size=20",
         "hibernate.jdbc.batch_versioned_data=true", "hibernate.jdbc.use_streams_for_binary=true",
         "hibernate.jdbc.use_get_generated_keys=true",
-        //net.sf.ehcache.configurationResourceName
         "hibernate.cache.region.factory_class=org.hibernate.cache.ehcache.EhCacheRegionFactory",
         "hibernate.cache.use_second_level_cache=true", "hibernate.cache.use_query_cache=true",
         "hibernate.query.substitutions=true 1, false 0, yes 'Y', no 'N'", "hibernate.show_sql=true"))
       .description("Hibernate配置信息")
 
     bind("SessionFactory.default", classOf[LocalSessionFactoryBean])
-      .property("hibernateProperties", ref("HibernateConfig.default"))
+      .property("properties", ref("HibernateConfig.default"))
       .property("configLocations", "classpath*:META-INF/hibernate.cfg.xml")
       .property("ormLocations", "classpath*:META-INF/beangle/orm.xml").primary
 
@@ -67,7 +66,7 @@ object DaoModule extends BindModule {
       .parent("TransactionProxy.template").primary().description("基于Hibernate提供的通用DAO")
 
     bind("LobHandler.default", classOf[DefaultLobHandler]).description("Spring提供的大字段处理句柄")
-
+    bind(classOf[DomainFactory])
     bind("web.Interceptor.hibernate", classOf[OpenSessionInViewInterceptor])
   }
 

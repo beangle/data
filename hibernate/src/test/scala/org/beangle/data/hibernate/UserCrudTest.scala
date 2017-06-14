@@ -28,8 +28,8 @@ import org.beangle.data.model.meta.Domain
 
 object UserCrudTest {
 
-  def testCrud(sf: SessionFactory, domain: Domain) {
-    val entityDao = new HibernateEntityDao(sf, domain)
+  def testCrud(sf: SessionFactory) {
+    val entityDao = new HibernateEntityDao(sf)
     val session = sf.getCurrentSession
     val transaction = session.beginTransaction()
     val roles = entityDao.getAll(classOf[User])
