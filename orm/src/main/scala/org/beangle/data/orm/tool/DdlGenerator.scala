@@ -25,6 +25,7 @@ import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.data.jdbc.meta.{ Database, Engines }
 import org.beangle.commons.lang.{ Locales, SystemInfo }
 import org.beangle.data.orm.Mappings
+import org.beangle.data.orm.SchemaExporter
 
 /**
  * Generate DDL and Sequences and Comments
@@ -48,7 +49,7 @@ object DdlGenerator {
     val ormLocations = ResourcePatternResolver.getResources("classpath*://META-INF/beangle/orm.xml")
     val mappings = new Mappings(new Database(engine), ormLocations)
     mappings.autobind()
-    val scripts = mappings.generateSql(pattern)
+    val scripts = new SchemaExporter(mappings).generateSql()
 
     //export to files
     writeTo(dir, "0-schemas.sql", scripts.schemas)
@@ -57,7 +58,6 @@ object DdlGenerator {
     writeTo(dir, "3-indices.sql", scripts.indices)
     writeTo(dir, "4-sequences.sql", scripts.sequences)
     writeTo(dir, "5-comments.sql", scripts.comments)
-
   }
 
   private def writeTo(dir: String, file: String, content: String): Unit = {
@@ -66,5 +66,4 @@ object DdlGenerator {
     writer.flush
     writer.close
   }
-
 }

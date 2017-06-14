@@ -18,7 +18,7 @@
  */
 package org.beangle.data.model.pojo
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * 有时效性的实体
@@ -33,10 +33,10 @@ trait TemporalAt {
   /**
    * 获得生效时间
    */
-  var beginAt: LocalDateTime = _
+  var beginAt: Instant = _
 
   /**
    * 获得失效时间
    */
-  var endAt: Option[LocalDateTime] = None
+  var endAt: Option[Instant] = None
 }
