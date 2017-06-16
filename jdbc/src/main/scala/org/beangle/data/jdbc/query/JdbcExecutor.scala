@@ -30,6 +30,8 @@ import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.logging.Logging
 
 import javax.sql.DataSource
+import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.DefaultSqlTypeMapping
 
 object JdbcExecutor {
   var oracleTimestampMethod: Method = _
@@ -39,50 +41,13 @@ object JdbcExecutor {
   } catch {
     case e: Exception =>
   }
-
-  val objectTypeToSqlTypeMap: Map[Class[_], Int] = Map((classOf[Boolean], BOOLEAN),
-    (classOf[Byte] -> TINYINT),
-    (classOf[Short], SMALLINT),
-    (classOf[Integer], INTEGER),
-    (classOf[Long], BIGINT),
-    (classOf[BigInteger], BIGINT),
-    (classOf[Float], FLOAT),
-    (classOf[Double], DOUBLE),
-    (classOf[BigDecimal], DECIMAL),
-    (classOf[java.sql.Date], DATE),
-    (classOf[java.sql.Time], TIME),
-    (classOf[java.sql.Timestamp], TIMESTAMP),
-    (classOf[ju.Date], TIMESTAMP),
-    (classOf[java.sql.Clob], CLOB),
-    (classOf[java.sql.Blob], BLOB))
-
-  def isStringType(clazz: Class[_]): Boolean = {
-    classOf[CharSequence].isAssignableFrom(clazz) || classOf[StringWriter].isAssignableFrom(clazz)
-  }
-  def isDateType(clazz: Class[_]): Boolean = {
-    classOf[ju.Date].isAssignableFrom(clazz) &&
-      !(classOf[java.sql.Date].isAssignableFrom(clazz) ||
-        classOf[java.sql.Time].isAssignableFrom(clazz) ||
-        classOf[java.sql.Timestamp].isAssignableFrom(clazz))
-  }
-  def toSqlType(clazz: Class[_]): Int = {
-    objectTypeToSqlTypeMap.get(clazz) match {
-      case Some(sqltype) => sqltype
-      case None => {
-        if (classOf[Number].isAssignableFrom(clazz))
-          NUMERIC
-        else if (isStringType(clazz)) VARCHAR
-        else if (isDateType(clazz) || classOf[ju.Calendar].isAssignableFrom(clazz)) {
-          TIMESTAMP
-        } else OTHER
-      }
-    }
-  }
 }
 
 class JdbcExecutor(dataSource: DataSource) extends Logging {
 
   import JdbcExecutor._
+  val engine = Engines.forDataSource(dataSource)
+  val sqlTypeMapping = new DefaultSqlTypeMapping(engine)
   var pmdKnownBroken: Boolean = false
   var showSql = false
 
@@ -208,12 +173,12 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
           case e: SQLException => {
             pmdKnownBroken = true
             for (i <- 0 until stmtParamCount)
-              sqltypes(i) = if (null == params(i)) VARCHAR else JdbcExecutor.toSqlType(params(i).getClass)
+              sqltypes(i) = if (null == params(i)) VARCHAR else sqlTypeMapping.sqlCode(params(i).getClass)
           }
         }
       } else {
         for (i <- 0 until stmtParamCount)
-          sqltypes(i) = if (null == params(i)) VARCHAR else JdbcExecutor.toSqlType(params(i).getClass)
+          sqltypes(i) = if (null == params(i)) VARCHAR else sqlTypeMapping.sqlCode(params(i).getClass)
       }
     }
 
@@ -307,7 +272,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
               }
             }
             case CLOB => {
-              if (isStringType(value.getClass)) stmt.setString(index, value.toString())
+              if (isStringType(value.getClass)) stmt.setString(index, value.toString)
               else {
                 //FIXME workround Method org.postgresql.jdbc4.Jdbc4PreparedStatement.setAsciiStream(int, InputStream) is not yet implemented.
                 val clb = value.asInstanceOf[Clob]
@@ -331,6 +296,11 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
       i += 1
     }
   }
+
+  private def isStringType(clazz: Class[_]): Boolean = {
+    classOf[CharSequence].isAssignableFrom(clazz) || classOf[StringWriter].isAssignableFrom(clazz)
+  }
+
   protected def rethrow(cause: SQLException, sql: String, params: Any*) {
     var causeMessage = cause.getMessage()
     if (causeMessage == null) causeMessage = ""

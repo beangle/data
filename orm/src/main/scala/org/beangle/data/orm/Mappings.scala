@@ -30,6 +30,7 @@ import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.lang.annotation.{ beta, value }
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
+import org.beangle.data.jdbc.DefaultSqlTypeMapping
 import org.beangle.data.jdbc.meta.{ Column, Database }
 import org.beangle.data.model.{ IntId, LongId, ShortId, StringId }
 import org.beangle.data.model.meta.{ SingularProperty, Type }

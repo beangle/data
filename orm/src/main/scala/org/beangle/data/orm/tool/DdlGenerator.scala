@@ -45,7 +45,7 @@ object DdlGenerator {
 
     var dialect = args(0)
 
-    val engine = Engines.forDatabase(dialect)
+    val engine = Engines.forName(dialect)
     val ormLocations = ResourcePatternResolver.getResources("classpath*://META-INF/beangle/orm.xml")
     val mappings = new Mappings(new Database(engine), ormLocations)
     mappings.autobind()

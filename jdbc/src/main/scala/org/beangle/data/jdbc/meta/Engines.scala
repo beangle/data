@@ -19,6 +19,8 @@
 package org.beangle.data.jdbc.meta
 
 import java.sql.Types._
+import org.beangle.commons.lang.Strings
+import javax.sql.DataSource
 
 object Engines {
 
@@ -26,8 +28,17 @@ object Engines {
     Map("PostgreSQL" -> PostgreSQL, "MySQL" -> MySQL, "H2" -> H2,
       "HSQL Database Engine" -> HSQL, "Oracle" -> Oracle)
 
-  def forDatabase(databaseName: String): Engine = {
-    name2Engines.get(databaseName) match {
+  def forDataSource(ds: DataSource): Engine = {
+    val connection = ds.getConnection
+    val name = connection.getMetaData.getDatabaseProductName
+    connection.close()
+    forName(name)
+  }
+
+  def forName(databaseName: String): Engine = {
+    var name = Strings.capitalize(databaseName)
+    name = name.replace("sql", "SQL")
+    name2Engines.get(name) match {
       case Some(engine) => engine
       case None =>
         if (databaseName.startsWith("DB2/")) {
