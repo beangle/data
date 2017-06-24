@@ -9,6 +9,7 @@ import java.time.Year
 import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.meta.SqlType
 import org.beangle.data.jdbc.meta.Engine
+import org.beangle.commons.lang.annotation.value
 
 object SqlTypeMapping {
   def DefaultStringSqlType = new SqlType(VARCHAR, "varchar(255)", 255)
@@ -73,27 +74,39 @@ class DefaultSqlTypeMapping(engine: Engine) {
   def sqlCode(clazz: Class[_]): Int = {
     concretTypes.get(clazz) match {
       case Some(c) => c
-      case None    => generalTypes.find(_._1.isAssignableFrom(clazz)).getOrElse((clazz, OTHER))._2
+      case None =>
+        val finded = generalTypes.find(_._1.isAssignableFrom(clazz))
+        finded match {
+          case Some((clazz, tc)) => tc
+          case None =>
+            if (clazz.isAnnotationPresent(classOf[value])) {
+              val ctors = clazz.getConstructors
+              var find: Class[_] = null
+              var i = 0
+              while ((find eq null) && i < ctors.length) {
+                val ctor = ctors(i)
+                val params = ctor.getParameters
+                if (params.length == 1) find = params(0).getType
+                i += 1
+              }
+              concretTypes.get(find).getOrElse(OTHER)
+            } else if (clazz.getName.contains("$")) {
+              val containerClass = Class.forName(Strings.substringBefore(clazz.getName, "$") + "$")
+              if (classOf[Enumeration].isAssignableFrom(containerClass)) {
+                INTEGER
+              } else {
+                throw new RuntimeException(s"Cannot find sqltype for ${clazz.getName}")
+              }
+            } else {
+              OTHER
+            }
+        }
     }
   }
 
   def sqlType(clazz: Class[_]): SqlType = {
-    concretTypes.get(clazz) match {
-      case Some(c) =>
-        val sqlType = engine.toType(c)
-        if (sqlType.code == VARCHAR) sqlType.length = Some(255)
-        sqlType
-      case None =>
-        if (clazz.getName.contains("$")) {
-          val containerClass = Class.forName(Strings.substringBefore(clazz.getName, "$") + "$")
-          if (classOf[Enumeration].isAssignableFrom(containerClass)) {
-            engine.toType(INTEGER)
-          } else {
-            throw new RuntimeException(s"Cannot find sqltype for ${clazz.getName}")
-          }
-        } else {
-          throw new RuntimeException(s"Cannot find sqltype for ${clazz.getName}")
-        }
-    }
+    val sqlType = engine.toType(sqlCode(clazz))
+    if (sqlType.code == VARCHAR) sqlType.length = Some(255)
+    sqlType
   }
 }
