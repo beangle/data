@@ -55,16 +55,15 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   override def init(): Unit = {
     if (null != url) {
       val isXML = url.endsWith(".xml")
+      val file = new java.io.File(url)
       if (url.startsWith("jdbc:")) {
         if (null == driver) {
           driver = Strings.substringBetween(url, "jdbc:", ":")
           props.put("url", url)
         }
-      } else if (url.startsWith("file:")) {
-        merge(readConf(new FileInputStream(url.substring(5)), isXML))
-      } else if (!url.contains(':')) {
-        merge(readConf(new FileInputStream(url), isXML))
-      } else {
+      } else if (file.exists) {
+        merge(readConf(new FileInputStream(file), isXML))
+      }  else {
         val text = getURLText(url)
         val is = new ByteArrayInputStream(text.getBytes)
         merge(readConf(is, isXML))
