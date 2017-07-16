@@ -19,10 +19,10 @@
 package org.beangle.data.jdbc.meta
 
 class DBScripts {
-  var schemas: String = _
-  var tables: String = _
-  var sequences: String = _
-  var constraints: String = _
-  var indices: String = _
-  var comments: String = _
+  var schemas: List[String] = _
+  var tables: List[String] = _
+  var sequences: List[String] = _
+  var constraints: List[String] = _
+  var indices: List[String] = _
+  var comments: List[String] = _
 }

@@ -383,10 +383,6 @@ abstract class MappingModule extends Logging {
     new ElementLength(len)
   }
 
-  //  protected def typeis(t: String): TypeSetter = {
-  //    new TypeSetter(t)
-  //  }
-
   protected final def bind[T: ClassTag]()(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): EntityHolder[T] = {
     bind(manifest.runtimeClass.asInstanceOf[Class[T]], null, ttag)
   }

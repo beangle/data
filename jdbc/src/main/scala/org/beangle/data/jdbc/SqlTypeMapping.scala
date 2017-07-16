@@ -105,8 +105,7 @@ class DefaultSqlTypeMapping(engine: Engine) {
   }
 
   def sqlType(clazz: Class[_]): SqlType = {
-    val sqlType = engine.toType(sqlCode(clazz))
-    if (sqlType.code == VARCHAR) sqlType.length = Some(255)
-    sqlType
+    val sqlTypeCode = sqlCode(clazz)
+    if (sqlTypeCode == VARCHAR) engine.toType(sqlTypeCode, 255) else engine.toType(sqlTypeCode)
   }
 }

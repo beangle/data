@@ -35,8 +35,10 @@ trait Dialect {
 
   def supportsCascadeDelete: Boolean
 
+  def supportsCommentOn: Boolean
+
   def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
-                    referencedTable: String, primaryKey: Iterable[String]): String
+    referencedTable: String, primaryKey: Iterable[String]): String
 
   def metadataGrammar: MetadataGrammar
 
@@ -51,7 +53,7 @@ abstract class AbstractDialect(val engine: Engine, versions: String) extends Dia
   val version: Dbversion = new Dbversion(versions)
 
   override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
-                             referencedTable: String, primaryKey: Iterable[String]): String = {
+    referencedTable: String, primaryKey: Iterable[String]): String = {
     val res: StringBuffer = new StringBuffer(30)
     res.append(" add constraInt ").append(constraintName).append(" foreign key (")
       .append(Strings.join(foreignKey, ", ")).append(") references ").append(referencedTable)
@@ -62,6 +64,8 @@ abstract class AbstractDialect(val engine: Engine, versions: String) extends Dia
   }
 
   override def supportsCascadeDelete = true
+
+  override def supportsCommentOn = false
 
   def support(dbversion: String): Boolean = {
     if (null != version) version.contains(dbversion) else false

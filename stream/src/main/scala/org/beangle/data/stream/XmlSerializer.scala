@@ -38,7 +38,7 @@ object XmlSerializer {
 class XmlSerializer(val driver: XmlDriver, val mapper: Mapper, val registry: MarshallerRegistry)
   extends AbstractSerializer {
 
-  override def supportMediaTypes: Seq[MimeType] = {
+  override def mediaTypes: Seq[MimeType] = {
     List(MimeTypes.ApplicationXml)
   }
 
@@ -47,7 +47,7 @@ class XmlSerializer(val driver: XmlDriver, val mapper: Mapper, val registry: Mar
 class XmlXPathSerializer(val driver: XmlDriver, val mapper: Mapper, val registry: MarshallerRegistry, absolutePath: Boolean, singleNode: Boolean)
   extends ReferenceByXPathSerializer(absolutePath, singleNode) {
 
-  override def supportMediaTypes: Seq[MimeType] = {
+  override def mediaTypes: Seq[MimeType] = {
     List(MimeTypes.ApplicationXml)
   }
 

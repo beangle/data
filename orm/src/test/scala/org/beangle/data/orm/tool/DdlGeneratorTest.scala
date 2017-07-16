@@ -25,4 +25,9 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class DdlGeneratorTest extends FunSpec with Matchers {
 
+  describe("DdlGenerator") {
+    it("generate") {
+      DdlGenerator.main(Array("postgresql","/tmp","zh_CN"))
+    }
+  }
 }

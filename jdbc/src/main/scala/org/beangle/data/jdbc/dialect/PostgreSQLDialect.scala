@@ -43,4 +43,6 @@ class PostgreSQLDialect extends AbstractDialect(Engines.PostgreSQL, "[8.4)") {
   override def defaultSchema: String = {
     "public"
   }
+  
+  override def supportsCommentOn = true
 }

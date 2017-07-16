@@ -33,10 +33,10 @@ class TestUser extends LongId {
 }
 
 class NamedMember extends Component {
-  var name: Name = _
+  var name: Name2 = _
 }
 
-class Name extends Component {
+class Name2 extends Component {
   var firstName: String = _
   var lastName: String = _
 }

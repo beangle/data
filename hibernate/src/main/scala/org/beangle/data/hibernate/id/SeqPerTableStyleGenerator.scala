@@ -39,7 +39,7 @@ import org.hibernate.boot.model.relational.QualifiedName
  *
  * <pre>
  * 1)具有较好的数据库移植性，支持没有sequence的数据库。
- * 2)可以通过设置优化起进行优化
+ * 2)可以通过设置进行优化
  * 3)可以按照表名进行自动命名序列名，模式seq_{table}
  * </pre>
  *

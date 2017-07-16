@@ -31,6 +31,10 @@ import org.beangle.commons.lang.reflect.Reflections
 
 class Profiles(resources: Resources) extends Logging {
 
+  val defaultProfile = new MappingProfile
+
+  defaultProfile.naming = new RailsNamingPolicy(this)
+
   private val profiles = new collection.mutable.HashMap[String, MappingProfile]
 
   private val namings = new collection.mutable.HashMap[String, NamingPolicy]
@@ -61,66 +65,58 @@ class Profiles(resources: Resources) extends Logging {
   }
 
   def getSchema(clazz: Class[_]): Option[String] = {
-    getProfile(clazz) match {
-      case None => None
-      case Some(profile) => {
-        var schema = profile.schema
-        val anno = profile.annotations find { ann =>
-          clazz.getAnnotations() exists { annon =>
-            if (ann.clazz.isAssignableFrom(annon.getClass())) {
-              if (isNotEmpty(ann.value)) {
-                try {
-                  val method = annon.getClass().getMethod("value")
-                  String.valueOf(method.invoke(annon)) == ann.value
-                } catch {
-                  case e: Throwable => {
-                    Console.err.print("Annotation value needed:", ann.value, annon.getClass)
-                    false
-                  }
-                }
-              } else true
-            } else false
-          }
-        }
-        anno foreach (an => if (isNotEmpty(an.schema)) schema = Some(an.schema))
-        schema
+    val profile = getProfile(clazz)
+    var schema = profile.schema
+    val anno = profile.annotations find { ann =>
+      clazz.getAnnotations() exists { annon =>
+        if (ann.clazz.isAssignableFrom(annon.getClass())) {
+          if (isNotEmpty(ann.value)) {
+            try {
+              val method = annon.getClass().getMethod("value")
+              String.valueOf(method.invoke(annon)) == ann.value
+            } catch {
+              case e: Throwable => {
+                Console.err.print("Annotation value needed:", ann.value, annon.getClass)
+                false
+              }
+            }
+          } else true
+        } else false
       }
     }
+    anno foreach (an => if (isNotEmpty(an.schema)) schema = Some(an.schema))
+    schema
   }
 
   def getPrefix(clazz: Class[_]): String = {
-    getProfile(clazz) match {
-      case None => ""
-      case Some(profile) => {
-        var prefix = profile.prefix
-        val anno = profile.annotations find { ann =>
-          clazz.getAnnotations() exists { annon =>
-            if (ann.clazz.isAssignableFrom(annon.getClass())) {
-              if (isNotEmpty(ann.value)) {
-                try {
-                  val method = annon.getClass().getMethod("value")
-                  String.valueOf(method.invoke(annon)) == ann.value
-                } catch {
-                  case e: Exception => {
-                    Console.err.print("Annotation value needed:", ann.value, annon.getClass)
-                    false
-                  }
-                }
-              } else true
-            } else false
-          }
-        }
-        anno foreach (an => if (isNotEmpty(an.prefix)) prefix = an.prefix)
-        if (isEmpty(prefix)) "" else prefix
+    val profile = getProfile(clazz)
+    var prefix = profile.prefix
+    val anno = profile.annotations find { ann =>
+      clazz.getAnnotations() exists { annon =>
+        if (ann.clazz.isAssignableFrom(annon.getClass())) {
+          if (isNotEmpty(ann.value)) {
+            try {
+              val method = annon.getClass().getMethod("value")
+              String.valueOf(method.invoke(annon)) == ann.value
+            } catch {
+              case e: Exception => {
+                Console.err.print("Annotation value needed:", ann.value, annon.getClass)
+                false
+              }
+            }
+          } else true
+        } else false
       }
     }
+    anno foreach (an => if (isNotEmpty(an.prefix)) prefix = an.prefix)
+    if (isEmpty(prefix)) "" else prefix
   }
 
-  def getNamingPolicy(clazz: Class[_]): Option[NamingPolicy] = {
-    getProfile(clazz).map { p => p.naming }
+  def getNamingPolicy(clazz: Class[_]): NamingPolicy = {
+    getProfile(clazz).naming
   }
 
-  def getProfile(clazz: Class[_]): Option[MappingProfile] = {
+  def getProfile(clazz: Class[_]): MappingProfile = {
     var name = clazz.getName()
     var matched: Option[MappingProfile] = None
     while (isNotEmpty(name) && matched == None) {
@@ -129,7 +125,7 @@ class Profiles(resources: Resources) extends Logging {
       name = substringBeforeLast(name, ".")
       if (name.length() == len) name = ""
     }
-    matched
+    matched.getOrElse(defaultProfile)
   }
 
   /**

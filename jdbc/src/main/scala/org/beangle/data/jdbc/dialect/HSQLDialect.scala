@@ -46,4 +46,6 @@ class HSQLDialect extends AbstractDialect(Engines.HSQL, "[2.0.0,)") {
     "PUBLIC"
   }
 
+  override def supportsCommentOn = true
+
 }

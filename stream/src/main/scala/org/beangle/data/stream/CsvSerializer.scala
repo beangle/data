@@ -39,7 +39,7 @@ object CsvSerializer {
 final class CsvSerializer(val driver: CsvDriver, val mapper: Mapper, val registry: MarshallerRegistry)
     extends AbstractSerializer {
 
-  def supportMediaTypes: Seq[MimeType] = {
+  override def mediaTypes: Seq[MimeType] = {
     List(MimeTypes.TextCsv)
   }
 

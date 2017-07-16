@@ -205,12 +205,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             entity
           }
           case None =>
-            val naming = profiles.getNamingPolicy(clazz) match {
-              case Some(p) => p.classToTableName(clazz, entityName)
-              case None =>
-                logger.warn(s"Cannot find profile for $entityName")
-                Name(None, entityName)
-            }
+            val naming = profiles.getNamingPolicy(clazz).classToTableName(clazz, entityName)
             val schema = database.getOrCreateSchema(naming.schema.orNull)
             val table = schema.createTable(naming.text)
             val e = new EntityTypeMapping(refEntity(clazz, entityName), table)
@@ -433,9 +428,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val lastDot = propertyName.lastIndexOf(".")
     var colName = if (lastDot == -1) propertyName else propertyName.substring(lastDot + 1)
     colName = if (key) colName + "Id" else colName
-    profiles.getNamingPolicy(clazz) foreach { np =>
-      colName = np.propertyToColumnName(clazz, colName)
-    }
+    colName = profiles.getNamingPolicy(clazz).propertyToColumnName(clazz, colName)
     colName
   }
 

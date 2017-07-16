@@ -26,6 +26,8 @@ import org.beangle.data.jdbc.meta.{ Database, Engines }
 import org.beangle.commons.lang.{ Locales, SystemInfo }
 import org.beangle.data.orm.Mappings
 import org.beangle.data.orm.SchemaExporter
+import org.beangle.data.jdbc.dialect.Dialects
+import org.beangle.commons.lang.Strings
 
 /**
  * Generate DDL and Sequences and Comments
@@ -43,13 +45,14 @@ object DdlGenerator {
     var pattern: String = null
     if (args.length > 3) pattern = args(3)
 
-    var dialect = args(0)
+    var dialectName = args(0)
 
-    val engine = Engines.forName(dialect)
-    val ormLocations = ResourcePatternResolver.getResources("classpath*://META-INF/beangle/orm.xml")
-    val mappings = new Mappings(new Database(engine), ormLocations)
+    val dialect = Dialects.forName(dialectName)
+    val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
+    println(ormLocations)
+    val mappings = new Mappings(new Database(dialect.engine), ormLocations)
     mappings.autobind()
-    val scripts = new SchemaExporter(mappings).generateSql()
+    val scripts = new SchemaExporter(mappings, dialect, locale, pattern).generate()
 
     //export to files
     writeTo(dir, "0-schemas.sql", scripts.schemas)
@@ -60,10 +63,12 @@ object DdlGenerator {
     writeTo(dir, "5-comments.sql", scripts.comments)
   }
 
-  private def writeTo(dir: String, file: String, content: String): Unit = {
-    val writer = new FileWriter(dir + "/" + file, false)
-    writer.write(content)
-    writer.flush
-    writer.close
+  private def writeTo(dir: String, file: String, contents: List[String]): Unit = {
+    if (null != contents && !contents.isEmpty) {
+      val writer = new FileWriter(dir + "/" + file, false)
+      writer.write(contents.mkString("\n"))
+      writer.flush
+      writer.close
+    }
   }
 }

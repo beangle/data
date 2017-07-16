@@ -66,4 +66,5 @@ class DB2Dialect extends AbstractDialect(Engines.DB2, "[8.0]") {
 
   override def defaultSchema: String = null
 
+  override def supportsCommentOn = true
 }
