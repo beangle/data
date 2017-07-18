@@ -127,10 +127,10 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
   override def processIdentifierGenerators() {
     val identifierFactory = metadata.getIdentifierGeneratorFactory.asInstanceOf[MutableIdentifierGeneratorFactory]
     // 注册缺省的sequence生成器
-    identifierFactory.register("seq_per_table", classOf[SeqPerTableStyleGenerator])
-    identifierFactory.register("auto_increment", classOf[AutoIncrementGenerator])
-    identifierFactory.register("date", classOf[DateStyleGenerator])
-    identifierFactory.register("code", classOf[CodeStyleGenerator])
+    identifierFactory.register(IdGenerator.SeqPerTable, classOf[SeqPerTableStyleGenerator])
+    identifierFactory.register(IdGenerator.AutoIncrement, classOf[AutoIncrementGenerator])
+    identifierFactory.register(IdGenerator.Date, classOf[DateStyleGenerator])
+    identifierFactory.register(IdGenerator.Code, classOf[CodeStyleGenerator])
   }
 
   override def processFilterDefinitions() {
