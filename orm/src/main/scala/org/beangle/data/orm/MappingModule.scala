@@ -321,6 +321,10 @@ abstract class MappingModule extends Logging {
     a
   }
 
+  protected def autoIncrement(): Unit = {
+    defaultIdGenerator(IdGenerator.AutoIncrement)
+  }
+
   protected def notnull = new NotNull
 
   protected def unique = new Unique

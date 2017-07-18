@@ -195,6 +195,12 @@ final class Collection(val clazz: Class[_], val property: String) {
   }
 }
 
+object IdGenerator {
+  val Date = "date"
+  val AutoIncrement = "auto_increment"
+  val SeqPerTable = "seq_per_table"
+  val Code = "code"
+}
 final class IdGenerator(var name: String) {
   val params = Collections.newMap[String, String]
   var nullValue: Option[String] = None
