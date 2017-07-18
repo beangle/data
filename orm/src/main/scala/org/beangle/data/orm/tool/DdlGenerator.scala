@@ -66,7 +66,10 @@ object DdlGenerator {
   private def writeTo(dir: String, file: String, contents: List[String]): Unit = {
     if (null != contents && !contents.isEmpty) {
       val writer = new FileWriter(dir + "/" + file, false)
-      writer.write(contents.mkString("\n"))
+      contents foreach { c =>
+        writer.write(c)
+        writer.write(";\n")
+      }
       writer.flush
       writer.close
     }

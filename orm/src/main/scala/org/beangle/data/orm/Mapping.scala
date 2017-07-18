@@ -46,13 +46,13 @@ trait Mapping extends Cloneable {
 
 trait StructTypeMapping extends Mapping {
   var properties = Collections.newMap[String, PropertyMapping[_]]
-  def getProperty(property: String): PropertyMapping[_] = {
+  def getPropertyMapping(property: String): PropertyMapping[_] = {
     val idx = property.indexOf(".")
     if (idx == -1) {
       properties(property)
     } else {
-      val sp = properties(property.substring(0, idx)).asInstanceOf[SingularMapping]
-      sp.mapping.asInstanceOf[StructTypeMapping].getProperty(property.substring(idx + 1))
+      val sp = properties(property.substring(0, idx)).asInstanceOf[SingularPropertyMapping]
+      sp.mapping.asInstanceOf[StructTypeMapping].getPropertyMapping(property.substring(idx + 1))
     }
   }
 }
@@ -132,7 +132,7 @@ abstract class PropertyMapping[T <: Property](val property: T) {
   def copy(): this.type
 }
 
-final class SingularMapping(property: SingularProperty, var mapping: Mapping)
+final class SingularPropertyMapping(property: SingularProperty, var mapping: Mapping)
     extends PropertyMapping(property) with Fetchable with ColumnHolder with Cloneable {
   def copy: this.type = {
     val cloned = super.clone().asInstanceOf[this.type]
@@ -148,7 +148,7 @@ final class SingularMapping(property: SingularProperty, var mapping: Mapping)
   }
 }
 
-abstract class PluralMapping[T <: PluralProperty](property: T, var element: Mapping)
+abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var element: Mapping)
     extends PropertyMapping(property) with Fetchable with Cloneable {
   var ownerColumn: Column = _
   var inverse: Boolean = false
@@ -169,10 +169,10 @@ abstract class PluralMapping[T <: PluralProperty](property: T, var element: Mapp
   }
 }
 
-class CollectionMapping(property: CollectionProperty, element: Mapping) extends PluralMapping(property, element)
+class CollectionMapping(property: CollectionProperty, element: Mapping) extends PluralPropertyMapping(property, element)
 
 final class MapMapping(property: MapProperty, var key: Mapping, element: Mapping)
-    extends PluralMapping(property, element) {
+    extends PluralPropertyMapping(property, element) {
 
   override def copy(): this.type = {
     val cloned = super.clone().asInstanceOf[this.type]

@@ -217,12 +217,12 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
   }
 
-  private def bindComponent(mh: Mappings.Holder, name: String, propertyType: Class[_], tpe: ru.Type): SingularMapping = {
+  private def bindComponent(mh: Mappings.Holder, name: String, propertyType: Class[_], tpe: ru.Type): SingularPropertyMapping = {
     val ct = new EmbeddableTypeImpl(propertyType)
     val cp = new SingularPropertyImpl(name, propertyType, ct)
     mh.meta.addProperty(cp)
     val cem = new EmbeddableTypeMapping(ct)
-    val cpm = new SingularMapping(cp, cem)
+    val cpm = new SingularPropertyMapping(cp, cem)
     val ctpe = tpe.member(ru.TermName(name)).asMethod.returnType
     val manifest = BeanInfos.get(propertyType, ctpe)
     manifest.readables foreach {
@@ -372,7 +372,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     new BasicTypeMapping(new BasicType(idTypeOf(entityClazz)), newRefColumn(entityClazz, entityName))
   }
 
-  private def bindId(mh: Mappings.Holder, name: String, propertyType: Class[_], tye: ru.Type): SingularMapping = {
+  private def bindId(mh: Mappings.Holder, name: String, propertyType: Class[_], tye: ru.Type): SingularPropertyMapping = {
     val typ = new BasicType(propertyType)
     val meta = new SingularPropertyImpl(name, propertyType, typ)
     meta.optional = false
@@ -382,13 +382,13 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     column.nullable = meta.optional
     val elemMapping = new BasicTypeMapping(typ, column)
 
-    val p = new SingularMapping(meta, elemMapping)
+    val p = new SingularPropertyMapping(meta, elemMapping)
     mh.mapping.table.add(column)
 
     p
   }
 
-  private def bindScalar(mh: Mappings.Holder, name: String, propertyType: Class[_], typeName: String, optional: Boolean): SingularMapping = {
+  private def bindScalar(mh: Mappings.Holder, name: String, propertyType: Class[_], typeName: String, optional: Boolean): SingularPropertyMapping = {
     val typ = new BasicType(propertyType)
     val meta = new SingularPropertyImpl(name, propertyType, typ)
     meta.optional = optional
@@ -397,14 +397,14 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val column = newColumn(columnName(mh.mapping.clazz, name, false), propertyType, true)
     column.nullable = meta.optional
     val elemMapping = new BasicTypeMapping(typ, column)
-    val p = new SingularMapping(meta, elemMapping)
+    val p = new SingularPropertyMapping(meta, elemMapping)
     //FIXME
     //    if (None == p.typeName) p.typeName = Some(typeName)
     mh.mapping.table.add(column)
     p
   }
 
-  private def bindManyToOne(mh: Mappings.Holder, name: String, propertyType: Class[_], optional: Boolean): SingularMapping = {
+  private def bindManyToOne(mh: Mappings.Holder, name: String, propertyType: Class[_], optional: Boolean): SingularPropertyMapping = {
     val typ = refEntity(propertyType, propertyType.getName)
     val meta = new SingularPropertyImpl(name, propertyType, typ)
     meta.optional = optional
@@ -412,7 +412,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
     val idType = idTypeOf(propertyType)
     val column = newColumn(columnName(mh.mapping.clazz, name, true), idType, optional)
-    val p = new SingularMapping(meta, new BasicTypeMapping(new BasicType(idType), column))
+    val p = new SingularPropertyMapping(meta, new BasicTypeMapping(new BasicType(idType), column))
     mh.mapping.table.add(column)
     p
   }

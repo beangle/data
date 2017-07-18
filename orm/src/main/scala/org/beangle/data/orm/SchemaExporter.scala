@@ -1,24 +1,17 @@
 package org.beangle.data.orm
 
-import org.beangle.data.jdbc.meta.DBScripts
-import org.beangle.data.jdbc.meta.Column
-import org.beangle.data.jdbc.meta.ForeignKey
-import org.beangle.data.jdbc.meta.Table
-import org.beangle.data.model.Component
-import org.beangle.data.model.meta.Property
-import java.io.FileWriter
-import javax.persistence.ManyToOne
-import java.io.Writer
-import org.beangle.commons.logging.Logging
-import javax.xml.crypto.dsig.keyinfo.KeyValue
 import java.util.Locale
-import org.beangle.commons.text.i18n.Messages
-import org.beangle.data.jdbc.meta.Identifier
-import org.beangle.commons.lang.Strings._
-import org.beangle.data.jdbc.dialect.SQL
-import org.beangle.data.jdbc.dialect.Dialect
 
-class SchemaExporter(val mappings: Mappings, dialect: Dialect, locale: Locale, pattern: String) extends Logging {
+import org.beangle.commons.lang.Strings.isBlank
+import org.beangle.commons.logging.Logging
+import org.beangle.commons.text.i18n.Messages
+import org.beangle.data.jdbc.dialect.{ Dialect, SQL }
+import org.beangle.data.jdbc.meta.{ DBScripts, Identifier, Table }
+import org.beangle.data.model.meta.Property
+import org.beangle.data.jdbc.meta.Column
+import org.beangle.data.model.Component
+
+class SchemaExporter(mappings: Mappings, dialect: Dialect, locale: Locale, pattern: String) extends Logging {
 
   private var commentBundles = Messages(locale)
 
@@ -30,36 +23,85 @@ class SchemaExporter(val mappings: Mappings, dialect: Dialect, locale: Locale, p
   private val indexes = new collection.mutable.ListBuffer[String]
   private val processed = new collection.mutable.HashSet[Table]
 
-  private def getComment(clazz: Class[_], key: String): String = {
+  private def getComment(clazz: Class[_], key: String): Option[String] = {
     val comment = commentBundles.get(clazz, key)
     if (key == comment) {
       logger.warn(s"Cannot find comment of ${clazz.getName}.$key")
-      key + "?"
+      Some(key + "?")
     } else {
-      comment
+      Some(comment)
     }
   }
+
   def generate(): DBScripts = {
     // 1. first process class mapping
     val schemaSet = new collection.mutable.HashSet[String]
     mappings.entityMappings.values foreach { em =>
-      val table = em.table
       val clazz = em.clazz
-      table.comment = Some(getComment(clazz, clazz.getSimpleName))
-      if (table.schema.name != Identifier.empty) {
-        schemaSet += table.schema.name.value
-      }
+
       if (isBlank(pattern) || clazz.getPackage.getName.startsWith(pattern)) {
+        val table = em.table
+        table.comment = getComment(clazz, clazz.getSimpleName)
+        if (table.schema.name != Identifier.empty) {
+          schemaSet += table.schema.name.value
+        }
+        commentProperties(clazz, table, em)
+        commentIdProperty(clazz, table, em)
         generateTableSql(table)
       }
     }
     val scripts = new DBScripts()
     schemas ++= schemaSet.map(s => s"create schema $s")
-    
+
     scripts.schemas = schemas.sorted.toList
-    scripts.comments =comments.toSet.toList.sorted
-    scripts.tables =tables.sorted.toList
+    scripts.comments = comments.toSet.toList.sorted
+    scripts.tables = tables.sorted.toList
     scripts
+  }
+
+  private def commentProperties(clazz: Class[_], table: Table, em: StructTypeMapping) {
+    em.properties foreach {
+      case (p, pt) =>
+        commentProperty(clazz, table, pt)
+    }
+  }
+
+  private def commentProperty(clazz: Class[_], table: Table, pm: PropertyMapping[_]): Unit = {
+    val property = pm.property.asInstanceOf[Property]
+    pm match {
+      case sm: SingularPropertyMapping =>
+        sm.mapping match {
+          case btm: BasicTypeMapping =>
+            if (btm.columns.size == 1) {
+              val column = btm.columns.head
+              if (column.name.value.endsWith("_id")) {
+                column.comment = Some(getComment(clazz, property.name).get + "ID")
+              } else {
+                column.comment = getComment(clazz, property.name)
+              }
+            }
+          case stm: StructTypeMapping =>
+            commentProperties(property.clazz, table, stm)
+          case _ =>
+        }
+      case _ =>
+    }
+  }
+
+  private def commentIdProperty(clazz: Class[_], table: Table, em: EntityTypeMapping): Unit = {
+    if (null != em.idGenerator) {
+      val pm = em.getPropertyMapping(em.typ.id.name)
+      pm match {
+        case sm: SingularPropertyMapping =>
+          sm.mapping match {
+            case btm: BasicTypeMapping =>
+              val column = btm.columns.head
+              column.comment = Some(getComment(clazz, em.typ.id.name).get + (":" + em.idGenerator.name))
+            case _ =>
+          }
+        case _ =>
+      }
+    }
   }
 
   private def generateTableSql(table: Table): Unit = {
@@ -68,39 +110,16 @@ class SchemaExporter(val mappings: Mappings, dialect: Dialect, locale: Locale, p
     comments ++= SQL.commentsOnTable(table, dialect)
     tables += SQL.createTable(table, dialect)
 
-    //    val subIter = table.getUniqueKeyIterator
-    //    while (subIter.hasNext) {
-    //      val uk = subIter.next
-    //      val constraintString = uk.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema)
-    //      if (constraintString != null) constraints += constraintString
-    //    }
-    //
-    //    val idxIter = table.getIndexIterator
-    //    while (idxIter.hasNext) {
-    //      val index = idxIter.next
-    //      indexes += index.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema)
-    //    }
-    //
-    //    if (dialect.hasAlterTable) {
-    //      val fkIter = table.getForeignKeyIterator
-    //      while (fkIter.hasNext) {
-    //        val fk = fkIter.next.asInstanceOf[ForeignKey]
-    //        if (fk.isPhysicalConstraint) {
-    //          constraints += fk.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema)
-    //        }
-    //      }
-    //    }
+    table.foreignKeys foreach { fk =>
+      constraints += SQL.alterTableAddforeignKey(fk, dialect)
+    }
+
+    table.indexes foreach { idx =>
+      indexes += SQL.createIndex(idx)
+    }
   }
 
-  //  /**
-  //   * Generate sql scripts
-  //   */
   //  def gen(dirName: String, packageName: String): Unit = {
-  //    configuration = ConfigurationBuilder.build(new OverrideConfiguration)
-  //    mapping = configuration.buildMapping
-  //    defaultCatalog = configuration.getProperties.getProperty(DEFAULT_CATALOG)
-  //    defaultSchema = configuration.getProperties.getProperty(DEFAULT_SCHEMA)
-  //    configuration.getProperties.put(DIALECT, dialect)
   //
   //    // 1. first process class mapping
   //    val schemaSet = new collection.mutable.HashSet[String]
@@ -218,21 +237,6 @@ class SchemaExporter(val mappings: Mappings, dialect: Dialect, locale: Locale, p
   //    }
   //  }
   //
-  //  private def commentIdProperty(clazz: Class[_], table: Table, p: Property, identifier: KeyValue): Unit = {
-  //    if (p.getColumnSpan == 1) {
-  //      val column = p.getColumnIterator.next.asInstanceOf[Column]
-  //      var comment = getComment(clazz, p.getName)
-  //      identifier match {
-  //        case sv: SimpleValue => comment += (":" + sv.getIdentifierGeneratorStrategy + toString(sv.getIdentifierGeneratorProperties))
-  //        case _ =>
-  //      }
-  //      column.setComment(comment)
-  //    } else if (p.getColumnSpan > 1) {
-  //      val pc = p.getValue.asInstanceOf[Component]
-  //      val columnOwnerClass = pc.getComponentClass
-  //      commentProperties(columnOwnerClass, table, pc.getPropertyIterator)
-  //    }
-  //  }
   //
   //  private def toString(properties: ju.Properties): String = {
   //    if (properties.isEmpty) return ""
@@ -244,26 +248,6 @@ class SchemaExporter(val mappings: Mappings, dialect: Dialect, locale: Locale, p
   //      if (null != value) result.put(p, value)
   //    }
   //    if (result.isEmpty) "" else result.toString.replace("Map", "")
-  //  }
-  //  private def commentProperty(clazz: Class[_], table: Table, p: Property): Unit = {
-  //    if (null == p) return
-  //    if (p.getColumnSpan == 1) {
-  //      val column = p.getColumnIterator.next.asInstanceOf[Column]
-  //      if (isForeignColumn(table, column)) {
-  //        column.setComment(getComment(clazz, p.getName) + "ID")
-  //      } else {
-  //        column.setComment(getComment(clazz, p.getName))
-  //      }
-  //    } else if (p.getColumnSpan > 1) {
-  //      val pc = p.getValue.asInstanceOf[Component]
-  //      val columnOwnerClass = pc.getComponentClass
-  //      commentProperties(columnOwnerClass, table, pc.getPropertyIterator)
-  //    }
-  //  }
-  //
-  //  private def commentProperties(clazz: Class[_], table: Table, ip: ju.Iterator[_]) {
-  //    while (ip.hasNext)
-  //      commentProperty(clazz, table, ip.next.asInstanceOf[Property])
   //  }
   //
   //  private def generateTableSql(table: Table): Unit = {

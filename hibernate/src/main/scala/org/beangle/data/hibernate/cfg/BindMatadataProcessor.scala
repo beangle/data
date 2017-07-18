@@ -25,7 +25,7 @@ import org.beangle.data.jdbc.meta.Column
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.model.meta.{ BasicType, EntityType, PluralProperty, Property }
-import org.beangle.data.orm.{ BasicTypeMapping, CollectionMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapMapping, Mappings, PluralMapping, PropertyMapping, SimpleColumn, SingularMapping, TypeDef }
+import org.beangle.data.orm.{ BasicTypeMapping, CollectionMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapMapping, Mappings, PluralPropertyMapping, PropertyMapping, SimpleColumn, SingularPropertyMapping, TypeDef }
 import org.beangle.data.hibernate.ScalaPropertyAccessStrategy
 import org.beangle.data.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, SeqPerTableStyleGenerator }
 import org.beangle.data.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionJsDateType, OptionJsTimestampType, OptionJuDateType, OptionLongType, OptionShortType, OptionStringType, SeqType, SetType, ValueType }
@@ -215,7 +215,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
       case (propertyName, p) =>
         var value: Value = null
         p match {
-          case sm: SingularMapping =>
+          case sm: SingularPropertyMapping =>
             sm.mapping match {
               case btm: BasicTypeMapping =>
                 sm.property.propertyType match {
@@ -234,7 +234,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
                 value = new HComponent(metadata, entity)
                 bindComponent(value.asInstanceOf[HComponent], etm, subpath, false)
             }
-          case colp: PluralMapping[_] =>
+          case colp: PluralPropertyMapping[_] =>
             val hcol = createCollection(colp, entity)
             metadata.addCollectionBinding(bindCollection(entity, em.entityName + "." + propertyName, colp, hcol))
             value = hcol
@@ -258,7 +258,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     entity
   }
 
-  private def bindSimpleId(em: EntityTypeMapping, entity: RootClass, idName: String, idp: SingularMapping): Unit = {
+  private def bindSimpleId(em: EntityTypeMapping, entity: RootClass, idName: String, idp: SingularPropertyMapping): Unit = {
     val id = new SimpleValue(metadata, entity.getTable)
     entity.setIdentifier(id)
     bindColumns(idp.columns, id, idName)
@@ -271,7 +271,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     makeIdentifier(em, id)
   }
 
-  def bindCollectionSecondPass(colp: PluralMapping[_], collection: HCollection,
+  def bindCollectionSecondPass(colp: PluralPropertyMapping[_], collection: HCollection,
     entities: java.util.Map[String, PersistentClass]): Unit = {
     val pp = colp.property.asInstanceOf[PluralProperty]
     pp.element match {
@@ -446,7 +446,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
   def initOuterJoinFetchSetting(col: HFetchable, seqp: Fetchable): Unit = {
     seqp.fetch match {
       case Some(fetch) => col.setFetchMode(if ("join" == fetch) FetchMode.JOIN else FetchMode.SELECT)
-      case None => col.setFetchMode(FetchMode.DEFAULT)
+      case None        => col.setFetchMode(FetchMode.DEFAULT)
     }
     col.setLazy(false)
   }
@@ -473,7 +473,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     sv.getTable.setIdentifierValue(sv)
     idgenerator.nullValue match {
       case Some(v) => sv.setNullValue(v)
-      case None => sv.setNullValue(if ("assigned" == sv.getIdentifierGeneratorStrategy) "undefined" else null)
+      case None    => sv.setNullValue(if ("assigned" == sv.getIdentifierGeneratorStrategy) "undefined" else null)
     }
   }
 
@@ -507,7 +507,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
   }
 
-  def createCollection(colp: PluralMapping[_], owner: PersistentClass): HCollection = {
+  def createCollection(colp: PluralPropertyMapping[_], owner: PersistentClass): HCollection = {
     colp match {
       case mapp: MapMapping => new HMap(metadata, owner)
       case cp: CollectionMapping =>
@@ -539,11 +539,11 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
           else subpath.substring(component.getOwner.getEntityName.length + 1)
 
         p match {
-          case colp: PluralMapping[_] =>
+          case colp: PluralPropertyMapping[_] =>
             val hcol = createCollection(colp, component.getOwner)
             metadata.addCollectionBinding(bindCollection(component.getOwner, subpath, colp, hcol))
             value = hcol
-          case sm: SingularMapping =>
+          case sm: SingularPropertyMapping =>
             sm.mapping match {
               case btm: BasicTypeMapping =>
                 sm.property.propertyType match {
@@ -574,7 +574,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     component
   }
 
-  private def setPluralTypeName(pm: PluralMapping[_], coll: HCollection): Unit = {
+  private def setPluralTypeName(pm: PluralPropertyMapping[_], coll: HCollection): Unit = {
     val p = pm.property.asInstanceOf[PluralProperty]
     if (classOf[collection.Set[_]].isAssignableFrom(p.clazz)) {
       coll.setTypeName(classOf[SetType].getName)
@@ -585,7 +585,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
   }
 
-  def bindCollection(entity: PersistentClass, role: String, cp: PluralMapping[_], coll: HCollection): HCollection = {
+  def bindCollection(entity: PersistentClass, role: String, cp: PluralPropertyMapping[_], coll: HCollection): HCollection = {
     coll.setRole(role)
     coll.setInverse(cp.inverse)
     cp.where foreach (v => coll.setWhere(v))
@@ -616,7 +616,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
 
     cp.sort match {
-      case None => coll.setSorted(false)
+      case None       => coll.setSorted(false)
       case Some(sort) => coll.setSorted(true); if (sort != "natural") coll.setComparatorClassName(sort)
     }
 

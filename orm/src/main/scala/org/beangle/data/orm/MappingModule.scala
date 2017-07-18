@@ -96,7 +96,7 @@ object MappingModule {
 
   class One2Many(targetEntity: Option[Class[_]], mappedBy: String, private var cascade: Option[String] = None) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val colpm = cast[PluralMapping[_]](pm, holder, "one2many should used on seq")
+      val colpm = cast[PluralPropertyMapping[_]](pm, holder, "one2many should used on seq")
       colpm.ownerColumn = refColumn(holder, Some(mappedBy))
       targetEntity foreach { clazz =>
         colpm.property match {
@@ -129,7 +129,7 @@ object MappingModule {
 
   class Table(table: String) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      cast[PluralMapping[_]](pm, holder, "table should used on seq").table = Some(table)
+      cast[PluralPropertyMapping[_]](pm, holder, "table should used on seq").table = Some(table)
     }
   }
 
@@ -170,9 +170,9 @@ object MappingModule {
         throw new RuntimeException("Cannot find access properties for " + holder.mapping.entityName + " with declarations:" + declarations)
       }
       lasts foreach { property =>
-        val p = holder.mapping.getProperty(property)
-        declarations foreach (d => d(holder, p))
-        p.mergeable = false
+        val pm = holder.mapping.getPropertyMapping(property)
+        declarations foreach (d => d(holder, pm))
+        pm.mergeable = false
       }
       lasts.clear()
     }
