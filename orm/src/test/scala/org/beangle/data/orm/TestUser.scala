@@ -30,10 +30,17 @@ class TestUser extends LongId {
   var member: NamedMember = _
 
   var updatedAt: Instant = _
+
+  var role: TestRole = _
+
+  var friends: collection.mutable.HashSet[TestUser] = _
+
+  var properties: collection.mutable.HashSet[UserProperty] = _
 }
 
 class NamedMember extends Component {
   var name: Name2 = _
+  var middleName: String = _
 }
 
 class Name2 extends Component {
