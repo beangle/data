@@ -25,7 +25,7 @@ import org.beangle.data.jdbc.meta.Column
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.model.meta.{ BasicType, EntityType, PluralProperty, Property }
-import org.beangle.data.orm.{ BasicTypeMapping, CollectionMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapMapping, Mappings, PluralPropertyMapping, PropertyMapping, SimpleColumn, SingularPropertyMapping, TypeDef }
+import org.beangle.data.orm.{ BasicTypeMapping, CollectionPropertyMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapPropertyMapping, Mappings, PluralPropertyMapping, PropertyMapping, SimpleColumn, SingularPropertyMapping, TypeDef }
 import org.beangle.data.hibernate.ScalaPropertyAccessStrategy
 import org.beangle.data.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, SeqPerTableStyleGenerator }
 import org.beangle.data.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionJsDateType, OptionJsTimestampType, OptionJuDateType, OptionLongType, OptionShortType, OptionStringType, SeqType, SetType, ValueType }
@@ -50,6 +50,7 @@ import org.hibernate.tuple.{ GeneratedValueGeneration, GenerationTiming }
 
 /**
  * Hibernate Bind Metadadta processor.
+ * @see org.hibernate.boot.model.source.internal.hbm.ModelBinder
  */
 class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataBuildingContext) extends MetadataSourceProcessor {
 
@@ -63,13 +64,27 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
   }
 
-  private val namingStrategy = metadata.getMetadataBuildingOptions.getImplicitNamingStrategy
-
-  private val database = metadata.getDatabase
-
   private var minColumnEnableDynaUpdate = 7
 
   private var globalIdGenerator: IdGenerator = _
+
+  override def processQueryRenames() {}
+
+  override def processNamedQueries() {}
+
+  override def processAuxiliaryDatabaseObjectDefinitions() {}
+
+  override def processFilterDefinitions() {}
+
+  override def processFetchProfiles() {}
+
+  override def prepareForEntityHierarchyProcessing() {}
+
+  override def postProcessEntityHierarchies() {}
+
+  override def processResultSetMappings() {}
+
+  override def finishUp() {}
 
   override def prepare() {
     val strategySelector = metadataSources.getServiceRegistry.getService(classOf[StrategySelector])
@@ -99,7 +114,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
       }
 
     val types = new collection.mutable.HashMap[String, TypeDef]
-    types ++= mappings.types
+    types ++= mappings.typeDefs
     mappings.valueTypes foreach (t => types += (t.getName -> new TypeDef(classOf[ValueType].getName, Map("valueClass" -> t.getName))))
     mappings.enumTypes foreach (t => types += (t._1 -> new TypeDef(classOf[EnumType].getName, Map("enumClass" -> t._2))))
 
@@ -112,18 +127,6 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
   }
 
-  override def processQueryRenames() {
-
-  }
-
-  override def processNamedQueries() {
-
-  }
-
-  override def processAuxiliaryDatabaseObjectDefinitions() {
-
-  }
-
   override def processIdentifierGenerators() {
     val identifierFactory = metadata.getIdentifierGeneratorFactory.asInstanceOf[MutableIdentifierGeneratorFactory]
     // 注册缺省的sequence生成器
@@ -131,18 +134,6 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     identifierFactory.register(IdGenerator.AutoIncrement, classOf[AutoIncrementGenerator])
     identifierFactory.register(IdGenerator.Date, classOf[DateStyleGenerator])
     identifierFactory.register(IdGenerator.Code, classOf[CodeStyleGenerator])
-  }
-
-  override def processFilterDefinitions() {
-
-  }
-
-  override def processFetchProfiles() {
-
-  }
-
-  override def prepareForEntityHierarchyProcessing() {
-
   }
 
   override def processEntityHierarchies(processedEntityNames: java.util.Set[String]) {
@@ -165,19 +156,9 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
       cb.setCacheConcurrencyStrategy(definition.cacheUsage)
       cb.setCacheRegionName(region)
     }
-
   }
 
-  override def postProcessEntityHierarchies() {
-  }
-
-  override def processResultSetMappings() {
-  }
-
-  override def finishUp() {
-  }
-
-  class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: CollectionMapping)
+  class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: CollectionPropertyMapping)
       extends CollectionSecondPass(context, collection, new java.util.HashMap[String, String]) {
 
     def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
@@ -186,7 +167,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
   }
 
-  class MapSecondPass(context: MetadataBuildingContext, map: HMap, mapp: MapMapping)
+  class MapSecondPass(context: MetadataBuildingContext, map: HMap, mapp: MapPropertyMapping)
       extends CollectionSecondPass(context, map, new java.util.HashMap[String, String]) {
     override def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
       bindMapSecondPass(mapp, map, entities.asInstanceOf[java.util.Map[String, PersistentClass]])
@@ -215,18 +196,18 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
       case (propertyName, p) =>
         var value: Value = null
         p match {
-          case sm: SingularPropertyMapping =>
-            sm.mapping match {
+          case spm: SingularPropertyMapping =>
+            spm.mapping match {
               case btm: BasicTypeMapping =>
-                sm.property.propertyType match {
+                spm.property.propertyType match {
                   case et: EntityType =>
-                    value = bindManyToOne(new HManyToOne(metadata, table), propertyName, et.entityName, btm.columns, sm)
+                    value = bindManyToOne(new HManyToOne(metadata, table), propertyName, et.entityName, btm.columns, spm)
                   case _ =>
-                    if (sm.property.name == "id") {
-                      bindSimpleId(em, entity, propertyName, sm)
+                    if (spm.property.name == "id") {
+                      bindSimpleId(em, entity, propertyName, spm)
                       entity.createPrimaryKey
                     } else {
-                      value = bindSimpleValue(new SimpleValue(metadata, table), propertyName, sm, btm.typ.clazz.getName)
+                      value = bindSimpleValue(new SimpleValue(metadata, table), propertyName, spm, btm.typ.clazz.getName)
                     }
                 }
               case etm: EmbeddableTypeMapping =>
@@ -242,9 +223,6 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
 
         if (value != null) {
           val property = createProperty(value, propertyName, entity.getMappedClass, p)
-          //          if (naturalId)            property.setNaturalIdentifier(true)
-          //          if (uniqueKey != null) {
-          //            uniqueKey.addColumns(property.getColumnIterator)
           entity.addProperty(property)
         }
     }
@@ -337,7 +315,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
   }
 
-  def bindMapSecondPass(mapp: MapMapping, map: HMap, entities: java.util.Map[String, PersistentClass]): Unit = {
+  def bindMapSecondPass(mapp: MapPropertyMapping, map: HMap, entities: java.util.Map[String, PersistentClass]): Unit = {
     bindCollectionSecondPass(mapp, map, entities)
 
     mapp.key match {
@@ -382,18 +360,11 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     value
   }
 
-  /**
-   * FIXME NamingStrategy?
-   */
   private def nameColumn(cm: Column, propertyPath: String): Tuple2[Identifier, String] = {
-    val database = metadata.getDatabase
-    var logicalName: Identifier = null
-    if (null == cm.name) {
-      logicalName = database.toIdentifier(propertyPath)
-    } else {
-      logicalName = database.toIdentifier(cm.name.value)
-    }
-    (logicalName, logicalName.render(database.getDialect))
+    val db = metadata.getDatabase
+    val logicalName: Identifier = null
+    if (null == cm.name) db.toIdentifier(propertyPath) else db.toIdentifier(cm.name.value)
+    (logicalName, logicalName.render(db.getDialect))
   }
 
   private def bindColumns(cms: Iterable[Column], simpleValue: SimpleValue, propertyPath: String): Unit = {
@@ -414,10 +385,6 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
         metadata.asInstanceOf[InFlightMetadataCollector].addColumnNameBinding(table, logicalName, column)
       }
       simpleValue.addColumn(column)
-      //          bindIndex( columnElement.attribute( "index" ), table, column )
-      //          bindIndex( node.attribute( "index" ), table, column )
-      //          bindUniqueKey( columnElement.attribute( "unique-key" ), table, column )
-      //          bindUniqueKey( node.attribute( "unique-key" ), table, column )
     }
   }
 
@@ -459,6 +426,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     params.put(IDENTIFIER_NORMALIZER, objectNameNormalizer)
 
     val name = metadata.getDatabase.getDefaultNamespace.getPhysicalName
+    val database = metadata.getDatabase
     if (null != name && null != name.getSchema) {
       params.setProperty(SCHEMA, database.getDefaultNamespace().getPhysicalName.getSchema.render(database.getDialect))
     }
@@ -477,24 +445,6 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
   }
 
-  def quote(name: String): String = {
-    if (name == null || name.length == 0 || isQuoted(name)) name
-    else new StringBuffer(name.length + 2).append('`').append(name).append('`').toString
-  }
-
-  def isQuoted(name: String): Boolean = {
-    return name != null && name.length != 0 && name.charAt(0) == '`' && name.charAt(name.length - 1) == '`'
-  }
-
-  def quoteIdentifier(identifier: String): String = {
-    identifier
-  }
-
-  def unqualify(name: String): String = {
-    val lastDotIdx = name.lastIndexOf(".")
-    if (lastDotIdx == -1) name else name.substring(lastDotIdx + 1)
-  }
-
   def qualify(first: String, second: String): String = {
     s"$first.$second"
   }
@@ -509,8 +459,8 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
 
   def createCollection(colp: PluralPropertyMapping[_], owner: PersistentClass): HCollection = {
     colp match {
-      case mapp: MapMapping => new HMap(metadata, owner)
-      case cp: CollectionMapping =>
+      case mapp: MapPropertyMapping => new HMap(metadata, owner)
+      case cp: CollectionPropertyMapping =>
         if (Jpas.isSeq(cp.property.clazz)) {
           if (cp.index.isEmpty) new HBag(metadata, owner) else new HList(metadata, owner)
         } else {
@@ -562,15 +512,6 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
           component.addProperty(property)
         }
     }
-
-    //    comp match {
-    //      case cp: ComponentMapping if (cp.unique) =>
-    //        val iter = component.getColumnIterator
-    //        val cols = new java.util.ArrayList[HColumn]
-    //        while (iter.hasNext) cols.add(iter.next.asInstanceOf[HColumn])
-    //        component.getOwner.getTable.createUniqueKey(cols)
-    //      case _ =>
-    //    }
     component
   }
 
@@ -598,19 +539,13 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
       coll.getOwner.setSubselectLoadableCollections(true)
     }
     coll.setLazy(true)
-    val collectionName = Strings.substringAfterLast(role, ".")
     cp.property.asInstanceOf[PluralProperty].element match {
       case et: EntityType if cp.one2many =>
         val oneToMany = new HOneToMany(metadata, coll.getOwner)
         coll.setElement(oneToMany)
         oneToMany.setReferencedEntityName(et.entityName)
       case _ =>
-        val tableName = cp.table match {
-          case Some(t) => t
-          case None =>
-            val ownerTable = coll.getOwner.getTable
-            ownerTable.getName + "_" + unqualify(collectionName)
-        }
+        val tableName = cp.table.get
         val table = metadata.addTable(coll.getOwner.getTable.getSchema, null, tableName, cp.subselect.orNull, false)
         coll.setCollectionTable(table)
     }
@@ -621,10 +556,10 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
 
     cp match {
-      case cp: CollectionMapping =>
+      case cp: CollectionPropertyMapping =>
         cp.property.orderBy foreach (v => coll.setOrderBy(v))
         metadata.addSecondPass(new CollSecondPass(context, coll, cp))
-      case mapp: MapMapping =>
+      case mapp: MapPropertyMapping =>
         metadata.addSecondPass(new MapSecondPass(context, coll.asInstanceOf[HMap], mapp))
     }
 
@@ -667,5 +602,4 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     }
     property.setLazy(pm.lazyed)
   }
-
 }

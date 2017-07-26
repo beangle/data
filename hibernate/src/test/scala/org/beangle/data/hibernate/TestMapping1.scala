@@ -22,7 +22,6 @@ import scala.reflect.runtime.universe
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.hibernate.model.{ Coded, IntIdResource, LongDateIdResource, LongIdResource, Skill, SkillType, User }
-import org.beangle.data.orm.Mapping
 import org.beangle.commons.lang.time.WeekDay
 import org.beangle.data.hibernate.model.Profile
 import org.beangle.data.orm.MappingModule
