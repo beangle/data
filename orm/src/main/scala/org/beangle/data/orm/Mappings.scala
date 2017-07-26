@@ -143,7 +143,6 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val clazz = etm.typ.clazz
     val table = etm.table
     processPropertyMappings(clazz, table, etm)
-
   }
 
   private def getComment(clazz: Class[_], key: String): String = {
@@ -152,12 +151,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
   private def getComment(clazz: Class[_], key: String, defaults: String): String = {
     val comment = messages.get(clazz, key)
-    if (key == comment) {
-      logger.warn(s"Cannot find comment of ${clazz.getName}.$key")
-      defaults
-    } else {
-      comment
-    }
+    if (key == comment) defaults else comment
   }
 
   private def processPropertyMappings(clazz: Class[_], table: Table, stm: StructTypeMapping): Unit = {
@@ -212,6 +206,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                   }
                 case _ =>
               }
+              collectTable.createPrimaryKey(collectTable.columns.map(_.name): _*)
             }
         }
     }
