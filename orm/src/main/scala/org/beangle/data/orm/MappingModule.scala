@@ -56,18 +56,17 @@ object MappingModule {
 
   class ElementColumn(name: String) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val mp = cast[MapMapping](pm, holder, "element column should used on map")
+      val mp = cast[PluralPropertyMapping[_]](pm, holder, "element column should used on PluralProperty")
       val ch = mp.element.asInstanceOf[ColumnHolder]
       ch.columns foreach (x => x.name = Identifier(name))
     }
   }
 
-  //FIXME sqlType.length =>type name
   class ElementLength(len: Int) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val mp = cast[MapMapping](pm, holder, "element length should used on map")
+      val mp = cast[PluralPropertyMapping[_]](pm, holder, "element length should used on PluralProperty")
       val ch = mp.element.asInstanceOf[ColumnHolder]
-      ch.columns foreach (x => x.sqlType.length = Some(len))
+      ch.columns foreach (x => x.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len))
     }
   }
 
@@ -77,12 +76,6 @@ object MappingModule {
       cacheholder.add(List(new Collection(holder.clazz, p.name)))
     }
   }
-
-  //  class TypeSetter(val typeName: String) extends Declaration {
-  //    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-  //      cast[TypeNameHolder](pm, holder, "TypeNameHolder needed").typeName = Some(typeName)
-  //    }
-  //  }
 
   private def refColumn(holder: EntityHolder[_], property: Option[String]): Column = {
     val mappings = holder.mappings
@@ -122,7 +115,7 @@ object MappingModule {
 
   class OrderBy(orderBy: String) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val cm = cast[CollectionMapping](pm, holder, "order by should used on seq");
+      val cm = cast[CollectionPropertyMapping](pm, holder, "order by should used on seq");
       cm.property.asInstanceOf[CollectionPropertyImpl].orderBy = Some(orderBy)
     }
   }
@@ -142,7 +135,7 @@ object MappingModule {
 
   class OrderColumn(orderColumn: String) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val collp = cast[CollectionMapping](pm, holder, "order column should used on many2many seq")
+      val collp = cast[CollectionPropertyMapping](pm, holder, "order column should used on many2many seq")
       val idxCol = new Column(Identifier(if (null == orderColumn) MappingModule.OrderColumnName else orderColumn), holder.mappings.sqlTypeMapping.sqlType(classOf[Int]), false)
       collp.index = Some(idxCol)
     }

@@ -18,107 +18,17 @@
  */
 package org.beangle.data.orm
 
-import org.beangle.data.model.meta._
-import org.beangle.data.jdbc.meta.Table
-import org.beangle.data.jdbc.meta.Column
-import org.beangle.data.jdbc.meta.SqlType
-import org.beangle.commons.collection.Collections
 import scala.collection.mutable.Buffer
-import java.sql.Types
 
-class SimpleColumn(column: Column) extends ColumnHolder {
-  require(null != column)
-  val columns: Buffer[Column] = Buffer.empty[Column]
-  columns += column
-}
+import org.beangle.commons.collection.Collections
+import org.beangle.data.jdbc.meta.Column
+import org.beangle.data.model.meta.{ CollectionProperty, MapProperty, PluralProperty, Property, SingularProperty }
 
 trait Fetchable {
   var fetch: Option[String] = None
 }
-trait ColumnHolder {
-  def columns: Iterable[Column]
-}
-
-trait Mapping extends Cloneable {
-  def typ: Type
-  def copy(): Mapping
-}
-
-trait StructTypeMapping extends Mapping {
-  var properties = Collections.newMap[String, PropertyMapping[_]]
-  def getPropertyMapping(property: String): PropertyMapping[_] = {
-    val idx = property.indexOf(".")
-    if (idx == -1) {
-      properties(property)
-    } else {
-      val sp = properties(property.substring(0, idx)).asInstanceOf[SingularPropertyMapping]
-      sp.mapping.asInstanceOf[StructTypeMapping].getPropertyMapping(property.substring(idx + 1))
-    }
-  }
-}
-
-final class EntityTypeMapping(var typ: EntityType, var table: Table) extends StructTypeMapping {
-  var cacheUsage: String = _
-  var cacheRegion: String = _
-  var isLazy: Boolean = true
-  var proxy: String = _
-  var isAbstract: Boolean = _
-  var idGenerator: IdGenerator = _
-
-  def cache(region: String, usage: String): this.type = {
-    this.cacheRegion = region
-    this.cacheUsage = usage
-    this
-  }
-
-  def clazz: Class[_] = {
-    typ.clazz
-  }
-
-  def entityName: String = {
-    typ.entityName
-  }
-  def copy(): this.type = {
-    this
-  }
-}
-
-final class BasicTypeMapping(val typ: BasicType, column: Column)
-    extends Mapping with Cloneable with ColumnHolder {
-
-  var columns: Buffer[Column] = Buffer.empty[Column]
-
-  if (null != column) columns += column
-
-  def copy(): BasicTypeMapping = {
-    val cloned = super.clone().asInstanceOf[BasicTypeMapping]
-    val cc = Buffer.empty[Column]
-    columns foreach { c =>
-      cc += c.clone()
-    }
-    cloned.columns = cc
-    cloned
-  }
-
-}
-
-final class EmbeddableTypeMapping(val typ: EmbeddableType) extends StructTypeMapping {
-
-  def copy(): EmbeddableTypeMapping = {
-    val cloned = super.clone().asInstanceOf[EmbeddableTypeMapping]
-    val cp = Collections.newMap[String, PropertyMapping[_]]
-    properties foreach {
-      case (name, p) =>
-        cp += (name -> p.copy().asInstanceOf[PropertyMapping[Property]])
-    }
-    cloned.properties = cp
-    cloned
-  }
-
-}
 
 abstract class PropertyMapping[T <: Property](val property: T) {
-  var access: Option[String] = None
   var cascade: Option[String] = None
   var mergeable: Boolean = true
 
@@ -132,7 +42,7 @@ abstract class PropertyMapping[T <: Property](val property: T) {
   def copy(): this.type
 }
 
-final class SingularPropertyMapping(property: SingularProperty, var mapping: Mapping)
+final class SingularPropertyMapping(property: SingularProperty, var mapping: TypeMapping)
     extends PropertyMapping(property) with Fetchable with ColumnHolder with Cloneable {
   def copy: this.type = {
     val cloned = super.clone().asInstanceOf[this.type]
@@ -148,7 +58,7 @@ final class SingularPropertyMapping(property: SingularProperty, var mapping: Map
   }
 }
 
-abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var element: Mapping)
+abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var element: TypeMapping)
     extends PropertyMapping(property) with Fetchable with Cloneable {
   var ownerColumn: Column = _
   var inverse: Boolean = false
@@ -169,9 +79,9 @@ abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var eleme
   }
 }
 
-class CollectionMapping(property: CollectionProperty, element: Mapping) extends PluralPropertyMapping(property, element)
+class CollectionPropertyMapping(property: CollectionProperty, element: TypeMapping) extends PluralPropertyMapping(property, element)
 
-final class MapMapping(property: MapProperty, var key: Mapping, element: Mapping)
+final class MapPropertyMapping(property: MapProperty, var key: TypeMapping, element: TypeMapping)
     extends PluralPropertyMapping(property, element) {
 
   override def copy(): this.type = {
@@ -179,34 +89,5 @@ final class MapMapping(property: MapProperty, var key: Mapping, element: Mapping
     cloned.element = this.element.copy()
     cloned.key = this.key.copy()
     cloned
-  }
-}
-
-class TypeDef(val clazz: String, val params: Map[String, String])
-
-final class Collection(val clazz: Class[_], val property: String) {
-  var cacheRegion: String = _
-  var cacheUsage: String = _
-
-  def cache(region: String, usage: String): this.type = {
-    this.cacheRegion = region
-    this.cacheUsage = usage
-    this
-  }
-}
-
-object IdGenerator {
-  val Date = "date"
-  val AutoIncrement = "auto_increment"
-  val SeqPerTable = "seq_per_table"
-  val Code = "code"
-}
-final class IdGenerator(var name: String) {
-  val params = Collections.newMap[String, String]
-  var nullValue: Option[String] = None
-
-  def unsaved(value: String): this.type = {
-    nullValue = Some(value)
-    this
   }
 }
