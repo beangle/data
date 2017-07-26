@@ -362,8 +362,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
 
   private def nameColumn(cm: Column, propertyPath: String): Tuple2[Identifier, String] = {
     val db = metadata.getDatabase
-    val logicalName: Identifier = null
-    if (null == cm.name) db.toIdentifier(propertyPath) else db.toIdentifier(cm.name.value)
+    val logicalName = if (null == cm.name) db.toIdentifier(propertyPath) else db.toIdentifier(cm.name.value)
     (logicalName, logicalName.render(db.getDialect))
   }
 
