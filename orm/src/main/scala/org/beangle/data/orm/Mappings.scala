@@ -177,7 +177,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             }
           case ppm: PluralPropertyMapping[_] =>
             if (ppm.many2many) {
-              if (ppm.table.isEmpty) ppm.table = Some(table.name + "_" + Strings.unCamel(p))
+              if (ppm.table.isEmpty) ppm.table = Some(table.name + "_" + Strings.unCamel(p,'_'))
               val collectTable = table.schema.createTable(ppm.table.get)
               collectTable.comment = Some(getComment(clazz, property.name))
               ppm.ownerColumn.comment = Some(getComment(clazz, clazz.getSimpleName) + "ID")
