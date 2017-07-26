@@ -81,7 +81,7 @@ class Schema(var database: Database, var name: Identifier) {
   }
 
   override def toString: String = {
-    "Schema " + name + " table:" + tables.keySet.toString + " sequence:" + sequences.toString
+    "Schema " + name
   }
 
   class NameFilter {

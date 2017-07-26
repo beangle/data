@@ -74,3 +74,30 @@ class ForeignKey(t: Table, n: Identifier, column: Identifier = null) extends Con
 
   override def toString = "Foreign key(" + name + ')'
 }
+
+import java.math.BigInteger
+import java.security.MessageDigest
+
+import org.beangle.commons.codec.digest.Digests
+
+object ForeignKey {
+  def autoname(fk: ForeignKey): String = {
+    val sb = new StringBuilder()
+      .append("table`").append(fk.table.name).append("`")
+      .append("references`").append(fk.referencedTable.name).append("`");
+
+    fk.referencedColumns foreach { fc =>
+      sb.append("column`").append(fc.value).append("`");
+    }
+    "fk" + hashedName(sb.toString)
+  }
+
+  def hashedName(s: String): String = {
+    val md = MessageDigest.getInstance("MD5")
+    md.reset()
+    md.update(s.getBytes)
+    val digest = md.digest()
+    new BigInteger(1, digest).toString(35)
+  }
+}
+

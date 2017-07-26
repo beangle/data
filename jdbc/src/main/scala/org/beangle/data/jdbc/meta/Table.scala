@@ -18,8 +18,9 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.commons.lang.Strings
 import scala.collection.mutable.ListBuffer
+
+import org.beangle.commons.lang.Strings
 
 object Table {
   def qualify(schema: Schema, name: Identifier): String = {
@@ -141,6 +142,24 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
 
   def getForeignKey(keyName: String): Option[ForeignKey] = {
     foreignKeys.find(f => f.name.value == keyName)
+  }
+
+  def createPrimaryKey(columnName: Identifier): PrimaryKey = {
+    val pk = new PrimaryKey(this, null, columnName)
+    this.primaryKey = Some(pk)
+    pk
+  }
+
+  def createForeignKey(columnName: Identifier, refTable: Table): ForeignKey = {
+    refTable.primaryKey match {
+      case Some(pk) =>
+        val fk = new ForeignKey(this, Identifier("fk_temp"), columnName)
+        fk.refer(refTable, pk.columns.head)
+        fk.name = Identifier(ForeignKey.autoname(fk))
+        this.add(fk)
+      case None =>
+        throw new RuntimeException("Cannot refer on a table without primary key")
+    }
   }
 
   def add(key: ForeignKey): ForeignKey = {

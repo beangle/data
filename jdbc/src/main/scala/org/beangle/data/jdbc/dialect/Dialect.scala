@@ -55,7 +55,7 @@ abstract class AbstractDialect(val engine: Engine, versions: String) extends Dia
   override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
     referencedTable: String, primaryKey: Iterable[String]): String = {
     val res: StringBuffer = new StringBuffer(30)
-    res.append(" add constraInt ").append(constraintName).append(" foreign key (")
+    res.append(" add constraint ").append(constraintName).append(" foreign key (")
       .append(Strings.join(foreignKey, ", ")).append(") references ").append(referencedTable)
     if (!primaryKey.isEmpty) {
       res.append(" (").append(Strings.join(primaryKey, ", ")).append(')')
