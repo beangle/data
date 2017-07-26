@@ -57,11 +57,7 @@ object SQL {
       }
       val useUniqueConstraint = col.unique && (!col.nullable || grammar.supportsNullUnique)
       if (useUniqueConstraint) {
-        if (grammar.supportsUnique) {
-          buf.append(" unique")
-        } else {
-          table.getOrCreateUniqueKey(col.literalName(dialect.engine) + '_').addColumn(col.name)
-        }
+        if (grammar.supportsUnique) buf.append(" unique")
       }
 
       if (col.hasCheck && grammar.supportsColumnCheck) {
