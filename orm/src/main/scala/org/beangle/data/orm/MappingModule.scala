@@ -151,7 +151,7 @@ object MappingModule {
   class Target(clazz: Class[_]) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val sp = pm.property.asInstanceOf[SingularPropertyImpl]
-      sp.propertyType = holder.mappings.entities(clazz.getName)
+      sp.propertyType = holder.mappings.refEntity(clazz, clazz.getName)
     }
   }
 

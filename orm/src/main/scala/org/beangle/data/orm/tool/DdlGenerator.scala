@@ -28,7 +28,6 @@ import org.beangle.data.jdbc.dialect.{ Dialect, Dialects, SQL }
 import org.beangle.data.jdbc.meta.{ DBScripts, Database, Table }
 import org.beangle.data.orm.Mappings
 
-
 /**
  * Generate DDL and Sequences and Comments
  */
@@ -47,7 +46,7 @@ object DdlGenerator {
     val dialect = Dialects.forName(dialectName)
     val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
     val mappings = new Mappings(new Database(dialect.engine), ormLocations)
-    mappings.locale= locale
+    mappings.locale = locale
     mappings.autobind()
     val scripts = new SchemaExporter(mappings, dialect).generate()
 
@@ -73,7 +72,6 @@ object DdlGenerator {
   }
 }
 
-
 class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
 
   private val schemas = new collection.mutable.ListBuffer[String]
@@ -90,7 +88,7 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
       schema => schema.tables.values foreach (generateTableSql(_))
     }
     val scripts = new DBScripts()
-    schemas ++= database.schemas.keys.map(s => s"create schema $s")
+    schemas ++= database.schemas.keys.filter(i => i.value.length > 0).map(s => s"create schema $s")
     scripts.schemas = schemas.sorted.toList
     scripts.comments = comments.toSet.toList.sorted
     scripts.tables = tables.sorted.toList

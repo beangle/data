@@ -10,3 +10,7 @@ TemporalOn.beginOn=生效日期
 TemporalOn.endOn=失效日期
 Updated.updatedAt=更新时间
 Remark.remark=备注
+DateRange.beginOn=开始日期
+DateRange.endOn=结束日期
+InstantRange.beginAt=开始时间
+InstantRange.endAt=结束时间

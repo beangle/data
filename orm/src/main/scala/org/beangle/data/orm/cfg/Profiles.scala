@@ -44,7 +44,7 @@ class Profiles(resources: Resources) extends Logging {
   namings.put("rails", new RailsNamingPolicy(this))
 
   for (url <- resources.paths) addConfig(url)
-  if (!profiles.isEmpty) logger.info(s"Table name pattern: -> ${this.toString}")
+  if (!profiles.isEmpty) logger.info(s"Table name pattern: -> \n${this.toString}")
 
   def addConfig(url: URL): Unit = {
     try {
@@ -192,17 +192,17 @@ class Profiles(resources: Resources) extends Logging {
     if (profiles.isEmpty) return ""
     val maxlength = profiles.map(m => m._1.length).max
     val sb = new StringBuilder
-    profiles foreach {
-      case (packageName, profile) =>
-        sb.append(rightPad(packageName, maxlength, ' ')).append(" : [")
-          .append(profile.schema.getOrElse(""))
-        sb.append(",").append(profile.prefix)
-        //      if (!module.abbreviations.isEmpty()) {
-        //        sb.append(" , ").append(module.abbreviations)
-        //      }
-        sb.append(']').append(';')
+    profiles.keySet.toList.sorted foreach { packageName =>
+      val profile = profiles(packageName)
+      sb.append(rightPad(packageName, maxlength, ' ')).append(" : [")
+        .append(profile.schema.getOrElse("_")).append(",")
+      sb.append(if (isEmpty(profile.prefix)) "_" else profile.prefix)
+      //      if (!module.abbreviations.isEmpty()) {
+      //        sb.append(" , ").append(module.abbreviations)
+      //      }
+      sb.append(']').append("\n")
     }
     if (sb.length > 0) sb.deleteCharAt(sb.length - 1)
-    sb.toString()
+    sb.toString
   }
 }
