@@ -155,7 +155,7 @@ object ParamSetter extends Logging {
       if (null == params(i)) {
         stmt.setNull(index, if (sqltypes(i) == NULL) VARCHAR else sqltypes(i))
       } else {
-        setParam(stmt, i, params(i), sqltypes(i))
+        setParam(stmt, index, params(i), sqltypes(i))
       }
       i += 1
     }
