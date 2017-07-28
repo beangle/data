@@ -32,7 +32,7 @@ import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
-import org.beangle.data.jdbc.DefaultSqlTypeMapping
+import org.beangle.data.jdbc.{ DefaultSqlTypeMapping, SqlTypeMapping }
 import org.beangle.data.jdbc.meta.{ Column, Database, Table }
 import org.beangle.data.model.{ IntId, LongId, ShortId, StringId }
 import org.beangle.data.model.meta.{ EntityType, PluralProperty, Property, SingularProperty, Type }
@@ -53,7 +53,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
   var locale: Locale = Locale.getDefault
 
-  var sqlTypeMapping = new DefaultSqlTypeMapping(database.engine)
+  var sqlTypeMapping :SqlTypeMapping = new DefaultSqlTypeMapping(database.engine)
 
   val entities = new mutable.HashMap[String, EntityTypeImpl]
 
