@@ -39,7 +39,7 @@ object JsonpSerializer {
 class JsonpSerializer(val driver: DefaultJsonpDriver, val mapper: Mapper, val registry: MarshallerRegistry)
   extends AbstractSerializer {
 
-  override def supportMediaTypes: Seq[MimeType] = {
+  override def mediaTypes: Seq[MimeType] = {
     List(MimeTypes.ApplicationJavascript)
   }
 }

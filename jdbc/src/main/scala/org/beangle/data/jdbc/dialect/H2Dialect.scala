@@ -45,4 +45,5 @@ class H2Dialect extends AbstractDialect(Engines.H2, "[1.3,)") {
     "PUBLIC"
   }
 
+  override def supportsCommentOn = true
 }

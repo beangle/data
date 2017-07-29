@@ -88,12 +88,18 @@ private[orm] object Proxy extends Logging {
     }
     val ctor = javac.compile("public " + proxyClassName + "(){}").asInstanceOf[CtConstructor]
     val ctorBody = new StringBuilder("{ _lastAccessed = new java.util.HashSet();")
+    var componentIdx = 0
     componentTypes foreach {
       case (name, componentClass) =>
         val p = manifest.properties(name)
         val setName = p.setter.get.getName
         val getName = p.getter.get.getName
-        ctorBody ++= (setName + "(new " + componentClass.getName + "()); ((" + componentClass.getName + ")" + getName + "()).setParent(this," + "\"" + name + ".\");")
+
+        //User component variale instead call get method,otherwise with add name into _lastAccessed.
+        val componentVariable = "comp" + componentIdx
+        ctorBody ++= componentClass.getName + " " + componentVariable + " = new " + componentClass.getName + "();"
+        ctorBody ++= (setName + "(" + componentVariable + ");" + componentVariable + ".setParent(this," + "\"" + name + ".\");")
+        componentIdx += 1
     }
     ctorBody ++= ("}")
     ctor.setBody(ctorBody.toString)
@@ -157,12 +163,17 @@ private[orm] object Proxy extends Logging {
     //implement setParent and lastAccessed
     var ctmod = javac.compile("public void setParent(" + classOf[ModelProxy].getName + " proxy,String path) { return null;}").asInstanceOf[CtMethod]
     val setParentBody = new StringBuilder("{this._parent=$1;this._path=$2;")
+    var componentIdx = 0
     componentTypes foreach {
       case (name, componentClass) =>
         val p = manifest.properties(name)
         val setName = p.setter.get.getName
         val getName = p.getter.get.getName
-        setParentBody ++= (setName + "(new " + componentClass.getName + "()); ((" + componentClass.getName + ")" + getName + "()).setParent(this," + "\"" + path + name + ".\");")
+        //User component variale instead call get method,otherwise with add name into _lastAccessed.
+        val componentVariable = "comp" + componentIdx
+        setParentBody ++= componentClass.getName + " " + componentVariable + " = new " + componentClass.getName + "();"
+        setParentBody ++= (setName + "(" + componentVariable + ");" + componentVariable + ".setParent(this," + "\"" + path + name + ".\");")
+        componentIdx += 1
     }
     setParentBody ++= "}"
     ctmod.setBody(setParentBody.toString)

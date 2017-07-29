@@ -65,7 +65,9 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
         val is = new ByteArrayInputStream(text.getBytes)
         merge(readConf(is, isXML))
       } else {
-        merge(readConf(new URL(url).openStream(), isXML))
+        val f = new java.io.File(url)
+        val urlAddr = if (f.exists) f.toURI.toURL else new URL(url)
+        merge(readConf(urlAddr.openStream(), isXML))
       }
     }
     postInit()

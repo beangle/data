@@ -18,25 +18,31 @@
  */
 package org.beangle.data.orm
 
-import org.beangle.data.model.LongId
-import org.beangle.data.model.Component
-import java.time.Instant
+import org.beangle.data.model.{ Component, LongId }
+import org.beangle.data.model.pojo.Updated
 
 /**
  * @author chaostone
  */
-class TestUser extends LongId {
+class TestUser extends LongId with Updated {
 
   var member: NamedMember = _
 
-  var updatedAt: Instant = _
+  var role: TestRole = _
+
+  var friends: collection.mutable.HashSet[TestUser] = _
+
+  var properties: collection.mutable.HashSet[UserProperty] = _
+
+  var tags: collection.mutable.Map[String, String] = _
 }
 
 class NamedMember extends Component {
-  var name: Name = _
+  var name: Name2 = _
+  var middleName: String = _
 }
 
-class Name extends Component {
+class Name2 extends Component {
   var firstName: String = _
   var lastName: String = _
 }

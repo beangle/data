@@ -1,15 +1,13 @@
 package org.beangle.data.jdbc
 
-import java.sql.Types.{ BIGINT, BINARY, BIT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, LONGVARBINARY, LONGVARCHAR, NULL, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARBINARY, VARCHAR }
 import java.math.BigInteger
-import java.io.StringWriter
-import org.beangle.commons.lang.time.WeekState
-import org.beangle.commons.lang.time.HourMinute
+import java.sql.Types.{ BIGINT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARCHAR }
 import java.time.Year
+
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.meta.SqlType
-import org.beangle.data.jdbc.meta.Engine
 import org.beangle.commons.lang.annotation.value
+import org.beangle.commons.lang.time.{ HourMinute, WeekState }
+import org.beangle.data.jdbc.meta.{ Engine, SqlType }
 
 object SqlTypeMapping {
   def DefaultStringSqlType = new SqlType(VARCHAR, "varchar(255)", 255)
@@ -22,7 +20,7 @@ trait SqlTypeMapping {
   def sqlCode(clazz: Class[_]): Int
 }
 
-class DefaultSqlTypeMapping(engine: Engine) {
+class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
   private val concretTypes: Map[Class[_], Int] = Map(
     (classOf[Boolean], BOOLEAN),
     (classOf[Byte], TINYINT),
@@ -64,7 +62,8 @@ class DefaultSqlTypeMapping(engine: Engine) {
     (classOf[Year], INTEGER),
 
     (classOf[java.sql.Clob], CLOB),
-    (classOf[java.sql.Blob], BLOB))
+    (classOf[java.sql.Blob], BLOB),
+    (classOf[Array[_]], BLOB))
 
   private val generalTypes: Map[Class[_], Int] = Map(
     (classOf[java.util.Date], TIMESTAMP),
@@ -105,8 +104,7 @@ class DefaultSqlTypeMapping(engine: Engine) {
   }
 
   def sqlType(clazz: Class[_]): SqlType = {
-    val sqlType = engine.toType(sqlCode(clazz))
-    if (sqlType.code == VARCHAR) sqlType.length = Some(255)
-    sqlType
+    val sqlTypeCode = sqlCode(clazz)
+    if (sqlTypeCode == VARCHAR) engine.toType(sqlTypeCode, 255) else engine.toType(sqlTypeCode)
   }
 }

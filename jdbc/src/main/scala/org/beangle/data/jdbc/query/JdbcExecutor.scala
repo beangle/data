@@ -18,20 +18,17 @@
  */
 package org.beangle.data.jdbc.query
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, StringReader, StringWriter }
+import java.io.StringWriter
 import java.lang.reflect.Method
-import java.math.{ BigDecimal, BigInteger }
-import java.sql.{ BatchUpdateException, Blob, Clob, Connection, Date, PreparedStatement, ResultSet, SQLException, Time, Timestamp }
-import java.sql.Types.{ BIGINT, BINARY, BIT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, LONGVARBINARY, LONGVARCHAR, NULL, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARBINARY, VARCHAR }
-import java.{ util => ju }
+import java.sql.{ BatchUpdateException, Connection, PreparedStatement, ResultSet, SQLException, Timestamp }
+import java.sql.Types.TIMESTAMP
 
-import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.{ ClassLoaders, Strings }
 import org.beangle.commons.logging.Logging
+import org.beangle.data.jdbc.DefaultSqlTypeMapping
+import org.beangle.data.jdbc.meta.Engines
 
 import javax.sql.DataSource
-import org.beangle.data.jdbc.meta.Engines
-import org.beangle.data.jdbc.DefaultSqlTypeMapping
 
 object JdbcExecutor {
   var oracleTimestampMethod: Method = _
@@ -48,11 +45,10 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
   import JdbcExecutor._
   val engine = Engines.forDataSource(dataSource)
   val sqlTypeMapping = new DefaultSqlTypeMapping(engine)
-  var pmdKnownBroken: Boolean = false
   var showSql = false
 
   def unique[T](sql: String, params: Any*): Option[T] = {
-    val rs = query(sql)
+    val rs = query(sql, params)
     if (rs.isEmpty) None
     else Some(rs.head.head.asInstanceOf[T])
   }
@@ -75,18 +71,26 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
 
   def getConnection(): Connection = dataSource.getConnection()
 
+  def statement(sql: String): Statement = {
+    new Statement(sql, this)
+  }
+
   def query(sql: String, params: Any*): Seq[Array[Any]] = {
+    query(sql, TypeParamSetter(sqlTypeMapping, params))
+  }
+
+  def query(sql: String, setter: PreparedStatement => Unit): Seq[Array[Any]] = {
     if (showSql) println("JdbcExecutor:" + sql)
     val conn = getConnection()
     var stmt: PreparedStatement = null
     var rs: ResultSet = null
     try {
       stmt = conn.prepareStatement(sql)
-      setParams(stmt, params, null)
+      setter(stmt)
       rs = stmt.executeQuery()
       convertToSeq(rs)
     } catch {
-      case e: SQLException => rethrow(e, sql, params); List.empty
+      case e: SQLException => rethrow(e, sql); List.empty
     } finally {
       if (null != rs) rs.close()
       if (null != stmt) stmt.close()
@@ -95,6 +99,10 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
   }
 
   def update(sql: String, params: Any*): Int = {
+    update(sql, TypeParamSetter(sqlTypeMapping, params))
+  }
+
+  def update(sql: String, setter: PreparedStatement => Unit): Int = {
     if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
     val conn = getConnection()
@@ -102,7 +110,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     var rows = 0
     try {
       stmt = conn.prepareStatement(sql)
-      setParams(stmt, params, null)
+      setter(stmt)
       rows = stmt.executeUpdate()
       stmt.close()
       stmt = null
@@ -110,7 +118,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     } catch {
       case e: SQLException => {
         conn.rollback()
-        rethrow(e, sql, params)
+        rethrow(e, sql)
       }
     } finally {
       if (null != stmt) stmt.close()
@@ -130,7 +138,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
       stmt = conn.prepareStatement(sql)
       for (param <- datas) {
         curParam = param
-        setParams(stmt, param, types)
+        ParamSetter.setParams(stmt, param, types)
         stmt.addBatch()
       }
       rows ++= stmt.executeBatch()
@@ -149,156 +157,6 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
       conn.close()
     }
     rows.toList
-  }
-
-  def setParams(stmt: PreparedStatement, params: Seq[Any], types: Seq[Int]) {
-    // check the parameter count, if we can
-    val paramsCount = if (params == null) 0 else params.length
-    var stmtParamCount = 0
-    var sqltypes: Array[Int] = null
-
-    if (null != types && !types.isEmpty) {
-      stmtParamCount = types.length
-      sqltypes = types.toArray
-    } else {
-      stmtParamCount = if (!pmdKnownBroken) stmt.getParameterMetaData().getParameterCount else params.length
-      sqltypes = new Array[Int](stmtParamCount)
-      for (i <- 0 until stmtParamCount) sqltypes(i) = NULL
-
-      if (!pmdKnownBroken) {
-        var pmd = stmt.getParameterMetaData()
-        try {
-          for (i <- 0 until stmtParamCount) sqltypes(i) = pmd.getParameterType(i + 1)
-        } catch {
-          case e: SQLException => {
-            pmdKnownBroken = true
-            for (i <- 0 until stmtParamCount)
-              sqltypes(i) = if (null == params(i)) VARCHAR else sqlTypeMapping.sqlCode(params(i).getClass)
-          }
-        }
-      } else {
-        for (i <- 0 until stmtParamCount)
-          sqltypes(i) = if (null == params(i)) VARCHAR else sqlTypeMapping.sqlCode(params(i).getClass)
-      }
-    }
-
-    if (stmtParamCount > paramsCount)
-      throw new SQLException("Wrong number of parameters: expected " + stmtParamCount + ", was given " + paramsCount)
-
-    var i = 0
-    while (i < stmtParamCount) {
-      val index = i + 1
-      if (null == params(i)) {
-        stmt.setNull(index, if (sqltypes(i) == NULL) VARCHAR else sqltypes(i))
-      } else {
-        val value = params(i)
-        try {
-          val sqltype = sqltypes(i)
-          sqltype match {
-            case CHAR | VARCHAR =>
-              stmt.setString(index, value.asInstanceOf[String])
-            case LONGVARCHAR =>
-              stmt.setCharacterStream(index, new StringReader(value.asInstanceOf[String]))
-
-            case BOOLEAN | BIT =>
-              value match {
-                case b: Boolean => stmt.setBoolean(index, b)
-                case i: Number  => stmt.setBoolean(index, i.intValue > 0)
-              }
-            case TINYINT | SMALLINT | INTEGER =>
-              stmt.setInt(index, value.asInstanceOf[Number].intValue)
-            case BIGINT =>
-              stmt.setLong(index, value.asInstanceOf[Number].longValue)
-
-            case FLOAT | DOUBLE =>
-              if (value.isInstanceOf[BigDecimal]) {
-                stmt.setBigDecimal(index, value.asInstanceOf[BigDecimal])
-              } else {
-                stmt.setDouble(index, value.asInstanceOf[Double])
-              }
-
-            case NUMERIC | DECIMAL => {
-              if (value.isInstanceOf[BigDecimal]) {
-                stmt.setBigDecimal(index, value.asInstanceOf[BigDecimal])
-              } else {
-                stmt.setObject(index, value, sqltype)
-              }
-            }
-
-            case DATE => {
-              if (value.isInstanceOf[ju.Date]) {
-                if (value.isInstanceOf[Date]) stmt.setDate(index, value.asInstanceOf[Date])
-                else stmt.setDate(index, new java.sql.Date(value.asInstanceOf[ju.Date].getTime()))
-              } else if (value.isInstanceOf[ju.Calendar]) {
-                val cal = value.asInstanceOf[ju.Calendar]
-                stmt.setDate(index, new java.sql.Date(cal.getTime().getTime()), cal);
-              } else {
-                stmt.setObject(index, value, DATE);
-              }
-            }
-            case TIME => {
-              if (value.isInstanceOf[ju.Date]) {
-                if (value.isInstanceOf[Time]) stmt.setTime(index, value.asInstanceOf[Time])
-                else stmt.setTime(index, new java.sql.Time(value.asInstanceOf[ju.Date].getTime()))
-              } else if (value.isInstanceOf[ju.Calendar]) {
-                val cal = value.asInstanceOf[ju.Calendar]
-                stmt.setTime(index, new Time(cal.getTime().getTime()), cal)
-              } else {
-                stmt.setObject(index, value, TIME);
-              }
-            }
-            case TIMESTAMP => {
-              if (value.isInstanceOf[ju.Date]) {
-                if (value.isInstanceOf[Timestamp])
-                  stmt.setTimestamp(index, value.asInstanceOf[Timestamp])
-                else
-                  stmt.setTimestamp(index, new Timestamp(value.asInstanceOf[ju.Date].getTime()))
-              } else if (value.isInstanceOf[ju.Calendar]) {
-                val cal = value.asInstanceOf[ju.Calendar]
-                stmt.setTimestamp(index, new Timestamp(cal.getTime().getTime()), cal)
-              } else {
-                stmt.setObject(index, value, TIMESTAMP);
-              }
-            }
-            case BINARY | VARBINARY | LONGVARBINARY => {
-              if (value.isInstanceOf[Array[Byte]]) {
-                val bytes = value.asInstanceOf[Array[Byte]]
-                stmt.setBinaryStream(index, new ByteArrayInputStream(bytes), bytes.length)
-              } else {
-                val in = value.asInstanceOf[InputStream]
-                val out = new ByteArrayOutputStream()
-                IOs.copy(in, out)
-                stmt.setBinaryStream(index, in, out.size)
-              }
-            }
-            case CLOB => {
-              if (isStringType(value.getClass)) stmt.setString(index, value.toString)
-              else {
-                //FIXME workround Method org.postgresql.jdbc4.Jdbc4PreparedStatement.setAsciiStream(int, InputStream) is not yet implemented.
-                val clb = value.asInstanceOf[Clob]
-                val out = new ByteArrayOutputStream()
-                IOs.copy(clb.getAsciiStream, out)
-                stmt.setAsciiStream(index, clb.getAsciiStream, out.size())
-              }
-            }
-            case BLOB => {
-              val in = value.asInstanceOf[Blob].getBinaryStream
-              val out = new ByteArrayOutputStream()
-              IOs.copy(in, out)
-              stmt.setBinaryStream(index, in, out.size)
-            }
-            case _ => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
-          }
-        } catch {
-          case e: Exception => logger.error("set value error", e);
-        }
-      }
-      i += 1
-    }
-  }
-
-  private def isStringType(clazz: Class[_]): Boolean = {
-    classOf[CharSequence].isAssignableFrom(clazz) || classOf[StringWriter].isAssignableFrom(clazz)
   }
 
   protected def rethrow(cause: SQLException, sql: String, params: Any*) {

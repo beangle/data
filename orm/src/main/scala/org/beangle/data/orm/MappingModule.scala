@@ -56,18 +56,17 @@ object MappingModule {
 
   class ElementColumn(name: String) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val mp = cast[MapMapping](pm, holder, "element column should used on map")
+      val mp = cast[PluralPropertyMapping[_]](pm, holder, "element column should used on PluralProperty")
       val ch = mp.element.asInstanceOf[ColumnHolder]
       ch.columns foreach (x => x.name = Identifier(name))
     }
   }
 
-  //FIXME sqlType.length =>type name
   class ElementLength(len: Int) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val mp = cast[MapMapping](pm, holder, "element length should used on map")
+      val mp = cast[PluralPropertyMapping[_]](pm, holder, "element length should used on PluralProperty")
       val ch = mp.element.asInstanceOf[ColumnHolder]
-      ch.columns foreach (x => x.sqlType.length = Some(len))
+      ch.columns foreach (x => x.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len))
     }
   }
 
@@ -77,12 +76,6 @@ object MappingModule {
       cacheholder.add(List(new Collection(holder.clazz, p.name)))
     }
   }
-
-  //  class TypeSetter(val typeName: String) extends Declaration {
-  //    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-  //      cast[TypeNameHolder](pm, holder, "TypeNameHolder needed").typeName = Some(typeName)
-  //    }
-  //  }
 
   private def refColumn(holder: EntityHolder[_], property: Option[String]): Column = {
     val mappings = holder.mappings
@@ -96,7 +89,7 @@ object MappingModule {
 
   class One2Many(targetEntity: Option[Class[_]], mappedBy: String, private var cascade: Option[String] = None) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val colpm = cast[PluralMapping[_]](pm, holder, "one2many should used on seq")
+      val colpm = cast[PluralPropertyMapping[_]](pm, holder, "one2many should used on seq")
       colpm.ownerColumn = refColumn(holder, Some(mappedBy))
       targetEntity foreach { clazz =>
         colpm.property match {
@@ -122,14 +115,14 @@ object MappingModule {
 
   class OrderBy(orderBy: String) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val cm = cast[CollectionMapping](pm, holder, "order by should used on seq");
+      val cm = cast[CollectionPropertyMapping](pm, holder, "order by should used on seq");
       cm.property.asInstanceOf[CollectionPropertyImpl].orderBy = Some(orderBy)
     }
   }
 
   class Table(table: String) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      cast[PluralMapping[_]](pm, holder, "table should used on seq").table = Some(table)
+      cast[PluralPropertyMapping[_]](pm, holder, "table should used on seq").table = Some(table)
     }
   }
 
@@ -142,7 +135,7 @@ object MappingModule {
 
   class OrderColumn(orderColumn: String) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val collp = cast[CollectionMapping](pm, holder, "order column should used on many2many seq")
+      val collp = cast[CollectionPropertyMapping](pm, holder, "order column should used on many2many seq")
       val idxCol = new Column(Identifier(if (null == orderColumn) MappingModule.OrderColumnName else orderColumn), holder.mappings.sqlTypeMapping.sqlType(classOf[Int]), false)
       collp.index = Some(idxCol)
     }
@@ -158,7 +151,7 @@ object MappingModule {
   class Target(clazz: Class[_]) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val sp = pm.property.asInstanceOf[SingularPropertyImpl]
-      sp.propertyType = holder.mappings.entities(clazz.getName)
+      sp.propertyType = holder.mappings.refEntity(clazz, clazz.getName)
     }
   }
 
@@ -170,9 +163,9 @@ object MappingModule {
         throw new RuntimeException("Cannot find access properties for " + holder.mapping.entityName + " with declarations:" + declarations)
       }
       lasts foreach { property =>
-        val p = holder.mapping.getProperty(property)
-        declarations foreach (d => d(holder, p))
-        p.mergeable = false
+        val pm = holder.mapping.getPropertyMapping(property)
+        declarations foreach (d => d(holder, pm))
+        pm.mergeable = false
       }
       lasts.clear()
     }
@@ -321,6 +314,10 @@ abstract class MappingModule extends Logging {
     a
   }
 
+  protected def autoIncrement(): Unit = {
+    defaultIdGenerator(IdGenerator.AutoIncrement)
+  }
+
   protected def notnull = new NotNull
 
   protected def unique = new Unique
@@ -382,10 +379,6 @@ abstract class MappingModule extends Logging {
   protected def eleLength(len: Int): ElementLength = {
     new ElementLength(len)
   }
-
-  //  protected def typeis(t: String): TypeSetter = {
-  //    new TypeSetter(t)
-  //  }
 
   protected final def bind[T: ClassTag]()(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): EntityHolder[T] = {
     bind(manifest.runtimeClass.asInstanceOf[Class[T]], null, ttag)

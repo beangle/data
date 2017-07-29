@@ -39,7 +39,7 @@ object JsonSerializer {
 class JsonSerializer(val driver: JsonDriver, val mapper: Mapper, val registry: MarshallerRegistry)
   extends AbstractSerializer {
 
-  override def supportMediaTypes: Seq[MimeType] = {
+  override def mediaTypes: Seq[MimeType] = {
     List(MimeTypes.ApplicationJson)
   }
 

@@ -23,6 +23,7 @@ import scala.collection.mutable
 import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.vendor.VendorInfo
 import org.beangle.data.jdbc.vendor.Vendors
+import org.beangle.commons.lang.ClassLoaders
 
 object Dialects {
 
@@ -38,6 +39,12 @@ object Dialects {
     registeredDialects.put(product, dialects.toList)
   }
 
+  def forName(dialectName: String): Dialect = {
+    var name = Strings.capitalize(dialectName)
+    name = name.replace("sql", "SQL")
+    ClassLoaders.newInstance("org.beangle.data.jdbc.dialect." + name + "Dialect").asInstanceOf[Dialect]
+  }
+
   register(Vendors.oracle, new OracleDialect)
   register(Vendors.db2, new DB2Dialect)
   register(Vendors.derby, new DerbyDialect)
@@ -46,40 +53,4 @@ object Dialects {
   register(Vendors.mysql, new MySQLDialect)
   register(Vendors.postgresql, new PostgreSQLDialect)
   register(Vendors.sqlserver, new SQLServerDialect)
-
-  private def printPad(name: String) { print(Strings.rightPad(name, 17, ' ')) }
-
-  def printTypeMatrix() {
-    import java.sql.Types._
-    val types = Array(BOOLEAN, BIT, CHAR, INTEGER, SMALLINT, TINYINT, BIGINT,
-      FLOAT, DOUBLE, DECIMAL, NUMERIC, DATE, TIME, TIMESTAMP, VARCHAR, LONGVARCHAR,
-      BINARY, VARBINARY, LONGVARBINARY, BLOB, CLOB)
-
-    val typeNames = Array("BOOLEAN", "BIT", "CHAR", "INTEGER", "SMALLINT", "TINYINT", "BIGINT",
-      "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "DATE", "TIME", "TIMESTAMP", "VARCHAR", "LONGVARCHAR",
-      "BINARY", "VARBINARY", "LONGVARBINARY", "BLOB", "CLOB")
-
-    val dialects = Array(new OracleDialect, new H2Dialect, new MySQLDialect, new PostgreSQLDialect,
-      new SQLServerDialect, new DB2Dialect)
-
-    printPad("Type/Dialect")
-    for (dialect <- dialects) {
-      printPad(Strings.replace(dialect.getClass.getSimpleName, "Dialect", ""))
-    }
-
-    println()
-    for (i <- 0 until types.length) {
-      printPad(typeNames(i))
-      for (dialect <- dialects) {
-        val typeName =
-          try {
-            dialect.engine.typeNames.get(types(i))
-          } catch {
-            case e: Exception => "error"
-          }
-        printPad(typeName)
-      }
-      println("")
-    }
-  }
 }
