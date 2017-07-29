@@ -20,4 +20,5 @@ package org.beangle.data.jdbc.dialect
 
 class DerbyDialect extends DB2Dialect {
 
+  override def supportsCommentOn = false
 }

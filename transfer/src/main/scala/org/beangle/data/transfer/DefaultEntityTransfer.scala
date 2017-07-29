@@ -26,7 +26,7 @@ object DefaultEntityTransfer {
 }
 
 /**
- * DefaultEntityImporter class.
+ * DefaultEntityTransfer
  *
  * @author chaostone
  */

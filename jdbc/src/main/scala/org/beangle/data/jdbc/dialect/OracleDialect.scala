@@ -94,4 +94,6 @@ class OracleDialect() extends AbstractDialect(Engines.Oracle, "[10.1)") {
         " and idx.table_owner=':schema'" +
         " order by idx.table_name,col.column_position")
   }
+
+  override def supportsCommentOn = true
 }

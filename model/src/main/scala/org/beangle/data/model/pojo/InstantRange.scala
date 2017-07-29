@@ -22,12 +22,12 @@ import java.time.Instant
 
 trait InstantRange {
   /**
-   * 起始日期
+   * 起始时间
    */
   var beginAt: Instant = _
 
   /**
-   * 结束日期
+   * 结束时间
    */
   var endAt: Instant = _
 }

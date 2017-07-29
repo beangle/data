@@ -18,12 +18,8 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.beangle.data.jdbc.meta.Column
-import org.beangle.data.jdbc.meta.Table
-import org.beangle.data.jdbc.meta.Sequence
-import org.beangle.data.jdbc.meta.Index
-import org.beangle.data.jdbc.meta.ForeignKey
-import org.beangle.data.jdbc.meta.PrimaryKey
+import org.beangle.data.jdbc.meta.{ Column, ForeignKey, Index, PrimaryKey, Sequence, Table }
+import org.beangle.commons.collection.Collections
 
 object SQL {
 
@@ -61,20 +57,17 @@ object SQL {
       }
       val useUniqueConstraint = col.unique && (!col.nullable || grammar.supportsNullUnique)
       if (useUniqueConstraint) {
-        if (grammar.supportsUnique) {
-          buf.append(" unique")
-        } else {
-          table.getOrCreateUniqueKey(col.literalName(dialect.engine) + '_').addColumn(col.name)
-        }
+        if (grammar.supportsUnique) buf.append(" unique")
       }
 
       if (col.hasCheck && grammar.supportsColumnCheck) {
         buf.append(" check (").append(col.check.get).append(")")
       }
-      col.comment foreach { c =>
-        buf.append(grammar.getColumnComment(c))
+      if (!dialect.supportsCommentOn) {
+        col.comment foreach { c =>
+          buf.append(grammar.getColumnComment(c))
+        }
       }
-
       if (iter.hasNext) buf.append(", ")
     }
     table.primaryKey foreach { pk =>
@@ -83,11 +76,30 @@ object SQL {
       }
     }
     buf.append(')')
-    table.comment foreach { c =>
-      buf.append(grammar.getComment(c))
+    if (!dialect.supportsCommentOn) {
+      table.comment foreach { c =>
+        buf.append(grammar.getComment(c))
+      }
     }
-
     buf.toString
+  }
+
+  def commentsOnTable(table: Table, dialect: Dialect): List[String] = {
+    if (dialect.supportsCommentOn) {
+      val comments = Collections.newBuffer[String]
+      val tableName = table.qualifiedName
+      table.comment foreach { c =>
+        comments += ("comment on table " + tableName + " is '" + c + "'");
+      }
+      table.columns foreach { c =>
+        c.comment foreach { cc =>
+          comments += ("comment on column " + tableName + '.' + c.name + " is '" + cc + "'")
+        }
+      }
+      comments.toList
+    } else {
+      List.empty
+    }
   }
 
   def query(table: Table): String = {

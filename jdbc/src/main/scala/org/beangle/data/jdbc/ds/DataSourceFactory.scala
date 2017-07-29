@@ -60,14 +60,14 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
           driver = Strings.substringBetween(url, "jdbc:", ":")
           props.put("url", url)
         }
-      } else if (url.startsWith("file:")) {
-        merge(readConf(new FileInputStream(url.substring(5)), isXML))
-      } else if (!url.contains(':')) {
-        merge(readConf(new FileInputStream(url), isXML))
-      } else {
+      } else if (url.startsWith("http")) {
         val text = getURLText(url)
         val is = new ByteArrayInputStream(text.getBytes)
         merge(readConf(is, isXML))
+      } else {
+        val f = new java.io.File(url)
+        val urlAddr = if (f.exists) f.toURI.toURL else new URL(url)
+        merge(readConf(urlAddr.openStream(), isXML))
       }
     }
     postInit()

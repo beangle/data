@@ -54,7 +54,7 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
 
   var properties = new ju.Properties
 
-  var dbEngine: Option[String] = None
+  var engine: Option[String] = None
 
   /**
    * Import System properties and disable jdbc metadata lookup
@@ -110,15 +110,15 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
   }
 
   private def getMappings: Mappings = {
-    val engine = dbEngine match {
-      case Some(e) => Engines.forDatabase(e)
+    val eng = engine match {
+      case Some(e) => Engines.forName(e)
       case None =>
         val connection = dataSource.getConnection
         val dbProductName = connection.getMetaData.getDatabaseProductName
         connection.close()
-        Engines.forDatabase(dbProductName)
+        Engines.forName(dbProductName)
     }
-    val mappings = new Mappings(new Database(engine), ormLocations.toList)
+    val mappings = new Mappings(new Database(eng), ormLocations.toList)
     mappings.autobind()
     mappings
   }

@@ -18,8 +18,9 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.commons.lang.Strings
 import scala.collection.mutable.ListBuffer
+
+import org.beangle.commons.lang.Strings
 
 object Table {
   def qualify(schema: Schema, name: Identifier): String = {
@@ -56,17 +57,6 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
 
   def qualifiedName: String = {
     Table.qualify(schema, name)
-  }
-
-  def getOrCreateUniqueKey(keyName: String): UniqueKey = {
-    uniqueKeys.find(f => f.name.value == keyName) match {
-      case Some(uk) => uk
-      case None =>
-        val uk = new UniqueKey(this, Identifier(keyName))
-        uk.table = this
-        uniqueKeys += uk
-        uk
-    }
   }
 
   def attach(engine: Engine): this.type = {
@@ -141,6 +131,32 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
 
   def getForeignKey(keyName: String): Option[ForeignKey] = {
     foreignKeys.find(f => f.name.value == keyName)
+  }
+
+  def createPrimaryKey(columnNames: Identifier*): PrimaryKey = {
+    val pk = if (columnNames.size == 1) {
+      new PrimaryKey(this, null.asInstanceOf[Identifier], columnNames.head)
+    } else {
+      val pk2 = new PrimaryKey(this, null.asInstanceOf[Identifier], null.asInstanceOf[Identifier])
+      columnNames.foreach { cn =>
+        this.columns foreach (c => if (c.name == cn) pk2.addColumn(c))
+      }
+      pk2
+    }
+    this.primaryKey = Some(pk)
+    pk
+  }
+
+  def createForeignKey(columnName: Identifier, refTable: Table): ForeignKey = {
+    refTable.primaryKey match {
+      case Some(pk) =>
+        val fk = new ForeignKey(this, Identifier("fk_temp"), columnName)
+        fk.refer(refTable, pk.columns.head)
+        fk.name = Identifier(Constraint.autoname(fk))
+        this.add(fk)
+      case None =>
+        throw new RuntimeException("Cannot refer on a table without primary key")
+    }
   }
 
   def add(key: ForeignKey): ForeignKey = {
