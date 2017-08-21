@@ -16,7 +16,6 @@
     <module>jdbc</module>
     <module>orm</module>
     <module>hibernate</module>
-    <module>stream</module>
     <module>transfer</module>
   </modules>
 
@@ -53,11 +52,6 @@
       <dependency>
         <groupId>org.beangle.commons</groupId>
         <artifactId>beangle-commons-core_2.12</artifactId>
-        <version>${commons.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.beangle.commons</groupId>
-        <artifactId>beangle-commons-csv_2.12</artifactId>
         <version>${commons.version}</version>
       </dependency>
       <dependency>
