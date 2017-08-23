@@ -8,7 +8,7 @@
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent_2.12</artifactId>
   <packaging>pom</packaging>
-  <version>5.0.0.M6-SNAPSHOT</version>
+  <version>5.0.0.M6</version>
   <name>Beangle Data Parent</name>
 
   <modules>
@@ -38,8 +38,8 @@
   </scm>
 
   <properties>
-    <commons.version>5.0.0.M5</commons.version>
-    <cdi.version>0.0.12</cdi.version>
+    <commons.version>5.0.0.M6</commons.version>
+    <cdi.version>0.0.13</cdi.version>
     <spring.version>4.3.8.RELEASE</spring.version>
     <HikariCP.version>2.6.3</HikariCP.version>
     <jpa.version>1.0.0.Final</jpa.version>
@@ -62,6 +62,11 @@
       <dependency>
         <groupId>org.beangle.commons</groupId>
         <artifactId>beangle-commons-web_2.12</artifactId>
+        <version>${commons.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.beangle.commons</groupId>
+        <artifactId>beangle-commons-csv_2.12</artifactId>
         <version>${commons.version}</version>
       </dependency>
       <dependency>
