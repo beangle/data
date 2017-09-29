@@ -28,7 +28,7 @@ object Table {
     qualify(schema.name.toLiteral(engine), name.toLiteral(engine))
   }
 
-  private def qualify(schema: String, name: String): String = {
+  def qualify(schema: String, name: String): String = {
     val qualifiedName = new StringBuilder()
     if (Strings.isNotEmpty(schema)) qualifiedName.append(schema).append('.')
     qualifiedName.append(name).toString
