@@ -60,6 +60,6 @@ class SeqPerTableStyleGenerator extends SequenceStyleGenerator with Logging {
     new QualifiedNameParser.NameParts(
       null,
       jdbcEnv.getIdentifierHelper().toIdentifier(schema),
-      jdbcEnv.getIdentifierHelper().toIdentifier(seqName));
+      jdbcEnv.getIdentifierHelper().toIdentifier(seqName))
   }
 }

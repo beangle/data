@@ -18,73 +18,76 @@
  */
 package org.beangle.data.hibernate.id
 
-import java.sql.CallableStatement
+import java.sql.Connection
+import java.time.LocalDate
 import java.{ util => ju }
 
-import org.beangle.commons.lang.JLong
-import org.beangle.data.model.pojo.YearId
-import org.hibernate.`type`.{ IntegerType, LongType, Type }
-import org.hibernate.dialect.Dialect
-import org.hibernate.engine.jdbc.spi.JdbcCoordinator
-import org.hibernate.engine.spi.SessionImplementor
-import org.hibernate.id.{ Configurable, IdentifierGenerator }
-import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, SCHEMA, TABLE }
-import org.hibernate.mapping.Table
-import org.hibernate.jdbc.AbstractReturningWork
-import java.sql.Connection
-import org.hibernate.resource.transaction.spi.TransactionCoordinator
-import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.hibernate.service.ServiceRegistry
+import org.beangle.commons.lang.{ JLong, Strings }
+import org.beangle.data.jdbc.meta.Table
 import org.beangle.data.hibernate.cfg.MappingService
-import org.beangle.commons.lang.Strings
+import org.hibernate.`type`.{ LongType, Type }
+import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.id.{ Configurable, IdentifierGenerator }
+import org.hibernate.id.PersistentIdentifierGenerator.{ SCHEMA, TABLE }
+import org.hibernate.jdbc.AbstractReturningWork
+import org.hibernate.service.ServiceRegistry
 
 /**
- * Id generator based on function or procedure
+ * Id generator based on function or procedure,
+ * format:
+ * 
+ *   {{{
+ *      prefix YYYYMMDD sequence
+ *   }}}
+ * 
+ *   default function is date_id$seqLength
  */
 class DateStyleGenerator extends IdentifierGenerator with Configurable {
 
-  var func: IdFunctor = _
+  var prefix: String = ""
+
+  private var dateIdFunc:String = _
+
+  private var tableName: String = _
+
+  private var sql: String = _
+
+  private val format = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")
+
+  private var seqLength: Int = _
 
   override def configure(t: Type, params: ju.Properties, serviceRegistry: ServiceRegistry) {
     t match {
       case longType: LongType =>
-        func = LongIdFunctor
-      case intType: IntegerType =>
         val em = serviceRegistry.getService(classOf[MappingService]).mappings.entityMappings(params.getProperty(IdentifierGenerator.ENTITY_NAME))
         val ownerSchema = em.table.schema.name.toString
         val schema = if (Strings.isEmpty(ownerSchema)) params.getProperty(SCHEMA) else ownerSchema
+        tableName = Table.qualify(schema, params.getProperty(TABLE))
 
-        val tableName = Table.qualify(params.getProperty(CATALOG), schema, params.getProperty(TABLE))
-        func = new IntYearIdFunctor(tableName)
+        prefix = params.getProperty("prefix")
+        if (prefix == null) prefix = ""
+        seqLength = 19 - 8 - prefix.length
+
+        dateIdFunc = s"date_id${seqLength}"
+        sql = s"{? = call $dateIdFunc(?,?)"
+      case _ =>
+        throw new RuntimeException("DateStyleGenerator only support long type id")
     }
   }
 
   override def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {
-    val year = obj match {
-      case yearObj: YearId => yearObj.year
-      case _               => ju.Calendar.getInstance().get(ju.Calendar.YEAR)
-    }
-    func.gen(session.getTransactionCoordinator, year)
-  }
-}
-
-abstract class IdFunctor {
-  def gen(jdbc: TransactionCoordinator, year: Int): Number
-}
-
-object LongIdFunctor extends IdFunctor {
-  val sql = "{? = call next_year_id(?)}"
-  def gen(jdbc: TransactionCoordinator, year: Int): Number = {
-    jdbc.createIsolationDelegate().delegateWork(
+    session.getTransactionCoordinator().createIsolationDelegate().delegateWork(
       new AbstractReturningWork[Number]() {
         def execute(connection: Connection): Number = {
           val st = connection.prepareCall(sql)
           try {
             st.registerOutParameter(1, java.sql.Types.BIGINT)
-            st.setInt(2, year)
+            st.setString(2, prefix)
+            st.setString(3, tableName)
             st.execute()
-            val id = new JLong(st.getLong(1))
-            id
+            val today = LocalDate.now
+            val id = st.getLong(1)
+            new JLong(prefix + today.format(format) + Strings.leftPad(id.toString, seqLength, '0'))
           } finally {
             st.close()
           }
@@ -93,25 +96,3 @@ object LongIdFunctor extends IdFunctor {
   }
 }
 
-class IntYearIdFunctor(tableName: String) extends IdFunctor {
-  val sql = "{? = call next_id(?,?)}"
-
-  def gen(jdbc: TransactionCoordinator, year: Int): Number = {
-    jdbc.createIsolationDelegate().delegateWork(
-      new AbstractReturningWork[Number]() {
-        def execute(connection: Connection): Number = {
-          val st = connection.prepareCall(sql)
-          try {
-            st.registerOutParameter(1, java.sql.Types.BIGINT)
-            st.setString(2, tableName)
-            st.setInt(3, year)
-            st.execute()
-            val id = Integer.valueOf(st.getLong(1).asInstanceOf[Int])
-            id
-          } finally {
-            st.close()
-          }
-        }
-      }, true)
-  }
-}
