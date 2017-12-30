@@ -183,7 +183,7 @@ class PersistentSeq(session: SharedSessionContractImplementor, var list: Buffer[
 
   override def remove(n: Int): Object = {
     val old = if (isPutQueueEnabled()) readElementByIndex(n) else UNKNOWN
-    if (old == UNKNOWN) {
+    if (old eq UNKNOWN) {
       write()
       list.remove(n)
     } else {
@@ -200,7 +200,7 @@ class PersistentSeq(session: SharedSessionContractImplementor, var list: Buffer[
 
   override def update(n: Int, elem: Object) {
     val old = if (isPutQueueEnabled()) readElementByIndex(n) else UNKNOWN
-    if (old == UNKNOWN) {
+    if (old eq UNKNOWN) {
       write()
       list.update(n, elem);
     } else {

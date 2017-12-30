@@ -165,13 +165,13 @@ class PersistentMap(session: SharedSessionContractImplementor, var map: mutable.
 
   override def get(key: Object): Option[Object] = {
     val result = readElementByIndex(key)
-    if (result == UNKNOWN) map.get(key) else Some(result)
+    if (result eq UNKNOWN) map.get(key) else Some(result)
   }
 
   override def -=(key: Object): this.type = {
     if (isPutQueueEnabled()) {
       val old = readElementByIndex(key)
-      if (old != UNKNOWN) queueOperation(new Remove(key, old))
+      if (!(old eq UNKNOWN)) queueOperation(new Remove(key, old))
     }
     initialize(true)
     if (map.contains(key)) dirty()
@@ -182,7 +182,7 @@ class PersistentMap(session: SharedSessionContractImplementor, var map: mutable.
   def +=(kv: (Object, Object)): this.type = {
     if (isPutQueueEnabled()) {
       val old = readElementByIndex(kv._1)
-      if (old != UNKNOWN) queueOperation(new Put(kv, old))
+      if (!(old eq UNKNOWN)) queueOperation(new Put(kv, old))
     }
     initialize(true)
     val old = map.put(kv._1, kv._2).orNull

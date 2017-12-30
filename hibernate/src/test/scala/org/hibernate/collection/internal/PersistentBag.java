@@ -1,22 +1,4 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkit
- *
- * Copyright (c) 2005-2017, Beangle Software.
- *
- * Beangle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Beangle is distributed in the hope that it will be useful.
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
- */
-/*
  * Hibernate, Relational Persistence for Idiomatic Java
  *
  * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
@@ -47,7 +29,6 @@ import org.hibernate.type.Type;
  *
  * @author Gavin King
  */
-@SuppressWarnings({ "rawtypes", "serial" })
 public class PersistentBag extends AbstractPersistentCollection implements List {
 
 	protected List bag;
@@ -55,6 +36,7 @@ public class PersistentBag extends AbstractPersistentCollection implements List 
 	/**
 	 * Constructs a PersistentBag.  Needed for SOAP libraries, etc
 	 */
+	@SuppressWarnings("UnusedDeclaration")
 	public PersistentBag() {
 	}
 
@@ -302,8 +284,7 @@ public class PersistentBag extends AbstractPersistentCollection implements List 
 		return bag.toArray();
 	}
 
-	@SuppressWarnings("unchecked")
-  @Override
+	@Override
 	public Object[] toArray(Object[] a) {
 		read();
 		return bag.toArray( a );
@@ -391,6 +372,7 @@ public class PersistentBag extends AbstractPersistentCollection implements List 
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void clear() {
 		if ( isClearQueueEnabled() ) {
 			queueOperation( new Clear() );
@@ -427,6 +409,7 @@ public class PersistentBag extends AbstractPersistentCollection implements List 
 	 *
 	 * @return The number of occurences.
 	 */
+	@SuppressWarnings("UnusedDeclaration")
 	public int occurrences(Object o) {
 		read();
 		final Iterator itr = bag.iterator();
@@ -461,36 +444,42 @@ public class PersistentBag extends AbstractPersistentCollection implements List 
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Object get(int i) {
 		read();
 		return bag.get( i );
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public int indexOf(Object o) {
 		read();
 		return bag.indexOf( o );
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public int lastIndexOf(Object o) {
 		read();
 		return bag.lastIndexOf( o );
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public ListIterator listIterator() {
 		read();
 		return new ListIteratorProxy( bag.listIterator() );
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public ListIterator listIterator(int i) {
 		read();
 		return new ListIteratorProxy( bag.listIterator( i ) );
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Object remove(int i) {
 		write();
 		return bag.remove( i );
@@ -504,6 +493,7 @@ public class PersistentBag extends AbstractPersistentCollection implements List 
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public List subList(int start, int end) {
 		read();
 		return new ListProxy( bag.subList( start, end ) );
