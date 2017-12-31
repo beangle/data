@@ -18,22 +18,18 @@
  */
 package org.beangle.data.hibernate.id
 
-import java.{ util => ju }
-import org.hibernate.`type`.{ IntegerType, LongType, ShortType, Type }
-import org.hibernate.dialect.Dialect
-import org.hibernate.engine.spi.SessionImplementor
-import org.hibernate.id.{ Configurable, IdentifierGenerator }
-import org.hibernate.id.PersistentIdentifierGenerator.{ CATALOG, SCHEMA, TABLE }
-import org.hibernate.mapping.Table
-import org.hibernate.engine.jdbc.spi.JdbcCoordinator
-import java.sql.CallableStatement
-import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.beangle.data.orm.NamingPolicy
-import org.hibernate.service.ServiceRegistry
-import org.hibernate.jdbc.AbstractReturningWork
 import java.sql.Connection
-import org.beangle.data.hibernate.cfg.MappingService
+import java.{ util => ju }
+
 import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.meta.Table
+import org.beangle.data.hibernate.cfg.MappingService
+import org.hibernate.`type`.{ IntegerType, LongType, ShortType, Type }
+import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.id.{ Configurable, IdentifierGenerator }
+import org.hibernate.id.PersistentIdentifierGenerator.{ SCHEMA, TABLE }
+import org.hibernate.jdbc.AbstractReturningWork
+import org.hibernate.service.ServiceRegistry
 
 class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
   var identifierType: Type = _
@@ -45,7 +41,7 @@ class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
     val em = serviceRegistry.getService(classOf[MappingService]).mappings.entityMappings(params.getProperty(IdentifierGenerator.ENTITY_NAME))
     val ownerSchema = em.table.schema.name.toString
     val schema = if (Strings.isEmpty(ownerSchema)) params.getProperty(SCHEMA) else ownerSchema
-    tableName = Table.qualify(null, schema, params.getProperty(TABLE))
+    tableName = Table.qualify(schema, params.getProperty(TABLE)).toLowerCase()
   }
 
   def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {

@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>24.2</version>
+    <version>24.5</version>
   </parent>
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent_2.12</artifactId>
   <packaging>pom</packaging>
-  <version>5.0.0.M6</version>
+  <version>5.0.0</version>
   <name>Beangle Data Parent</name>
 
   <modules>
@@ -38,13 +38,13 @@
   </scm>
 
   <properties>
-    <commons.version>5.0.0.M6</commons.version>
-    <cdi.version>0.0.13</cdi.version>
+    <commons.version>5.0.0</commons.version>
+    <cdi.version>0.0.14</cdi.version>
     <spring.version>4.3.8.RELEASE</spring.version>
-    <HikariCP.version>2.6.3</HikariCP.version>
+    <HikariCP.version>2.7.4</HikariCP.version>
     <jpa.version>1.0.0.Final</jpa.version>
     <jta.version>1.1.1</jta.version>
-    <hibernate.version>5.2.10.Final</hibernate.version>
+    <hibernate.version>5.2.12.Final</hibernate.version>
   </properties>
 
   <dependencyManagement>

@@ -19,18 +19,18 @@
 package org.beangle.data.hibernate.model
 
 import org.beangle.data.model.{ IntId, LongId }
-import org.beangle.data.model.pojo.{ Named, YearId }
+import org.beangle.data.model.pojo.{ Named }
 
-class LongIdResource extends LongId with Named {
+class LongIdResource extends LongId {
 
 }
 
-class LongDateIdResource extends LongId with Named with YearId {
+class LongDateIdResource extends LongId with Named {
 
   var year: Int = _
 }
 
-class IntIdResource extends IntId with Named with YearId {
+class IntIdResource extends IntId with Named {
 
   var year: Int = _
 }
