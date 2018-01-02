@@ -21,8 +21,8 @@ object EngineTest {
       "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "DATE", "TIME", "TIMESTAMP", "VARCHAR", "LONGVARCHAR",
       "BINARY", "VARBINARY", "LONGVARBINARY", "BLOB", "CLOB")
 
-    val dialects = Array(new OracleDialect, new H2Dialect, new MySQLDialect, new PostgreSQLDialect,
-      new SQLServerDialect, new DB2Dialect)
+    val dialects = Array(new OracleDialect, new PostgreSQLDialect, new MySQLDialect,
+      new SQLServerDialect, new DB2Dialect, new H2Dialect)
 
     printPad("Type/DBEngine")
     for (dialect <- dialects) {
@@ -44,5 +44,4 @@ object EngineTest {
       println("")
     }
   }
-
 }

@@ -144,7 +144,8 @@ object MappingModule {
   class Length(len: Int) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
-      ch.columns foreach (c => c.sqlType.length = Some(len))
+      val engine = holder.mappings.database.engine
+      ch.columns foreach (c => c.sqlType = engine.toType(c.sqlType.code, len, c.sqlType.precision.getOrElse(0), c.sqlType.scale.getOrElse(0)))
     }
   }
 
@@ -223,8 +224,8 @@ object MappingModule {
     }
 
     def table(table: String): this.type = {
-      //FIXME
-      //entity.table.name = table
+      val t = mapping.table
+      t.name = Identifier(table)
       this
     }
   }
