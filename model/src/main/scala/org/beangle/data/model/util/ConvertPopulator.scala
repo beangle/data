@@ -56,49 +56,47 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
     val attrs = Strings.split(attr, ".")
     while (index < attrs.length) {
       val nested = attrs(index)
-      try {
-        property = properties.get[Object](propObj, nested)
-        objtype.getProperty(nested) match {
-          case Some(t) => {
-            property match {
-              case null | None =>
-                property = t.clazz.newInstance()
-                properties.set(propObj.asInstanceOf[AnyRef], nested, property)
-              case Some(p) =>
-                property = p
-              case _ =>
-            }
-            if (index < attrs.length) {
-              t match {
-                case n: SingularProperty => {
-                  n.propertyType match {
-                    case s: StructType => objtype = s
-                    case _ =>
-                      logger.error(s"Cannot find property type [$nested] of ${propObj.getClass}")
-                      throw new RuntimeException("Cannot find property type " + nested + " of " + propObj.getClass().getName())
-                  }
-                }
-                case _ =>
-                  logger.error(s"Cannot populate collection property type [$nested] of ${propObj.getClass}")
-                  throw new RuntimeException("Cannot find property type " + nested + " of " + propObj.getClass().getName())
-              }
-            }
-            propertyType = t
+      property = properties.get[Object](propObj, nested)
+      objtype.getProperty(nested) match {
+        case Some(t) => {
+          property match {
+            case null | None =>
+              property = t.clazz.newInstance()
+              properties.set(propObj.asInstanceOf[AnyRef], nested, property)
+            case Some(p) =>
+              property = p
+            case _ =>
           }
-          case None => {
-            logger.error(s"Cannot find property type [$nested] of ${propObj.getClass}")
-            throw new RuntimeException("Cannot find property type " + nested + " of " + propObj.getClass().getName())
+          if (index < attrs.length) {
+            t match {
+              case n: SingularProperty => {
+                n.propertyType match {
+                  case s: StructType => objtype = s
+                  case _             => logError(propObj, nested)
+                }
+              }
+              case _ => logError(propObj, nested)
+            }
+          }
+          propertyType = t
+        }
+        case None => {
+          if (nested.contains("[") && null != property) {
+            propertyType = new Domain.SingularPropertyImpl(nested, property.getClass, new BasicType(property.getClass))
+          } else {
+            logError(propObj, nested)
           }
         }
-        index += 1
-        propObj = property
-      } catch {
-        case e: Exception => throw new RuntimeException(e)
       }
+      index += 1
+      propObj = property
     }
     return (property, propertyType)
   }
 
+  private def logError(obj: Any, propertyName: String): Unit = {
+    logger.error(s"Cannot find property type [$propertyName] of ${obj.getClass}")
+  }
   /**
    * 安静的拷贝属性，如果属性非法或其他错误则记录日志
    */
