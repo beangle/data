@@ -70,7 +70,6 @@ class BeangleMetadataBuilderFactory extends MetadataBuilderFactory {
       val rootMetadataBuildingContext = new MetadataBuildingContextRootImpl(
         options, classLoaderAccess, metadataCollector);
 
-
       val processor = new BindMatadataProcessor(sources, rootMetadataBuildingContext)
 
       processor.prepare()

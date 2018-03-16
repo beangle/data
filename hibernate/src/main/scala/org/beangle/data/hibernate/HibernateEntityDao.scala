@@ -93,10 +93,14 @@ object QuerySupport {
   /**
    * 为query设置JPA style参数
    */
-  def setParameters[T](query: Query[T], argument: Any*): Query[T] = {
-    if (argument != null && argument.length > 0) {
-      for (i <- 0 until argument.length)
-        query.setParameter(String.valueOf(i + 1), argument(i).asInstanceOf[AnyRef])
+  def setParameters[T](query: Query[T], argument: Iterable[_]): Query[T] = {
+    if (argument != null && !argument.isEmpty) {
+      var i = 1
+      val iter = argument.iterator
+      while (iter.hasNext) {
+        query.setParameter(String.valueOf(i), iter.next().asInstanceOf[AnyRef])
+        i += 1
+      }
     }
     query
   }
