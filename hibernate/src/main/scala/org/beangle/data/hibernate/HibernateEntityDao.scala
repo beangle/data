@@ -1,20 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkit
+ * Beangle, Agile Development Scaffold and Toolkits.
  *
- * Copyright (c) 2005-2017, Beangle Software.
+ * Copyright © 2005, The Beangle Software.
  *
- * Beangle is free software: you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Beangle is distributed in the hope that it will be useful.
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.beangle.data.hibernate
 
@@ -93,10 +93,14 @@ object QuerySupport {
   /**
    * 为query设置JPA style参数
    */
-  def setParameters[T](query: Query[T], argument: Any*): Query[T] = {
-    if (argument != null && argument.length > 0) {
-      for (i <- 0 until argument.length)
-        query.setParameter(String.valueOf(i + 1), argument(i).asInstanceOf[AnyRef])
+  def setParameters[T](query: Query[T], argument: Iterable[_]): Query[T] = {
+    if (argument != null && !argument.isEmpty) {
+      var i = 1
+      val iter = argument.iterator
+      while (iter.hasNext) {
+        query.setParameter(String.valueOf(i), iter.next().asInstanceOf[AnyRef])
+        i += 1
+      }
     }
     query
   }

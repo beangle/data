@@ -1,20 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkit
+ * Beangle, Agile Development Scaffold and Toolkits.
  *
- * Copyright (c) 2005-2017, Beangle Software.
+ * Copyright © 2005, The Beangle Software.
  *
- * Beangle is free software: you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Beangle is distributed in the hope that it will be useful.
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Beangle.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.beangle.data.model.util
 
@@ -56,49 +56,47 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
     val attrs = Strings.split(attr, ".")
     while (index < attrs.length) {
       val nested = attrs(index)
-      try {
-        property = properties.get[Object](propObj, nested)
-        objtype.getProperty(nested) match {
-          case Some(t) => {
-            property match {
-              case null | None =>
-                property = t.clazz.newInstance()
-                properties.set(propObj.asInstanceOf[AnyRef], nested, property)
-              case Some(p) =>
-                property = p
-              case _ =>
-            }
-            if (index < attrs.length) {
-              t match {
-                case n: SingularProperty => {
-                  n.propertyType match {
-                    case s: StructType => objtype = s
-                    case _ =>
-                      logger.error(s"Cannot find property type [$nested] of ${propObj.getClass}")
-                      throw new RuntimeException("Cannot find property type " + nested + " of " + propObj.getClass().getName())
-                  }
-                }
-                case _ =>
-                  logger.error(s"Cannot populate collection property type [$nested] of ${propObj.getClass}")
-                  throw new RuntimeException("Cannot find property type " + nested + " of " + propObj.getClass().getName())
-              }
-            }
-            propertyType = t
+      property = properties.get[Object](propObj, nested)
+      objtype.getProperty(nested) match {
+        case Some(t) => {
+          property match {
+            case null | None =>
+              property = t.clazz.newInstance()
+              properties.set(propObj.asInstanceOf[AnyRef], nested, property)
+            case Some(p) =>
+              property = p
+            case _ =>
           }
-          case None => {
-            logger.error(s"Cannot find property type [$nested] of ${propObj.getClass}")
-            throw new RuntimeException("Cannot find property type " + nested + " of " + propObj.getClass().getName())
+          if (index < attrs.length) {
+            t match {
+              case n: SingularProperty => {
+                n.propertyType match {
+                  case s: StructType => objtype = s
+                  case _             => logError(propObj, nested)
+                }
+              }
+              case _ => logError(propObj, nested)
+            }
+          }
+          propertyType = t
+        }
+        case None => {
+          if (nested.contains("[") && null != property) {
+            propertyType = new Domain.SingularPropertyImpl(nested, property.getClass, new BasicType(property.getClass))
+          } else {
+            logError(propObj, nested)
           }
         }
-        index += 1
-        propObj = property
-      } catch {
-        case e: Exception => throw new RuntimeException(e)
       }
+      index += 1
+      propObj = property
     }
     return (property, propertyType)
   }
 
+  private def logError(obj: Any, propertyName: String): Unit = {
+    logger.error(s"Cannot find property type [$propertyName] of ${obj.getClass}")
+  }
   /**
    * 安静的拷贝属性，如果属性非法或其他错误则记录日志
    */
