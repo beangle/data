@@ -41,7 +41,7 @@
     <commons.version>5.1.0.M2</commons.version>
     <cdi.version>0.0.15</cdi.version>
     <spring.version>4.3.14.RELEASE</spring.version>
-    <HikariCP.version>2.7.8</HikariCP.version>
+    <HikariCP.version>3.0.0</HikariCP.version>
     <jpa.version>1.0.0.Final</jpa.version>
     <jta.version>1.1.1</jta.version>
     <hibernate.version>5.2.12.Final</hibernate.version>

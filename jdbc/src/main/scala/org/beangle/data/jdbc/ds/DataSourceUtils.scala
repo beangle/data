@@ -23,6 +23,7 @@ import java.util.Properties
 import scala.language.existentials
 
 import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.vendor.Vendors
 
 import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
@@ -30,7 +31,7 @@ import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
 import javax.script.ScriptEngineManager
 import javax.sql.DataSource
 
-object DataSourceUtils {
+object DataSourceUtils extends Logging{
 
   def build(driver: String, username: String, password: String, props: collection.Map[String, String]): DataSource = {
     new HikariDataSource(new HikariConfig(buildProperties(driver, username, password, props)))
@@ -41,7 +42,11 @@ object DataSourceUtils {
       case hikarids: HikariDataSource => hikarids.close()
       case _ =>
         val method = dataSource.getClass.getMethod("close")
-        method.invoke(dataSource)
+        if (null != method) {
+          method.invoke(dataSource)
+        }else{
+          logger.info(s"Cannot find ${dataSource.getClass.getName}'s close method")
+        }
     }
   }
 
