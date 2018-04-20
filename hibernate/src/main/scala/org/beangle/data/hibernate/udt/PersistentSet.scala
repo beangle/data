@@ -23,115 +23,77 @@ import java.sql.ResultSet
 import java.{ util => ju }
 
 import scala.collection.JavaConverters
-import scala.collection.mutable
-import scala.collection.mutable.Buffer
+import scala.collection.mutable.{ Buffer, HashMap => MHashMap, HashSet => MHashSet, ListBuffer, Set => MSet }
 
 import org.hibernate.`type`.Type
 import org.hibernate.collection.internal.AbstractPersistentCollection
 import org.hibernate.collection.internal.AbstractPersistentCollection.DelayedOperation
-import org.hibernate.engine.spi.SessionImplementor
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
-import org.hibernate.engine.spi.SharedSessionContractImplementor
 
-class PersistentSet(session: SharedSessionContractImplementor, var set: mutable.Set[Object] = null)
-    extends AbstractPersistentCollection(session) with collection.mutable.Set[Object] {
+class PersistentSet(session: SharedSessionContractImplementor)
+  extends AbstractPersistentCollection(session) with MSet[Object] {
 
   protected var tempList: Buffer[Object] = _
 
-  if (null != set) {
-    setInitialized()
-    setDirectlyAccessible(true)
+  protected var set: MSet[Object] = _
+
+  def this(session: SharedSessionContractImplementor, set: MSet[Object]) {
+    this(session)
+    this.set = set
+    if (null != set) {
+      setInitialized()
+      setDirectlyAccessible(true)
+    }
   }
 
   override def getSnapshot(persister: CollectionPersister): JSerializable = {
-    val cloned = new mutable.HashMap[Object, Object]
+    val cloned = new MHashMap[Object, Object]
     set foreach { ele =>
-      val copied = persister.getElementType().deepCopy(ele, persister.getFactory())
-      cloned.put(copied, copied);
+      val copied = persister.getElementType.deepCopy(ele, persister.getFactory)
+      cloned.put(copied, copied)
     }
     cloned
   }
 
   override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[_] = {
-    SeqHelper.getOrphans(snapshot.asInstanceOf[mutable.HashMap[Object, Object]].keys, set, entityName, getSession())
+    SeqHelper.getOrphans(snapshot.asInstanceOf[MHashMap[Object, Object]].keys, set, entityName, getSession)
   }
 
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
-    val elementType = persister.getElementType()
-    val sn = getSnapshot().asInstanceOf[mutable.HashMap[Object, Object]]
-    (sn.size == set.size) && !set.exists { test => !sn.contains(test) || elementType.isDirty(sn(test), test, getSession()) }
+    val elementType = persister.getElementType
+    val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
+    if (sn.size != this.set.size) {
+      false
+    } else {
+      !this.set.exists { e =>
+        sn.get(e) match {
+          case None    => true
+          case Some(v) => elementType.isDirty(v, e, getSession)
+        }
+      }
+    }
   }
 
-  override def isSnapshotEmpty(snapshot: JSerializable): Boolean = snapshot.asInstanceOf[mutable.HashMap[_, _]].isEmpty
-
-  def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int) {
-    this.set = persister.getCollectionType().instantiate(anticipatedSize).asInstanceOf[mutable.HashSet[Object]]
+  override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
+    snapshot.asInstanceOf[MHashMap[_, _]].isEmpty
   }
 
-  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable, owner: Object) {
+  def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int): Unit = {
+    this.set = persister.getCollectionType.instantiate(anticipatedSize).asInstanceOf[MHashSet[Object]]
+  }
+
+  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable,
+    owner: Object) {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
     val size = array.length
     beforeInitialize(persister, size)
     array foreach { ele =>
-      val newone = persister.getElementType().assemble(ele, getSession(), owner)
-      if (null != newone) set += newone
+      val newone = persister.getElementType.assemble(ele, getSession, owner)
+      if (null != newone) this.set += newone
     }
   }
-
-  override def isWrapper(collection: Object): Boolean = set eq collection
-
-  override def readFrom(rs: ResultSet, persister: CollectionPersister, descriptor: CollectionAliases, owner: Object): Object = {
-    val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases(), getSession())
-    if (null != element) tempList += element
-    element
-  }
-  override def beginRead() {
-    super.beginRead();
-    tempList = new mutable.ListBuffer[Object]
-  }
-
-  override def endRead(): Boolean = {
-    set ++= tempList
-    tempList = null
-    setInitialized()
-    true
-  }
-
-  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
-    val elementType = persister.getElementType()
-    val sn = getSnapshot().asInstanceOf[mutable.HashMap[Object, Object]]
-    val deletes = new mutable.ListBuffer[Object]()
-    deletes ++= sn.filterKeys(!set.contains(_)).keys
-    deletes ++= set.filter { ele => sn.contains(ele) && elementType.isDirty(ele, sn(ele), getSession()) }
-    JavaConverters.asJavaIterator(deletes.iterator)
-  }
-  override def disassemble(persister: CollectionPersister): JSerializable = {
-    set.map(ele => persister.getElementType().disassemble(ele, getSession(), null)).toArray.asInstanceOf[Array[JSerializable]]
-  }
-  override def entries(persister: CollectionPersister): ju.Iterator[_] = {
-    JavaConverters.asJavaIterator(set.iterator)
-  }
-
-  override def entryExists(entry: Object, i: Int): Boolean = true
-
-  override def getElement(entry: Object): Object = entry
-
-  override def getSnapshotElement(entry: Object, i: Int): Object = {
-    throw new UnsupportedOperationException("Sets don't support updating by element")
-  }
-
-  override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = {
-    throw new UnsupportedOperationException("Sets don't have indexes");
-  }
-
-  override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
-    // note that it might be better to iterate the snapshot but this is safe,
-    // assuming the user implements equals() properly, as required by the Set contract!
-    !getSnapshot().asInstanceOf[mutable.HashMap[Object, Object]].get(entry).exists(ele => !elemType.isDirty(ele, entry, getSession()))
-  }
-
-  override def needsUpdating(entry: Object, i: Int, elemType: Type): Boolean = false
 
   override def isCollectionEmpty: Boolean = {
     set.isEmpty
@@ -139,6 +101,15 @@ class PersistentSet(session: SharedSessionContractImplementor, var set: mutable.
 
   override def size: Int = {
     if (readSize()) getCachedSize() else set.size
+  }
+
+  override def isEmpty: Boolean = {
+    if (readSize()) getCachedSize() == 0 else this.set.isEmpty
+  }
+
+  override def contains(elem: Object): Boolean = {
+    val exists = readElementExistence(elem)
+    if (exists == null) set.contains(elem) else exists.booleanValue
   }
 
   override def iterator: Iterator[Object] = {
@@ -151,7 +122,7 @@ class PersistentSet(session: SharedSessionContractImplementor, var set: mutable.
       initialize(true)
       if (set.add(elem)) dirty()
     } else if (!exists) {
-      queueOperation(new Add(elem));
+      queueOperation(new Add(elem))
     }
     this
   }
@@ -160,9 +131,10 @@ class PersistentSet(session: SharedSessionContractImplementor, var set: mutable.
     val exists = if (isOperationQueueEnabled()) readElementExistence(elem) else null
     if (exists == null) {
       initialize(true)
-      if (set.remove(elem)) dirty()
-    } else if (exists)
-      queueOperation(new Remove(elem));
+      if (this.set.remove(elem)) dirty()
+    } else if (exists) {
+      queueOperation(new Remove(elem))
+    }
     this
   }
 
@@ -178,10 +150,70 @@ class PersistentSet(session: SharedSessionContractImplementor, var set: mutable.
     }
   }
 
-  override def contains(elem: Object): Boolean = { set.contains(elem) }
+  override def toString: String = {
+    read(); set.toString
+  }
 
-  override def toString(): String = {
-    read(); set.toString()
+  override def readFrom(rs: ResultSet, persister: CollectionPersister, descriptor: CollectionAliases,
+    owner: Object): Object = {
+    val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases, getSession)
+    if (null != element) tempList += element
+    element
+  }
+
+  override def beginRead() {
+    super.beginRead()
+    tempList = new ListBuffer[Object]
+  }
+
+  override def endRead(): Boolean = {
+    this.set ++= tempList
+    tempList = null
+    setInitialized()
+    true
+  }
+
+  override def entries(persister: CollectionPersister): ju.Iterator[_] = {
+    JavaConverters.asJavaIterator(set.iterator)
+  }
+
+  override def disassemble(persister: CollectionPersister): JSerializable = {
+    this.set.map(ele => persister.getElementType.disassemble(ele, getSession, null))
+      .toArray.asInstanceOf[Array[JSerializable]]
+  }
+
+  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
+    val elementType = persister.getElementType
+    val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
+    val deletes = new ListBuffer[Object]
+    deletes ++= sn.filterKeys(!set.contains(_)).keys
+    deletes ++= set.filter { ele => sn.contains(ele) && elementType.isDirty(ele, sn(ele), getSession) }
+    JavaConverters.asJavaIterator(deletes.iterator)
+  }
+
+  override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
+    val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
+    !sn.get(entry).exists(ele => !elemType.isDirty(ele, entry, getSession))
+  }
+
+  override def needsUpdating(entry: Object, i: Int, elemType: Type): Boolean = {
+    false
+  }
+
+  override def isRowUpdatePossible: Boolean = {
+    false
+  }
+
+  override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = {
+    throw new UnsupportedOperationException("Sets don't have indexes");
+  }
+
+  override def getElement(entry: Object): Object = {
+    entry
+  }
+
+  override def getSnapshotElement(entry: Object, i: Int): Object = {
+    throw new UnsupportedOperationException("Sets don't support updating by element")
   }
 
   override def equals(other: Any): Boolean = {
@@ -191,20 +223,28 @@ class PersistentSet(session: SharedSessionContractImplementor, var set: mutable.
   override def hashCode(): Int = {
     read(); set.hashCode()
   }
-  final class Add(val value: Object) extends DelayedOperation {
-    override def operate() { set += value }
-    override def getAddedInstance(): Object = value
-    override def getOrphan(): Object = null
+
+  override def entryExists(entry: Object, i: Int): Boolean = {
+    null != entry
   }
 
-  final class Remove(old: Object) extends DelayedOperation {
-    override def operate() { set.remove(old) }
-    override def getAddedInstance(): Object = null
-    override def getOrphan(): Object = old
+  override def isWrapper(collection: Object): Boolean = {
+    set eq collection
   }
+
+  final class Add(value: Object) extends AbstractValueDelayedOperation(value, null) {
+    override def operate() { set.add(getAddedInstance()) }
+  }
+
+  final class Remove(orphan: Object) extends AbstractValueDelayedOperation(null, orphan) {
+    override def operate() { set.remove(orphan) }
+  }
+
   final class Clear extends DelayedOperation {
     override def operate() { set.clear() }
     override def getAddedInstance(): Object = null
-    override def getOrphan(): Object = throw new UnsupportedOperationException("queued clear cannot be used with orphan delete")
+    override def getOrphan(): Object = {
+      throw new UnsupportedOperationException("queued clear cannot be used with orphan delete")
+    }
   }
 }

@@ -50,8 +50,8 @@ class HierarchicalsTest extends FunSpec with Matchers {
     p.add(21, "01.10.10")
     p.add(22, "01.11")
     p.add(23, "01.11.01")
-    p.add(24, "01.11.02")
     p.add(25, "01.11.03")
+    p.add(24, "01.11.02")
     p
   }
 

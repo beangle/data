@@ -177,7 +177,7 @@ object Hierarchicals {
    */
   def move[T <: Hierarchical[T]](node: T, parentNode: T, index: Int): Iterable[T] = {
     var sibling: Buffer[T] = parentNode.children
-    sibling.sorted
+    sibling = sibling.sorted
     sibling -= node
     if (node.parent == Option(parentNode)) {
       if (node.lastindex != index) shiftCode(node, sibling, index)

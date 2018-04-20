@@ -41,9 +41,18 @@ object UserCrudTest {
     val role1 = new ExtendRole(1)
     val role2 = new ExtendRole(2)
     val role3 = new ExtendRole(3)
+
+    val role4 = new ExtendRole(4)
+    val role41 = new ExtendRole(41)
     role1.enName = "role1"
     role2.enName = "role2"
     role3.enName = "role3"
+
+    role4.enName = "role4"
+    role4.children += role41
+    role41.enName = "role41"
+    role41.parent = Some(role4)
+
     user.roleSet.add(role1)
     user.roleSet.add(role2)
     user.roleList.asInstanceOf[ListBuffer[Role]] += role1
@@ -55,7 +64,7 @@ object UserCrudTest {
     user.properties.put("address", "some street")
     user.occupy = new WeekState(2)
     role2.parent = Some(role1)
-    entityDao.saveOrUpdate(role1, role2, role3, user)
+    entityDao.saveOrUpdate(role1, role2, role3, role4, role41,user)
 
     val query = OqlBuilder.from(classOf[Role], "r").where("r.parent = :parent", role1)
     val list = entityDao.search(query)
@@ -67,7 +76,7 @@ object UserCrudTest {
 
     val query2 = OqlBuilder.from(classOf[Role], "r").where("r.parent is null")
     val list2 = entityDao.search(query2)
-    assert(list2.size == 2)
+    assert(list2.size == 3)
 
     val query3 = OqlBuilder.from(classOf[User], "u").where("u.age = :age", 20)
     val list3 = entityDao.search(query3)
@@ -75,12 +84,12 @@ object UserCrudTest {
 
     val query4 = OqlBuilder.from(classOf[Role], "r").where("exists(from " + classOf[Role].getName + " r2 where r2=r.parent)")
     val list4 = entityDao.search(query4)
-    assert(list4.size == 1)
+    assert(list4.size == 2)
 
     val query5 = OqlBuilder.from(classOf[Role], "r")
     query5.where("r.parent.name like :roleName", "Role%")
     val list5 = entityDao.search(query5)
-    assert(list5.size == 1)
+    assert(list5.size == 2)
 
     session.flush()
     session.clear()
@@ -99,6 +108,9 @@ object UserCrudTest {
     assert(savedRole.parent.get.id == role1.id)
     assert(savedRole.parent.get.asInstanceOf[ExtendRole].enName == "role1")
 
+    val savedRole4 = entityDao.get(classOf[Role], role4.id)
+    savedRole4.children -= role41
+    entityDao.saveOrUpdate(savedRole4)
     session.flush()
     transaction.commit()
 
