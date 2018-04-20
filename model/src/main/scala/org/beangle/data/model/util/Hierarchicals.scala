@@ -170,31 +170,31 @@ object Hierarchicals {
     nodes ++= parents
   }
 
-  def move[T <: Hierarchical[T]](node: T, sibling: Buffer[T], index: Int): Iterable[T] = {
-    if (node.parent == null) {
-      if (Numbers.toInt(node.indexno) != index) shiftCode(node, sibling, index)
-      else Seq.empty
-    } else {
-      node.parent foreach { p => p.children -= node }
-      node.parent = None
-      shiftCode(node, sibling, index)
-    }
-  }
-
   /**
    * 将节点移动到给定位置
    * implementation:
    *   由于级联保存的原因，不要更改原有上级节点和目标上级节点的children属性
    */
-  def move[T <: Hierarchical[T]](node: T, location: T, index: Int): Iterable[T] = {
-    var sibling: Buffer[T] = location.children
-    sibling.sorted
+  def move[T <: Hierarchical[T]](node: T, parentNode: T, index: Int): Iterable[T] = {
+    var sibling: Buffer[T] = parentNode.children
+    sibling = sibling.sorted
     sibling -= node
-    if (node.parent == Option(location)) {
-      if (Numbers.toInt(node.indexno) != index) shiftCode(node, sibling, index)
+    if (node.parent == Option(parentNode)) {
+      if (node.lastindex != index) shiftCode(node, sibling, index)
       else Seq.empty
     } else {
-      node.parent = Option(location)
+      node.parent = Option(parentNode)
+      shiftCode(node, sibling, index)
+    }
+  }
+
+  def move[T <: Hierarchical[T]](node: T, sibling: Buffer[T], index: Int): Iterable[T] = {
+    if (node.parent == null) {
+      if (node.lastindex != index) shiftCode(node, sibling, index)
+      else Seq.empty
+    } else {
+      node.parent foreach { p => p.children -= node }
+      node.parent = None
       shiftCode(node, sibling, index)
     }
   }
@@ -209,6 +209,9 @@ object Hierarchicals {
     (1 to sibling.size) foreach { seqno =>
       val one = sibling(seqno - 1)
       generateCode(one, Strings.leftPad(String.valueOf(seqno), nolength, '0'), nodes)
+    }
+    if (null != node.children) {
+      node.children foreach (m => generateCode(m, null, nodes))
     }
     nodes
   }
@@ -230,7 +233,9 @@ object Hierarchicals {
 
   private def genIndexno[T <: Hierarchical[T]](node: T) {
     node.parent foreach { p =>
-      node.indexno = Strings.concat(p.indexno, ".", String.valueOf(node.lastindex))
+      val seqlen = String.valueOf(p.children.size).length
+      val levelSeqNo = Strings.leftPad(String.valueOf(node.lastindex), seqlen, '0')
+      node.indexno = Strings.concat(p.indexno, ".", levelSeqNo)
     }
   }
 }
