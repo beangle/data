@@ -38,7 +38,7 @@
   </scm>
 
   <properties>
-    <commons.version>5.1.0.M2</commons.version>
+    <commons.version>5.1.0.M3/commons.version>
     <cdi.version>0.0.15</cdi.version>
     <spring.version>4.3.14.RELEASE</spring.version>
     <HikariCP.version>3.0.0</HikariCP.version>
