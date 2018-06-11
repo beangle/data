@@ -41,7 +41,7 @@ object TypeParamSetter {
 }
 
 class TypeParamSetter(params: Seq[Any], types: Seq[Int])
-    extends Function1[PreparedStatement, Unit] with Logging {
+  extends Function1[PreparedStatement, Unit] with Logging {
   override def apply(ps: PreparedStatement): Unit = {
     ParamSetter.setParams(ps, params, types)
   }
@@ -147,10 +147,12 @@ object ParamSetter extends Logging {
           }
         }
         case BLOB => {
-          val in = value.asInstanceOf[Blob].getBinaryStream
-          val out = new ByteArrayOutputStream()
-          IOs.copy(in, out)
-          stmt.setBinaryStream(index, in, out.size)
+          val in = value match {
+            case array: Array[Byte] => new ByteArrayInputStream(array)
+            case is: InputStream    => is
+            case blob: Blob         => blob.getBinaryStream
+          }
+          stmt.setBinaryStream(index, in)
         }
         case _ => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
       }

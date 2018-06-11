@@ -32,7 +32,7 @@ class ProxyTest extends FunSpec with Matchers {
     it("access without component") {
       val proxy1 = Proxy.generate(classOf[TestUser])
       val user1 = proxy1.asInstanceOf[TestUser]
-      user1.properties
+      val ps=user1.properties
       val accessed = proxy1.lastAccessed()
       assert(accessed.size == 1)
       assert(accessed.contains("properties"))
