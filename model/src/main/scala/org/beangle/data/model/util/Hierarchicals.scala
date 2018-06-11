@@ -176,15 +176,12 @@ object Hierarchicals {
    *   由于级联保存的原因，不要更改原有上级节点和目标上级节点的children属性
    */
   def move[T <: Hierarchical[T]](node: T, parentNode: T, index: Int): Iterable[T] = {
-    var sibling: Buffer[T] = parentNode.children
-    sibling = sibling.sorted
-    sibling -= node
     if (node.parent == Option(parentNode)) {
-      if (node.lastindex != index) shiftCode(node, sibling, index)
+      if (node.lastindex != index) shiftCode(node, parentNode.children, index)
       else Seq.empty
     } else {
       node.parent = Option(parentNode)
-      shiftCode(node, sibling, index)
+      shiftCode(node, parentNode.children, index)
     }
   }
 
@@ -200,14 +197,15 @@ object Hierarchicals {
   }
 
   private def shiftCode[T <: Hierarchical[T]](node: T, sibling: Buffer[T], idx: Int): Iterable[T] = {
-    var index = idx
-    index -= 1
-    if (index > sibling.size) index = sibling.size
-    sibling.insert(index, node)
-    val nolength = String.valueOf(sibling.size).length
+    var index = idx - 1
+    val sorted = sibling.sorted
+    sorted -= node
+    if (index > sorted.size) index = sorted.size
+    sorted.insert(index, node)
+    val nolength = String.valueOf(sorted.size).length
     val nodes = Collections.newSet[T]
-    (1 to sibling.size) foreach { seqno =>
-      val one = sibling(seqno - 1)
+    (1 to sorted.size) foreach { seqno =>
+      val one = sorted(seqno - 1)
       generateCode(one, Strings.leftPad(String.valueOf(seqno), nolength, '0'), nodes)
     }
     if (null != node.children) {

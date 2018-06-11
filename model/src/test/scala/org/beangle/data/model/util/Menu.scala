@@ -25,12 +25,14 @@ import org.beangle.commons.lang.Strings
 import scala.collection.mutable.Buffer
 
 object Menu {
+
   def apply(id: Int, indexno: String): Menu = {
     val menu = new Menu()
     menu.id = id
     menu.indexno = indexno
     menu
   }
+
   def apply(id: Int, indexno: String, parent: Menu): Menu = {
     val menu = new Menu()
     menu.id = id
@@ -58,7 +60,10 @@ class Profile {
   }
 
   def move(menuId: Int, parentId: Option[Int], idx: Int): Iterable[Menu] = {
-    val me = menu(menuId)
+    move(menu(menuId), parentId, idx)
+  }
+
+  def move(me: Menu, parentId: Option[Int], idx: Int): Iterable[Menu] = {
     var parent: Menu = null
     var sibling: Buffer[Menu] = null
     parentId match {
@@ -70,8 +75,11 @@ class Profile {
       Hierarchicals.move(me, sibling, idx)
     } else {
       Hierarchicals.move(me, parent, idx)
+      parent.children += me
     }
+
   }
+
   def add(id: Int, indexNo: String): this.type = {
     val menu = Menu(id, indexNo)
     val parentIndexNo = Strings.substringBeforeLast(indexNo, ".")
@@ -85,5 +93,9 @@ class Profile {
 
     this.menus += menu
     this
+  }
+
+  def sortedMenus: List[Menu] = {
+    menus.sorted.toList
   }
 }
