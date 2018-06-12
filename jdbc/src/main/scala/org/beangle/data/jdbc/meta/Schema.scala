@@ -31,6 +31,15 @@ class Schema(var database: Database, var name: Identifier) {
 
   val sequences = new mutable.HashSet[Sequence]
 
+  def cleanEmptyTables(): Unit = {
+    tables.retain((name, table) => !table.columns.isEmpty)
+  }
+
+  def addTable(table: Table): this.type = {
+    tables.put(table.name, table)
+    this
+  }
+
   def createTable(tbname: String): Table = {
     val tableId = Identifier(tbname)
     tables.get(tableId) match {
@@ -54,6 +63,7 @@ class Schema(var database: Database, var name: Identifier) {
       tables.get(engine.toIdentifier(tbname))
     }
   }
+
   def filterTables(includes: Seq[String], excludes: Seq[String]): Seq[Table] = {
     val filter = new NameFilter()
     val engine = database.engine

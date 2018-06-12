@@ -28,6 +28,22 @@ class Database(val engine: Engine) {
     schemas.getOrElseUpdate(schema, new Schema(this, schema))
   }
 
+  def getTable(schema: String, name: String): Option[Table] = {
+    getOrCreateSchema(schema).getTable(name)
+  }
+
+  def addTable(schemaName: String, tableName: String): Table = {
+    val schema = getOrCreateSchema(schemaName)
+    val table = new Table(schema, tableName)
+    schema.addTable(table)
+    table
+  }
+
+  def addTable(schema: String, table: Table): Table = {
+    getOrCreateSchema(schema).addTable(table)
+    table
+  }
+
   def getOrCreateSchema(schema: String): Schema = {
     if (Strings.isEmpty(schema)) {
       getOrCreateSchema(Identifier.empty)
