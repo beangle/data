@@ -32,7 +32,7 @@ class SchemaTest extends FunSpec with Matchers {
       val dialect = new OracleDialect
       val database = new Database(Engines.Oracle)
       val db = database.getOrCreateSchema("TEST")
-      val table = new Table(db, "t 1")
+      val table = db.createTable("\"t 1\"")
       db.tables.put(table.name, table)
       assert(db.getTable("test.\"t 1\"").isDefined)
       assert(db.getTable("\"t 1\"").isDefined)

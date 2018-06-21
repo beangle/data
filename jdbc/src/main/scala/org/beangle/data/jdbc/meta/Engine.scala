@@ -60,8 +60,14 @@ trait Engine {
 
   def toIdentifier(literal: String): Identifier = {
     if (Strings.isEmpty(literal)) return Identifier.empty
-    if (literal.charAt(0) == quoteChars._1) Identifier(literal.substring(1, literal.length - 1), true)
-    else {
+    if (literal.charAt(0) == quoteChars._1) {
+      val content = literal.substring(1, literal.length - 1)
+      storeCase match {
+        case StoreCase.Lower => Identifier(content, content == content.toLowerCase())
+        case StoreCase.Upper => Identifier(content, content == content.toUpperCase())
+        case StoreCase.Mixed => Identifier(content, false)
+      }
+    } else {
       storeCase match {
         case StoreCase.Lower => Identifier(literal.toLowerCase(), false)
         case StoreCase.Upper => Identifier(literal.toUpperCase(), false)

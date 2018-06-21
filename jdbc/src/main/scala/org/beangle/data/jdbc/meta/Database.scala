@@ -34,7 +34,7 @@ class Database(val engine: Engine) {
 
   def addTable(schemaName: String, tableName: String): Table = {
     val schema = getOrCreateSchema(schemaName)
-    val table = new Table(schema, tableName)
+    val table = new Table(schema, engine.toIdentifier(tableName))
     schema.addTable(table)
     table
   }

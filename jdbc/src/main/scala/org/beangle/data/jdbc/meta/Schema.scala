@@ -41,23 +41,23 @@ class Schema(var database: Database, var name: Identifier) {
   }
 
   def createTable(tbname: String): Table = {
-    val tableId = Identifier(tbname)
+    val tableId = database.engine.toIdentifier(tbname)
     tables.get(tableId) match {
       case Some(table) => table
       case None =>
-        val ntable = new Table(this, database.engine.toIdentifier(tbname))
+        val ntable = new Table(this, tableId)
         tables.put(tableId, ntable)
         ntable
     }
   }
+
   /**
    * Using table literal (with or without schema) search table
    */
   def getTable(tbname: String): Option[Table] = {
     val engine = database.engine
-    val nschema = name.toLiteral(engine)
     if (tbname.contains(".")) {
-      if (nschema != engine.toIdentifier(Strings.substringBefore(tbname, ".")).value) None
+      if (name != engine.toIdentifier(Strings.substringBefore(tbname, "."))) None
       else tables.get(engine.toIdentifier(Strings.substringAfter(tbname, ".")))
     } else {
       tables.get(engine.toIdentifier(tbname))
