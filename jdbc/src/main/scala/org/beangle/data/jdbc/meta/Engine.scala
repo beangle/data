@@ -103,11 +103,11 @@ abstract class AbstractEngine extends Engine {
     }
   }
 
-  override def toType(sqlCode: Int): SqlType = {
+  override final def toType(sqlCode: Int): SqlType = {
     toType(sqlCode, 0, 0)
   }
 
-  override def toType(sqlCode: Int, length: Int): SqlType = {
+  override final def toType(sqlCode: Int, length: Int): SqlType = {
     if (SqlType.isNumberType(sqlCode)) {
       toType(sqlCode, 0, length, 0)
     } else {
@@ -115,7 +115,7 @@ abstract class AbstractEngine extends Engine {
     }
   }
 
-  override def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
+  override final def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
     toType(sqlCode, 0, precision, scale)
   }
 
