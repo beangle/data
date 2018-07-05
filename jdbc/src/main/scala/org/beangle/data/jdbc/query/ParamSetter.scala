@@ -92,7 +92,7 @@ object ParamSetter extends Logging {
             case jc: ju.Calendar =>
               stmt.setDate(index, new java.sql.Date(jc.getTime.getTime), jc)
             case _ =>
-              stmt.setObject(index, value, DATE);
+              stmt.setObject(index, value, DATE)
           }
         }
         case TIME => {
@@ -105,7 +105,7 @@ object ParamSetter extends Logging {
             case jc: ju.Calendar =>
               stmt.setTime(index, new Time(jc.getTime.getTime), jc)
             case _ =>
-              stmt.setObject(index, value, TIME);
+              stmt.setObject(index, value, TIME)
           }
         }
         case TIMESTAMP => {
@@ -139,11 +139,8 @@ object ParamSetter extends Logging {
         case CLOB => {
           if (isStringType(value.getClass)) stmt.setString(index, value.toString)
           else {
-            //FIXME workround Method org.postgresql.jdbc4.Jdbc4PreparedStatement.setAsciiStream(int, InputStream) is not yet implemented.
             val clb = value.asInstanceOf[Clob]
-            val out = new ByteArrayOutputStream()
-            IOs.copy(clb.getAsciiStream, out)
-            stmt.setAsciiStream(index, clb.getAsciiStream, out.size())
+            stmt.setString(index, clb.getSubString(1, clb.length.asInstanceOf[Int]))
           }
         }
         case BLOB => {

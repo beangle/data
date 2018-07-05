@@ -82,11 +82,10 @@ class TypeNames {
   def get(typecode: Int, size: Int, precision: Int, scale: Int): String = {
     val map = weighted.get(typecode).orNull //Map[Int, String]
     if (map != null && map.size > 0) {
-      // iterate entries ordered by capacity to find first fit
-      for ((k, v) <- map) {
-        if (size <= k) {
-          return replace(v, size, precision, scale);
-        }
+      val weight = if (SqlType.isNumberType(typecode)) precision else size
+      val rs = map.find(weight <= _._1)
+      if (rs.isEmpty) {
+        replace(rs.get._2, size, precision, scale);
       }
     }
     return replace(get(typecode), size, precision, scale);
@@ -102,8 +101,6 @@ class TypeNames {
   /**
    * set a type name for specified type key and capacity
    *
-   * @param typecode
-   * the type key
    */
   def put(typecode: Int, capacity: Int, value: String) {
     val map = weighted.get(typecode).getOrElse(new collection.immutable.TreeMap[Int, String]) //Map[Int, String]
@@ -112,9 +109,6 @@ class TypeNames {
 
   /**
    * set a default type name for specified type key
-   *
-   * @param typecode
-   * the type key
    */
   def put(typecode: Int, value: String) {
     defaults += (typecode -> value)

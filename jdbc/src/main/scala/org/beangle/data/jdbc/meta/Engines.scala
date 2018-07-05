@@ -77,11 +77,13 @@ object Engines {
           case 5  => new SqlType(SMALLINT, "int2")
           case 10 => new SqlType(INTEGER, "int4")
           case 19 => new SqlType(BIGINT, "int8")
-          case _  => super.toType(sqlCode, 0, length, scale)
+          case _  => super.toType(sqlCode, 0, precision, scale)
         }
         result.length = Some(length)
         result
-      } else super.toType(sqlCode, length, precision, scale)
+      } else {
+        super.toType(sqlCode, length, precision, scale)
+      }
     }
   }
 
