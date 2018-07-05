@@ -45,9 +45,9 @@ class H2DialectTest extends DialectTestCase {
     val meta = ds.getConnection().getMetaData()
     val database = new Database(Engines.H2)
     schema = database.getOrCreateSchema(Identifier("PUBLIC"))
-    val loader = new MetadataLoader(schema, new H2Dialect, meta)
-    loader.loadTables(false)
-    loader.loadSequences()
+    val loader = new MetadataLoader(meta, new H2Dialect)
+    loader.loadTables(schema, false)
+    loader.loadSequences(schema)
     listTableAndSequences
   }
 }

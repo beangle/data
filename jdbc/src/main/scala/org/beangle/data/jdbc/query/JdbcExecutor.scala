@@ -48,7 +48,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
   var showSql = false
 
   def unique[T](sql: String, params: Any*): Option[T] = {
-    val rs = query(sql, params)
+    val rs = query(sql, params: _*)
     if (rs.isEmpty) None
     else Some(rs.head.head.asInstanceOf[T])
   }

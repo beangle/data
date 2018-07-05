@@ -43,9 +43,6 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   val foreignKeys = new ListBuffer[ForeignKey]
   val indexes = new ListBuffer[Index]
 
-  def this(schema: Schema, name: String) {
-    this(schema, Identifier(name))
-  }
   def engine: Engine = {
     schema.database.engine
   }

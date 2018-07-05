@@ -59,7 +59,7 @@ object Engines {
       DECIMAL -> "numeric($p,$s)", NUMERIC -> "numeric($p,$s)",
       DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
       BINARY -> "bytea", VARBINARY -> "bytea", LONGVARBINARY -> "bytea",
-      CLOB -> "text", BLOB -> "oid")
+      CLOB -> "text", BLOB -> "bytea")
 
     registerTypes2(
       (DECIMAL, 1, "boolean"), (DECIMAL, 10, "integer"),
@@ -77,11 +77,13 @@ object Engines {
           case 5  => new SqlType(SMALLINT, "int2")
           case 10 => new SqlType(INTEGER, "int4")
           case 19 => new SqlType(BIGINT, "int8")
-          case _  => super.toType(sqlCode, length, scale)
+          case _  => super.toType(sqlCode, 0, precision, scale)
         }
         result.length = Some(length)
         result
-      } else super.toType(sqlCode, length, precision, scale)
+      } else {
+        super.toType(sqlCode, length, precision, scale)
+      }
     }
   }
 
