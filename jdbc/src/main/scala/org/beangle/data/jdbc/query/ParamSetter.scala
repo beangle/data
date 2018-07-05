@@ -41,7 +41,7 @@ object TypeParamSetter {
 }
 
 class TypeParamSetter(params: Seq[Any], types: Seq[Int])
-    extends Function1[PreparedStatement, Unit] with Logging {
+  extends Function1[PreparedStatement, Unit] with Logging {
   override def apply(ps: PreparedStatement): Unit = {
     ParamSetter.setParams(ps, params, types)
   }
@@ -92,7 +92,7 @@ object ParamSetter extends Logging {
             case jc: ju.Calendar =>
               stmt.setDate(index, new java.sql.Date(jc.getTime.getTime), jc)
             case _ =>
-              stmt.setObject(index, value, DATE);
+              stmt.setObject(index, value, DATE)
           }
         }
         case TIME => {
@@ -105,7 +105,7 @@ object ParamSetter extends Logging {
             case jc: ju.Calendar =>
               stmt.setTime(index, new Time(jc.getTime.getTime), jc)
             case _ =>
-              stmt.setObject(index, value, TIME);
+              stmt.setObject(index, value, TIME)
           }
         }
         case TIMESTAMP => {
@@ -139,18 +139,17 @@ object ParamSetter extends Logging {
         case CLOB => {
           if (isStringType(value.getClass)) stmt.setString(index, value.toString)
           else {
-            //FIXME workround Method org.postgresql.jdbc4.Jdbc4PreparedStatement.setAsciiStream(int, InputStream) is not yet implemented.
             val clb = value.asInstanceOf[Clob]
-            val out = new ByteArrayOutputStream()
-            IOs.copy(clb.getAsciiStream, out)
-            stmt.setAsciiStream(index, clb.getAsciiStream, out.size())
+            stmt.setString(index, clb.getSubString(1, clb.length.asInstanceOf[Int]))
           }
         }
         case BLOB => {
-          val in = value.asInstanceOf[Blob].getBinaryStream
-          val out = new ByteArrayOutputStream()
-          IOs.copy(in, out)
-          stmt.setBinaryStream(index, in, out.size)
+          val in = value match {
+            case array: Array[Byte] => new ByteArrayInputStream(array)
+            case is: InputStream    => is
+            case blob: Blob         => blob.getBinaryStream
+          }
+          stmt.setBinaryStream(index, in)
         }
         case _ => if (0 == sqltype) stmt.setObject(index, value) else stmt.setObject(index, value, sqltype)
       }

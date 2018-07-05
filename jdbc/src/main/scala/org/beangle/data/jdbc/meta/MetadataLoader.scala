@@ -55,23 +55,21 @@ object MetadataColumns {
   val Remarks = "REMARKS"
 }
 
-class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) extends Logging {
+class MetadataLoader(meta: DatabaseMetaData, dialect: Dialect) extends Logging {
   import MetadataColumns._
 
-  val tables = new mutable.HashMap[String, Table]
-
-  def loadTables(extras: Boolean): Unit = {
+  def loadTables(schema: Schema, extras: Boolean): Unit = {
     val TYPES: Array[String] = Array("TABLE")
     val newCatalog = if (None == schema.catalog) null else schema.catalog.get.toLiteral(dialect.engine)
     val newSchema = schema.name.toLiteral(dialect.engine)
 
     val sw = new Stopwatch(true)
     var rs = meta.getTables(newCatalog, newSchema, null, TYPES)
+    val tables = new mutable.HashMap[String, Table]
     while (rs.next()) {
       val tableName = rs.getString(TableName)
       if (!tableName.startsWith("BIN$")) {
-        val mySchema = schema.database.getOrCreateSchema(rs.getString(TableSchema))
-        val table = new Table(mySchema, rs.getString(TableName))
+        val table = schema.database.addTable(rs.getString(TableSchema), rs.getString(TableName))
         table.comment = Option(rs.getString(Remarks))
         tables.put(Table.qualify(table.schema, table.name), table)
       }
@@ -87,7 +85,7 @@ class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) e
     while (rs.next()) {
       val colName = rs.getString(ColumnName)
       if (null != colName) {
-        getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
+        getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
           val length = rs.getInt(ColumnSize)
           val scale = rs.getInt(DecimalDigits)
           val sqlType = new SqlType(rs.getInt(DataType), new StringTokenizer(rs.getString(TypeName), "() ").nextToken(), length, scale)
@@ -104,6 +102,7 @@ class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) e
 
     //evict empty column tables
     val origTabCount = tables.size
+    schema.cleanEmptyTables()
     tables.retain((name, table) => !table.columns.isEmpty)
     if (tables.size == origTabCount) logger.info(s"Load $cols columns in $sw")
     else logger.info(s"Load $cols columns and evict empty ${origTabCount - tables.size} tables in $sw.")
@@ -118,7 +117,6 @@ class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) e
         batchLoadExtra(schema, dialect.metadataGrammar)
       }
     }
-    tables foreach { case (k, t) => schema.tables.put(t.name, t) }
   }
 
   private def batchLoadExtra(schema: Schema, grammar: MetadataGrammar) {
@@ -128,8 +126,7 @@ class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) e
     // load primary key
     rs = meta.getConnection().createStatement().executeQuery(grammar.primaryKeysql.replace(":schema", schemaName))
     while (rs.next()) {
-
-      getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
+      getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
         val colname = rs.getString(ColumnName)
         val pkName = getIdentifier(rs, PKName)
         table.primaryKey match {
@@ -142,7 +139,7 @@ class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) e
     // load imported key
     rs = meta.getConnection().createStatement().executeQuery(grammar.importedKeySql.replace(":schema", schemaName))
     while (rs.next()) {
-      getTable(rs.getString(FKTabkeSchem), rs.getString(FKTableName)) foreach { table =>
+      getTable(schema.database, rs.getString(FKTabkeSchem), rs.getString(FKTableName)) foreach { table =>
         val fkName = getIdentifier(rs, FKName)
         val column = table.column(rs.getString(FKColumnName))
         val fk = table.getForeignKey(fkName.value) match {
@@ -158,7 +155,7 @@ class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) e
     // load index
     rs = meta.getConnection().createStatement().executeQuery(grammar.indexInfoSql.replace(":schema", schemaName))
     while (rs.next()) {
-      getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
+      getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
         val indexName = rs.getString(IndexName)
         var idx = table.getIndex(indexName) match {
           case None         => table.add(new Index(table, Identifier(indexName)))
@@ -179,13 +176,15 @@ class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) e
     logger.info(s"Load contraint and index in $sw.")
   }
 
-  class MetaLoadTask(val buffer: ConcurrentLinkedQueue[String], val tables: mutable.HashMap[String, Table]) extends Runnable {
+  class MetaLoadTask(val buffer: ConcurrentLinkedQueue[String], val tables: mutable.HashMap[String, Table])
+    extends Runnable {
     def run() {
       var completed = 0
       var nextTableName = buffer.poll()
       while (null != nextTableName) {
         try {
           val table = tables(nextTableName)
+          val schema = table.schema
           logger.info(s"Loading ${table.qualifiedName}...")
           // load primary key
           var rs: ResultSet = null
@@ -236,7 +235,7 @@ class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) e
     }
   }
 
-  def loadSequences(): Unit = {
+  def loadSequences(schema: Schema): Unit = {
     val sequences = new mutable.HashSet[Sequence]
     val ss: SequenceGrammar = dialect.sequenceGrammar
     if (null == ss) return
@@ -283,8 +282,7 @@ class MetadataLoader(schema: Schema, dialect: Dialect, meta: DatabaseMetaData) e
     Identifier(rs.getString(columnName))
   }
 
-  private def getTable(schemaName: String, name: String): Option[Table] = {
-    val tableSchema = schema.database.getOrCreateSchema(schemaName)
-    tables.get(Table.qualify(tableSchema, Identifier(name)))
+  private def getTable(database: Database, schemaName: String, name: String): Option[Table] = {
+    database.getTable(schemaName, name)
   }
 }

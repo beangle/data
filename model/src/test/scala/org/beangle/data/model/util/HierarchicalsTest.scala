@@ -25,6 +25,10 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class HierarchicalsTest extends FunSpec with Matchers {
 
+  def makeEmptyProfile(): Profile = {
+    new Profile
+  }
+
   def makeMenuProfile(): Profile = {
     val p = new Profile
     p.add(1, "01")
@@ -74,6 +78,24 @@ class HierarchicalsTest extends FunSpec with Matchers {
       p.move(22, Some(10), 1).toBuffer
       p.menu(22).indexno should be("01.09.1")
       p.menu(25).indexno should be("01.09.1.3")
+    }
+
+    it("create and move") {
+      val p = makeMenuProfile()
+      val a = p.move(Menu(99, null), Some(1), 2).toBuffer
+
+      val e = makeEmptyProfile()
+      e.add(1, "01")
+      e.add(2, "")
+      e.add(3, "")
+      e.add(4, "")
+      e.move(2, Some(1), 1)
+      e.move(3, Some(1), 2)
+      e.move(4, Some(1), 3)
+
+      e.menu(2).indexno should be("01.1")
+      e.menu(3).indexno should be("01.2")
+      e.menu(4).indexno should be("01.3")
     }
   }
 }

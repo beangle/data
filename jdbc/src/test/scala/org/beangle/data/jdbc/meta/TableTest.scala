@@ -19,15 +19,11 @@
 package org.beangle.data.jdbc.meta
 
 import java.sql.Types
-import org.beangle.data.jdbc.dialect.H2Dialect
-import org.beangle.data.jdbc.dialect.PostgreSQLDialect
+
+import org.beangle.data.jdbc.dialect.{ PostgreSQLDialect, SQL }
 import org.junit.runner.RunWith
-import org.scalatest.Finders
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
+import org.scalatest.{ FlatSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
-import org.beangle.data.jdbc.dialect.OracleDialect
-import org.beangle.data.jdbc.dialect.SQL
 
 @RunWith(classOf[JUnitRunner])
 class TableTest extends FlatSpec with Matchers {
@@ -38,7 +34,7 @@ class TableTest extends FlatSpec with Matchers {
   val public = oracleDb.getOrCreateSchema("PUBLIC")
 
   "create sql" should "like this" in {
-    val table = new Table(test, "USER")
+    val table = new Table(test, Identifier("USER"))
     val column = new Column("NAME", oracle.toType(Types.VARCHAR, 30))
     column.comment = Some("login name")
     column.nullable = false
@@ -62,7 +58,7 @@ class TableTest extends FlatSpec with Matchers {
   }
 
   "lowercase " should "corrent" in {
-    val table = new Table(public, "USER")
+    val table = new Table(public, Identifier("USER"))
     val database = new Database(Engines.PostgreSQL)
     val test = database.getOrCreateSchema("TEST")
 

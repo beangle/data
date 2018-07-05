@@ -60,8 +60,14 @@ trait Engine {
 
   def toIdentifier(literal: String): Identifier = {
     if (Strings.isEmpty(literal)) return Identifier.empty
-    if (literal.charAt(0) == quoteChars._1) Identifier(literal.substring(1, literal.length - 1), true)
-    else {
+    if (literal.charAt(0) == quoteChars._1) {
+      val content = literal.substring(1, literal.length - 1)
+      storeCase match {
+        case StoreCase.Lower => Identifier(content, content == content.toLowerCase())
+        case StoreCase.Upper => Identifier(content, content == content.toUpperCase())
+        case StoreCase.Mixed => Identifier(content, false)
+      }
+    } else {
       storeCase match {
         case StoreCase.Lower => Identifier(literal.toLowerCase(), false)
         case StoreCase.Upper => Identifier(literal.toUpperCase(), false)
@@ -97,11 +103,11 @@ abstract class AbstractEngine extends Engine {
     }
   }
 
-  override def toType(sqlCode: Int): SqlType = {
+  override final def toType(sqlCode: Int): SqlType = {
     toType(sqlCode, 0, 0)
   }
 
-  override def toType(sqlCode: Int, length: Int): SqlType = {
+  override final def toType(sqlCode: Int, length: Int): SqlType = {
     if (SqlType.isNumberType(sqlCode)) {
       toType(sqlCode, 0, length, 0)
     } else {
@@ -109,7 +115,7 @@ abstract class AbstractEngine extends Engine {
     }
   }
 
-  override def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
+  override final def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
     toType(sqlCode, 0, precision, scale)
   }
 
