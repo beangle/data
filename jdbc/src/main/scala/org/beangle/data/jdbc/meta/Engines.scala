@@ -59,7 +59,7 @@ object Engines {
       DECIMAL -> "numeric($p,$s)", NUMERIC -> "numeric($p,$s)",
       DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
       BINARY -> "bytea", VARBINARY -> "bytea", LONGVARBINARY -> "bytea",
-      CLOB -> "text", BLOB -> "oid")
+      CLOB -> "text", BLOB -> "bytea")
 
     registerTypes2(
       (DECIMAL, 1, "boolean"), (DECIMAL, 10, "integer"),
