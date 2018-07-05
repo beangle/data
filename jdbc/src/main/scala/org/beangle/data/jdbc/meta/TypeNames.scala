@@ -84,7 +84,7 @@ class TypeNames {
     if (map != null && map.size > 0) {
       val weight = if (SqlType.isNumberType(typecode)) precision else size
       val rs = map.find(weight <= _._1)
-      if (rs.isEmpty) {
+      if (!rs.isEmpty) {
         replace(rs.get._2, size, precision, scale);
       }
     }
