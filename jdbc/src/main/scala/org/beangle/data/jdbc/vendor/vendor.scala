@@ -32,7 +32,7 @@ object Vendors {
     Driver("pgsql", "com.impossibl.postgres.jdbc.PGDataSource", "com.impossibl.postgres.jdbc.PGDriver", "//<host>:<port>/<database_name>"))
 
   val oracle = Vendor("Oracle", new OracleDialect,
-    Driver("oracle", "oracle.jdbc.pool.OracleDataSource", "oracle.jdbc.driver.OracleDriver", "thin:@//<host>:<port>/<service_name>",
+    Driver("oracle", "oracle.jdbc.pool.OracleDataSource", "oracle.jdbc.OracleDriver", "thin:@//<host>:<port>/<service_name>",
       "thin:@<host>:<port>:<SID>", "thin:@(DESCRIPTION=(ADDRESS_LIST=(LOAD_BALANCE=OFF)(FAILOVER=ON)"
         + "(ADDRESS=(PROTOCOL=TCP)(HOST=<host1>)(PORT=<port1>))"
         + "(ADDRESS=(PROTOCOL=TCP)(HOST=<host2>)(PORT=<port2>)))"

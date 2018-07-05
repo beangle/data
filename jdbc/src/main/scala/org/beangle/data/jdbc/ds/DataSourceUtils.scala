@@ -31,7 +31,7 @@ import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
 import javax.script.ScriptEngineManager
 import javax.sql.DataSource
 
-object DataSourceUtils extends Logging{
+object DataSourceUtils extends Logging {
 
   def build(driver: String, username: String, password: String, props: collection.Map[String, String]): DataSource = {
     new HikariDataSource(new HikariConfig(buildProperties(driver, username, password, props)))
@@ -44,7 +44,7 @@ object DataSourceUtils extends Logging{
         val method = dataSource.getClass.getMethod("close")
         if (null != method) {
           method.invoke(dataSource)
-        }else{
+        } else {
           logger.info(s"Cannot find ${dataSource.getClass.getName}'s close method")
         }
     }
@@ -65,10 +65,10 @@ object DataSourceUtils extends Logging{
     if (null != username) properties.put("username", username)
     if (null != password) properties.put("password", password)
 
-    if (!properties.containsKey("jdbcUrl")) {
-      if (!properties.containsKey("dataSourceClassName")) properties.put("dataSourceClassName", Vendors.drivers(driver).dataSourceClassName)
-    } else {
+    if (properties.containsKey("jdbcUrl")) {
       Class.forName(Vendors.drivers(driver).className)
+    } else {
+      if (!properties.containsKey("dataSourceClassName")) properties.put("dataSourceClassName", Vendors.drivers(driver).dataSourceClassName)
     }
     properties
   }
