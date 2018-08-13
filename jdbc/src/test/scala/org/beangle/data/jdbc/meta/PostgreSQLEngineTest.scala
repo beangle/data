@@ -31,7 +31,7 @@ class PostgreSQLEngineTest extends FlatSpec with Matchers {
     val dialect = Engines.PostgreSQL
     val scale = 0
     val precision = 65535
-    val size = 65535;
+    val size = 65535
     dialect.typeNames.get(Types.NUMERIC, size, precision, scale) equals "numeric(1000, 0)" should be(true)
     dialect.typeNames.get(Types.DECIMAL, 1, 1, 0) equals "boolean" should be(true)
   }

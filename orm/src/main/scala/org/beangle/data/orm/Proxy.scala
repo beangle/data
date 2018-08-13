@@ -22,7 +22,7 @@ import java.lang.reflect.Method
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{ ClassLoaders, Primitives }
-import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.commons.lang.reflect.{ BeanInfos, PropertyDescriptor }
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.orm.Jpas.isComponent
@@ -71,11 +71,8 @@ private[orm] object Proxy extends Logging {
         if (p.readable) {
           val getter = p.getter.get
           val value = if (p.typeinfo.optional) "null" else Primitives.defaultLiteral(p.clazz)
-          val body = if (p.typeinfo.optional) {
-            s"public scala.Option ${getter.getName}() { return $value;}"
-          } else {
-            s"public ${p.clazz.getName} ${getter.getName}() { return $value;}"
-          }
+          val javaTypeName = toJavaType(p)
+          val body = s"public ${javaTypeName} ${getter.getName}() { return $value;}"
           val ctmod = javac.compile(body).asInstanceOf[CtMethod]
           if (isComponent(p.clazz)) {
             componentTypes += (name -> generateComponent(p.clazz, name + "."))
@@ -138,12 +135,8 @@ private[orm] object Proxy extends Logging {
         if (p.readable) {
           val getter = p.getter.get
           val value = if (p.typeinfo.optional) "null" else Primitives.defaultLiteral(p.clazz)
-          val body =
-            if (p.typeinfo.optional) {
-              s"public scala.Option ${getter.getName}() { return $value;}"
-            } else {
-              s"public ${p.clazz.getName} ${getter.getName}() { return $value;}"
-            }
+          val javaTypeName = toJavaType(p)
+          val body = s"public ${javaTypeName} ${getter.getName}() { return $value;}"
           val ctmod = javac.compile(body).asInstanceOf[CtMethod]
           val accessed = "_parent.lastAccessed()"
           if (isComponent(p.clazz)) {
@@ -187,5 +180,17 @@ private[orm] object Proxy extends Logging {
     // cct.debugWriteFile("/tmp/model/")
     proxies.put(classFullName, maked)
     maked
+  }
+
+  def toJavaType(p: PropertyDescriptor): String = {
+    if (p.typeinfo.optional) {
+      "scala.Option"
+    } else {
+      if (p.clazz.isArray) {
+        p.clazz.getComponentType.getName + "[]"
+      } else {
+        p.clazz.getName
+      }
+    }
   }
 }
