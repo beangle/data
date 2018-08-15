@@ -19,7 +19,7 @@
 package org.beangle.data.jdbc
 
 import java.math.BigInteger
-import java.sql.Types.{ BIGINT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARCHAR }
+import java.sql.Types.{ BIGINT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARCHAR, VARBINARY }
 import java.time.Year
 
 import org.beangle.commons.lang.Strings
@@ -81,7 +81,7 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
 
     (classOf[java.sql.Clob], CLOB),
     (classOf[java.sql.Blob], BLOB),
-    (classOf[Array[_]], BLOB))
+    (classOf[Array[Byte]], VARBINARY))
 
   private val generalTypes: Map[Class[_], Int] = Map(
     (classOf[java.util.Date], TIMESTAMP),
