@@ -98,7 +98,8 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
   override def processTypeDefinitions() {
     val cls = context.getBuildingOptions().getServiceRegistry().getService(classOf[ClassLoaderService])
 
-    Map(("byte?", classOf[OptionByteType]),
+    Map(
+      ("byte?", classOf[OptionByteType]),
       ("char?", classOf[OptionCharType]), ("int?", classOf[OptionIntType]),
       ("short?", classOf[OptionShortType]),
       ("bool?", classOf[OptionBooleanType]), ("long?", classOf[OptionLongType]),
@@ -159,7 +160,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
   }
 
   class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: CollectionPropertyMapping)
-      extends CollectionSecondPass(context, collection, new java.util.HashMap[String, String]) {
+    extends CollectionSecondPass(context, collection, new java.util.HashMap[String, String]) {
 
     def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
       bindCollectionSecondPass(colp, collection, entities.asInstanceOf[java.util.Map[String, PersistentClass]])
@@ -168,7 +169,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
   }
 
   class MapSecondPass(context: MetadataBuildingContext, map: HMap, mapp: MapPropertyMapping)
-      extends CollectionSecondPass(context, map, new java.util.HashMap[String, String]) {
+    extends CollectionSecondPass(context, map, new java.util.HashMap[String, String]) {
     override def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
       bindMapSecondPass(mapp, map, entities.asInstanceOf[java.util.Map[String, PersistentClass]])
       map.createAllKeys()
@@ -325,7 +326,8 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
             map.setIndex(bindSimpleValue(new SimpleValue(metadata, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, sk, bt.clazz.getName))
           case et: EntityType =>
             val kt = mapp.property.key.asInstanceOf[EntityType]
-            map.setIndex(bindManyToOne(new HManyToOne(metadata, map.getCollectionTable),
+            map.setIndex(bindManyToOne(
+              new HManyToOne(metadata, map.getCollectionTable),
               DEFAULT_INDEX_COLUMN_NAME, kt.entityName, sk.columns))
         }
       case ck: EmbeddableTypeMapping =>
@@ -353,7 +355,11 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
         value.setTypeName(td.getTypeImplementorClass.getName)
         value.setTypeParameters(td.getParametersAsProperties)
       } else {
-        value.setTypeName(typeName)
+        if (typeName.equals("[B")) {
+          value.setTypeName("binary")
+        } else {
+          value.setTypeName(typeName)
+        }
       }
     }
     bindColumns(colHolder.columns, value, name)

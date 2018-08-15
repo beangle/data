@@ -29,8 +29,9 @@ import java.sql.Types
 class SqlTypeMappingTest extends FunSpec with Matchers {
   describe("SqlTypeMapping") {
     it("test value type") {
-     val mapping = new DefaultSqlTypeMapping(Engines.forName("h2"))
-     assert(mapping.sqlCode(classOf[Terms]) == Types.SMALLINT)
+      val mapping = new DefaultSqlTypeMapping(Engines.forName("h2"))
+      assert(mapping.sqlCode(classOf[Terms]) == Types.SMALLINT)
+      assert(mapping.sqlCode(classOf[Array[Byte]]) == Types.VARBINARY)
     }
   }
 }
