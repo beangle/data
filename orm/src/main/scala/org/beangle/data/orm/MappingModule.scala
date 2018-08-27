@@ -18,19 +18,20 @@
  */
 package org.beangle.data.orm
 
+import java.sql.{ Blob, Clob, Types }
+
 import scala.collection.JavaConverters.asScalaSet
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
 
 import org.beangle.commons.collection.Collections
-import org.beangle.data.jdbc.meta.{ Column, Identifier }
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
-import org.beangle.data.model.meta._
-import org.beangle.data.model.meta.Domain._
-import org.beangle.data.model.meta.EntityType
+import org.beangle.data.jdbc.meta.{ Column, Identifier }
+import org.beangle.data.model.meta.Domain.{ CollectionPropertyImpl, MapPropertyImpl, SingularPropertyImpl }
+import org.beangle.data.model.meta.Property
 
 object MappingModule {
 
@@ -44,6 +45,37 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
       ch.columns foreach (c => c.nullable = false)
+    }
+  }
+
+  class Lob extends Declaration {
+    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+      val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
+      val c = pm.property.asInstanceOf[Property].clazz
+      var isBlob = false
+      var isClob = false
+      if (c.isArray) {
+        if (c.getName.equals("[B") || c.getComponentType == classOf[java.lang.Byte] || classOf[java.io.Serializable].isAssignableFrom(c)) {
+          isBlob = true
+        } else if (c.getName.equals("[C") || c.getComponentType == classOf[java.lang.Character] || c == classOf[String]) {
+          isClob = true
+        }
+      } else {
+        if (c == classOf[Blob]) {
+          isBlob = true
+        } else if (c == classOf[Clob]) {
+          isClob = true
+        }
+      }
+      if (!isClob && !isBlob) {
+        throw new RuntimeException(s"Cannot mapping s.getName to lob!")
+      } else {
+        if (isBlob) {
+          ch.columns foreach (c => c.sqlType = holder.mappings.database.engine.toType(Types.BLOB))
+        } else {
+          ch.columns foreach (c => c.sqlType = holder.mappings.database.engine.toType(Types.CLOB))
+        }
+      }
     }
   }
 
@@ -322,6 +354,8 @@ abstract class MappingModule extends Logging {
   protected def notnull = new NotNull
 
   protected def unique = new Unique
+
+  protected def lob = new Lob
 
   protected def length(len: Int) = new Length(len)
 

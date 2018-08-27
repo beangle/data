@@ -86,7 +86,8 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
   private val generalTypes: Map[Class[_], Int] = Map(
     (classOf[java.util.Date], TIMESTAMP),
     (classOf[CharSequence], VARCHAR),
-    (classOf[Number], NUMERIC))
+    (classOf[Number], NUMERIC),
+    (classOf[java.io.Serializable], VARBINARY))
 
   def sqlCode(clazz: Class[_]): Int = {
     concretTypes.get(clazz) match {
