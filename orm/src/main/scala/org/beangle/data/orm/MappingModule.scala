@@ -61,7 +61,7 @@ object MappingModule {
           isClob = true
         }
       } else {
-        //这两个条件不要调整顺序，否则大部分类都是可序列化字类，回映射成blob
+        //注意：这两个条件不要调整顺序，否则大部分类都是可序列化字类，回映射成blob
         if (c == classOf[Clob] || c == classOf[String]) {
           isClob = true
         } else if (c == classOf[Blob] || classOf[java.io.Serializable].isAssignableFrom(c)) {
@@ -69,7 +69,8 @@ object MappingModule {
         }
       }
       if (!isClob && !isBlob) {
-        throw new RuntimeException(s"Cannot mapping ${c.getName} to lob!")
+        val p = pm.property.asInstanceOf[Property]
+        throw new RuntimeException(s"Cannot mapping ${holder.clazz.getName}.${p.name}(${c.getName}) to lob!")
       } else {
         val engine = holder.mappings.database.engine
         if (isBlob) {
