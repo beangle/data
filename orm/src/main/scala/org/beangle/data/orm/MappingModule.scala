@@ -55,25 +55,28 @@ object MappingModule {
       var isBlob = false
       var isClob = false
       if (c.isArray) {
-        if (c.getName.equals("[B") || c.getComponentType == classOf[java.lang.Byte] || classOf[java.io.Serializable].isAssignableFrom(c)) {
+        if (c.getName.equals("[B") || c.getComponentType == classOf[java.lang.Byte]) {
           isBlob = true
-        } else if (c.getName.equals("[C") || c.getComponentType == classOf[java.lang.Character] || c == classOf[String]) {
+        } else if (c.getName.equals("[C") || c.getComponentType == classOf[java.lang.Character]) {
           isClob = true
         }
       } else {
-        if (c == classOf[Blob]) {
-          isBlob = true
-        } else if (c == classOf[Clob]) {
+        //注意：这两个条件不要调整顺序，否则大部分类都是可序列化字类，回映射成blob
+        if (c == classOf[Clob] || c == classOf[String]) {
           isClob = true
+        } else if (c == classOf[Blob] || classOf[java.io.Serializable].isAssignableFrom(c)) {
+          isBlob = true
         }
       }
       if (!isClob && !isBlob) {
-        throw new RuntimeException(s"Cannot mapping s.getName to lob!")
+        val p = pm.property.asInstanceOf[Property]
+        throw new RuntimeException(s"Cannot mapping ${holder.clazz.getName}.${p.name}(${c.getName}) to lob!")
       } else {
+        val engine = holder.mappings.database.engine
         if (isBlob) {
-          ch.columns foreach (c => c.sqlType = holder.mappings.database.engine.toType(Types.BLOB))
+          ch.columns foreach (c => c.sqlType = engine.toType(Types.BLOB))
         } else {
-          ch.columns foreach (c => c.sqlType = holder.mappings.database.engine.toType(Types.CLOB))
+          ch.columns foreach (c => c.sqlType = engine.toType(Types.CLOB))
         }
       }
     }
