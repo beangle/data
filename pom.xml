@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>24.10</version>
+    <version>25.0</version>
   </parent>
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent_2.12</artifactId>
@@ -38,9 +38,9 @@
   </scm>
 
   <properties>
-    <commons.version>5.1.1</commons.version>
-    <cdi.version>0.0.16</cdi.version>
-    <spring.version>4.3.17.RELEASE</spring.version>
+    <commons.version>5.1.2</commons.version>
+    <cdi.version>0.0.17</cdi.version>
+    <spring.version>4.3.19.RELEASE</spring.version>
     <HikariCP.version>3.2.0</HikariCP.version>
     <jpa.version>1.0.0.Final</jpa.version>
     <jta.version>1.1.1</jta.version>

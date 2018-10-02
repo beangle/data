@@ -63,6 +63,7 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
 
     (classOf[java.sql.Date], DATE),
     (classOf[java.time.LocalDate], DATE),
+    (classOf[java.time.YearMonth], DATE),
 
     (classOf[java.sql.Time], TIME),
     (classOf[java.time.LocalTime], TIME),

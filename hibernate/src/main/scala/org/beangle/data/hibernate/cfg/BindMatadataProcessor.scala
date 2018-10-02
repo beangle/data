@@ -21,14 +21,14 @@ package org.beangle.data.hibernate.cfg
 import java.lang.reflect.Modifier
 import java.{ util => ju }
 
-import org.beangle.data.jdbc.meta.Column
-import org.beangle.commons.lang.{ ClassLoaders, Strings }
+import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.data.model.meta.{ BasicType, EntityType, PluralProperty, Property }
-import org.beangle.data.orm.{ BasicTypeMapping, CollectionPropertyMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapPropertyMapping, Mappings, PluralPropertyMapping, PropertyMapping, SimpleColumn, SingularPropertyMapping, TypeDef }
 import org.beangle.data.hibernate.ScalaPropertyAccessStrategy
 import org.beangle.data.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, SeqPerTableStyleGenerator }
-import org.beangle.data.hibernate.udt.{ EnumType, MapType, OptionBooleanType, OptionByteType, OptionCharType, OptionDoubleType, OptionFloatType, OptionIntType, OptionJsDateType, OptionJsTimestampType, OptionJuDateType, OptionLongType, OptionShortType, OptionStringType, SeqType, SetType, ValueType }
+import org.beangle.data.hibernate.udt.{ EnumType, MapType, SeqType, SetType, ValueType }
+import org.beangle.data.jdbc.meta.Column
+import org.beangle.data.model.meta.{ BasicType, EntityType, PluralProperty, Property }
+import org.beangle.data.orm.{ BasicTypeMapping, CollectionPropertyMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapPropertyMapping, PluralPropertyMapping, PropertyMapping, SimpleColumn, SingularPropertyMapping, TypeDef }
 import org.hibernate.{ FetchMode, MappingException }
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.model.TypeDefinition
@@ -97,23 +97,6 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
    */
   override def processTypeDefinitions() {
     val cls = context.getBuildingOptions().getServiceRegistry().getService(classOf[ClassLoaderService])
-
-    Map(
-      ("byte?", classOf[OptionByteType]),
-      ("char?", classOf[OptionCharType]), ("int?", classOf[OptionIntType]),
-      ("short?", classOf[OptionShortType]),
-      ("bool?", classOf[OptionBooleanType]), ("long?", classOf[OptionLongType]),
-      ("float?", classOf[OptionFloatType]), ("double?", classOf[OptionDoubleType]),
-      ("java.lang.String?", classOf[OptionStringType]),
-      ("java.util.Date?", classOf[OptionJuDateType]),
-      ("java.sql.Date?", classOf[OptionJsDateType]),
-      ("java.sql.Timestamp?", classOf[OptionJsTimestampType])) foreach {
-        case (name, clazz) =>
-          val p = new ju.HashMap[String, String]
-          val definition = new TypeDefinition(name, clazz, Array(name), p)
-          context.getMetadataCollector.addTypeDefinition(definition)
-      }
-
     val types = new collection.mutable.HashMap[String, TypeDef]
     types ++= mappings.typeDefs
     mappings.valueTypes foreach (t => types += (t.getName -> new TypeDef(classOf[ValueType].getName, Map("valueClass" -> t.getName))))
@@ -251,7 +234,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
   }
 
   def bindCollectionSecondPass(colp: PluralPropertyMapping[_], collection: HCollection,
-    entities: java.util.Map[String, PersistentClass]): Unit = {
+                               entities: java.util.Map[String, PersistentClass]): Unit = {
     val pp = colp.property.asInstanceOf[PluralProperty]
     pp.element match {
       case et: EntityType =>

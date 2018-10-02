@@ -20,6 +20,8 @@ package org.beangle.data.hibernate.model
 
 import org.beangle.data.model.Entity
 import org.beangle.commons.collection.Collections
+import java.time.YearMonth
+import java.time.LocalDate
 
 class Role(var id: Int) extends Entity[Int] with Coded {
   this.code = String.valueOf(System.identityHashCode(this))
@@ -35,6 +37,8 @@ class Role(var id: Int) extends Entity[Int] with Coded {
   var s: java.util.Calendar = java.util.Calendar.getInstance
 
   var creator: Option[User] = None
+  var startOn: Option[LocalDate]  = None
+  var properties = Collections.newMap[Int, Boolean]
 }
 
 class ExtendRole(id: Int) extends Role(id) {
