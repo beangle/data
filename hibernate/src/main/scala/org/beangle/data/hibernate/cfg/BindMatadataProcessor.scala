@@ -47,6 +47,8 @@ import org.hibernate.mapping.Collection.{ DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_K
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
 import org.hibernate.property.access.spi.PropertyAccessStrategy
 import org.hibernate.tuple.{ GeneratedValueGeneration, GenerationTiming }
+import org.beangle.data.hibernate.udt.YearMonthType
+import java.time.YearMonth
 
 /**
  * Hibernate Bind Metadadta processor.
@@ -97,6 +99,15 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
    */
   override def processTypeDefinitions() {
     val cls = context.getBuildingOptions().getServiceRegistry().getService(classOf[ClassLoaderService])
+
+    Map(
+      (classOf[YearMonth].getName, classOf[YearMonthType])) foreach {
+        case (name, clazz) =>
+          val p = new ju.HashMap[String, String]
+          val definition = new TypeDefinition(name, clazz, Array(name), p)
+          context.getMetadataCollector.addTypeDefinition(definition)
+      }
+
     val types = new collection.mutable.HashMap[String, TypeDef]
     types ++= mappings.typeDefs
     mappings.valueTypes foreach (t => types += (t.getName -> new TypeDef(classOf[ValueType].getName, Map("valueClass" -> t.getName))))

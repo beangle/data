@@ -37,7 +37,7 @@ class Role(var id: Int) extends Entity[Int] with Coded {
   var s: java.util.Calendar = java.util.Calendar.getInstance
 
   var creator: Option[User] = None
-  var startOn: Option[LocalDate]  = None
+  var startOn: Option[YearMonth]  = None
   var properties = Collections.newMap[Int, Boolean]
 }
 

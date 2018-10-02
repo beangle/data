@@ -50,7 +50,7 @@ object UserCrudTest {
     role2.enName = "role2"
     role3.enName = "role3"
 
-    role2.startOn =Some(LocalDate.now)
+    role2.startOn = Some(YearMonth.parse("2019-02"))
     role2.properties.put(3, false)
 
     role4.enName = "role4"
