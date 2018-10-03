@@ -31,10 +31,10 @@ class RailsNamingPolicyTest extends FunSpec with Matchers {
 
   describe("RailsNamingPolicy") {
     it("Get Module") {
-      System.setProperty("jpa_prefix", "j_")
+      System.setProperty("jpa_prefix", "public")
       val profiles = new Profiles(new Resources(None, ClassLoaders.getResources("META-INF/beangle/orm.xml"), None))
       val module = profiles.getProfile(classOf[NationBean])
-      assert(module.schema == Some("j_naming"))
+      assert(module.schema == Some("public_naming"))
       assert(profiles.getPrefix(classOf[NationBean]) == "gb_")
 
       val daoModule = profiles.getProfile(classOf[SchoolBean])

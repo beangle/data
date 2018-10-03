@@ -57,7 +57,7 @@ class HibernateConfigTest extends FunSpec with Matchers {
   val roleMetaOption = domain.getEntity(classOf[Role])
   val userMetaOption = domain.getEntity(classOf[User])
 
-  it("Should support int? and scala collection") {
+  it("Should support option and collection") {
     UserCrudTest.testCrud(sf)
   }
 
