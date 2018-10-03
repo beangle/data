@@ -16,32 +16,17 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.listener
-
-import org.beangle.data.transfer.AbstractTransferListener
-import org.beangle.data.transfer.TransferResult
+package org.beangle.data.transfer.importer
 
 /**
- * 转换调试监听器
+ * ImportPrepare interface.
  *
  * @author chaostone
  */
-class DebugListener extends AbstractTransferListener {
+trait ImportPrepare {
 
-  override def onStart(tr: TransferResult) {
-    tr.addMessage("start", transfer.dataName);
-  }
-
-  override def onFinish(tr: TransferResult) {
-    tr.addMessage("end", transfer.dataName);
-  }
-
-  override def onItemStart(tr: TransferResult) {
-    tr.addMessage("start Item", transfer.tranferIndex + "");
-  }
-
-  override def onItemFinish(tr: TransferResult) {
-    tr.addMessage("end Item", transfer.current);
-  }
-
+  /**
+   * prepare.
+   */
+  def prepare(importer: Importer);
 }

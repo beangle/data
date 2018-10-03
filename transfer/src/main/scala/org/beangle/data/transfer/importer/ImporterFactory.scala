@@ -16,29 +16,33 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.io
+package org.beangle.data.transfer.importer
 
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.LineNumberReader
+
+import org.beangle.data.transfer.csv.CsvItemReader
+import org.beangle.data.transfer.excel.ExcelItemReader
 import org.beangle.data.transfer.Format
 
 /**
- * 数据读取类
+ * Importer Factory
  *
  * @author chaostone
+ * @since 3.1
  */
-trait Reader {
+object ImporterFactory {
 
-  /**
-   * 读取数据
-   */
-  def read(): Any
-
-  /**
-   * 返回读取类型的格式
-   */
-  def format: Format.Value
-
-  /**
-   * 关闭
-   */
-  def close()
+  def getEntityImporter(format: Format.Value, is: InputStream, clazz: Class[_],
+                        params: Map[String, Any]): EntityImporter = {
+    val importer = new DefaultEntityImporter(clazz);
+    if (format.equals(Format.Xls)) {
+      importer.reader = new ExcelItemReader(is, 1)
+    } else {
+      val reader = new LineNumberReader(new InputStreamReader(is))
+      importer.reader = new CsvItemReader(reader)
+    }
+    importer
+  }
 }

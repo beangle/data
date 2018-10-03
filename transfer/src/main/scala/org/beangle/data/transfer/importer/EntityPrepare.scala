@@ -16,29 +16,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.io
+package org.beangle.data.transfer.importer
 
-import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.io.ItemReader
 
 /**
- * 数据读取类
+ * DescriptionAttrPrepare class.
  *
  * @author chaostone
  */
-trait Reader {
+object EntityPrepare extends ImportPrepare {
 
-  /**
-   * 读取数据
-   */
-  def read(): Any
+  def prepare(importer: Importer) {
+    val entityImporter = importer.asInstanceOf[DefaultEntityImporter]
+    entityImporter.addEntity(DefaultEntityImporter.alias, entityImporter.entityClass)
 
-  /**
-   * 返回读取类型的格式
-   */
-  def format: Format.Value
+    val reader = importer.reader.asInstanceOf[ItemReader]
+    importer.asInstanceOf[AbstractImporter].setAttrs(reader.readTitle(), reader.readDescription());
+  }
 
-  /**
-   * 关闭
-   */
-  def close()
 }

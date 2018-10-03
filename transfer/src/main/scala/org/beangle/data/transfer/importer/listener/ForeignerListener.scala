@@ -16,15 +16,18 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.listener;
+package org.beangle.data.transfer.importer.listener
 
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.lang.Strings
 import org.beangle.data.model.Entity
 import org.beangle.data.dao.EntityDao
-import org.beangle.data.transfer.{ AbstractTransfer, MultiEntityTransfer, TransferListener, TransferResult }
 
 import ForeignerListener.CACHE_SIZE
+import org.beangle.data.transfer.importer.ImportResult
+import org.beangle.data.transfer.importer.ImportListener
+import org.beangle.data.transfer.importer.MultiEntityImporter
+import org.beangle.data.transfer.importer.AbstractImporter
 
 object ForeignerListener {
   val CACHE_SIZE = 500;
@@ -38,7 +41,7 @@ object ForeignerListener {
  *
  * @author chaostone
  */
-class ForeignerListener(entityDao: EntityDao) extends TransferListener {
+class ForeignerListener(entityDao: EntityDao) extends ImportListener {
 
   import ForeignerListener._
   protected val foreigersMap = new collection.mutable.HashMap[String, collection.mutable.HashMap[String, Object]]
@@ -48,12 +51,12 @@ class ForeignerListener(entityDao: EntityDao) extends TransferListener {
 
   private var multiEntity = false;
 
-  override def onStart(tr: TransferResult) {
-    multiEntity = (transfer.getClass == classOf[MultiEntityTransfer])
+  override def onStart(tr: ImportResult) {
+    multiEntity = (transfer.getClass == classOf[MultiEntityImporter])
   }
 
-  override def onItemFinish(tr: TransferResult) {
-    val itermTranfer = transfer.asInstanceOf[AbstractTransfer]
+  override def onItemFinish(tr: ImportResult) {
+    val itermTranfer = transfer.asInstanceOf[AbstractImporter]
     // 过滤所有外键
     val iter = itermTranfer.attrs.iterator
     while (iter.hasNext) {
@@ -70,7 +73,7 @@ class ForeignerListener(entityDao: EntityDao) extends TransferListener {
         if (Strings.isNotEmpty(codeValue)) {
           var entity: Object = null;
           if (multiEntity) {
-            entity = transfer.asInstanceOf[MultiEntityTransfer].getCurrent(attri).asInstanceOf[AnyRef]
+            entity = transfer.asInstanceOf[MultiEntityImporter].getCurrent(attri).asInstanceOf[AnyRef]
           } else {
             entity = transfer.current;
           }
@@ -96,8 +99,8 @@ class ForeignerListener(entityDao: EntityDao) extends TransferListener {
             case _ =>
           }
           val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf("."));
-          val entityTransfer = transfer.asInstanceOf[MultiEntityTransfer]
-          entityTransfer.populator.populate(entity.asInstanceOf[Entity[_]], entityTransfer.domain.getEntity(entity.getClass).get, parentAttr, foreiger);
+          val entityImporter = transfer.asInstanceOf[MultiEntityImporter]
+          entityImporter.populator.populate(entity.asInstanceOf[Entity[_]], entityImporter.domain.getEntity(entity.getClass).get, parentAttr, foreiger);
         }
       }
     }
@@ -110,11 +113,11 @@ class ForeignerListener(entityDao: EntityDao) extends TransferListener {
   /**
    * 结束转换
    */
-  override def onFinish(tr: TransferResult) {}
+  override def onFinish(tr: ImportResult) {}
 
   /**
    * 开始转换单个项目
    */
-  override def onItemStart(tr: TransferResult) {}
+  override def onItemStart(tr: ImportResult) {}
 
 }

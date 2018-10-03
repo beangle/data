@@ -16,40 +16,32 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer;
+package org.beangle.data.transfer.importer.listener
 
-import org.beangle.commons.collection.Collections
-import scala.collection.mutable.Buffer
-import scala.collection.mutable.ListBuffer
-import org.beangle.commons.conversion.Conversion
-import org.beangle.commons.conversion.impl.DefaultConversion
+import org.beangle.data.transfer.importer.AbstractImportListener
+import org.beangle.data.transfer.importer.ImportResult
 
 /**
- * 转换结果
+ * 转换调试监听器
  *
  * @author chaostone
  */
-class TransferResult {
+class DebugListener extends AbstractImportListener {
 
-  val msgs = new ListBuffer[TransferMessage]
-
-  val errs = new ListBuffer[TransferMessage]
-
-  var transfer: Transfer = _
-
-  def addFailure(message: String, value: Any): Unit = {
-    errs += new TransferMessage(transfer.tranferIndex, message, value)
+  override def onStart(tr: ImportResult) {
+    tr.addMessage("start", transfer.dataName);
   }
 
-  def addMessage(message: String, value: Any): Unit = {
-    msgs += new TransferMessage(transfer.tranferIndex, message, value)
+  override def onFinish(tr: ImportResult) {
+    tr.addMessage("end", transfer.dataName);
   }
 
-  def hasErrors: Boolean = {
-    !errs.isEmpty
+  override def onItemStart(tr: ImportResult) {
+    tr.addMessage("start Item", transfer.tranferIndex + "");
   }
 
-  def errors: Int = {
-    errs.size
+  override def onItemFinish(tr: ImportResult) {
+    tr.addMessage("end Item", transfer.current);
   }
+
 }
