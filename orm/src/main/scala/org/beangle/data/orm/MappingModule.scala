@@ -89,6 +89,22 @@ object MappingModule {
     }
   }
 
+  class KeyColumn(name: String) extends Declaration {
+    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+      val mp = cast[MapPropertyMapping](pm, holder, "key column should used on MapProperty")
+      val ch = mp.key.asInstanceOf[ColumnHolder]
+      ch.columns foreach (x => x.name = Identifier(name))
+    }
+  }
+
+  class KeyLength(len: Int) extends Declaration {
+    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+      val mp = cast[MapPropertyMapping](pm, holder, "key length should used on MapProperty")
+      val ch = mp.key.asInstanceOf[ColumnHolder]
+      ch.columns foreach (x => x.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len))
+    }
+  }
+
   class ElementColumn(name: String) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val mp = cast[PluralPropertyMapping[_]](pm, holder, "element column should used on PluralProperty")
@@ -410,6 +426,13 @@ abstract class MappingModule extends Logging {
     new ColumnName(name)
   }
 
+  protected def keyColumn(name: String): KeyColumn = {
+    new KeyColumn(name)
+  }
+
+  protected def keyLength(len: Int): KeyLength = {
+    new KeyLength(len)
+  }
   protected def eleColumn(name: String): ElementColumn = {
     new ElementColumn(name)
   }

@@ -34,6 +34,7 @@ object TestMapping2 extends MappingModule {
     bind[Role].on(r => declare(
       r.name is (length(112), unique),
       r.parent is target[Role],
+      r.properties is (keyColumn("tag_id")),
       r.children is (depends("parent"), cacheable))).generator("assigned")
 
     bind[ExtendRole](classOf[Role].getName)
