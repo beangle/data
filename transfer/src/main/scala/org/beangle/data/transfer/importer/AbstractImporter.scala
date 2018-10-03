@@ -16,24 +16,24 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer
+package org.beangle.data.transfer.importer
 
 import java.util.Locale
 import scala.annotation.elidable
 import scala.annotation.elidable.FINE
 import scala.collection.mutable.ListBuffer
 import org.beangle.commons.logging.Logging
-import org.beangle.data.transfer.io.TransferFormat
 import org.beangle.commons.lang.Strings
+import org.beangle.data.transfer.Format
 
 /**
  * 导入的抽象和缺省实现
  *
  * @author chaostone
  */
-abstract class AbstractTransfer extends Transfer with Logging {
-  protected var transferResult: TransferResult = _
-  protected val listeners = new ListBuffer[TransferListener]
+abstract class AbstractImporter extends Importer with Logging {
+  protected var transferResult: ImportResult = _
+  protected val listeners = new ListBuffer[ImportListener]
   var success = 0
   var fail = 0
   this.prepare = new DescriptionAttrPrepare()
@@ -44,7 +44,7 @@ abstract class AbstractTransfer extends Transfer with Logging {
   /**
    * 进行转换
    */
-  def transfer(tr: TransferResult): Unit = {
+  def transfer(tr: ImportResult): Unit = {
     this.transferResult = tr;
     this.transferResult.transfer = this;
     val transferStartAt = System.currentTimeMillis();
@@ -90,7 +90,7 @@ abstract class AbstractTransfer extends Transfer with Logging {
     Locale.getDefault();
   }
 
-  def format: TransferFormat.Value = {
+  def format: Format.Value = {
     reader.format
   }
 
@@ -98,7 +98,7 @@ abstract class AbstractTransfer extends Transfer with Logging {
     index;
   }
 
-  override def addListener(listener: TransferListener): Transfer = {
+  override def addListener(listener: ImportListener): Importer = {
     listeners += listener
     listener.transfer = this
     this

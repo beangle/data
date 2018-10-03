@@ -32,7 +32,7 @@ import org.scalatest.{ FunSpec, Matchers }
 import org.springframework.core.io.UrlResource
 
 @RunWith(classOf[JUnitRunner])
-class HbmConfigTest extends FunSpec with Matchers {
+class HibernateConfigTest extends FunSpec with Matchers {
 
   val ormLocations = ClassLoaders.getResource("META-INF/beangle/orm.xml").toList
   val resouces = ormLocations map (url => new UrlResource(url.toURI))
@@ -57,7 +57,7 @@ class HbmConfigTest extends FunSpec with Matchers {
   val roleMetaOption = domain.getEntity(classOf[Role])
   val userMetaOption = domain.getEntity(classOf[User])
 
-  it("Should support int? and scala collection") {
+  it("Should support option and collection") {
     UserCrudTest.testCrud(sf)
   }
 

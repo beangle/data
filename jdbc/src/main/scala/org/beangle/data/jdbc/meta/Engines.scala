@@ -45,8 +45,9 @@ object Engines {
           DB2
         } else if (databaseName.startsWith("Microsoft SQL Server")) {
           SQLServer
+        } else {
+          throw new RuntimeException(s"Cannot find engine for database $databaseName")
         }
-        throw new RuntimeException(s"Cannot find engine for database $databaseName")
     }
   }
 
@@ -81,6 +82,8 @@ object Engines {
         }
         result.length = Some(length)
         result
+      } else if (sqlCode == BLOB) {
+        super.toType(VARBINARY, length, precision, scale)
       } else {
         super.toType(sqlCode, length, precision, scale)
       }

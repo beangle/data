@@ -8,7 +8,7 @@
       <class annotation = "org.beangle.data.model.annotation.code" prefix="jb_" value="ministry" />
       <class annotation = "org.beangle.data.model.annotation.code" prefix="xb_" value="school" schema="school"/>
 
-      <profile package = "naming" plau="true" schema="${jpa_prefix}naming"/>
+      <profile package = "naming" plau="true" schema="${jpa_prefix}_naming"/>
     </profile>
 
     <profile package = "org.beangle.data.hibernate.dao" pluralize="true" schema="${jpa_prefix}"/>

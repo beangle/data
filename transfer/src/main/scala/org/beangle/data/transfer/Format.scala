@@ -18,32 +18,9 @@
  */
 package org.beangle.data.transfer
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-import java.util.Map;
-
-import org.beangle.data.transfer.csv.CsvItemReader;
-import org.beangle.data.transfer.excel.ExcelItemReader;
-import org.beangle.data.transfer.io.TransferFormat;
-
 /**
- * Importer Factory
- *
- * @author chaostone
- * @since 3.1
+ * TransferFormats interface.
  */
-object ImporterFactory {
-
-  def getEntityImporter(format: TransferFormat.Value, is: InputStream, clazz: Class[_],
-    params: Map[String, Any]): EntityTransfer = {
-    val importer = new DefaultEntityTransfer(clazz);
-    if (format.equals(TransferFormat.Xls)) {
-      importer.reader = new ExcelItemReader(is, 1)
-    } else {
-      val reader = new LineNumberReader(new InputStreamReader(is))
-      importer.reader = new CsvItemReader(reader)
-    }
-    importer
-  }
+object Format extends Enumeration(1) {
+  val Csv, Txt, Html, Xls, Xlsx, Pdf, Dbf = Value
 }

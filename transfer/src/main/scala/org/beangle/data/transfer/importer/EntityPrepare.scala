@@ -16,22 +16,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.orm
+package org.beangle.data.transfer.importer
 
-class TestModule extends MappingModule {
+import org.beangle.data.transfer.io.ItemReader
 
-  override def binding(): Unit = {
-    autoIncrement()
+/**
+ * DescriptionAttrPrepare class.
+ *
+ * @author chaostone
+ */
+object EntityPrepare extends ImportPrepare {
 
-    bind[TestUser].on(e => declare(
-      e.properties is depends("user"),
-      e.friends is eleColumn("friend_user_id"),
-      e.tags is (table("users_tags"), keyLength(30), eleColumn("value2"), eleLength(200))))
+  def prepare(importer: Importer) {
+    val entityImporter = importer.asInstanceOf[DefaultEntityImporter]
+    entityImporter.addEntity(DefaultEntityImporter.alias, entityImporter.entityClass)
 
-    bind[TestRole].on(e => declare(
-      e.name is unique,
-      e.properties is keyColumn("type_id")))
-
-    bind[UserProperty]
+    val reader = importer.reader.asInstanceOf[ItemReader]
+    importer.asInstanceOf[AbstractImporter].setAttrs(reader.readTitle(), reader.readDescription());
   }
+
 }

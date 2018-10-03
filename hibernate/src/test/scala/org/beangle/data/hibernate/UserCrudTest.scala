@@ -25,6 +25,8 @@ import org.beangle.data.dao.OqlBuilder
 import org.beangle.data.hibernate.model.{ ExtendRole, Member, Name, Role, User }
 import org.hibernate.SessionFactory
 import org.beangle.data.model.meta.Domain
+import java.time.YearMonth
+import java.time.LocalDate
 
 object UserCrudTest {
 
@@ -48,6 +50,9 @@ object UserCrudTest {
     role2.enName = "role2"
     role3.enName = "role3"
 
+    role2.startOn = Some(YearMonth.parse("2019-02"))
+    role2.properties.put(3, false)
+
     role4.enName = "role4"
     role4.children += role41
     role41.enName = "role41"
@@ -64,7 +69,7 @@ object UserCrudTest {
     user.properties.put("address", "some street")
     user.occupy = new WeekState(2)
     role2.parent = Some(role1)
-    entityDao.saveOrUpdate(role1, role2, role3, role4, role41,user)
+    entityDao.saveOrUpdate(role1, role2, role3, role4, role41, user)
 
     val query = OqlBuilder.from(classOf[Role], "r").where("r.parent = :parent", role1)
     val list = entityDao.search(query)

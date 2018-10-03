@@ -16,11 +16,26 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.io
+package org.beangle.data.transfer.importer
 
 /**
- * TransferFormats interface.
+ * AbstractImporterListener class.
+ *
+ * @author chaostone
  */
-object TransferFormat extends Enumeration(1) {
-  val Csv, Txt, Html, Xls, Xlsx, Pdf, Dbf = Value
+class AbstractImportListener extends ImportListener {
+
+  def onFinish(tr: ImportResult) {
+  }
+
+  def onItemFinish(tr: ImportResult) {
+  }
+
+  def onStart(tr: ImportResult) {
+
+  }
+
+  def onItemStart(tr: ImportResult) {
+  }
+
 }

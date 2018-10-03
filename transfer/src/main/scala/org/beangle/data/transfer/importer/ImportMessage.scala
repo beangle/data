@@ -16,20 +16,35 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer
+package org.beangle.data.transfer.importer
 
-import org.beangle.data.transfer.io.ItemReader;
+import org.beangle.commons.lang.Objects
+import scala.collection.mutable.ListBuffer
 
+object ImporterMessage {
+  /** Constant <code>ERROR_ATTRS="error.transfer.attrs"</code> */
+  val ERROR_ATTRS = "error.transfer.attrs";
+
+  /** Constant <code>ERROR_ATTRS_EXPORT="error.transfer.attrs.export"</code> */
+  val ERROR_ATTRS_EXPORT = "error.transfer.attrs.export";
+}
 /**
- * DescriptionAttrPrepare class.
- *
- * @author chaostone
+ * 转换消息
  */
- class DescriptionAttrPrepare extends TransferPrepare {
+class ImportMessage(val index: Int, val message: String, value: Any) {
 
-  def prepare(importer:Transfer ) {
-    val reader = importer.reader.asInstanceOf[ItemReader]
-    importer.asInstanceOf[AbstractTransfer].setAttrs(reader.readTitle(), reader.readDescription());
+  /**
+   * 消息中使用的对应值
+   */
+  val values = new ListBuffer[Any]
+  values += value
+
+  /**
+   * toString.
+   */
+  override def toString: String = {
+    Objects.toStringBuilder(this).add("index", this.index).add("message", this.message)
+      .add("values", this.values).toString();
   }
 
 }

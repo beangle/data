@@ -102,7 +102,8 @@ class Schema(var database: Database, var name: Identifier) {
       val results = new collection.mutable.ListBuffer[Identifier]
       for (tabId <- tables) {
         val tabame = tabId.value
-        val tableName = if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame
+        var tableName = if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame
+        tableName = tableName.toLowerCase
         if (includes.exists(p => p == "*" || tableName.startsWith(p) && !excludes.contains(tableName)))
           results += tabId
       }

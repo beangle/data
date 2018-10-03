@@ -16,26 +16,10 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer
+package org.beangle.data.transfer.exporter
 
-import java.util.Set
-import org.beangle.data.model.util.Populator
-import org.beangle.data.transfer.io.ItemReader
-import org.beangle.data.model.meta.Domain
+import org.beangle.commons.collection.Collections
 
-/**
- * EntityImporter interface.
- *
- * @author chaostone
- */
-trait EntityTransfer extends Transfer {
-
-  def foreignerKeys: collection.Set[String]
-
-  def addForeignedKeys(foreignerKey: String)
-
-  var populator: Populator = _
-
-  var domain: Domain = _
-
+class Context {
+  val datas = Collections.newMap[String, Any]
 }

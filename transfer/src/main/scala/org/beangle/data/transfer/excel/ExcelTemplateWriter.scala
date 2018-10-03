@@ -16,26 +16,39 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer;
+package org.beangle.data.transfer.excel
 
-/**
- * AbstractTransferListener class.
- *
- * @author chaostone
- */
-class AbstractTransferListener extends TransferListener {
+import java.io.OutputStream
+import java.net.URL
 
-  def onFinish(tr: TransferResult) {
+import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.exporter.Context
+import org.beangle.data.transfer.io.Writer
+import org.jxls.util.JxlsHelper
+
+class ExcelTemplateWriter(val template: URL, os: OutputStream) extends Writer {
+
+  var context: Context = _
+
+  this.outputStream = os
+
+  /**
+   * write.
+   */
+  def write() {
+    val ctx = new org.jxls.common.Context()
+    context.datas foreach {
+      case (k, v) =>
+        ctx.putVar(k, v)
+    }
+    JxlsHelper.getInstance().processTemplate(template.openStream(), outputStream, ctx)
   }
 
-  def onItemFinish(tr: TransferResult) {
+  override def format: Format.Value = {
+    Format.Xls
   }
 
-  def onStart(tr: TransferResult) {
+  override def close() {
 
   }
-
-  def onItemStart(tr: TransferResult) {
-  }
-
 }

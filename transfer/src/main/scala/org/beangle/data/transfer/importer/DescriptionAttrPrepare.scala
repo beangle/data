@@ -16,37 +16,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer;
+package org.beangle.data.transfer.importer
+
+import org.beangle.data.transfer.io.ItemReader
 
 /**
- * 转换监听器
+ * DescriptionAttrPrepare class.
  *
  * @author chaostone
  */
-trait TransferListener {
+class DescriptionAttrPrepare extends ImportPrepare {
 
-  /**
-   * 开始转换
-   */
-  def onStart(tr: TransferResult)
+  def prepare(importer: Importer) {
+    val reader = importer.reader.asInstanceOf[ItemReader]
+    importer.asInstanceOf[AbstractImporter].setAttrs(reader.readTitle(), reader.readDescription());
+  }
 
-  /**
-   * 结束转换
-   */
-  def onFinish(tr: TransferResult)
-
-  /**
-   * 开始转换单个项目
-   */
-  def onItemStart(tr: TransferResult)
-
-  /**
-   * 结束转换单个项目
-   */
-  def onItemFinish(tr: TransferResult)
-
-  /**
-   * 设置转换器
-   */
-  var transfer: Transfer=_
 }

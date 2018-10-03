@@ -16,23 +16,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer
+package org.beangle.data.transfer.importer
 
 import org.beangle.data.model.meta.EntityType
 
-object DefaultEntityTransfer {
+object DefaultEntityImporter {
 
   val alias = "_entity";
 }
 
 /**
- * DefaultEntityTransfer
+ * DefaultEntityImporter
  *
  * @author chaostone
  */
-class DefaultEntityTransfer(val entityClass: Class[_]) extends MultiEntityTransfer {
+class DefaultEntityImporter(val entityClass: Class[_]) extends MultiEntityImporter {
 
-  import DefaultEntityTransfer._
+  import DefaultEntityImporter._
 
   this.prepare = EntityPrepare
 

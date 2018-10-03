@@ -19,16 +19,14 @@
 package org.beangle.data.jdbc.ds
 
 import java.io.{ BufferedReader, ByteArrayInputStream, FileInputStream, InputStreamReader }
-import java.net.{ URLConnection, URL }
-import org.beangle.commons.bean.{ Factory, Initializing }
+import java.io.InputStream
+import java.net.{ HttpURLConnection, URLConnection, URL }
+import javax.sql.DataSource
+
+import org.beangle.commons.bean.{ Disposable, Factory, Initializing }
+import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.Strings
-import javax.script.ScriptEngineManager
-import javax.sql.DataSource
-import java.io.InputStream
-import java.net.HttpURLConnection
-import org.beangle.commons.bean.Disposable
-import org.beangle.commons.collection.Collections
 
 /**
  * Build a DataSource from file: or http: config url
