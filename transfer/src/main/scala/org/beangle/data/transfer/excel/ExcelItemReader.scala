@@ -25,8 +25,9 @@ import org.apache.poi.hssf.usermodel.{ HSSFCell, HSSFSheet, HSSFWorkbook }
 import org.apache.poi.ss.usermodel.{ Cell, DateUtil }
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
-import org.beangle.data.transfer.io.{ ItemReader, TransferFormat }
 import org.apache.poi.ss.usermodel.CellType
+import org.beangle.data.transfer.io.ItemReader
+import org.beangle.data.transfer.Format
 
 object ExcelItemReader {
   val DEFAULT_HEADINDEX = 0
@@ -156,8 +157,8 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
     }
   }
 
-  override def format: TransferFormat.Value = {
-    TransferFormat.Xls
+  override def format: Format.Value = {
+    Format.Xls
   }
 
   override def close(): Unit = {

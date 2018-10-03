@@ -16,19 +16,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer
+package org.beangle.data.transfer.importer
 
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.EntityType
+import org.beangle.data.transfer.IllegalFormatException
 
 /**
  * MultiEntityImporter class.
  *
  * @author chaostone
  */
-class MultiEntityTransfer extends AbstractTransfer with EntityTransfer with Logging {
+class MultiEntityImporter extends AbstractImporter with EntityImporter with Logging {
 
   protected var currentEntities = new collection.mutable.HashMap[String, AnyRef]
 

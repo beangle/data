@@ -16,17 +16,37 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer
+package org.beangle.data.transfer.importer
 
 /**
- * ImportPrepare interface.
+ * 转换监听器
  *
  * @author chaostone
  */
-trait TransferPrepare {
+trait ImportListener {
 
   /**
-   * prepare.
+   * 开始转换
    */
-  def prepare(transfer: Transfer);
+  def onStart(tr: ImportResult)
+
+  /**
+   * 结束转换
+   */
+  def onFinish(tr: ImportResult)
+
+  /**
+   * 开始转换单个项目
+   */
+  def onItemStart(tr: ImportResult)
+
+  /**
+   * 结束转换单个项目
+   */
+  def onItemFinish(tr: ImportResult)
+
+  /**
+   * 设置转换器
+   */
+  var transfer: Importer = _
 }

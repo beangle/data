@@ -16,22 +16,22 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer
+package org.beangle.data.transfer.importer
 
 import java.util.Locale
-
-import org.beangle.data.transfer.io.{ Reader, TransferFormat }
+import org.beangle.data.transfer.io.Reader
+import org.beangle.data.transfer.Format
 
 /**
  * 数据转换接口
  *
  * @author chaostone
  */
-trait Transfer {
+trait Importer {
   /**
    * 启动转换
    */
-  def transfer(tr: TransferResult);
+  def transfer(tr: ImportResult);
 
   /**
    * 转换一个对象
@@ -41,12 +41,12 @@ trait Transfer {
   /**
    * 添加转换监听器
    */
-  def addListener(listener: TransferListener): Transfer
+  def addListener(listener: ImportListener): Importer
 
   /**
    * 转换数据的类型
    */
-  def format: TransferFormat.Value
+  def format: Format.Value
 
   /**
    * 转换使用的locale
@@ -104,5 +104,5 @@ trait Transfer {
 
   var curData: collection.mutable.Map[String, Any] = _
 
-  var prepare: TransferPrepare = _
+  var prepare: ImportPrepare = _
 }

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.beangle.data</groupId>
     <artifactId>beangle-data-parent_2.12</artifactId>
-    <version>5.0.8-SNAPSHOT</version>
+    <version>5.0.8</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>beangle-data-transfer_2.12</artifactId>
@@ -12,7 +12,6 @@
   <properties>
     <bundle.symbolicName>org.beangle.data.transfer</bundle.symbolicName>
     <bundle.namespace>org.beangle.data.transfer</bundle.namespace>
-    <poi.version>3.17</poi.version>
   </properties>
 
   <dependencies>
@@ -34,6 +33,16 @@
           <artifactId>log4j</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.jxls</groupId>
+      <artifactId>jxls</artifactId>
+      <version>${jxls.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jxls</groupId>
+      <artifactId>jxls-poi</artifactId>
+      <version>${jxls-poi.version}</version>
     </dependency>
   </dependencies>
 </project>

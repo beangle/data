@@ -18,15 +18,13 @@
  */
 package org.beangle.data.transfer.csv;
 
-import java.io.IOException
 import java.io.LineNumberReader
+
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.Strings
-import org.beangle.data.transfer.io.ItemReader
-import org.beangle.data.transfer.io.TransferFormat
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory;
 import org.beangle.commons.logging.Logging
+import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.io.ItemReader
 
 /**
  * CsvItemReader class.
@@ -82,8 +80,8 @@ class CsvItemReader(reader: LineNumberReader) extends ItemReader with Logging {
     this.dataIndex = dataIndex
   }
 
-  def format: TransferFormat.Value = {
-    TransferFormat.Csv;
+  def format: Format.Value = {
+    Format.Csv;
   }
 
   override def close(): Unit = {

@@ -16,35 +16,40 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer;
+package org.beangle.data.transfer.importer
 
-import org.beangle.commons.lang.Objects;
+import org.beangle.commons.collection.Collections
+import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
+import org.beangle.commons.conversion.Conversion
+import org.beangle.commons.conversion.impl.DefaultConversion
 
-object TransferMessage {
-  /** Constant <code>ERROR_ATTRS="error.transfer.attrs"</code> */
-  val ERROR_ATTRS = "error.transfer.attrs";
-
-  /** Constant <code>ERROR_ATTRS_EXPORT="error.transfer.attrs.export"</code> */
-  val ERROR_ATTRS_EXPORT = "error.transfer.attrs.export";
-}
 /**
- * 转换消息
+ * 转换结果
+ *
+ * @author chaostone
  */
-class TransferMessage(val index: Int, val message: String, value: Any) {
+class ImportResult {
 
-  /**
-   * 消息中使用的对应值
-   */
-  val values = new ListBuffer[Any]
-  values += value
+  val msgs = new ListBuffer[ImportMessage]
 
-  /**
-   * toString.
-   */
-  override def toString: String = {
-    Objects.toStringBuilder(this).add("index", this.index).add("message", this.message)
-      .add("values", this.values).toString();
+  val errs = new ListBuffer[ImportMessage]
+
+  var transfer: Importer = _
+
+  def addFailure(message: String, value: Any): Unit = {
+    errs += new ImportMessage(transfer.tranferIndex, message, value)
   }
 
+  def addMessage(message: String, value: Any): Unit = {
+    msgs += new ImportMessage(transfer.tranferIndex, message, value)
+  }
+
+  def hasErrors: Boolean = {
+    !errs.isEmpty
+  }
+
+  def errors: Int = {
+    errs.size
+  }
 }

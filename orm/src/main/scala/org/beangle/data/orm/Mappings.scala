@@ -396,8 +396,6 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
     var mapKeyType = Strings.substringBefore(kvtype, ",").trim
     var mapEleType = Strings.substringAfter(kvtype, ",").trim
-    mapKeyType = if (mapKeyType.contains(".")) mapKeyType else "java.lang." + mapKeyType
-    mapEleType = if (mapEleType.contains(".")) mapEleType else "java.lang." + mapEleType
 
     var keyMeta: Type = null
     var keyMapping: TypeMapping = null

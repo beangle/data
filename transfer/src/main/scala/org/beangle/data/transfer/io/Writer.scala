@@ -19,6 +19,7 @@
 package org.beangle.data.transfer.io
 
 import java.io.OutputStream
+import org.beangle.data.transfer.Format
 
 /**
  * Writer interface.
@@ -27,7 +28,7 @@ import java.io.OutputStream
  */
 trait Writer {
 
-  def format: TransferFormat.Value
+  def format: Format.Value
 
   var outputStream: OutputStream = _
 

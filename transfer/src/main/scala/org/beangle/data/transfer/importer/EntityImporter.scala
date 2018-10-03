@@ -16,23 +16,24 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer;
+package org.beangle.data.transfer.importer
 
-import org.beangle.data.transfer.io.ItemReader;
+import org.beangle.data.model.util.Populator
+import org.beangle.data.model.meta.Domain
 
 /**
- * DescriptionAttrPrepare class.
+ * EntityImporter interface.
  *
  * @author chaostone
  */
-object EntityPrepare extends TransferPrepare {
+trait EntityImporter extends Importer {
 
-  def prepare(importer: Transfer) {
-    val entityTransfer = importer.asInstanceOf[DefaultEntityTransfer]
-    entityTransfer.addEntity(DefaultEntityTransfer.alias, entityTransfer.entityClass)
+  def foreignerKeys: collection.Set[String]
 
-    val reader = importer.reader.asInstanceOf[ItemReader]
-    importer.asInstanceOf[AbstractTransfer].setAttrs(reader.readTitle(), reader.readDescription());
-  }
+  def addForeignedKeys(foreignerKey: String)
+
+  var populator: Populator = _
+
+  var domain: Domain = _
 
 }

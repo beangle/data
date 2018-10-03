@@ -22,7 +22,7 @@ import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, Strin
 import java.math.BigDecimal
 import java.sql.{ Blob, Clob, Date, PreparedStatement, SQLException, Time, Timestamp }
 import java.sql.Types.{ BIGINT, BINARY, BIT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, LONGVARBINARY, LONGVARCHAR, NULL, NUMERIC, SMALLINT, TIME, TIMESTAMP, TINYINT, VARBINARY, VARCHAR }
-import java.time.{ Instant, LocalDate, LocalDateTime, LocalTime, ZonedDateTime }
+import java.time.{ Instant, LocalDate, LocalDateTime, LocalTime, YearMonth, ZonedDateTime }
 import java.{ util => ju }
 
 import org.beangle.commons.io.IOs
@@ -91,6 +91,8 @@ object ParamSetter extends Logging {
               else stmt.setDate(index, new java.sql.Date(jd.getTime))
             case jc: ju.Calendar =>
               stmt.setDate(index, new java.sql.Date(jc.getTime.getTime), jc)
+            case ym: YearMonth =>
+              stmt.setDate(index, Date.valueOf(LocalDate.of(ym.getYear, ym.getMonth, 1)))
             case _ =>
               stmt.setObject(index, value, DATE)
           }
