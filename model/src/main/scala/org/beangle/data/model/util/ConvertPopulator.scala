@@ -113,6 +113,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
    */
   override def populate(entity: Entity[_], entityType: EntityType, params: collection.Map[String, Any]): Int = {
     var success = 0
+    val idName = entityType.id.name
     params foreach {
       case (attr, v) =>
         var value = v
@@ -121,7 +122,13 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
           else if (TrimStr) value = (value.asInstanceOf[String]).trim()
         }
         if (-1 == attr.indexOf('.')) {
-          copyValue(entity, attr, value)
+          if (attr == idName) {
+            if (null != value && value.toString != "0") {
+              copyValue(entity, attr, value)
+            }
+          } else {
+            copyValue(entity, attr, value)
+          }
         } else {
           val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf('.'))
           try {
