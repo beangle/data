@@ -79,7 +79,7 @@ final class EntityTypeMapping(var typ: EntityType, var table: Table) extends Str
 }
 
 final class BasicTypeMapping(val typ: BasicType, column: Column)
-    extends TypeMapping with Cloneable with ColumnHolder {
+  extends TypeMapping with Cloneable with ColumnHolder {
 
   var columns: Buffer[Column] = Buffer.empty[Column]
 
@@ -127,10 +127,11 @@ final class Collection(val clazz: Class[_], val property: String) {
 
 object IdGenerator {
   val Date = "date"
+  val DateTime = "datetime"
   val AutoIncrement = "auto_increment"
   val SeqPerTable = "seq_per_table"
   val Code = "code"
-  val Assigned="assigned"
+  val Assigned = "assigned"
 }
 
 final class IdGenerator(var name: String) {

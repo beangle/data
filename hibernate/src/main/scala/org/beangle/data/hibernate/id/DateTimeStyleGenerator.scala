@@ -23,14 +23,14 @@ package org.beangle.data.hibernate.id
  * format:
  *
  *   {{{
- *      YYYYMMDD sequence
+ *      YYYYMMDDHH24MISS sequence
  *   }}}
  *
  *   default function is date_id
  */
-class DateStyleGenerator  extends SqlStyleGenerator  {
+class DateTimeStyleGenerator extends SqlStyleGenerator  {
 
   override protected  def  sql: String = {
-    "{? = call date_id()}"
+    "{? = call datetime_id()}"
   }
 }

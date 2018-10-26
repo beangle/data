@@ -19,13 +19,14 @@
 package org.beangle.data.hibernate.cfg
 
 import java.lang.reflect.Modifier
+import java.time.YearMonth
 import java.{ util => ju }
 
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.hibernate.ScalaPropertyAccessStrategy
-import org.beangle.data.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, SeqPerTableStyleGenerator }
-import org.beangle.data.hibernate.udt.{ EnumType, MapType, SeqType, SetType, ValueType }
+import org.beangle.data.hibernate.id.{ AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, DateTimeStyleGenerator, SeqPerTableStyleGenerator }
+import org.beangle.data.hibernate.udt.{ EnumType, MapType, SeqType, SetType, ValueType, YearMonthType }
 import org.beangle.data.jdbc.meta.Column
 import org.beangle.data.model.meta.{ BasicType, EntityType, PluralProperty, Property }
 import org.beangle.data.orm.{ BasicTypeMapping, CollectionPropertyMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapPropertyMapping, PluralPropertyMapping, PropertyMapping, SimpleColumn, SingularPropertyMapping, TypeDef }
@@ -47,8 +48,6 @@ import org.hibernate.mapping.Collection.{ DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_K
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
 import org.hibernate.property.access.spi.PropertyAccessStrategy
 import org.hibernate.tuple.{ GeneratedValueGeneration, GenerationTiming }
-import org.beangle.data.hibernate.udt.YearMonthType
-import java.time.YearMonth
 
 /**
  * Hibernate Bind Metadadta processor.
@@ -128,6 +127,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     identifierFactory.register(IdGenerator.SeqPerTable, classOf[SeqPerTableStyleGenerator])
     identifierFactory.register(IdGenerator.AutoIncrement, classOf[AutoIncrementGenerator])
     identifierFactory.register(IdGenerator.Date, classOf[DateStyleGenerator])
+    identifierFactory.register(IdGenerator.DateTime, classOf[DateTimeStyleGenerator])
     identifierFactory.register(IdGenerator.Code, classOf[CodeStyleGenerator])
   }
 
