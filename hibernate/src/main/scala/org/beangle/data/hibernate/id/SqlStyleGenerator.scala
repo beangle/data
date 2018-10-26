@@ -54,7 +54,6 @@ abstract class SqlStyleGenerator extends IdentifierGenerator  {
           try {
             st.registerOutParameter(1, java.sql.Types.BIGINT)
             st.execute()
-            val today = LocalDate.now
             java.lang.Long.valueOf(st.getLong(1))
           } finally {
             st.close()
