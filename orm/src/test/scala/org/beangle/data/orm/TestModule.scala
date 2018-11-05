@@ -30,6 +30,7 @@ class TestModule extends MappingModule {
 
     bind[TestRole].on(e => declare(
       e.name is unique,
+      e.vocations is (joinColumn("role_id"), eleColumn("exclude_on")),
       e.properties is keyColumn("type_id")))
 
     bind[UserProperty]

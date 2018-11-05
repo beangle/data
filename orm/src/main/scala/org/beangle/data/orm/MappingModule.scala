@@ -121,6 +121,15 @@ object MappingModule {
     }
   }
 
+  class JoinColumn(name: String) extends Declaration {
+    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+      val mp = cast[PluralPropertyMapping[_]](pm, holder, "element column should used on PluralProperty")
+      if (null != mp.ownerColumn) {
+        mp.ownerColumn.name = Identifier(name)
+      }
+    }
+  }
+
   class Cache(val cacheholder: CacheHolder) extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val p = pm.property.asInstanceOf[Property]
@@ -433,12 +442,17 @@ abstract class MappingModule extends Logging {
   protected def keyLength(len: Int): KeyLength = {
     new KeyLength(len)
   }
+
   protected def eleColumn(name: String): ElementColumn = {
     new ElementColumn(name)
   }
 
   protected def eleLength(len: Int): ElementLength = {
     new ElementLength(len)
+  }
+
+  protected def joinColumn(name: String): JoinColumn = {
+    new JoinColumn(name)
   }
 
   protected final def bind[T: ClassTag]()(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): EntityHolder[T] = {
