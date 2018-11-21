@@ -18,24 +18,24 @@
  */
 package org.beangle.data.transfer.exporter
 
-import org.beangle.commons.collection.Collections
-import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.Writer
+import org.beangle.commons.lang.Strings
 
-class Context {
-  val datas = Collections.newMap[String, Any]
+class SimpleItemExporter extends AbstractItemExporter {
+  /** 导出属性对应的标题 */
+  protected var titles: Array[String] = _
 
-  var exporter: Exporter = _
-
-  var writer: Writer = _
-
-  var format: Format.Value = _
-
-  def get[T](key: String, clazz: Class[T]): Option[T] = {
-    datas.get(key).asInstanceOf[Option[T]]
+  protected override def beforeExport(): Boolean = {
+    if (null == titles) {
+      context.get("titles", classOf[Object]) foreach { t =>
+        t match {
+          case s: String        => titles = Strings.split(s, ",")
+          case a: Array[String] => titles = a
+        }
+      }
+    }
+    if (null == titles || titles.length == 0) return false
+    writer.writeTitle(null, titles)
+    true
   }
 
-  def put(key: String, v: Any) {
-    datas.put(key, v)
-  }
 }

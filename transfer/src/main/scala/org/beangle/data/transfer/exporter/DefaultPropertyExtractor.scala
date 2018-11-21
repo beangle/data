@@ -18,24 +18,14 @@
  */
 package org.beangle.data.transfer.exporter
 
-import org.beangle.commons.collection.Collections
-import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.Writer
+import org.beangle.commons.bean.Properties
 
-class Context {
-  val datas = Collections.newMap[String, Any]
+class DefaultPropertyExtractor extends PropertyExtractor {
 
-  var exporter: Exporter = _
-
-  var writer: Writer = _
-
-  var format: Format.Value = _
-
-  def get[T](key: String, clazz: Class[T]): Option[T] = {
-    datas.get(key).asInstanceOf[Option[T]]
-  }
-
-  def put(key: String, v: Any) {
-    datas.put(key, v)
+  override def getPropertyValue(target: Object, property: String): Any = {
+    Properties.get[Any](target, property) match {
+      case o: Option[_] => o.getOrElse(null)
+      case a: Any       => a
+    }
   }
 }

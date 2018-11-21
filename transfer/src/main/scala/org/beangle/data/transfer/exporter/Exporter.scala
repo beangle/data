@@ -18,24 +18,8 @@
  */
 package org.beangle.data.transfer.exporter
 
-import org.beangle.commons.collection.Collections
-import org.beangle.data.transfer.Format
 import org.beangle.data.transfer.io.Writer
 
-class Context {
-  val datas = Collections.newMap[String, Any]
-
-  var exporter: Exporter = _
-
-  var writer: Writer = _
-
-  var format: Format.Value = _
-
-  def get[T](key: String, clazz: Class[T]): Option[T] = {
-    datas.get(key).asInstanceOf[Option[T]]
-  }
-
-  def put(key: String, v: Any) {
-    datas.put(key, v)
-  }
+trait Exporter {
+  def export(context: Context, writer: Writer)
 }
