@@ -82,11 +82,10 @@ object Constraint {
     val sb = new StringBuilder()
       .append("table`").append(fk.table.name).append("`")
       .append("references`").append(fk.referencedTable.name).append("`");
-
-    fk.referencedColumns foreach { fc =>
+    fk.columns foreach { fc =>
       sb.append("column`").append(fc.value).append("`");
     }
-    "fk" + hashedName(sb.toString)
+    "fk_" + hashedName(sb.toString)
   }
 
   def hashedName(s: String): String = {
@@ -94,6 +93,8 @@ object Constraint {
     md.reset()
     md.update(s.getBytes)
     val digest = md.digest()
+    // By converting to base 35 (full alphanumeric), It will always be smaller than the 30
+    // Required by oracles.
     new BigInteger(1, digest).toString(35)
   }
 }
