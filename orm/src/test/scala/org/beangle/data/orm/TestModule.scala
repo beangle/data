@@ -18,6 +18,8 @@
  */
 package org.beangle.data.orm
 
+import org.beangle.data.model.Entity
+
 class TestModule extends MappingModule {
 
   override def binding(): Unit = {
@@ -34,5 +36,15 @@ class TestModule extends MappingModule {
       e.properties is keyColumn("type_id")))
 
     bind[UserProperty]
+
+    bind[Menu].on(c => declare(
+      c.name is (notnull, length(20))))
+
+    bind[AbstractMenu].on(c => declare(
+      c.title is (notnull, length(30))))
+
+    bind[UrlMenu].on(c => declare(
+      c.url is (notnull, length(40)),
+      c.parent is target[UrlMenu]))
   }
 }

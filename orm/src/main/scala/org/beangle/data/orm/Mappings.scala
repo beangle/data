@@ -34,7 +34,7 @@ import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.jdbc.{ DefaultSqlTypeMapping, SqlTypeMapping }
 import org.beangle.data.jdbc.meta.{ Column, Database, Table }
-import org.beangle.data.model.{ IntId, LongId, ShortId, StringId }
+import org.beangle.data.model.{ IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity }
 import org.beangle.data.model.meta.{ EntityType, PluralProperty, Property, SingularProperty, Type }
 import org.beangle.data.model.meta.BasicType
 import org.beangle.data.model.meta.Domain.{ CollectionPropertyImpl, EmbeddableTypeImpl, EntityTypeImpl, MapPropertyImpl, MutableStructType, SingularPropertyImpl }
@@ -188,6 +188,9 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             val schema = database.getOrCreateSchema(naming.schema.orNull)
             val table = schema.createTable(naming.text)
             val e = new EntityTypeMapping(refEntity(clazz, entityName), table)
+            if (clazz.isInterface || Modifier.isAbstract(clazz.getModifiers)) {
+              e.isAbstract = true
+            }
             entityMappings.put(entityName, e)
             e
         }
@@ -391,13 +394,13 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   private def idTypeOf(clazz: Class[_]): Class[_] = {
-    if (classOf[LongId].isAssignableFrom(clazz)) {
+    if (classOf[LongIdEntity].isAssignableFrom(clazz)) {
       classOf[Long]
-    } else if (classOf[IntId].isAssignableFrom(clazz)) {
+    } else if (classOf[IntIdEntity].isAssignableFrom(clazz)) {
       classOf[Int]
-    } else if (classOf[ShortId].isAssignableFrom(clazz)) {
+    } else if (classOf[ShortIdEntity].isAssignableFrom(clazz)) {
       classOf[Short]
-    } else if (classOf[StringId].isAssignableFrom(clazz)) {
+    } else if (classOf[StringIdEntity].isAssignableFrom(clazz)) {
       classOf[String]
     } else {
       BeanInfos.get(clazz).getPropertyType("id").get
