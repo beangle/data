@@ -18,33 +18,19 @@
  */
 package org.beangle.data.orm
 
+import org.beangle.data.model.LongId
+import org.beangle.data.model.pojo.Hierarchical
+import org.beangle.data.model.pojo.Named
 import org.beangle.data.model.Entity
 
-class TestModule extends MappingModule {
+trait Menu extends Named with Entity[Long] {
+  var parent: Option[Menu] = None
+}
 
-  override def binding(): Unit = {
-    autoIncrement()
+abstract class AbstractMenu extends LongId with Menu {
+  var title: String = _
+}
 
-    bind[TestUser].on(e => declare(
-      e.properties is depends("user"),
-      e.friends is eleColumn("friend_user_id"),
-      e.tags is (table("users_tags"), keyLength(30), eleColumn("value2"), eleLength(200))))
-
-    bind[TestRole].on(e => declare(
-      e.name is unique,
-      e.vocations is (joinColumn("role_id"), eleColumn("exclude_on")),
-      e.properties is keyColumn("type_id")))
-
-    bind[UserProperty]
-
-    bind[Menu].on(c => declare(
-      c.name is (notnull, length(20))))
-
-    bind[AbstractMenu].on(c => declare(
-      c.title is (notnull, length(30))))
-
-    bind[UrlMenu].on(c => declare(
-      c.url is (notnull, length(40)),
-      c.parent is target[UrlMenu]))
-  }
+class UrlMenu extends AbstractMenu {
+  var url: String = _
 }

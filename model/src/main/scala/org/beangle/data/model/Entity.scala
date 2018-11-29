@@ -57,18 +57,19 @@ trait Entity[ID] extends Serializable {
 
 trait LongIdEntity extends Entity[Long]
 trait IntIdEntity extends Entity[Int]
+trait ShortIdEntity extends Entity[Short]
 trait StringIdEntity extends Entity[String]
 
 abstract class NumId[ID] extends Entity[ID] {
   var id: ID = _
 }
 
-abstract class LongId extends NumId[Long]
+abstract class LongId extends NumId[Long] with LongIdEntity
 
-abstract class IntId extends NumId[Int]
+abstract class IntId extends NumId[Int] with IntIdEntity
 
-abstract class ShortId extends NumId[Short]
+abstract class ShortId extends NumId[Short] with ShortIdEntity
 
-abstract class StringId extends Entity[String] {
+abstract class StringId extends StringIdEntity {
   var id: String = _
 }

@@ -19,7 +19,7 @@
 package org.beangle.data.jdbc
 
 import java.math.BigInteger
-import java.sql.Types.{ BIGINT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, OTHER, SMALLINT, TIME, TIMESTAMP, TINYINT, VARCHAR, VARBINARY }
+import java.sql.Types.{ BIGINT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, SMALLINT, TIME, TIMESTAMP, TINYINT, VARCHAR, VARBINARY }
 import java.time.Year
 
 import org.beangle.commons.lang.Strings
@@ -75,6 +75,8 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
     (classOf[java.time.LocalDateTime], TIMESTAMP),
     (classOf[java.time.ZonedDateTime], TIMESTAMP),
 
+    (classOf[java.util.Locale], VARCHAR),
+
     (classOf[java.time.Duration], BIGINT),
     (classOf[HourMinute], SMALLINT),
     (classOf[WeekState], BIGINT),
@@ -107,19 +109,23 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
                 if (params.length == 1) find = params(0).getType
                 i += 1
               }
-              concretTypes.get(find).getOrElse(OTHER)
+              concretTypes.get(find).getOrElse(raiseMappingError(clazz))
             } else if (clazz.getName.contains("$")) {
               val containerClass = Class.forName(Strings.substringBefore(clazz.getName, "$") + "$")
               if (classOf[Enumeration].isAssignableFrom(containerClass)) {
                 INTEGER
               } else {
-                throw new RuntimeException(s"Cannot find sqltype for ${clazz.getName}")
+                raiseMappingError(clazz)
               }
             } else {
-              OTHER
+              raiseMappingError(clazz)
             }
         }
     }
+  }
+
+  private def raiseMappingError(clazz: Class[_]): Int = {
+    throw new RuntimeException(s"Cannot find sqltype for ${clazz.getName}")
   }
 
   def sqlType(clazz: Class[_]): SqlType = {
