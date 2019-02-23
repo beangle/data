@@ -30,7 +30,6 @@ import org.beangle.data.transfer.io.ItemReader
 import org.beangle.data.transfer.Format
 
 object ExcelItemReader {
-  val DEFAULT_HEADINDEX = 0
   /** Constant <code>numberFormat</code> */
   val numberFormat = NumberFormat.getInstance()
   numberFormat.setGroupingUsed(false);
@@ -46,7 +45,7 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   /** Constant <code>sheetNum=0</code> */
   val sheetNum = 0;
 
-  this.headIndex = ExcelItemReader.DEFAULT_HEADINDEX
+  this.headIndex = 0
   this.dataIndex = headIndex + 1
 
   /**
@@ -67,7 +66,7 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   def this(is: InputStream, headIndex: Int) {
     this(is)
     this.headIndex = headIndex
-    this.dataIndex = headIndex + 1
+    this.dataIndex = this.headIndex + 1
     this.indexInSheet = dataIndex
   }
 
@@ -80,8 +79,7 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
     if (workbook.getNumberOfSheets() < 1) {
       List.empty
     } else {
-      val sheet = workbook.getSheetAt(0);
-      readLine(sheet, 0)
+      readLine(workbook.getSheetAt(0), headIndex);
     }
   }
 
@@ -89,10 +87,9 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
     if (workbook.getNumberOfSheets() < 1) {
       List.empty
     } else {
-      val sheet = workbook.getSheetAt(0);
-      val attrs = readLine(sheet, headIndex);
-      attrCount = attrs.length;
-      attrs
+      val comments = readComments(workbook.getSheetAt(0), headIndex)
+      attrCount = comments.length
+      comments
     }
   }
 
@@ -103,19 +100,36 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
     val row = sheet.getRow(rowIndex)
     val attrList = new collection.mutable.ListBuffer[String]
     var hasEmptyCell = false
-    (0 until row.getLastCellNum) foreach { i =>
-      if (!hasEmptyCell) {
-        val cell = row.getCell(i);
-        if (null != cell) {
-          val attr = cell.getRichStringCellValue().getString();
-          if (Strings.isEmpty(attr)) {
-            hasEmptyCell = true
-          } else {
-            attrList += attr.trim
-          }
-        } else {
-          hasEmptyCell = true
+    for (i <- 0 until row.getLastCellNum; if !hasEmptyCell) {
+      val cell = row.getCell(i);
+      val attr = cell.getRichStringCellValue().getString();
+      if (Strings.isEmpty(attr)) {
+        hasEmptyCell = true
+      } else {
+        attrList += attr.trim
+      }
+    }
+    attrList.toList
+  }
+
+  /**
+   * 读取注释
+   */
+  def readComments(sheet: HSSFSheet, rowIndex: Int): List[String] = {
+    val row = sheet.getRow(rowIndex)
+    val attrList = new collection.mutable.ListBuffer[String]
+    var hasEmptyCell = false
+    for (i <- 0 until row.getLastCellNum; if !hasEmptyCell) {
+      val cell = row.getCell(i)
+      val comment = cell.getCellComment()
+      if (null == comment || Strings.isEmpty(comment.getString().getString())) {
+        hasEmptyCell = true
+      } else {
+        var commentStr = comment.getString().getString();
+        if (commentStr.indexOf(':') > 0) {
+          commentStr = Strings.substringAfterLast(commentStr, ":")
         }
+        attrList += commentStr.trim()
       }
     }
     attrList.toList

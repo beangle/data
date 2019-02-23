@@ -133,7 +133,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val manifest = BeanInfos.get(mapping.clazz, typ)
     manifest.readables foreach {
       case (name, prop) =>
-        if (prop.readable & prop.writable && !mapping.properties.contains(name)) {
+        if (!prop.isTransient && prop.readable && prop.writable && !mapping.properties.contains(name)) {
           val optional = prop.typeinfo.optional
           val propType = prop.typeinfo.clazz
           val p =
@@ -152,7 +152,6 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             } else {
               bindScalar(mh, name, propType, scalarTypeName(name, propType), optional)
             }
-
           mapping.properties += (name -> p)
         }
     }
@@ -348,7 +347,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val manifest = BeanInfos.get(propertyType, ctpe)
     manifest.readables foreach {
       case (name, prop) =>
-        if (prop.writable) {
+        if (!prop.isTransient && prop.readable && prop.writable) {
           val optional = prop.typeinfo.optional
           val propType = prop.typeinfo.clazz
           val cmh = new Mappings.Holder(mh.mapping, ct)
