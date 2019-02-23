@@ -22,13 +22,14 @@ import org.beangle.data.model.LongId
 import org.beangle.data.model.pojo.Hierarchical
 import org.beangle.data.model.pojo.Named
 import org.beangle.data.model.Entity
+import org.beangle.data.model.LongIdEntity
 
-trait Menu extends Named with Entity[Long] {
+trait Menu extends Named with LongIdEntity{
   var parent: Option[Menu] = None
-  @transient var someVar: String = _
 }
 
 abstract class AbstractMenu extends LongId with Menu {
+  @transient var someVar: String = _
   var title: String = _
 }
 
