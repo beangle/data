@@ -25,6 +25,7 @@ import org.beangle.data.model.Entity
 
 trait Menu extends Named with Entity[Long] {
   var parent: Option[Menu] = None
+  @transient var someVar: String = _
 }
 
 abstract class AbstractMenu extends LongId with Menu {

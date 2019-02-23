@@ -133,7 +133,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val manifest = BeanInfos.get(mapping.clazz, typ)
     manifest.readables foreach {
       case (name, prop) =>
-        if (prop.readable & prop.writable && !mapping.properties.contains(name)) {
+        if (!prop.isTransient && prop.readable & prop.writable && !mapping.properties.contains(name)) {
           val optional = prop.typeinfo.optional
           val propType = prop.typeinfo.clazz
           val p =
