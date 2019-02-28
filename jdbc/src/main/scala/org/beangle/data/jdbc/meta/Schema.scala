@@ -94,16 +94,15 @@ class Schema(var database: Database, var name: Identifier) {
     "Schema " + name
   }
 
-  class NameFilter {
+  class NameFilter(lowercase: Boolean = true) {
     val excludes = new collection.mutable.ListBuffer[String]
     val includes = new collection.mutable.ListBuffer[String]
 
     def filter(tables: Iterable[Identifier]): List[Identifier] = {
       val results = new collection.mutable.ListBuffer[Identifier]
       for (tabId <- tables) {
-        val tabame = tabId.value
-        var tableName = if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame
-        tableName = tableName.toLowerCase
+        val tabame = (if (lowercase) tabId.value.toLowerCase else tabId.value)
+        val tableName = if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame
         if (includes.exists(p => p == "*" || tableName.startsWith(p) && !excludes.contains(tableName)))
           results += tabId
       }
@@ -111,11 +110,11 @@ class Schema(var database: Database, var name: Identifier) {
     }
 
     def exclude(table: String) {
-      excludes += table
+      excludes += (if (lowercase) table.toLowerCase else table)
     }
 
     def include(table: String) {
-      includes += table
+      includes += (if (lowercase) table.toLowerCase else table)
     }
   }
 
