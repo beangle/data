@@ -45,9 +45,15 @@ object Domain {
   class EntityTypeImpl(val entityName: String, var clazz: Class[_]) extends MutableStructType with EntityType {
     val properties = Collections.newMap[String, Property]
     var idName: String = "id"
-    def id: Property = {
-      properties.get(idName).orNull
+
+    def this(c: Class[_]) {
+      this(c.getName, c)
     }
+
+    def id: Property = {
+      properties(idName)
+    }
+
     override def toString: String = {
       s"${entityName}[${clazz.getName}]"
     }
@@ -66,7 +72,7 @@ object Domain {
     extends PropertyImpl(name, clazz) with SingularProperty
 
   final class CollectionPropertyImpl(name: String, clazz: Class[_], var element: Type)
-      extends PropertyImpl(name, clazz) with CollectionProperty {
+    extends PropertyImpl(name, clazz) with CollectionProperty {
     var orderBy: Option[String] = None
   }
 

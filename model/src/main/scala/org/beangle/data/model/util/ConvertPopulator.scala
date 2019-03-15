@@ -29,6 +29,7 @@ import org.beangle.commons.conversion.Conversion
 import org.beangle.commons.conversion.impl.DefaultConversion
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.bean.Properties
+import org.beangle.commons.collection.Collections
 
 object ConvertPopulator extends Logging {
   val TrimStr = true
@@ -101,7 +102,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
    * 安静的拷贝属性，如果属性非法或其他错误则记录日志
    */
   override def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean = {
-    populate(target, entityType, Map(attr -> value)) == 1
+    populate(target, entityType, Map(attr -> value)).fails isEmpty
   }
 
   /**
@@ -111,8 +112,8 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
    * 如果params中的id为null，则将该实体的置为null.<br>
    * 否则新生成一个实体，将其id设为params中指定的值。 空字符串按照null处理
    */
-  override def populate(entity: Entity[_], entityType: EntityType, params: collection.Map[String, Any]): Int = {
-    var success = 0
+  override def populate(entity: Entity[_], entityType: EntityType, params: collection.Map[String, Any]): Populator.CopyResult = {
+    val result = new Populator.CopyResult
     val idName = entityType.id.name
     params foreach {
       case (attr, v) =>
@@ -121,20 +122,21 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
           if (Strings.isEmpty(value.asInstanceOf[String])) value = null
           else if (TrimStr) value = (value.asInstanceOf[String]).trim()
         }
+
         if (-1 == attr.indexOf('.')) {
           if (attr == idName) {
             if (null != value && value.toString != "0") {
-              copyValue(entity, attr, value)
+              copyValue(entity, attr, value, result)
             }
           } else {
-            copyValue(entity, attr, value)
+            copyValue(entity, attr, value, result)
           }
         } else {
           val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf('.'))
           try {
             val ot = init(entity, entityType, parentAttr)
             if (null == ot) {
-              logger.error(s"error attr:[$attr] value:[$value]")
+              result.addFail(attr, s"error attr:[$attr] value:[$value]")
             } else {
               ot._2 match {
                 case sp: SingularProperty =>
@@ -143,37 +145,34 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
                       val foreignKey = ft.id.name
                       if (attr.endsWith("." + foreignKey)) {
                         if (null == value) {
-                          copyValue(entity, parentAttr, null)
+                          copyValue(entity, parentAttr, null, result)
                         } else {
                           val oldValue = properties.get[Object](entity, attr)
                           val newValue = convert(ft, foreignKey, value)
                           if (!Objects.equals(oldValue, newValue)) {
                             // 如果外键已经有值
                             if (null != oldValue) {
-                              copyValue(entity, parentAttr, null)
+                              copyValue(entity, parentAttr, null, result)
                               init(entity, entityType, parentAttr)
                             }
                             properties.set(entity, attr, newValue)
                           }
                         }
                       } else {
-                        copyValue(entity, attr, value)
+                        copyValue(entity, attr, value, result)
                       }
                     case _ =>
-                      copyValue(entity, attr, value)
+                      copyValue(entity, attr, value, result)
                   }
                 case _ =>
               }
             }
           } catch {
-            case e: Exception =>
-              logger.error(s"error attr:[$attr] value:[$value]", e)
-              success -= 1
+            case e: Exception => result.addFail(attr, "error attr:[$attr] value:[$value]")
           }
         }
-        success += 1
     }
-    success
+    result
   }
 
   private def convert(t: EntityType, attr: String, value: Any): Any = {
@@ -186,7 +185,10 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
     }
   }
 
-  private def copyValue(target: AnyRef, attr: String, value: Any): Any = {
-    properties.copy(target, attr, value)
+  private def copyValue(target: AnyRef, attr: String, value: Any, result: Populator.CopyResult): Any = {
+    val targetValue = properties.copy(target, attr, value)
+    if (null == value && null != targetValue || null != value && null == targetValue) {
+      result.addFail(attr, "copied value" + targetValue)
+    }
   }
 }
