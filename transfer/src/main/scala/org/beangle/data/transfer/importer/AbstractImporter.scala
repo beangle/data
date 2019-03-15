@@ -34,8 +34,7 @@ import org.beangle.data.transfer.Format
 abstract class AbstractImporter extends Importer with Logging {
   protected var transferResult: ImportResult = _
   protected val listeners = new ListBuffer[ImportListener]
-  var success = 0
-  var fail = 0
+  var success, fail = 0
   this.prepare = new DescriptionAttrPrepare()
   /** 属性说明[attr,description] */
   protected val descriptions = new collection.mutable.HashMap[String, String]
@@ -45,11 +44,11 @@ abstract class AbstractImporter extends Importer with Logging {
    * 进行转换
    */
   def transfer(tr: ImportResult): Unit = {
-    this.transferResult = tr;
-    this.transferResult.transfer = this;
-    val transferStartAt = System.currentTimeMillis();
+    this.transferResult = tr
+    this.transferResult.transfer = this
+    val transferStartAt = System.currentTimeMillis()
     try {
-      prepare.prepare(this);
+      prepare.prepare(this)
     } catch {
       // 预导入发生位置错误，错误信息已经记录在tr了
       case e: Throwable => e.printStackTrace(); return ;
@@ -57,21 +56,21 @@ abstract class AbstractImporter extends Importer with Logging {
     listeners.foreach(l => l.onStart(tr))
     while (read()) {
       val transferItemStart = System.currentTimeMillis();
-      index += 1;
+      index += 1
       beforeImportItem()
       if (isDataValid) {
-        val errors = tr.errors;
+        val errors = tr.errors
         // 实体转换开始
         listeners.foreach(l => l.onItemStart(tr))
         // 如果转换前已经存在错误,则不进行转换
         if (tr.errors == errors) {
           // 进行转换
-          transferItem();
+          transferItem()
           // 实体转换结束
           listeners.foreach(l => l.onItemFinish(tr))
           // 如果导入过程中没有错误，将成功记录数增一
-          if (tr.errors == errors) this.success += 1;
-          else this.fail += 1;
+          if (tr.errors == errors) this.success += 1
+          else this.fail += 1
 
           logger.debug(s"importer item:$tranferIndex take time: " + (System.currentTimeMillis() - transferItemStart));
         }

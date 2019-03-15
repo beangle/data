@@ -29,7 +29,7 @@ object EntityPrepare extends ImportPrepare {
 
   def prepare(importer: Importer) {
     val entityImporter = importer.asInstanceOf[DefaultEntityImporter]
-    entityImporter.addEntity(DefaultEntityImporter.alias, entityImporter.entityClass)
+    entityImporter.addEntity(entityImporter.entityClass)
 
     val reader = importer.reader.asInstanceOf[ItemReader]
     importer.asInstanceOf[AbstractImporter].setAttrs(reader.readTitle(), reader.readDescription());
