@@ -111,6 +111,7 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
               }
               concretTypes.get(find).getOrElse(raiseMappingError(clazz))
             } else if (clazz.getName.contains("$")) {
+              // convert A$Val to A$
               val containerClass = Class.forName(Strings.substringBefore(clazz.getName, "$") + "$")
               if (classOf[Enumeration].isAssignableFrom(containerClass)) {
                 INTEGER

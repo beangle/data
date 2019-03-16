@@ -31,6 +31,7 @@ class SqlTypeMappingTest extends FunSpec with Matchers {
     it("test value type") {
       val mapping = new DefaultSqlTypeMapping(Engines.forName("h2"))
       assert(mapping.sqlCode(classOf[Terms]) == Types.SMALLINT)
+      assert(mapping.sqlCode(classOf[Meta.V]) == Types.INTEGER)
       assert(mapping.sqlCode(classOf[Array[Byte]]) == Types.VARBINARY)
     }
   }
@@ -38,3 +39,10 @@ class SqlTypeMappingTest extends FunSpec with Matchers {
 
 @value
 class Terms(value: Short)
+
+object Meta extends Enumeration(1) {
+  val A = new V(1)
+  val B = new V(2)
+  val C = new V(3)
+  class V(id:Int) extends Val(id)
+}
