@@ -403,6 +403,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
     if (null != fetchable) initOuterJoinFetchSetting(manyToOne, fetchable)
     manyToOne.setReferencedEntityName(entityName)
     manyToOne.setReferenceToPrimaryKey(true)
+    manyToOne.setLazy(true)
     mappings.entities.get(entityName).foreach { et =>
       manyToOne.setTypeName(et.id.clazz.getName)
     }
@@ -414,7 +415,7 @@ class BindMatadataProcessor(metadataSources: MetadataSources, context: MetadataB
       case Some(fetch) => col.setFetchMode(if ("join" == fetch) FetchMode.JOIN else FetchMode.SELECT)
       case None        => col.setFetchMode(FetchMode.DEFAULT)
     }
-    col.setLazy(false)
+    col.setLazy(true)
   }
 
   def makeIdentifier(em: EntityTypeMapping, sv: SimpleValue): Unit = {

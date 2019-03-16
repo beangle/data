@@ -18,8 +18,19 @@
  */
 package org.beangle.data.model.util
 
-import org.beangle.data.model.meta._
-import org.beangle.data.model._
+import org.beangle.commons.collection.Collections
+import org.beangle.data.model.Entity
+import org.beangle.data.model.meta.{ EntityType, Property }
+
+object Populator {
+  class CopyResult {
+    var fails = Collections.newMap[String, String]
+
+    def addFail(attr: String, cause: String) {
+      fails += (attr -> cause)
+    }
+  }
+}
 /**
  * Populator interface.
  *
@@ -29,7 +40,7 @@ trait Populator {
   /**
    * populate.
    */
-  def populate(target: Entity[_], EntityType: EntityType, params: collection.Map[String, Any]): Int
+  def populate(target: Entity[_], EntityType: EntityType, params: collection.Map[String, Any]): Populator.CopyResult
 
   /**
    *

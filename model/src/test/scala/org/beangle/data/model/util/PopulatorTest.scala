@@ -16,33 +16,25 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc
+package org.beangle.data.model.util;
 
-import org.beangle.commons.lang.annotation.value
-import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.model.meta.{ BasicType, Domain }
 import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
-import java.sql.Types
 
 @RunWith(classOf[JUnitRunner])
-class SqlTypeMappingTest extends FunSpec with Matchers {
-  describe("SqlTypeMapping") {
-    it("test value type") {
-      val mapping = new DefaultSqlTypeMapping(Engines.forName("h2"))
-      assert(mapping.sqlCode(classOf[Terms]) == Types.SMALLINT)
-      assert(mapping.sqlCode(classOf[Meta.V]) == Types.INTEGER)
-      assert(mapping.sqlCode(classOf[Array[Byte]]) == Types.VARBINARY)
+class PopulatorTest extends FunSpec with Matchers {
+
+  describe("Populator") {
+    it("populate error attr") {
+      val populator = new ConvertPopulator()
+      val menu = new Menu
+      val menuET = new Domain.EntityTypeImpl(classOf[Menu])
+      menuET.properties += ("id" -> new Domain.SingularPropertyImpl("id", classOf[Int], new BasicType(classOf[Int])))
+      populator.populate(menu, menuET, "aa", "xx") should be(false)
+      populator.populate(menu, menuET, "id", "2") should be(true)
+      populator.populate(menu, menuET, "id", "0") should be(true)
     }
   }
-}
-
-@value
-class Terms(value: Short)
-
-object Meta extends Enumeration(1) {
-  val A = new V(1)
-  val B = new V(2)
-  val C = new V(3)
-  class V(id:Int) extends Val(id)
 }

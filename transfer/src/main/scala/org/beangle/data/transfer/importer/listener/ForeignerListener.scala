@@ -60,25 +60,25 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
     // 过滤所有外键
     val iter = itermTranfer.attrs.iterator
     while (iter.hasNext) {
-      val attri = iter.next() // getAttrs()得到属性,即表的第二行
-      val processed = itermTranfer.processAttr(attri);
+      val attri = iter.next()
       val foreigerKeyIndex = 0
       val isforeiger = foreigerKeys exists { fk =>
-        (processed.endsWith("." + fk))
+        (attri.endsWith("." + fk))
       }
       if (isforeiger) {
         val codeValue = transfer.curData(attri).asInstanceOf[String]
         var foreiger: Object = null;
         // 外键的代码是空的
         if (Strings.isNotEmpty(codeValue)) {
+          val shortName = Strings.substringBefore(attri, ".")
           var entity: Object = null;
           if (multiEntity) {
-            entity = transfer.asInstanceOf[MultiEntityImporter].getCurrent(attri).asInstanceOf[AnyRef]
+            entity = transfer.asInstanceOf[MultiEntityImporter].getCurrent(shortName).asInstanceOf[AnyRef]
           } else {
-            entity = transfer.current;
+            entity = transfer.current
           }
 
-          val attr = itermTranfer.processAttr(attri)
+          val attr = Strings.substringAfter(attri, ".")
           val nestedForeigner = Properties.get[Object](entity, Strings.substring(attr, 0, attr.lastIndexOf(".")));
           nestedForeigner match {
             case nestf: Entity[_] =>
