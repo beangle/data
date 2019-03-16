@@ -144,7 +144,4 @@ abstract class AbstractImporter extends Importer with Logging {
     this.attrs = attrs
   }
 
-  def processAttr(attr: String): String = {
-    attr
-  }
 }

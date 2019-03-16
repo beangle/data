@@ -58,33 +58,42 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
   protected val entityTypes = new collection.mutable.HashMap[String, EntityType]
 
   /**
+   * 摘取指定前缀的参数
+   */
+  private def sub(data: collection.Map[String, Any], alias: String): collection.mutable.Map[String, Any] = {
+    val prefix = alias + "."
+    val newParams = new collection.mutable.HashMap[String, Any]
+    for ((key, value) <- data) {
+      if (key.indexOf(prefix) == 0) {
+        newParams.put(key.substring(prefix.length), value)
+      }
+    }
+    newParams
+  }
+  /**
    * transferItem.
    */
   override def transferItem() {
-    // 在给定的值的范围内
-    curData foreach { entry =>
-      var value = entry._2
-      // 处理空字符串并对所有的字符串进行trim
-      value match {
-        case s: String =>
-          if (Strings.isBlank(s)) value = null
-          else value = Strings.trim(s)
-        case _ =>
-      }
-      // 处理null值
-      if (null != value) {
-        if (value.equals("null")) value = null
-        val key = entry._1
-        // 仅仅处理有明显作用实体的属性
-        if (key.contains(".")) {
-          val entity = getCurrent(key)
-          val attr = processAttr(key)
-          val entityName = getEntityName(key)
-          val etype = domain.getEntity(entityName).get
-          populateValue(entity.asInstanceOf[Entity[_]], etype, attr, value)
+    entityTypes foreach {
+      case (name, etype) =>
+        val entity = getCurrent(name)
+        sub(curData, name) foreach { entry =>
+          var value = entry._2
+          // 处理空字符串并对所有的字符串进行trim
+          value match {
+            case s: String =>
+              if (Strings.isBlank(s)) value = null
+              else value = Strings.trim(s)
+            case _ =>
+          }
+          // 处理null值
+          if (null != value) {
+            if (value.equals("null")) value = null
+            populateValue(entity.asInstanceOf[Entity[_]], etype, entry._1, value)
+          }
         }
-      }
     }
+
   }
 
   /**
@@ -117,16 +126,12 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
     }
   }
 
-  override def processAttr(attr: String): String = {
-    Strings.substringAfter(attr, ".")
+  protected def getEntityClass(alias: String): Class[_] = {
+    getEntityType(alias).clazz
   }
 
-  protected def getEntityClass(attr: String): Class[_] = {
-    getEntityType(attr).clazz
-  }
-
-  protected def getEntityType(attr: String): EntityType = {
-    entityTypes(Strings.substringBefore(attr, "."))
+  protected def getEntityType(alias: String): EntityType = {
+    entityTypes(alias)
   }
 
   def addEntity(clazz: Class[_]) {
@@ -152,8 +157,7 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
     return getEntityType(attr).entityName
   }
 
-  def getCurrent(attr: String): AnyRef = {
-    val alias = Strings.substringBefore(attr, ".")
+  def getCurrent(alias: String): AnyRef = {
     var entity = currents.get(alias).orNull
     if (null == entity) {
       entityTypes.get(alias) match {
@@ -211,7 +215,7 @@ class DefaultEntityImporter(val entityClass: Class[_], val shortName: String) ex
     return entityTypes(shortName).entityName
   }
 
-  override def getCurrent(attr: String): AnyRef = {
+  override def getCurrent(alias: String): AnyRef = {
     current
   }
 
@@ -219,12 +223,8 @@ class DefaultEntityImporter(val entityClass: Class[_], val shortName: String) ex
     super.getCurrent(shortName)
   }
 
-  protected override def getEntityName(attr: String): String = {
+  protected override def getEntityName(alias: String): String = {
     getEntityName()
-  }
-
-  override def processAttr(attr: String): String = {
-    attr
   }
 
   override def current_=(obj: AnyRef) = {
