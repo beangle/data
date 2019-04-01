@@ -27,8 +27,6 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
 
   var attrs: Array[String] = _
 
-  var propertyExtractor: PropertyExtractor = new DefaultPropertyExtractor()
-
   protected override def beforeExport(): Boolean = {
     if (null == attrs) {
       context.get("keys", classOf[Object]) foreach { k =>
@@ -55,10 +53,7 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
       }
     }
 
-    context.get("extractor", classOf[PropertyExtractor]) foreach { p =>
-      propertyExtractor = p
-    }
-    if (null == attrs || null == propertyExtractor) {
+    if (null == attrs) {
       logger.debug("attrs or propertyExtractor is null,transfer data as array.")
     }
     super.beforeExport()
@@ -72,14 +67,13 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
       super.exportItem()
       return
     }
+    val extractor = context.extractor
     val values = new Array[Any](attrs.length)
     for (i <- 0 until values.length) {
       try {
-        values(i) = propertyExtractor.getPropertyValue(current.asInstanceOf[AnyRef], attrs(i))
+        values(i) = extractor.getPropertyValue(current.asInstanceOf[AnyRef], attrs(i))
       } catch {
-        case e: Exception =>
-          logger.error("occur in get property :" + attrs(i)
-            + " and exception:" + e.getMessage())
+        case e: Exception => logger.error("occur in get property :" + attrs(i), e)
       }
     }
     writer.write(values)

@@ -30,7 +30,5 @@ trait Writer {
 
   def format: Format.Value
 
-  var outputStream: OutputStream = _
-
   def close()
 }

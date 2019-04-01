@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.excel;
+package org.beangle.data.transfer.excel
 
 import java.io.InputStream
 import java.text.NumberFormat
@@ -33,7 +33,6 @@ object ExcelItemReader {
   /** Constant <code>numberFormat</code> */
   val numberFormat = NumberFormat.getInstance()
   numberFormat.setGroupingUsed(false);
-
 }
 /**
  * Excel的每行一条数据的读取器

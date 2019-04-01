@@ -21,5 +21,14 @@ package org.beangle.data.transfer.exporter
 import org.beangle.data.transfer.io.Writer
 
 trait Exporter {
-  def export(context: Context, writer: Writer)
+  def export(context: ExportContext, writer: Writer)
+}
+
+class ExportSetting {
+
+  var exporter: Exporter = _
+
+  var writer: Writer = _
+
+  var context = new ExportContext()
 }

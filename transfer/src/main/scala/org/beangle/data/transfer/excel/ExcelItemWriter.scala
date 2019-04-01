@@ -19,13 +19,15 @@
 package org.beangle.data.transfer.excel
 
 import java.time.{ Instant, LocalDate }
+import java.io.OutputStream
+
 import org.apache.poi.hssf.usermodel.{ HSSFCellStyle, HSSFRichTextString, HSSFSheet, HSSFWorkbook }
 import org.apache.poi.hssf.util.HSSFColor.HSSFColorPredefined
 import org.apache.poi.ss.usermodel.{ CellType, FillPatternType, HorizontalAlignment, VerticalAlignment }
 import org.beangle.commons.lang.Numbers
 import org.beangle.data.transfer.Format
 import org.beangle.data.transfer.io.ItemWriter
-import org.beangle.data.transfer.exporter.Context
+import org.beangle.data.transfer.exporter.ExportContext
 
 /**
  * ExcelItemWriter class.
@@ -33,7 +35,7 @@ import org.beangle.data.transfer.exporter.Context
  * @author chaostone
  * @version $Id: $
  */
-class ExcelItemWriter(val context: Context) extends ItemWriter {
+class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
 
   var countPerSheet = 50000
 

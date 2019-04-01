@@ -22,15 +22,12 @@ import java.io.OutputStream
 import java.net.URL
 
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.exporter.Context
+import org.beangle.data.transfer.exporter.ExportContext
 import org.beangle.data.transfer.io.Writer
 import org.jxls.util.JxlsHelper
 
-class ExcelTemplateWriter(val template: URL, os: OutputStream) extends Writer {
-
-  var context: Context = _
-
-  this.outputStream = os
+class ExcelTemplateWriter(val template: URL, val context: ExportContext, val outputStream: OutputStream)
+  extends Writer {
 
   /**
    * write.
