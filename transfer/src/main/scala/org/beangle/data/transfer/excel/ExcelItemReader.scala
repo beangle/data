@@ -156,7 +156,7 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
    */
   def getCellValue(cell: HSSFCell): Object = {
     if ((cell == null)) return null;
-    cell.getCellTypeEnum match {
+    cell.getCellType match {
       case CellType.BLANK  => null
       case CellType.STRING => Strings.trim(cell.getRichStringCellValue().getString());
       case CellType.NUMERIC =>

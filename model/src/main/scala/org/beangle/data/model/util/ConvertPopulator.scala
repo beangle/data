@@ -102,7 +102,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
    * 安静的拷贝属性，如果属性非法或其他错误则记录日志
    */
   override def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean = {
-    populate(target, entityType, Map(attr -> value)).fails isEmpty
+    populate(target, entityType, Map(attr -> value)).fails.isEmpty
   }
 
   /**
