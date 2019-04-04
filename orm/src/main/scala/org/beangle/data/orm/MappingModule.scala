@@ -48,6 +48,20 @@ object MappingModule {
     }
   }
 
+  class ReadOnly extends Declaration {
+    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+      pm.updateable = false
+      pm.insertable = false
+    }
+  }
+
+  class Immutable extends Declaration {
+    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+      pm.updateable = false
+      pm.insertable = true
+    }
+  }
+
   class Lob extends Declaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
@@ -382,6 +396,10 @@ abstract class MappingModule extends Logging {
   protected def notnull = new NotNull
 
   protected def unique = new Unique
+
+  protected def readOnly = new ReadOnly
+
+  protected def immutable = new Immutable
 
   protected def lob = new Lob
 
