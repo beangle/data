@@ -126,7 +126,10 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
         if (-1 == attr.indexOf('.')) {
           if (attr == idName) {
             if (null != value && value.toString != "0") {
-              copyValue(entity, attr, value, result)
+              val old = properties.get[Any](entity, idName)
+              if (null == old || old.toString() == "0") {
+                copyValue(entity, attr, value, result)
+              }
             }
           } else {
             copyValue(entity, attr, value, result)
