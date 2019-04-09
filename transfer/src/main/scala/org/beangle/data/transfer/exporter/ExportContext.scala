@@ -16,19 +16,28 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.io
+package org.beangle.data.transfer.exporter
 
-import java.io.OutputStream
+import org.beangle.commons.collection.Collections
 import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.io.Writer
 
-/**
- * Writer interface.
- *
- * @author chaostone
- */
-trait Writer {
+class ExportContext {
+  val datas = Collections.newMap[String, Any]
 
-  def format: Format.Value
+  var format: Format.Value = _
 
-  def close()
+  var extractor: PropertyExtractor = new DefaultPropertyExtractor()
+
+  def get[T](key: String, clazz: Class[T]): Option[T] = {
+    datas.get(key).asInstanceOf[Option[T]]
+  }
+
+  def put(key: String, v: Any) {
+    val newer = v match {
+      case i: Iterable[_] => scala.collection.JavaConverters.asJavaCollection(i)
+      case _              => v
+    }
+    datas.put(key, newer)
+  }
 }

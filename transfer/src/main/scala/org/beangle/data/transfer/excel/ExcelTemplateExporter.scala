@@ -16,26 +16,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.exporter
-
-import org.beangle.commons.collection.Collections
-import org.beangle.data.transfer.Format
+package org.beangle.data.transfer.excel
+import org.beangle.data.transfer.exporter.{ Exporter, ExportContext }
 import org.beangle.data.transfer.io.Writer
 
-class Context {
-  val datas = Collections.newMap[String, Any]
+class ExcelTemplateExporter extends Exporter {
 
-  var exporter: Exporter = _
-
-  var writer: Writer = _
-
-  var format: Format.Value = _
-
-  def get[T](key: String, clazz: Class[T]): Option[T] = {
-    datas.get(key).asInstanceOf[Option[T]]
-  }
-
-  def put(key: String, v: Any) {
-    datas.put(key, v)
+  def export(context: ExportContext, writer: Writer): Unit = {
+    val templateWriter = writer.asInstanceOf[ExcelTemplateWriter]
+    templateWriter.write()
   }
 }

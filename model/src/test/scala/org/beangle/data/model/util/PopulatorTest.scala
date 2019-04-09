@@ -19,6 +19,7 @@
 package org.beangle.data.model.util;
 
 import org.beangle.data.model.meta.{ BasicType, Domain }
+import org.beangle.commons.lang.reflect.{ BeanInfo, BeanInfos }
 import org.junit.runner.RunWith
 import org.scalatest.{ FunSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
@@ -28,13 +29,22 @@ class PopulatorTest extends FunSpec with Matchers {
 
   describe("Populator") {
     it("populate error attr") {
+
+      val menuBeanInfo = getBeanInfo(classOf[Menu])
       val populator = new ConvertPopulator()
       val menu = new Menu
       val menuET = new Domain.EntityTypeImpl(classOf[Menu])
       menuET.properties += ("id" -> new Domain.SingularPropertyImpl("id", classOf[Int], new BasicType(classOf[Int])))
       populator.populate(menu, menuET, "aa", "xx") should be(false)
-      populator.populate(menu, menuET, "id", "2") should be(true)
+      populator.populate(menu, menuET, "id", "3") should be(true)
+      val id=menu.id
       populator.populate(menu, menuET, "id", "0") should be(true)
     }
+  }
+
+  import scala.reflect.ClassTag
+  import scala.reflect.runtime.{ universe => ru }
+  private def getBeanInfo[T](clazz: Class[T])(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): BeanInfo = {
+    BeanInfos.get(clazz, ttag.tpe)
   }
 }

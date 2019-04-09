@@ -16,19 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.io
+package org.beangle.data.transfer.excel
 
-import java.io.OutputStream
-import org.beangle.data.transfer.Format
-
-/**
- * Writer interface.
- *
- * @author chaostone
- */
-trait Writer {
-
-  def format: Format.Value
-
-  def close()
+case class User(id: Int, name: String) {
 }

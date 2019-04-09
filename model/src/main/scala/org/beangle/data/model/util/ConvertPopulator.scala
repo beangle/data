@@ -102,7 +102,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
    * 安静的拷贝属性，如果属性非法或其他错误则记录日志
    */
   override def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean = {
-    populate(target, entityType, Map(attr -> value)).fails isEmpty
+    populate(target, entityType, Map(attr -> value)).fails.isEmpty
   }
 
   /**
@@ -126,7 +126,10 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
         if (-1 == attr.indexOf('.')) {
           if (attr == idName) {
             if (null != value && value.toString != "0") {
-              copyValue(entity, attr, value, result)
+              val old = properties.get[Any](entity, idName)
+              if (null == old || old.toString() == "0") {
+                copyValue(entity, attr, value, result)
+              }
             }
           } else {
             copyValue(entity, attr, value, result)

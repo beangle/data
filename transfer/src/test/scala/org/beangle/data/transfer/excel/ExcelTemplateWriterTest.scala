@@ -18,34 +18,31 @@
  */
 package org.beangle.data.transfer.excel
 
-import java.io.OutputStream
-import java.net.URL
+import java.nio.file.Files
+import java.io.FileOutputStream
 
-import org.beangle.data.transfer.Format
+import org.junit.runner.RunWith
+import org.scalatest.Matchers
+import org.scalatest.FunSpec
+import org.scalatest.junit.JUnitRunner
+import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.transfer.exporter.ExportContext
-import org.beangle.data.transfer.io.Writer
-import org.jxls.util.JxlsHelper
 
-class ExcelTemplateWriter(val template: URL, val context: ExportContext, val outputStream: OutputStream)
-  extends Writer {
-
-  /**
-   * write.
-   */
-  def write() {
-    val ctx = new org.jxls.common.Context()
-    context.datas foreach {
-      case (k, v) =>
-        ctx.putVar(k, v)
+@RunWith(classOf[JUnitRunner])
+class ExcelTemplateWriterTest extends FunSpec with Matchers {
+  describe("TemplateWriter") {
+    it("export") {
+      val template = ClassLoaders.getResource("template.xls").get
+      val tempFile = Files.createTempFile("out", ".xls")
+      val os = new FileOutputStream(tempFile.toFile)
+      val context = new ExportContext()
+      val users = List(User(1, "001"), User(2, "002"))
+      context.put("users", users)
+      val writer = new ExcelTemplateWriter(template, context, os)
+      writer.write()
+      os.close()
+      //tempFile.toFile.delete()
     }
-    JxlsHelper.getInstance().processTemplate(template.openStream(), outputStream, ctx)
   }
 
-  override def format: Format.Value = {
-    Format.Xls
-  }
-
-  override def close() {
-
-  }
 }

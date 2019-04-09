@@ -106,3 +106,14 @@ trait Importer {
 
   var prepare: ImportPrepare = _
 }
+
+class ImportSetting {
+
+  var importer: Importer = _
+
+  var reader: Reader = _
+
+  var entityClazz: Class[_] = _
+
+  var shortName: String = _
+}
