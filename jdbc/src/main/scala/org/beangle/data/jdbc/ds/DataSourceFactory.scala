@@ -20,13 +20,14 @@ package org.beangle.data.jdbc.ds
 
 import java.io.{ BufferedReader, ByteArrayInputStream, FileInputStream, InputStreamReader }
 import java.io.InputStream
-import java.net.{ HttpURLConnection, URLConnection, URL }
+import java.net.URL
 import javax.sql.DataSource
 
 import org.beangle.commons.bean.{ Disposable, Factory, Initializing }
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.net.http.HttpUtils
 
 /**
  * Build a DataSource from file: or http: config url
@@ -59,7 +60,7 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
           props.put("url", url)
         }
       } else if (url.startsWith("http")) {
-        val text = getURLText(url)
+        val text = HttpUtils.getText(url).getOrElse("")
         val is = new ByteArrayInputStream(text.getBytes)
         merge(readConf(is, isXML))
       } else {
@@ -102,35 +103,4 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
       if (!props.contains(e._1)) props.put(e._1, e._2)
     }
   }
-
-  private def getURLText(url: String): String = {
-    var conn: HttpURLConnection = null
-    try {
-      conn = new URL(url).openConnection().asInstanceOf[HttpURLConnection]
-      conn.setConnectTimeout(5 * 1000)
-      conn.setReadTimeout(5 * 1000)
-      conn.setRequestMethod("GET")
-      conn.setDoOutput(true)
-
-      val in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"))
-      var line = in.readLine()
-      val stringBuffer = new StringBuffer(255)
-      while (line != null) {
-        stringBuffer.append(line)
-        stringBuffer.append("\n")
-        line = in.readLine()
-      }
-      stringBuffer.toString()
-    } catch {
-      case e: Throwable => throw new RuntimeException(e)
-    } finally {
-      if (conn != null) {
-        conn match {
-          case hcon: HttpURLConnection => hcon.disconnect()
-          case _                       =>
-        }
-      }
-    }
-  }
-
 }

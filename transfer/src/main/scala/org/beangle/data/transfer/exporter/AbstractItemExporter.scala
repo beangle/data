@@ -22,13 +22,13 @@ import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.io.{ ItemWriter, Writer }
 
 abstract class AbstractItemExporter extends Exporter with Logging {
-  var writer: ItemWriter = _
   var current: Any = _
-  var context: Context = _
+  var context: ExportContext = _
+  var writer: ItemWriter = _
 
-  override def export(context: Context, writer: Writer) {
-    this.writer = writer.asInstanceOf[ItemWriter]
+  override def export(context: ExportContext, writer: Writer) {
     this.context = context
+    this.writer = writer.asInstanceOf[ItemWriter]
     var index = -1
     var iter: Iterator[Any] = null
     val items = context.datas.get("items").getOrElse(null).asInstanceOf[Iterable[Any]]
