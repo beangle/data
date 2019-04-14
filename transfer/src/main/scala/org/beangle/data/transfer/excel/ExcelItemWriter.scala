@@ -105,7 +105,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
           val cell = row.createCell(i)
           var v = values(i)
           if (null != v && v.isInstanceOf[Option[_]]) {
-            v = v.asInstanceOf[Option[_]].orNull()
+            v = v.asInstanceOf[Option[_]].orNull
           }
           v match {
             case n: Number =>
