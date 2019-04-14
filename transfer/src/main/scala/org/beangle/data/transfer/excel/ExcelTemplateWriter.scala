@@ -36,7 +36,11 @@ class ExcelTemplateWriter(val template: URL, val context: ExportContext, val out
     val ctx = new org.jxls.common.Context()
     context.datas foreach {
       case (k, v) =>
-        ctx.putVar(k, v)
+        val nv = v match {
+          case i: Iterable[_] => scala.collection.JavaConverters.asJavaCollection(i)
+          case _ => v
+        }
+        ctx.putVar(k, nv)
     }
     JxlsHelper.getInstance().processTemplate(template.openStream(), outputStream, ctx)
   }

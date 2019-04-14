@@ -34,10 +34,6 @@ class ExportContext {
   }
 
   def put(key: String, v: Any) {
-    val newer = v match {
-      case i: Iterable[_] => scala.collection.JavaConverters.asJavaCollection(i)
-      case _              => v
-    }
-    datas.put(key, newer)
+    datas.put(key, v)
   }
 }

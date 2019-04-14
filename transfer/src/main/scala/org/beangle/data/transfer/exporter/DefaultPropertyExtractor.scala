@@ -23,9 +23,6 @@ import org.beangle.commons.bean.Properties
 class DefaultPropertyExtractor extends PropertyExtractor {
 
   override def getPropertyValue(target: Object, property: String): Any = {
-    Properties.get[Any](target, property) match {
-      case o: Option[_] => o.getOrElse(null)
-      case a: Any       => a
-    }
+    Properties.get[Any](target, property)
   }
 }
