@@ -31,7 +31,7 @@ trait Importer {
   /**
    * 启动转换
    */
-  def transfer(tr: ImportResult);
+  def transfer(tr: ImportResult)
 
   /**
    * 转换一个对象
@@ -116,4 +116,6 @@ class ImportSetting {
   var entityClazz: Class[_] = _
 
   var shortName: String = _
+
+  var listeners: List[ImportListener] = List.empty[ImportListener]
 }

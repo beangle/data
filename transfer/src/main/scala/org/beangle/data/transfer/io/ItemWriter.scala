@@ -27,6 +27,6 @@ trait ItemWriter extends Writer {
 
   def write(obj: Any)
 
-  def writeTitle(titleName: String, data: Any);
+  def writeTitle(titleName: String, data: Any)
 
 }

@@ -16,11 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.excel;
+package org.beangle.data.transfer.excel
 
 import java.text.DecimalFormat
 
-import org.apache.poi.hssf.usermodel.{ HSSFCell, HSSFRow, HSSFWorkbook }
+import org.apache.poi.hssf.usermodel.{HSSFCell, HSSFRow, HSSFWorkbook}
 import org.beangle.commons.lang.Strings
 
 /**
@@ -29,7 +29,7 @@ import org.beangle.commons.lang.Strings
  * @author chaostone
  */
 object ExcelTools {
-  val numberformat = new DecimalFormat("#0.00");
+  val numberformat = new DecimalFormat("#0.00")
 
   def toExcel(datas: Iterable[Array[_]], propertyShowKeys: String): HSSFWorkbook = {
     toExcel(new HSSFWorkbook(), "sheet1", datas, propertyShowKeys)
@@ -40,14 +40,14 @@ object ExcelTools {
    */
   def toExcel(wb: HSSFWorkbook, sheetName: String, datas: Iterable[Array[_]],
     propertyShowKeys: String): HSSFWorkbook = {
-    val sheet = wb.createSheet(sheetName);
-    var row: HSSFRow = null;
-    var cell: HSSFCell = null;
+    val sheet = wb.createSheet(sheetName)
+    var row: HSSFRow = null
+    var cell: HSSFCell = null
 
-    val pShowKeys = Strings.split(propertyShowKeys, ",");
+    val pShowKeys = Strings.split(propertyShowKeys, ",")
     row = sheet.createRow(0); // 建立新行
     // 显示标题列名
-    (0 until pShowKeys.length) foreach { i =>
+    pShowKeys.indices foreach { i =>
       cell = row.createCell(i); // 建立新cell
       // cell.setEncoding(HSSFCell.ENCODING_UTF_16);
       cell.setCellValue(pShowKeys(i));
@@ -56,13 +56,13 @@ object ExcelTools {
     var rowId = 1; // 数据行号（从2行开始填充)
     datas foreach { objs =>
       row = sheet.createRow(rowId); // 建立新行
-      (0 until objs.length) foreach { j =>
+      objs.indices foreach { j =>
         cell = row.createCell(j); // 建立新cell
         // cell.setEncoding(HSSFCell.ENCODING_UTF_16);
         cell.setCellValue(if (objs(j) == null) "" else objs(j).toString)
       }
       rowId += 1
     }
-    return wb;
+    wb
   }
 }

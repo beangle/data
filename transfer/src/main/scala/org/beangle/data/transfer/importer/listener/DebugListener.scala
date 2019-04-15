@@ -29,19 +29,19 @@ import org.beangle.data.transfer.importer.ImportResult
 class DebugListener extends AbstractImportListener {
 
   override def onStart(tr: ImportResult) {
-    tr.addMessage("start", transfer.dataName);
+    tr.addMessage("start", transfer.dataName)
   }
 
   override def onFinish(tr: ImportResult) {
-    tr.addMessage("end", transfer.dataName);
+    tr.addMessage("end", transfer.dataName)
   }
 
   override def onItemStart(tr: ImportResult) {
-    tr.addMessage("start Item", transfer.tranferIndex + "");
+    tr.addMessage("start Item", transfer.tranferIndex + "")
   }
 
   override def onItemFinish(tr: ImportResult) {
-    tr.addMessage("end Item", transfer.current);
+    tr.addMessage("end Item", transfer.current)
   }
 
 }

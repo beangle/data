@@ -29,7 +29,7 @@ class DescriptionAttrPrepare extends ImportPrepare {
 
   def prepare(importer: Importer) {
     val reader = importer.reader.asInstanceOf[ItemReader]
-    importer.asInstanceOf[AbstractImporter].setAttrs(reader.readTitle(), reader.readDescription());
+    importer.asInstanceOf[AbstractImporter].setAttrs(reader.readTitle(), reader.readDescription())
   }
 
 }

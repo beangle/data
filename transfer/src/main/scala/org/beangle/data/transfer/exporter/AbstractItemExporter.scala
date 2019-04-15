@@ -31,7 +31,7 @@ abstract class AbstractItemExporter extends Exporter with Logging {
     this.writer = writer.asInstanceOf[ItemWriter]
     var index = -1
     var iter: Iterator[Any] = null
-    val items = context.datas.get("items").getOrElse(null).asInstanceOf[Iterable[Any]]
+    val items = context.datas.get("items").orNull.asInstanceOf[Iterable[Any]]
     if (null != items) {
       iter = items.iterator
     }
