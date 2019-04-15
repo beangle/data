@@ -23,10 +23,10 @@ import scala.collection.mutable.ListBuffer
 
 object ImporterMessage {
   /** Constant <code>ERROR_ATTRS="error.transfer.attrs"</code> */
-  val ERROR_ATTRS = "error.transfer.attrs";
+  val ERROR_ATTRS = "error.transfer.attrs"
 
   /** Constant <code>ERROR_ATTRS_EXPORT="error.transfer.attrs.export"</code> */
-  val ERROR_ATTRS_EXPORT = "error.transfer.attrs.export";
+  val ERROR_ATTRS_EXPORT = "error.transfer.attrs.export"
 }
 /**
  * 转换消息
@@ -44,7 +44,7 @@ class ImportMessage(val index: Int, val message: String, value: Any) {
    */
   override def toString: String = {
     Objects.toStringBuilder(this).add("index", this.index).add("message", this.message)
-      .add("values", this.values).toString();
+      .add("values", this.values).toString()
   }
 
 }

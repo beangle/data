@@ -19,12 +19,12 @@
 package org.beangle.data.transfer.importer
 
 import java.util.Locale
-import scala.annotation.elidable
-import scala.annotation.elidable.FINE
-import scala.collection.mutable.ListBuffer
-import org.beangle.commons.logging.Logging
+
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
+
+import scala.collection.mutable.ListBuffer
 
 /**
  * 导入的抽象和缺省实现
@@ -38,7 +38,7 @@ abstract class AbstractImporter extends Importer with Logging {
   this.prepare = new DescriptionAttrPrepare()
   /** 属性说明[attr,description] */
   protected val descriptions = new collection.mutable.HashMap[String, String]
-  protected var index = 0;
+  protected var index = 0
 
   /**
    * 进行转换
@@ -51,11 +51,11 @@ abstract class AbstractImporter extends Importer with Logging {
       prepare.prepare(this)
     } catch {
       // 预导入发生位置错误，错误信息已经记录在tr了
-      case e: Throwable => e.printStackTrace(); return ;
+      case e: Throwable => e.printStackTrace(); return
     }
     listeners.foreach(l => l.onStart(tr))
     while (read()) {
-      val transferItemStart = System.currentTimeMillis();
+      val transferItemStart = System.currentTimeMillis()
       index += 1
       beforeImportItem()
       if (isDataValid) {
@@ -72,13 +72,13 @@ abstract class AbstractImporter extends Importer with Logging {
           if (tr.errors == errors) this.success += 1
           else this.fail += 1
 
-          logger.debug(s"importer item:$tranferIndex take time: " + (System.currentTimeMillis() - transferItemStart));
+          logger.debug(s"importer item:$tranferIndex take time: " + (System.currentTimeMillis() - transferItemStart))
         }
       }
     }
     listeners.foreach(l => l.onFinish(tr))
-    reader.close();
-    logger.debug("importer elapse: " + (System.currentTimeMillis() - transferStartAt));
+    reader.close()
+    logger.debug("importer elapse: " + (System.currentTimeMillis() - transferStartAt))
   }
 
   def ignoreNull: Boolean = {
@@ -86,7 +86,7 @@ abstract class AbstractImporter extends Importer with Logging {
   }
 
   def locale: Locale = {
-    Locale.getDefault();
+    Locale.getDefault()
   }
 
   def format: Format.Value = {
@@ -94,7 +94,7 @@ abstract class AbstractImporter extends Importer with Logging {
   }
 
   def tranferIndex: Int = {
-    index;
+    index
   }
 
   override def addListener(listener: ImportListener): Importer = {
@@ -117,13 +117,13 @@ abstract class AbstractImporter extends Importer with Logging {
     if (null == data) {
       this.current = null
       this.curData = null
-      return false;
+      false
     } else {
       curData = new collection.mutable.HashMap[String, Any]
-      (0 until data.length) foreach { i =>
-        this.curData.put(attrs(i), data(i));
+      data.indices foreach { i =>
+        this.curData.put(attrs(i), data(i))
       }
-      return true;
+      true
     }
   }
 

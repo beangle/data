@@ -18,12 +18,12 @@
  */
 package org.beangle.data.transfer.excel
 
-import java.time.{ Instant, LocalDate }
+import java.time.{Instant, LocalDate}
 import java.io.OutputStream
 
-import org.apache.poi.hssf.usermodel.{ HSSFCellStyle, HSSFRichTextString, HSSFSheet, HSSFWorkbook }
+import org.apache.poi.hssf.usermodel.{HSSFCellStyle, HSSFRichTextString, HSSFSheet, HSSFWorkbook}
 import org.apache.poi.hssf.util.HSSFColor.HSSFColorPredefined
-import org.apache.poi.ss.usermodel.{ CellType, FillPatternType, HorizontalAlignment, VerticalAlignment }
+import org.apache.poi.ss.usermodel.{CellType, FillPatternType, HorizontalAlignment, VerticalAlignment}
 import org.beangle.commons.lang.Numbers
 import org.beangle.data.transfer.Format
 import org.beangle.data.transfer.io.ItemWriter
@@ -55,8 +55,8 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
 
   def init() {
     if (null != context) {
-      val count = context.datas.get("countPerSheet").getOrElse("")
-      if (null != count && Numbers.isDigits(count.toString())) {
+      val count = context.datas.getOrElse("countPerSheet", "")
+      if (null != count && Numbers.isDigits(count.toString)) {
         val countParam = Numbers.toInt(count.toString)
         if (countParam > 0) this.countPerSheet = countParam
       }
@@ -99,9 +99,9 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
   protected def writeItem(datas: Any) {
     var row = sheet.createRow(index) // 建立新行
     if (datas != null) {
-      if (datas.getClass().isArray()) {
+      if (datas.getClass.isArray) {
         val values = datas.asInstanceOf[Array[_]]
-        for (i <- 0 until values.length) {
+        values.indices foreach { i =>
           val cell = row.createCell(i)
           var v = values(i)
           if (null != v && v.isInstanceOf[Option[_]]) {
@@ -113,19 +113,19 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
               cell.setCellValue(n.doubleValue())
             case d: java.sql.Date =>
               cell.setCellValue(d)
-              cell.setCellStyle(getDateStyle())
+              cell.setCellStyle(getDateStyle)
             case t: java.util.Date =>
               cell.setCellValue(t)
-              cell.setCellStyle(getTimeStyle())
+              cell.setCellStyle(getTimeStyle)
             case t: LocalDate =>
               cell.setCellValue(java.sql.Date.valueOf(t))
-              cell.setCellStyle(getDateStyle())
+              cell.setCellStyle(getDateStyle)
             case t: Instant =>
               cell.setCellValue(java.util.Date.from(t))
-              cell.setCellStyle(getTimeStyle())
+              cell.setCellStyle(getTimeStyle)
             case c: java.util.Calendar =>
               cell.setCellValue(c)
-              cell.setCellStyle(getTimeStyle())
+              cell.setCellStyle(getTimeStyle)
             case _ =>
               cell.setCellValue(new HSSFRichTextString(if (v == null) "" else v.toString))
           }
@@ -136,33 +136,33 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
           case n: Number => cell.setCellType(CellType.NUMERIC)
           case _         =>
         }
-        cell.setCellValue(new HSSFRichTextString(datas.toString()))
+        cell.setCellValue(new HSSFRichTextString(datas.toString))
       }
     }
   }
 
-  private def getDateStyle(): HSSFCellStyle = {
+  private def getDateStyle: HSSFCellStyle = {
     if (null == dateStyle) {
       dateStyle = workbook.createCellStyle()
-      dateStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateFormat()))
+      dateStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateFormat))
     }
     dateStyle
   }
 
-  private def getTimeStyle(): HSSFCellStyle = {
+  private def getTimeStyle: HSSFCellStyle = {
     if (null == timeStyle) {
       timeStyle = workbook.createCellStyle()
-      timeStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateTimeFormat()))
+      timeStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateTimeFormat))
     }
     timeStyle
   }
 
-  protected def getDateFormat(): String = {
-    return "YYYY-MM-DD"
+  protected def getDateFormat: String = {
+    "YYYY-MM-DD"
   }
 
-  protected def getDateTimeFormat(): String = {
-    return "YYYY-MM-DD HH:MM:SS"
+  protected def getDateTimeFormat: String = {
+    "YYYY-MM-DD HH:MM:SS"
   }
 
   protected def buildTitleStyle(): HSSFCellStyle = {
@@ -170,7 +170,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     style.setAlignment(HorizontalAlignment.CENTER) // 左右居中
     style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
     style.setFillPattern(FillPatternType.SOLID_FOREGROUND)
-    style.setFillForegroundColor(HSSFColorPredefined.GREY_25_PERCENT.getIndex())
+    style.setFillForegroundColor(HSSFColorPredefined.GREY_25_PERCENT.getIndex)
     style
   }
 }

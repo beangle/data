@@ -21,7 +21,7 @@ package org.beangle.data.transfer.importer
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.Entity
-import org.beangle.data.model.meta.{ Domain, EntityType }
+import org.beangle.data.model.meta.{Domain, EntityType}
 import org.beangle.data.model.util.Populator
 import org.beangle.data.transfer.IllegalFormatException
 
@@ -31,10 +31,6 @@ import org.beangle.data.transfer.IllegalFormatException
  * @author chaostone
  */
 trait EntityImporter extends Importer {
-
-  def foreignerKeys: collection.Set[String]
-
-  def addForeignedKeys(foreignerKey: String)
 
   var populator: Populator = _
 
@@ -51,9 +47,6 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
 
   protected var currents = new collection.mutable.HashMap[String, AnyRef]
 
-  val foreignerKeys = new collection.mutable.HashSet[String]
-
-  addForeignedKeys("code")
   // [alias,entityType]
   protected val entityTypes = new collection.mutable.HashMap[String, EntityType]
 
@@ -100,24 +93,18 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
    * Populate single attribute
    */
   protected def populateValue(entity: Entity[_], etype: EntityType, attr: String, value: Any): Unit = {
-    // 当有深层次属性
+    // 当有深层次属性,这里和传统的Populate不一样，导入面向的使用户，属性可能出现foreigner.name之类的，在正常的form表单中不会出现
     if (Strings.contains(attr, '.')) {
-      if (null != foreignerKeys) {
-        val foreigner = isForeigner(attr)
-        // 如果是个外键,先根据parentPath生成新的外键实体,因此导入的是外键,只能有一个属性导入.
-        if (foreigner) {
-          val parentPath = Strings.substringBeforeLast(attr, ".")
-          val propertyType = populator.init(entity, etype, parentPath)
-          val property = propertyType._1
-          property match {
-            case e: Entity[_] =>
-              if (e.persisted) {
-                populator.populate(entity, etype, parentPath, null)
-                populator.init(entity, etype, parentPath)
-              }
-            case _ =>
+      val parentPath = Strings.substringBeforeLast(attr, ".")
+      val propertyType = populator.init(entity, etype, parentPath)
+      val property = propertyType._1
+      property match {
+        case e: Entity[_] =>
+          if (e.persisted) {
+            populator.populate(entity, etype, parentPath, null)
+            populator.init(entity, etype, parentPath)
           }
-        }
+        case _ =>
       }
     }
 
@@ -142,19 +129,19 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
   def addEntity(alias: String, entityClass: Class[_]) {
     domain.getEntity(entityClass) match {
       case Some(entityType) => entityTypes.put(alias, entityType)
-      case None             => throw new RuntimeException("cannot find entity type for " + entityClass)
+      case None => throw new RuntimeException("cannot find entity type for " + entityClass)
     }
   }
 
   def addEntity(alias: String, entityName: String): Unit = {
     domain.getEntity(entityName) match {
       case Some(entityType) => entityTypes.put(alias, entityType)
-      case None             => throw new RuntimeException("cannot find entity type for " + entityName)
+      case None => throw new RuntimeException("cannot find entity type for " + entityName)
     }
   }
 
   protected def getEntityName(attr: String): String = {
-    return getEntityType(attr).entityName
+    getEntityType(attr).entityName
   }
 
   def getCurrent(alias: String): AnyRef = {
@@ -177,21 +164,12 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
     "multi entity"
   }
 
-  private def isForeigner(attr: String): Boolean = {
-    val property = Strings.substringAfterLast(attr, ".")
-    foreignerKeys.contains(property)
-  }
-
   override def current_=(obj: AnyRef) {
     currents = obj.asInstanceOf[collection.mutable.HashMap[String, AnyRef]]
   }
 
   override def current: AnyRef = {
     currents
-  }
-
-  def addForeignedKeys(foreignerKey: String): Unit = {
-    this.foreignerKeys += foreignerKey
   }
 
   protected override def beforeImportItem(): Unit = {
@@ -204,15 +182,15 @@ class DefaultEntityImporter(val entityClass: Class[_], val shortName: String) ex
   this.prepare = EntityPrepare
 
   protected override def getEntityType(attr: String): EntityType = {
-    return entityTypes(shortName)
+    entityTypes(shortName)
   }
 
   def getEntityClass: Class[_] = {
-    return entityTypes(shortName).clazz
+    entityTypes(shortName).clazz
   }
 
-  def getEntityName(): String = {
-    return entityTypes(shortName).entityName
+  def getEntityName: String = {
+    entityTypes(shortName).entityName
   }
 
   override def getCurrent(alias: String): AnyRef = {
@@ -224,10 +202,10 @@ class DefaultEntityImporter(val entityClass: Class[_], val shortName: String) ex
   }
 
   protected override def getEntityName(alias: String): String = {
-    getEntityName()
+    getEntityName
   }
 
-  override def current_=(obj: AnyRef) = {
+  override def current_=(obj: AnyRef):Unit = {
     currents.put(shortName, obj)
   }
 

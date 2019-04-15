@@ -20,17 +20,12 @@ package org.beangle.data.transfer.importer.listener
 
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.lang.Strings
-import org.beangle.data.model.Entity
 import org.beangle.data.dao.EntityDao
-
-import ForeignerListener.CACHE_SIZE
-import org.beangle.data.transfer.importer.ImportResult
-import org.beangle.data.transfer.importer.ImportListener
-import org.beangle.data.transfer.importer.MultiEntityImporter
-import org.beangle.data.transfer.importer.AbstractImporter
+import org.beangle.data.model.Entity
+import org.beangle.data.transfer.importer.{AbstractImporter, ImportListener, ImportResult, MultiEntityImporter}
 
 object ForeignerListener {
-  val CACHE_SIZE = 500;
+  val CACHE_SIZE = 500
 }
 /**
  * 导入数据外键监听器<br>
@@ -49,10 +44,10 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
   private val foreigerKeys = new collection.mutable.ListBuffer[String]
   foreigerKeys += "code"
 
-  private var multiEntity = false;
+  private var multiEntity = false
 
   override def onStart(tr: ImportResult) {
-    multiEntity = (transfer.getClass == classOf[MultiEntityImporter])
+    multiEntity = transfer.getClass == classOf[MultiEntityImporter]
   }
 
   override def onItemFinish(tr: ImportResult) {
@@ -61,46 +56,50 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
     val iter = itermTranfer.attrs.iterator
     while (iter.hasNext) {
       val attri = iter.next()
-      val foreigerKeyIndex = 0
+      var foreigerKeyIndex = -1
       val isforeiger = foreigerKeys exists { fk =>
-        (attri.endsWith("." + fk))
+        foreigerKeyIndex += 1
+        attri.endsWith("." + fk) && Strings.count(attri, '.') >= 2
       }
       if (isforeiger) {
         val codeValue = transfer.curData(attri).asInstanceOf[String]
-        var foreiger: Object = null;
+        var foreiger: Object = null
         // 外键的代码是空的
         if (Strings.isNotEmpty(codeValue)) {
-          val shortName = Strings.substringBefore(attri, ".")
-          var entity: Object = null;
+          var entity: Object = null
           if (multiEntity) {
-            entity = transfer.asInstanceOf[MultiEntityImporter].getCurrent(shortName).asInstanceOf[AnyRef]
+            val shortName = Strings.substringBefore(attri, ".")
+            entity = transfer.asInstanceOf[MultiEntityImporter].getCurrent(shortName)
           } else {
             entity = transfer.current
           }
 
           val attr = Strings.substringAfter(attri, ".")
-          val nestedForeigner = Properties.get[Object](entity, Strings.substring(attr, 0, attr.lastIndexOf(".")));
+          var nestedForeigner = Properties.get[Object](entity, Strings.substring(attr, 0, attr.lastIndexOf(".")))
+          if (nestedForeigner.isInstanceOf[Option[_]]) {
+            nestedForeigner = nestedForeigner.asInstanceOf[Option[AnyRef]].orNull
+          }
           nestedForeigner match {
             case nestf: Entity[_] =>
               val className = nestedForeigner.getClass.getName
               val foreignerMap = foreigersMap.getOrElseUpdate(className, new collection.mutable.HashMap[String, Object])
-              if (foreignerMap.size > CACHE_SIZE) foreignerMap.clear();
+              if (foreignerMap.size > CACHE_SIZE) foreignerMap.clear()
               foreiger = foreignerMap.get(codeValue).orNull
               if (foreiger == null) {
                 val clazz = nestedForeigner.getClass.asInstanceOf[Class[Entity[_]]]
-                val foreigners = entityDao.findBy(clazz, foreigerKeys(foreigerKeyIndex), List(codeValue));
-                if (!foreigners.isEmpty) {
+                val foreigners = entityDao.findBy(clazz, foreigerKeys(foreigerKeyIndex), List(codeValue))
+                if (foreigners.nonEmpty) {
                   foreiger = foreigners.head
-                  foreignerMap.put(codeValue, foreiger);
+                  foreignerMap.put(codeValue, foreiger)
                 } else {
-                  tr.addFailure("代码不存在", codeValue);
+                  tr.addFailure("代码不存在", codeValue)
                 }
               }
             case _ =>
           }
-          val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf("."));
+          val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf("."))
           val entityImporter = transfer.asInstanceOf[MultiEntityImporter]
-          entityImporter.populator.populate(entity.asInstanceOf[Entity[_]], entityImporter.domain.getEntity(entity.getClass).get, parentAttr, foreiger);
+          entityImporter.populator.populate(entity.asInstanceOf[Entity[_]], entityImporter.domain.getEntity(entity.getClass).get, parentAttr, foreiger)
         }
       }
     }

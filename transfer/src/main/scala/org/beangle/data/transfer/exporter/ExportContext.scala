@@ -20,10 +20,9 @@ package org.beangle.data.transfer.exporter
 
 import org.beangle.commons.collection.Collections
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.Writer
 
 class ExportContext {
-  val datas = Collections.newMap[String, Any]
+  val datas:collection.mutable.Map[String,Any] = Collections.newMap[String, Any]
 
   var format: Format.Value = _
 

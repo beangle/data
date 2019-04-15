@@ -18,11 +18,7 @@
  */
 package org.beangle.data.transfer.importer
 
-import org.beangle.commons.collection.Collections
-import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
-import org.beangle.commons.conversion.Conversion
-import org.beangle.commons.conversion.impl.DefaultConversion
 
 /**
  * 转换结果
@@ -46,7 +42,7 @@ class ImportResult {
   }
 
   def hasErrors: Boolean = {
-    !errs.isEmpty
+    errs.nonEmpty
   }
 
   def errors: Int = {

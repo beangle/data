@@ -21,18 +21,17 @@ package org.beangle.data.transfer.excel
 import java.io.InputStream
 import java.text.NumberFormat
 
-import org.apache.poi.hssf.usermodel.{ HSSFCell, HSSFSheet, HSSFWorkbook }
-import org.apache.poi.ss.usermodel.{ Cell, DateUtil }
+import org.apache.poi.hssf.usermodel.{HSSFCell, HSSFSheet, HSSFWorkbook}
+import org.apache.poi.ss.usermodel.{CellType, DateUtil}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
-import org.apache.poi.ss.usermodel.CellType
-import org.beangle.data.transfer.io.ItemReader
 import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.io.ItemReader
 
 object ExcelItemReader {
   /** Constant <code>numberFormat</code> */
-  val numberFormat = NumberFormat.getInstance()
-  numberFormat.setGroupingUsed(false);
+  val numberFormat: NumberFormat = NumberFormat.getInstance()
+  numberFormat.setGroupingUsed(false)
 }
 /**
  * Excel的每行一条数据的读取器
@@ -42,7 +41,7 @@ object ExcelItemReader {
 class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
 
   /** Constant <code>sheetNum=0</code> */
-  val sheetNum = 0;
+  val sheetNum = 0
 
   this.headIndex = 0
   this.dataIndex = headIndex + 1
@@ -50,7 +49,7 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   /**
    * 下一个要读取的位置 标题行和代码行分别默认占据0,1
    */
-  private var indexInSheet: Int = dataIndex;
+  private var indexInSheet: Int = dataIndex
 
   /**
    * 属性的个数，0表示在读取值的是否不做读限制
@@ -75,15 +74,15 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
    * @return an array of String objects.
    */
   override def readDescription(): List[String] = {
-    if (workbook.getNumberOfSheets() < 1) {
+    if (workbook.getNumberOfSheets < 1) {
       List.empty
     } else {
-      readLine(workbook.getSheetAt(0), headIndex);
+      readLine(workbook.getSheetAt(0), headIndex)
     }
   }
 
   override def readTitle(): List[String] = {
-    if (workbook.getNumberOfSheets() < 1) {
+    if (workbook.getNumberOfSheets < 1) {
       List.empty
     } else {
       val comments = readComments(workbook.getSheetAt(0), headIndex)
@@ -100,8 +99,8 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
     val attrList = new collection.mutable.ListBuffer[String]
     var hasEmptyCell = false
     for (i <- 0 until row.getLastCellNum; if !hasEmptyCell) {
-      val cell = row.getCell(i);
-      val attr = cell.getRichStringCellValue().getString();
+      val cell = row.getCell(i)
+      val attr = cell.getRichStringCellValue.getString
       if (Strings.isEmpty(attr)) {
         hasEmptyCell = true
       } else {
@@ -120,11 +119,11 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
     var hasEmptyCell = false
     for (i <- 0 until row.getLastCellNum; if !hasEmptyCell) {
       val cell = row.getCell(i)
-      val comment = cell.getCellComment()
-      if (null == comment || Strings.isEmpty(comment.getString().getString())) {
+      val comment = cell.getCellComment
+      if (null == comment || Strings.isEmpty(comment.getString.getString)) {
         hasEmptyCell = true
       } else {
-        var commentStr = comment.getString().getString();
+        var commentStr = comment.getString.getString
         if (commentStr.indexOf(':') > 0) {
           commentStr = Strings.substringAfterLast(commentStr, ":")
         }
@@ -135,16 +134,16 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   }
 
   override def read(): Any = {
-    val sheet = workbook.getSheetAt(sheetNum);
-    if (indexInSheet > sheet.getLastRowNum()) { return null; }
-    val row = sheet.getRow(indexInSheet);
-    indexInSheet += 1;
+    val sheet = workbook.getSheetAt(sheetNum)
+    if (indexInSheet > sheet.getLastRowNum) { return null; }
+    val row = sheet.getRow(indexInSheet)
+    indexInSheet += 1
     // 如果是个空行,返回空记录
     if (row == null) {
-      return new Array[Object](attrCount)
+      new Array[Object](attrCount)
     } else {
       val values = new Array[Object](if (attrCount != 0) attrCount else row.getLastCellNum)
-      (0 until values.length) foreach { k =>
+      values.indices foreach { k =>
         values(k) = getCellValue(row.getCell(k));
       }
       values
@@ -155,17 +154,17 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
    * 取cell单元格中的数据
    */
   def getCellValue(cell: HSSFCell): Object = {
-    if ((cell == null)) return null;
+    if (cell == null) return null
     cell.getCellType match {
       case CellType.BLANK  => null
-      case CellType.STRING => Strings.trim(cell.getRichStringCellValue().getString());
+      case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
       case CellType.NUMERIC =>
         if (DateUtil.isCellDateFormatted(cell)) {
-          cell.getDateCellValue();
+          cell.getDateCellValue
         } else {
-          ExcelItemReader.numberFormat.format(cell.getNumericCellValue());
+          ExcelItemReader.numberFormat.format(cell.getNumericCellValue)
         }
-      case CellType.BOOLEAN => if (cell.getBooleanCellValue()) java.lang.Boolean.TRUE else java.lang.Boolean.FALSE
+      case CellType.BOOLEAN => if (cell.getBooleanCellValue) java.lang.Boolean.TRUE else java.lang.Boolean.FALSE
       case _                => null
     }
   }
@@ -175,7 +174,7 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   }
 
   override def close(): Unit = {
-    this.workbook.cloneSheet(sheetNum);
+    this.workbook.cloneSheet(sheetNum)
   }
 
 }

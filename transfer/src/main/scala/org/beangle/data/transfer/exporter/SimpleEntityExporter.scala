@@ -44,8 +44,8 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
             keys += Strings.substringBefore(prop, ":")
             titles += Strings.substringAfter(prop, ":")
           } else {
-            keys += (prop)
-            titles += (prop)
+            keys += prop
+            titles += prop
           }
         }
         this.attrs = keys.toArray
@@ -69,7 +69,7 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
     }
     val extractor = context.extractor
     val values = new Array[Any](attrs.length)
-    for (i <- 0 until values.length) {
+    values.indices foreach{ i =>
       try {
         values(i) = extractor.getPropertyValue(current.asInstanceOf[AnyRef], attrs(i))
       } catch {
