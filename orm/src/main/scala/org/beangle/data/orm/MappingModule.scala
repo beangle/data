@@ -28,6 +28,7 @@ import scala.reflect.runtime.{universe => ru}
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.commons.lang.Strings.substringAfter
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.meta.{Column, Identifier}
 import org.beangle.data.model.meta.Domain.{CollectionPropertyImpl, MapPropertyImpl, SingularPropertyImpl}
@@ -324,7 +325,10 @@ object MappingModule {
     }
   }
 
-  final class Entities(val mappings: Mappings, val entityMappings: collection.mutable.Map[String, EntityTypeMapping], cacheConfig: CacheConfig) {
+  final class Entities(
+    val mappings: Mappings,
+    val entityMappings: collection.mutable.Map[String, EntityTypeMapping],
+    cacheConfig: CacheConfig) {
     def except(clazzes: Class[_]*): this.type = {
       clazzes foreach { c => entityMappings -= c.getName }
       this
@@ -341,9 +345,14 @@ object MappingModule {
       this
     }
 
-    def cacheAll(region: String, usage: String, excepts: Set[String]): this.type = {
+    def cacheAll(
+      region: String = cacheConfig.region,
+      usage: String = cacheConfig.usage,
+      excepts: Set[String] = Set.empty): this.type = {
       entityMappings foreach { e =>
-        mappings.cacheAll(e._2, cacheConfig.region, cacheConfig.usage, excepts)
+        val prefix = e._2.clazz.getSimpleName + "."
+        val entityExcepts = excepts.filter(_.startsWith(prefix)).map(substringAfter(_, prefix))
+        mappings.cacheAll(e._2, cacheConfig.region, cacheConfig.usage, entityExcepts)
       }
       this
     }
