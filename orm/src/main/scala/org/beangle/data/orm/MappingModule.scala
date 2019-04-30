@@ -18,19 +18,19 @@
  */
 package org.beangle.data.orm
 
-import java.sql.{ Blob, Clob, Types }
+import java.sql.{Blob, Clob, Types}
 
 import scala.collection.JavaConverters.asScalaSet
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{ universe => ru }
+import scala.reflect.runtime.{universe => ru}
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.meta.{ Column, Identifier }
-import org.beangle.data.model.meta.Domain.{ CollectionPropertyImpl, MapPropertyImpl, SingularPropertyImpl }
+import org.beangle.data.jdbc.meta.{Column, Identifier}
+import org.beangle.data.model.meta.Domain.{CollectionPropertyImpl, MapPropertyImpl, SingularPropertyImpl}
 import org.beangle.data.model.meta.Property
 
 object MappingModule {
@@ -272,17 +272,17 @@ object MappingModule {
     var proxy: Proxy.EntityProxy = _
 
     def cacheable(): this.type = {
-      mapping.cache(module.cacheConfig.region, module.cacheConfig.usage)
+      mappings.cache(mapping, module.cacheConfig.region, module.cacheConfig.usage)
       this
     }
 
-    def cache(region: String): this.type = {
-      mapping.cacheRegion = region
+    def cacheAll(region: String = module.cacheConfig.region, usage: String = module.cacheConfig.usage, excepts: Set[String] = Set.empty): this.type = {
+      mappings.cacheAll(mapping, region, usage, excepts)
       this
     }
 
-    def usage(usage: String): this.type = {
-      mapping.cacheUsage = usage
+    def cache(region: String, usage: String): this.type = {
+      mappings.cache(mapping, region, usage)
       this
     }
 
@@ -324,26 +324,27 @@ object MappingModule {
     }
   }
 
-  final class Entities(val entityMappings: collection.mutable.Map[String, EntityTypeMapping], cacheConfig: CacheConfig) {
+  final class Entities(val mappings: Mappings, val entityMappings: collection.mutable.Map[String, EntityTypeMapping], cacheConfig: CacheConfig) {
     def except(clazzes: Class[_]*): this.type = {
       clazzes foreach { c => entityMappings -= c.getName }
       this
     }
 
     def cacheable(): Unit = {
-      entityMappings foreach { e =>
-        e._2.cacheRegion = cacheConfig.region
-        e._2.cacheUsage = cacheConfig.usage
-      }
+      cache(cacheConfig.region, cacheConfig.usage)
     }
 
-    def cache(region: String): this.type = {
-      entityMappings foreach (e => e._2.cacheRegion = region)
+    def cache(region: String, usage: String): this.type = {
+      entityMappings foreach { e =>
+        mappings.cache(e._2, cacheConfig.region, cacheConfig.usage)
+      }
       this
     }
 
-    def usage(usage: String): this.type = {
-      entityMappings foreach (e => e._2.cacheUsage = usage)
+    def cacheAll(region: String, usage: String, excepts: Set[String]): this.type = {
+      entityMappings foreach { e =>
+        mappings.cacheAll(e._2, cacheConfig.region, cacheConfig.usage, excepts)
+      }
       this
     }
   }
@@ -510,8 +511,8 @@ abstract class MappingModule extends Logging {
     defaultIdGenerator = Some(strategy)
   }
 
-  protected final def cache(region: String): CacheHolder = {
-    new CacheHolder(mappings, region, cacheConfig.usage)
+  protected final def cache(region: String, usage: String): CacheHolder = {
+    new CacheHolder(mappings, region, usage)
   }
 
   protected final def cache(): CacheHolder = {
@@ -520,7 +521,7 @@ abstract class MappingModule extends Logging {
 
   protected final def all: Entities = {
     val newEntities = Collections.newMap[String, EntityTypeMapping]
-    new Entities(newEntities ++ entityMappings, cacheConfig)
+    new Entities(mappings, newEntities ++ entityMappings, cacheConfig)
   }
 
   protected final def collection[T](properties: String*)(implicit manifest: Manifest[T]): List[Collection] = {

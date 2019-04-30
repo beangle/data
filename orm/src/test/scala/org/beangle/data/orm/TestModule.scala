@@ -39,6 +39,6 @@ class TestModule extends MappingModule {
 
     bind[UrlMenu].on(c => declare(
       c.url is (notnull, length(40)),
-      c.parent is target[UrlMenu]))
+      c.parent is target[UrlMenu])).cacheAll()
   }
 }
