@@ -23,22 +23,21 @@ import java.net.URL
 import java.util.Locale
 
 import scala.collection.mutable
-import scala.reflect.runtime.{ universe => ru }
+import scala.reflect.runtime.{universe => ru}
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.config.Resources
-import org.beangle.commons.lang.{ ClassLoaders, Strings }
+import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
-import org.beangle.data.jdbc.{ DefaultSqlTypeMapping, SqlTypeMapping }
-import org.beangle.data.jdbc.meta.{ Column, Database, Table }
-import org.beangle.data.model.{ IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity }
-import org.beangle.data.model.meta.{ EntityType, PluralProperty, Property, SingularProperty, Type }
-import org.beangle.data.model.meta.BasicType
-import org.beangle.data.model.meta.Domain.{ CollectionPropertyImpl, EmbeddableTypeImpl, EntityTypeImpl, MapPropertyImpl, MutableStructType, SingularPropertyImpl }
-import org.beangle.data.orm.Jpas.{ isComponent, isEntity, isMap, isSeq, isSet }
+import org.beangle.data.jdbc.{DefaultSqlTypeMapping, SqlTypeMapping}
+import org.beangle.data.jdbc.meta.{Column, Database, Table}
+import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity}
+import org.beangle.data.model.meta.{BasicType, EntityType, PluralProperty, Property, SingularProperty, Type}
+import org.beangle.data.model.meta.Domain.{CollectionPropertyImpl, EmbeddableTypeImpl, EntityTypeImpl, MapPropertyImpl, MutableStructType, SingularPropertyImpl}
+import org.beangle.data.orm.Jpas.{isComponent, isEntity, isMap, isSeq, isSet}
 import org.beangle.data.orm.cfg.Profiles
 
 object Mappings {
@@ -98,6 +97,30 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
   def addCollection(definition: Collection): this.type = {
     collectMap.put(definition.clazz.getName() + definition.property, definition)
+    this
+  }
+
+  def cache(em: EntityTypeMapping, region: String, usage: String): this.type = {
+    em.cacheRegion = region
+    em.cacheUsage = usage
+    this
+  }
+
+  def cacheAll(em: EntityTypeMapping, region: String, usage: String, excepts: Set[String]): this.type = {
+    em.properties foreach {
+      case (k, v) =>
+        if (!excepts.contains(k)) {
+          v match {
+            case pm: PluralPropertyMapping[_] =>
+              if (pm.many2many) {
+                this.addCollection(new Collection(em.clazz, k, region, usage))
+              }
+            case _ =>
+          }
+        }
+    }
+    em.cacheRegion = region
+    em.cacheUsage = usage
     this
   }
 

@@ -21,8 +21,8 @@ package org.beangle.data.orm
 import scala.collection.mutable.Buffer
 
 import org.beangle.commons.collection.Collections
-import org.beangle.data.jdbc.meta.{ Column, Table }
-import org.beangle.data.model.meta.{ BasicType, EmbeddableType, EntityType, Property, Type }
+import org.beangle.data.jdbc.meta.{Column, Table}
+import org.beangle.data.model.meta.{BasicType, EmbeddableType, EntityType, Property, Type}
 
 trait ColumnHolder {
   def columns: Iterable[Column]
@@ -117,6 +117,11 @@ class TypeDef(val clazz: String, val params: Map[String, String])
 final class Collection(val clazz: Class[_], val property: String) {
   var cacheRegion: String = _
   var cacheUsage: String = _
+
+  def this(clazz: Class[_], property: String, region: String, usage: String) {
+    this(clazz, property)
+    cache(region, usage)
+  }
 
   def cache(region: String, usage: String): this.type = {
     this.cacheRegion = region
