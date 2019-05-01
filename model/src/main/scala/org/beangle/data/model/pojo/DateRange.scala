@@ -20,14 +20,18 @@ package org.beangle.data.model.pojo
 
 import java.time.LocalDate
 
+/** 具有日期范围的实体
+  *
+  * 开始和结束都在有效日期范围内
+  */
 trait DateRange {
-  /**
-   * 起始日期
-   */
+  /** 起始日期 */
   var beginOn: LocalDate = _
 
-  /**
-   * 结束日期
-   */
+  /** 结束日期 */
   var endOn: LocalDate = _
+
+  def within(date: LocalDate): Boolean = {
+    !(beginOn.isAfter(date) || endOn.isBefore(date))
+  }
 }

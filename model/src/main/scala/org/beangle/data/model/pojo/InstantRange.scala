@@ -20,14 +20,19 @@ package org.beangle.data.model.pojo
 
 import java.time.Instant
 
+/** 具有时间范围的实体
+  *
+  * 开始和结束都在有效时间范围内
+  */
 trait InstantRange {
-  /**
-   * 起始时间
-   */
+  /** 起始时间 */
   var beginAt: Instant = _
 
-  /**
-   * 结束时间
-   */
+  /** 结束时间 */
   var endAt: Instant = _
+
+
+  def within(time: Instant): Boolean = {
+    !(beginAt.isAfter(time) || endAt.isBefore(time))
+  }
 }
