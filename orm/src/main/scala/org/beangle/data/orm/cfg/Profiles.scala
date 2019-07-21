@@ -18,16 +18,14 @@
  */
 package org.beangle.data.orm.cfg
 
-import java.io.IOException
 import java.net.URL
 
 import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.Strings.{ replace, substringBetween, isEmpty, isNotEmpty, rightPad, substringBeforeLast, unCamel }
-import org.beangle.commons.logging.Logging
-import org.beangle.data.orm.NamingPolicy
-import org.beangle.data.orm.MappingModule
+import org.beangle.commons.lang.Strings._
 import org.beangle.commons.lang.reflect.Reflections
+import org.beangle.commons.logging.Logging
+import org.beangle.data.orm.{MappingModule, NamingPolicy}
 
 class Profiles(resources: Resources) extends Logging {
 
@@ -44,7 +42,7 @@ class Profiles(resources: Resources) extends Logging {
   namings.put("rails", new RailsNamingPolicy(this))
 
   for (url <- resources.paths) addConfig(url)
-  if (!profiles.isEmpty) logger.info(s"Table name pattern: -> \n${this.toString}")
+  if (profiles.nonEmpty) logger.info(s"Table name pattern: -> \n${this.toString}")
 
   def addConfig(url: URL): Unit = {
     try {
@@ -60,7 +58,7 @@ class Profiles(resources: Resources) extends Logging {
       }
       autoWire()
     } catch {
-      case e: IOException => logger.error("property load error", e)
+      case e: Exception => logger.error("property load error in url:" + url, e)
     }
   }
 
@@ -68,17 +66,16 @@ class Profiles(resources: Resources) extends Logging {
     val profile = getProfile(clazz)
     var schema = profile.schema
     val anno = profile.annotations find { ann =>
-      clazz.getAnnotations() exists { annon =>
-        if (ann.clazz.isAssignableFrom(annon.getClass())) {
+      clazz.getAnnotations exists { annon =>
+        if (ann.clazz.isAssignableFrom(annon.getClass)) {
           if (isNotEmpty(ann.value)) {
             try {
-              val method = annon.getClass().getMethod("value")
+              val method = annon.getClass.getMethod("value")
               String.valueOf(method.invoke(annon)) == ann.value
             } catch {
-              case e: Throwable => {
+              case _: Throwable =>
                 Console.err.print("Annotation value needed:", ann.value, annon.getClass)
                 false
-              }
             }
           } else true
         } else false
@@ -92,17 +89,16 @@ class Profiles(resources: Resources) extends Logging {
     val profile = getProfile(clazz)
     var prefix = profile.prefix
     val anno = profile.annotations find { ann =>
-      clazz.getAnnotations() exists { annon =>
-        if (ann.clazz.isAssignableFrom(annon.getClass())) {
+      clazz.getAnnotations exists { annon =>
+        if (ann.clazz.isAssignableFrom(annon.getClass)) {
           if (isNotEmpty(ann.value)) {
             try {
-              val method = annon.getClass().getMethod("value")
+              val method = annon.getClass.getMethod("value")
               String.valueOf(method.invoke(annon)) == ann.value
             } catch {
-              case e: Exception => {
+              case _: Exception =>
                 Console.err.print("Annotation value needed:", ann.value, annon.getClass)
                 false
-              }
             }
           } else true
         } else false
@@ -117,9 +113,9 @@ class Profiles(resources: Resources) extends Logging {
   }
 
   def getProfile(clazz: Class[_]): MappingProfile = {
-    var name = clazz.getName()
+    var name = clazz.getName
     var matched: Option[MappingProfile] = None
-    while (isNotEmpty(name) && matched == None) {
+    while (isNotEmpty(name) && matched.isEmpty) {
       if (profiles.contains(name)) matched = Some(profiles(name))
       val len = name.length
       name = substringBeforeLast(name, ".")
@@ -129,8 +125,8 @@ class Profiles(resources: Resources) extends Logging {
   }
 
   /**
-   * adjust parent relation by package name
-   */
+    * adjust parent relation by package name
+    */
   private def autoWire(): Unit = {
     if (profiles.size > 1) {
       profiles.foreach {
@@ -148,9 +144,10 @@ class Profiles(resources: Resources) extends Logging {
       }
     }
   }
+
   private def parseProfile(melem: scala.xml.Node, parent: MappingProfile): Unit = {
     val profile = new MappingProfile
-    if (!(melem \ "@package").isEmpty) {
+    if ((melem \ "@package").nonEmpty) {
       profile.packageName = (melem \ "@package").text
       if (null != parent) profile.packageName = parent.packageName + "." + profile.packageName
     }
@@ -160,16 +157,16 @@ class Profiles(resources: Resources) extends Logging {
       val annModule = new AnnotationModule(clazz, value)
       profile._annotations += annModule
 
-      if (!(anElem \ "@schema").isEmpty) {
+      if ((anElem \ "@schema").nonEmpty) {
         annModule.schema = parseSchema((anElem \ "@schema").text)
       }
-      if (!(anElem \ "@prefix").isEmpty) annModule.prefix = (anElem \ "@prefix").text
+      if ((anElem \ "@prefix").nonEmpty) annModule.prefix = (anElem \ "@prefix").text
     }
-    if (!(melem \ "@schema").isEmpty) {
+    if ((melem \ "@schema").nonEmpty) {
       profile._schema = parseSchema((melem \ "@schema").text)
     }
-    if (!(melem \ "@prefix").isEmpty) profile._prefix = (melem \ "@prefix").text
-    val naming = if (!(melem \ "@naming").isEmpty) (melem \ "@naming").text else "rails"
+    if ((melem \ "@prefix").nonEmpty) profile._prefix = (melem \ "@prefix").text
+    val naming = if ((melem \ "@naming").nonEmpty) (melem \ "@naming").text else "rails"
     if (namings.contains(naming)) {
       profile.naming = namings(naming)
     } else {
@@ -182,7 +179,7 @@ class Profiles(resources: Resources) extends Logging {
 
   private def parseSchema(name: String): String = {
     if (isEmpty(name) || (-1 == name.indexOf('{'))) return name
-    var newName = replace(name, "$", "")
+    val newName = replace(name, "$", "")
     val propertyName = substringBetween(newName, "{", "}")
     val pv = System.getProperty(propertyName)
     replace(newName, "{" + propertyName + "}", if (pv == null) "" else pv)
@@ -190,7 +187,7 @@ class Profiles(resources: Resources) extends Logging {
 
   override def toString: String = {
     if (profiles.isEmpty) return ""
-    val maxlength = profiles.map(m => m._1.length).max
+    val maxlength = profiles.keys.map(_.length).max
     val sb = new StringBuilder
     profiles.keySet.toList.sorted foreach { packageName =>
       val profile = profiles(packageName)
@@ -202,7 +199,7 @@ class Profiles(resources: Resources) extends Logging {
       //      }
       sb.append(']').append("\n")
     }
-    if (sb.length > 0) sb.deleteCharAt(sb.length - 1)
+    if (sb.nonEmpty) sb.deleteCharAt(sb.length - 1)
     sb.toString
   }
 }

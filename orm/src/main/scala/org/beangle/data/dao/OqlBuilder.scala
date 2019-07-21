@@ -18,9 +18,8 @@
  */
 package org.beangle.data.dao
 
-import org.beangle.commons.lang.Assert
-import org.beangle.commons.lang.Strings._
 import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.Strings._
 import org.beangle.data.orm.Jpas
 
 object OqlBuilder {
@@ -61,28 +60,34 @@ object OqlBuilder {
   }
 
 }
+
 /**
- * 实体类查询 Object Query Language Builder
- *
- * @author chaostone
- */
-class OqlBuilder[T] private () extends AbstractQueryBuilder[T] {
+  * 实体类查询 Object Query Language Builder
+  * @author chaostone
+  */
+class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
 
   /** 查询实体类 */
   var entityClass: Class[T] = _
 
   /**
-   * 形成计数查询语句，如果不能形成，则返回""
-   */
+    * 形成计数查询语句，如果不能形成，则返回""
+    */
   protected def genCountStatement(): String = {
     val countString = new StringBuilder("select count(*) ")
     // 原始查询语句
     val genQueryStr = genQueryStatement(false)
-    if (isEmpty(genQueryStr)) { return "" }
+    if (isEmpty(genQueryStr)) {
+      return ""
+    }
     val lowerCaseQueryStr = genQueryStr.toLowerCase()
 
-    if (contains(lowerCaseQueryStr, " group ")) { return "" }
-    if (contains(lowerCaseQueryStr, " union ")) { return "" }
+    if (contains(lowerCaseQueryStr, " group ")) {
+      return ""
+    }
+    if (contains(lowerCaseQueryStr, " union ")) {
+      return ""
+    }
 
     val indexOfFrom = findIndexOfFrom(lowerCaseQueryStr)
     val selectWhat = lowerCaseQueryStr.substring(0, indexOfFrom)
@@ -104,12 +109,10 @@ class OqlBuilder[T] private () extends AbstractQueryBuilder[T] {
     countString.toString()
   }
 
-  /**
-   * Find index of from
-   *
-   * @param query
-   * @return -1 or from index
-   */
+  /** Find index of from
+    * @param query query string
+    * @return -1 or from index
+    */
   private def findIndexOfFrom(query: String): Int = {
     if (query.startsWith("from")) return 0
     var fromIdx = query.indexOf(" from ")
@@ -123,13 +126,14 @@ class OqlBuilder[T] private () extends AbstractQueryBuilder[T] {
         else if (query.charAt(i) == ')') leftCnt -= 1
         i += 1
       }
-      if (leftCnt > 0) return -1
-      else {
+      if (leftCnt > 0) {
+        -1
+      } else {
         fromIdx = query.indexOf(" from ", i)
-        return if (fromIdx == -1) -1 else fromIdx + 1
+        if (fromIdx == -1) -1 else fromIdx + 1
       }
     } else {
-      return fromIdx + 1
+      fromIdx + 1
     }
   }
 
@@ -138,5 +142,5 @@ class OqlBuilder[T] private () extends AbstractQueryBuilder[T] {
     this
   }
 
-  override def lang = OqlBuilder.Lang
+  override def lang: Query.Lang = OqlBuilder.Lang
 }

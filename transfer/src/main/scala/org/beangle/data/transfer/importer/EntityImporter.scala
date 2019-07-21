@@ -26,10 +26,9 @@ import org.beangle.data.model.util.Populator
 import org.beangle.data.transfer.IllegalFormatException
 
 /**
- * EntityImporter interface.
- *
- * @author chaostone
- */
+  * EntityImporter interface.
+  * @author chaostone
+  */
 trait EntityImporter extends Importer {
 
   var populator: Populator = _
@@ -39,10 +38,9 @@ trait EntityImporter extends Importer {
 }
 
 /**
- * MultiEntityImporter class.
- *
- * @author chaostone
- */
+  * MultiEntityImporter class.
+  * @author chaostone
+  */
 class MultiEntityImporter extends AbstractImporter with EntityImporter with Logging {
 
   protected var currents = new collection.mutable.HashMap[String, AnyRef]
@@ -51,8 +49,8 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
   protected val entityTypes = new collection.mutable.HashMap[String, EntityType]
 
   /**
-   * 摘取指定前缀的参数
-   */
+    * 摘取指定前缀的参数
+    */
   private def sub(data: collection.Map[String, Any], alias: String): collection.mutable.Map[String, Any] = {
     val prefix = alias + "."
     val newParams = new collection.mutable.HashMap[String, Any]
@@ -63,10 +61,11 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
     }
     newParams
   }
+
   /**
-   * transferItem.
-   */
-  override def transferItem() {
+    * transferItem.
+    */
+  override def transferItem(): Unit = {
     entityTypes foreach {
       case (name, etype) =>
         val entity = getCurrent(name)
@@ -90,8 +89,8 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
   }
 
   /**
-   * Populate single attribute
-   */
+    * Populate single attribute
+    */
   protected def populateValue(entity: Entity[_], etype: EntityType, attr: String, value: Any): Unit = {
     // 当有深层次属性,这里和传统的Populate不一样，导入面向的使用户，属性可能出现foreigner.name之类的，在正常的form表单中不会出现
     if (Strings.contains(attr, '.')) {
@@ -109,7 +108,7 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
     }
 
     if (!populator.populate(entity, etype, attr, value)) {
-      transferResult.addFailure(descriptions.get(attr) + " data format error.", value)
+      transferResult.addFailure(descriptions.getOrElse(attr, "") + " data format error.", value)
     }
   }
 
@@ -121,12 +120,12 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
     entityTypes(alias)
   }
 
-  def addEntity(clazz: Class[_]) {
+  def addEntity(clazz: Class[_]): Unit = {
     val shortName = Strings.uncapitalize(Strings.substringAfterLast(clazz.getName, "."))
     this.addEntity(shortName, clazz)
   }
 
-  def addEntity(alias: String, entityClass: Class[_]) {
+  def addEntity(alias: String, entityClass: Class[_]): Unit = {
     domain.getEntity(entityClass) match {
       case Some(entityType) => entityTypes.put(alias, entityType)
       case None => throw new RuntimeException("cannot find entity type for " + entityClass)
@@ -164,7 +163,7 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
     "multi entity"
   }
 
-  override def current_=(obj: AnyRef) {
+  override def current_=(obj: AnyRef): Unit = {
     currents = obj.asInstanceOf[collection.mutable.HashMap[String, AnyRef]]
   }
 
@@ -205,7 +204,7 @@ class DefaultEntityImporter(val entityClass: Class[_], val shortName: String) ex
     getEntityName
   }
 
-  override def current_=(obj: AnyRef):Unit = {
+  override def current_=(obj: AnyRef): Unit = {
     currents.put(shortName, obj)
   }
 

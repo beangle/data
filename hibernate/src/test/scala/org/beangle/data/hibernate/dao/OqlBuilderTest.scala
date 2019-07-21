@@ -19,14 +19,14 @@
 package org.beangle.data.hibernate.dao
 
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.Matchers
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 import org.beangle.data.hibernate.naming.NationBean
 import org.beangle.data.dao.OqlBuilder
 
 @RunWith(classOf[JUnitRunner])
-class OqlBuilderTest extends FunSpec with Matchers {
+class OqlBuilderTest extends AnyFunSpec with Matchers {
 
   describe("OqlBuilder") {
     it("GenStatement") {

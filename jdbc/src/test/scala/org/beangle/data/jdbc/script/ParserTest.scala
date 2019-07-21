@@ -16,14 +16,15 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.script;
-import org.scalatest.FunSpec
-import org.scalatest.Matchers
-import org.scalatest.junit.JUnitRunner
+package org.beangle.data.jdbc.script
+
 import org.junit.runner.RunWith
+import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class ParserTest extends FunSpec with Matchers {
+class ParserTest extends AnyFunSpec with Matchers {
   describe("Oracle Parser") {
     it("parse prompt") {
       val list = OracleParser.parse(

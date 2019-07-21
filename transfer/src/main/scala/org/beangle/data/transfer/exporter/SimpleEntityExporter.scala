@@ -62,7 +62,7 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
   /**
    * 转换单个实体
    */
-  override def exportItem() {
+  override def exportItem(): Unit =  {
     if (null == attrs) {
       super.exportItem()
       return

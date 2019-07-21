@@ -25,5 +25,5 @@ trait Journal[T <: DateRange] extends Component {
 
   var head: T = _
 
-  var journals: Seq[T] = new ListBuffer[T]
+  var journals: collection.mutable.Seq[T] = new ListBuffer[T]
 }

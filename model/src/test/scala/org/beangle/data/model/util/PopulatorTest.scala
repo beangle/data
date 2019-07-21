@@ -16,16 +16,17 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.model.util;
+package org.beangle.data.model.util
 
-import org.beangle.data.model.meta.{ BasicType, Domain }
-import org.beangle.commons.lang.reflect.{ BeanInfo, BeanInfos }
+import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
+import org.beangle.data.model.meta.{BasicType, Domain}
 import org.junit.runner.RunWith
-import org.scalatest.{ FunSpec, Matchers }
-import org.scalatest.junit.JUnitRunner
+import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class PopulatorTest extends FunSpec with Matchers {
+class PopulatorTest extends AnyFunSpec with Matchers {
 
   describe("Populator") {
     it("populate error attr") {
@@ -37,13 +38,13 @@ class PopulatorTest extends FunSpec with Matchers {
       menuET.properties += ("id" -> new Domain.SingularPropertyImpl("id", classOf[Int], new BasicType(classOf[Int])))
       populator.populate(menu, menuET, "aa", "xx") should be(false)
       populator.populate(menu, menuET, "id", "3") should be(true)
-      val id=menu.id
+      val id = menu.id
       populator.populate(menu, menuET, "id", "0") should be(true)
     }
   }
 
-  import scala.reflect.ClassTag
-  import scala.reflect.runtime.{ universe => ru }
+  import scala.reflect.runtime.{universe => ru}
+
   private def getBeanInfo[T](clazz: Class[T])(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): BeanInfo = {
     BeanInfos.get(clazz, ttag.tpe)
   }

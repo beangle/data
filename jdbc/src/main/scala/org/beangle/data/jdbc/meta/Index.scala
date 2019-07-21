@@ -36,16 +36,15 @@
  */
 package org.beangle.data.jdbc.meta
 
-import scala.collection.mutable.ListBuffer
 import org.beangle.commons.collection.Collections
+
 /**
- * JDBC index metadata
- *
- * @author chaostone
- */
+  * JDBC index metadata
+  * @author chaostone
+  */
 class Index(var table: Table, var name: Identifier) extends Cloneable {
 
-  var columns = Collections.newBuffer[Identifier]
+  var columns: collection.mutable.Buffer[Identifier] = Collections.newBuffer
 
   var unique: Boolean = false
 

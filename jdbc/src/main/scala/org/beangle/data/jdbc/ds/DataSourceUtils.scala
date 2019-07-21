@@ -20,16 +20,14 @@ package org.beangle.data.jdbc.ds
 
 import java.util.Properties
 
-import scala.language.existentials
-
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import javax.script.ScriptEngineManager
+import javax.sql.DataSource
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.vendor.Vendors
 
-import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
-
-import javax.script.ScriptEngineManager
-import javax.sql.DataSource
+import scala.language.existentials
 
 object DataSourceUtils extends Logging {
 
@@ -52,7 +50,7 @@ object DataSourceUtils extends Logging {
 
   private def buildProperties(driver: String, username: String, password: String, props: collection.Map[String, String]): Properties = {
     val properties = new Properties
-    val writables = new BeanInfos().get(classOf[HikariConfig]).getWritableProperties()
+    val writables = new BeanInfos().get(classOf[HikariConfig]).getWritableProperties
 
     props.foreach { e =>
       var key = if (e._1 == "url") "jdbcUrl" else e._1
@@ -74,24 +72,23 @@ object DataSourceUtils extends Logging {
   }
 
   protected[ds] def parseJson(string: String): collection.mutable.HashMap[String, String] = {
-    val sem = new ScriptEngineManager();
-    val engine = sem.getEngineByName("javascript");
+    val sem = new ScriptEngineManager()
+    val engine = sem.getEngineByName("javascript")
     val result = new collection.mutable.HashMap[String, String]
-    val iter = engine.eval("result =" + string).asInstanceOf[java.util.Map[_, AnyRef]].entrySet().iterator();
-    while (iter.hasNext()) {
+    val iter = engine.eval("result =" + string).asInstanceOf[java.util.Map[_, AnyRef]].entrySet().iterator()
+    while (iter.hasNext) {
       val one = iter.next()
       var value: String = null
-      if (one.getValue.isInstanceOf[java.lang.Double]) {
-        val d = one.getValue.asInstanceOf[java.lang.Double]
-        if (java.lang.Double.compare(d, d.intValue()) > 0) value = d.toString()
-        else value = String.valueOf(d.intValue())
-      } else {
-        value = one.getValue().toString()
+      one.getValue match {
+        case d: java.lang.Double =>
+          if (java.lang.Double.compare(d, d.intValue) > 0) value = d.toString
+          else value = String.valueOf(d.intValue)
+        case _ =>
+          value = one.getValue.toString
       }
-
-      val key = if (one.getKey().toString() == "maxActive") "maxTotal" else one.getKey().toString();
-      result.put(key, value);
+      val key = if (one.getKey.toString == "maxActive") "maxTotal" else one.getKey.toString
+      result.put(key, value)
     }
-    result;
+    result
   }
 }

@@ -30,7 +30,7 @@ class PrimaryKey(table: Table, name: Identifier, column: Identifier) extends Con
 
   addColumn(column)
 
-  def addColumn(column: Column) {
+  def addColumn(column: Column): Unit = {
     if (column != null) {
       addColumn(column.name)
       if (column.nullable) enabled = false

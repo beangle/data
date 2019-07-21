@@ -97,7 +97,7 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
       case None =>
         val finded = generalTypes.find(_._1.isAssignableFrom(clazz))
         finded match {
-          case Some((clazz, tc)) => tc
+          case Some((_, tc)) => tc
           case None =>
             if (clazz.isAnnotationPresent(classOf[value])) {
               val ctors = clazz.getConstructors
@@ -109,7 +109,7 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
                 if (params.length == 1) find = params(0).getType
                 i += 1
               }
-              concretTypes.get(find).getOrElse(raiseMappingError(clazz))
+              concretTypes.getOrElse(find,raiseMappingError(clazz))
             } else if (clazz.getName.contains("$")) {
               // convert A$Val to A$
               val containerClass = Class.forName(Strings.substringBefore(clazz.getName, "$") + "$")

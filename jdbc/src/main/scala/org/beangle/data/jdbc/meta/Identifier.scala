@@ -31,7 +31,7 @@ case class Identifier(value: String, quoted: Boolean = false) extends Ordered[Id
   }
 
   override def toString: String = {
-    if (quoted) "`" + value + "`"
+    if (quoted) s"`$value`"
     else value
   }
 
@@ -42,9 +42,10 @@ case class Identifier(value: String, quoted: Boolean = false) extends Ordered[Id
   override def equals(other: Any): Boolean = {
     other match {
       case n: Identifier => n.value == this.value
-      case _             => false
+      case _ => false
     }
   }
+
   override def hashCode: Int = {
     value.hashCode()
   }
@@ -58,7 +59,7 @@ case class Identifier(value: String, quoted: Boolean = false) extends Ordered[Id
   def toLiteral(engine: Engine): String = {
     if (quoted) {
       val qc = engine.quoteChars
-      qc._1 + value + qc._2
+      s"${qc._1}$value${qc._2}"
     } else {
       value
     }

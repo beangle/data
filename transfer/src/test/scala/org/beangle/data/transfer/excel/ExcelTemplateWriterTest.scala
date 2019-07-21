@@ -23,13 +23,13 @@ import java.io.FileOutputStream
 
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
-import org.scalatest.FunSpec
-import org.scalatest.junit.JUnitRunner
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.transfer.exporter.ExportContext
 
 @RunWith(classOf[JUnitRunner])
-class ExcelTemplateWriterTest extends FunSpec with Matchers {
+class ExcelTemplateWriterTest extends AnyFunSpec with Matchers {
   describe("TemplateWriter") {
     it("export") {
       val template = ClassLoaders.getResource("template.xls").get

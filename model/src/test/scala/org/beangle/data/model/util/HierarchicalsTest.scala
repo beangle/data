@@ -19,11 +19,12 @@
 package org.beangle.data.model.util
 
 import org.junit.runner.RunWith
-import org.scalatest.{ FunSpec, Matchers }
-import org.scalatest.junit.JUnitRunner
+import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class HierarchicalsTest extends FunSpec with Matchers {
+class HierarchicalsTest extends AnyFunSpec with Matchers {
 
   def makeEmptyProfile(): Profile = {
     new Profile

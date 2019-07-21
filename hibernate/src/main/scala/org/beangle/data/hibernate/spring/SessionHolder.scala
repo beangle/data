@@ -35,7 +35,7 @@ class SessionHolder(val session: Session) extends ResourceHolderSupport {
 
   var previousFlushMode: FlushMode = _
 
-  override def clear() {
+  override def clear(): Unit = {
     super.clear()
     this.transaction = null
     this.previousFlushMode = null

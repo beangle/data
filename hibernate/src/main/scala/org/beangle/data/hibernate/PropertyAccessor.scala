@@ -48,7 +48,7 @@ object PropertyAccessor {
   }
 
   final class BasicSetter(val clazz: Class[_], val method: Method, val propertyName: String, optional: Boolean) extends Setter {
-    def set(target: Object, value: Object, factory: SessionFactoryImplementor) {
+    def set(target: Object, value: Object, factory: SessionFactoryImplementor): Unit = {
       try {
         val arg = if (optional) {
           if (value.isInstanceOf[Option[_]]) value else Option(value)

@@ -18,39 +18,37 @@
  */
 package org.beangle.data.model.util
 
-import java.lang.reflect.Method
-
-import org.beangle.data.model.Entity
-import org.beangle.data.model.meta._
-import org.beangle.commons.lang.Objects
-import org.beangle.commons.lang.Strings
-import org.beangle.commons.logging.Logging
+import org.beangle.commons.bean.Properties
 import org.beangle.commons.conversion.Conversion
 import org.beangle.commons.conversion.impl.DefaultConversion
 import org.beangle.commons.lang.reflect.Reflections
-import org.beangle.commons.bean.Properties
-import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.{Objects, Strings}
+import org.beangle.commons.logging.Logging
+import org.beangle.data.model.Entity
+import org.beangle.data.model.meta._
 
 object ConvertPopulator extends Logging {
   val TrimStr = true
 }
+
 /**
- * ConvertPopulator
- *
- * @author chaostone
- */
-import ConvertPopulator._
+  * ConvertPopulator
+  * @author chaostone
+  */
+
 import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.data.model.util.ConvertPopulator._
 
 class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) extends Populator with Logging {
   val properties = new Properties(BeanInfos.Default, conversion)
-  /**
-   * Initialize target's attribuate path,Return the last property value and type.
-   */
-  override def init(target: Entity[_], t: EntityType, attr: String): (Any, Property) = {
+
+  /** Initialize target's attribuate path
+    * Return the last property value and type.
+    */
+  override def init(target: Entity[_], et: EntityType, attr: String): (Any, Property) = {
     var propObj: Any = target
     var property: Any = null
-    var objtype: StructType = t
+    var objtype: StructType = et
     var propertyType: Property = null
 
     var index = 0
@@ -59,10 +57,10 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
       val nested = attrs(index)
       property = properties.get[Object](propObj, nested)
       objtype.getProperty(nested) match {
-        case Some(t) => {
+        case Some(t) =>
           property match {
             case null | None =>
-              property = t.clazz.newInstance()
+              property = Reflections.newInstance(t.clazz)
               properties.set(propObj.asInstanceOf[AnyRef], nested, property)
             case Some(p) =>
               property = p
@@ -70,64 +68,63 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
           }
           if (index < attrs.length) {
             t match {
-              case n: SingularProperty => {
+              case n: SingularProperty =>
                 n.propertyType match {
                   case s: StructType => objtype = s
-                  case _             => logError(propObj, nested)
+                  case _ => logError(propObj, nested)
                 }
-              }
               case _ => logError(propObj, nested)
             }
           }
           propertyType = t
-        }
-        case None => {
+        case None =>
           if (nested.contains("[") && null != property) {
             propertyType = new Domain.SingularPropertyImpl(nested, property.getClass, new BasicType(property.getClass))
           } else {
             logError(propObj, nested)
           }
-        }
       }
       index += 1
       propObj = property
     }
-    return (property, propertyType)
+    (property, propertyType)
   }
 
   private def logError(obj: Any, propertyName: String): Unit = {
     logger.error(s"Cannot find property type [$propertyName] of ${obj.getClass}")
   }
+
   /**
-   * 安静的拷贝属性，如果属性非法或其他错误则记录日志
-   */
+    * 安静的拷贝属性，如果属性非法或其他错误则记录日志
+    */
   override def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean = {
     populate(target, entityType, Map(attr -> value)).fails.isEmpty
   }
 
   /**
-   * 将params中的属性([attr(string)->value(object)]，放入到实体类中。
-   * <p>
-   * 如果引用到了别的实体，那么<br>
-   * 如果params中的id为null，则将该实体的置为null.<br>
-   * 否则新生成一个实体，将其id设为params中指定的值。 空字符串按照null处理
-   */
+    * 将params中的属性([attr(string)->value(object)]，放入到实体类中。
+    * <p>
+    * 如果引用到了别的实体，那么<br>
+    * 如果params中的id为null，则将该实体的置为null.<br>
+    * 否则新生成一个实体，将其id设为params中指定的值。 空字符串按照null处理
+    */
   override def populate(entity: Entity[_], entityType: EntityType, params: collection.Map[String, Any]): Populator.CopyResult = {
     val result = new Populator.CopyResult
     val idName = entityType.id.name
     params foreach {
       case (attr, v) =>
         var value = v
-        if (value.isInstanceOf[String]) {
-          if (Strings.isEmpty(value.asInstanceOf[String])) value = null
-          else if (TrimStr) value = (value.asInstanceOf[String]).trim()
+        value match {
+          case s: String =>
+            if (Strings.isEmpty(s)) value = null
+            else if (TrimStr) value = s.trim()
+          case _ =>
         }
-
         if (-1 == attr.indexOf('.')) {
           if (attr == idName) {
             if (null != value && value.toString != "0") {
               val old = properties.get[Any](entity, idName)
-              if (null == old || old.toString() == "0") {
+              if (null == old || old.toString == "0") {
                 copyValue(entity, attr, value, result)
               }
             }
@@ -171,7 +168,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
               }
             }
           } catch {
-            case e: Exception => result.addFail(attr, "error attr:[$attr] value:[$value]")
+            case _: Exception => result.addFail(attr, "error attr:[$attr] value:[$value]")
           }
         }
     }
@@ -183,7 +180,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
     else {
       t.getProperty(attr) match {
         case Some(ty) => conversion.convert(value, ty.clazz)
-        case None     => throw new RuntimeException("cannot find attribuate type of " + attr + " in " + t.entityName)
+        case None => throw new RuntimeException("cannot find attribuate type of " + attr + " in " + t.entityName)
       }
     }
   }

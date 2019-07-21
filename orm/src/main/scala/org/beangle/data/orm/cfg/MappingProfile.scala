@@ -46,7 +46,7 @@ class MappingProfile {
     else _annotations
   }
 
-  override def toString(): String = {
+  override def toString: String = {
     val sb = new StringBuilder()
     sb.append("[package:").append(packageName).append(", schema:").append(_schema)
     sb.append(", prefix:").append(_prefix).append(']')

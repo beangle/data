@@ -59,7 +59,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
     transaction.asInstanceOf[HibernateTransactionObject].hasTransaction
   }
 
-  protected override def doBegin(transaction: AnyRef, definition: TransactionDefinition) {
+  protected override def doBegin(transaction: AnyRef, definition: TransactionDefinition): Unit = {
     val txObject = transaction.asInstanceOf[HibernateTransactionObject]
 
     if (txObject.hasConnectionHolder && !txObject.getConnectionHolder().isSynchronizedWithTransaction()) {
@@ -134,14 +134,14 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
     new SuspendedResourcesHolder(sessionHolder, connectionHolder)
   }
 
-  protected override def doResume(transaction: AnyRef, suspendedResources: AnyRef) {
+  protected override def doResume(transaction: AnyRef, suspendedResources: AnyRef): Unit = {
     val resourcesHolder = suspendedResources.asInstanceOf[SuspendedResourcesHolder]
     if (hasResource(sessionFactory)) unbindResource(sessionFactory)
     bindResource(sessionFactory, resourcesHolder.sessionHolder)
     bindResource(dataSource, resourcesHolder.connectionHolder)
   }
 
-  protected override def doCommit(status: DefaultTransactionStatus) {
+  protected override def doCommit(status: DefaultTransactionStatus): Unit = {
     val txObject = status.getTransaction().asInstanceOf[HibernateTransactionObject]
     try {
       txObject.sessionHolder.transaction.commit()
@@ -151,7 +151,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
     }
   }
 
-  protected override def doRollback(status: DefaultTransactionStatus) {
+  protected override def doRollback(status: DefaultTransactionStatus): Unit = {
     val txObject = status.getTransaction().asInstanceOf[HibernateTransactionObject]
     try {
       txObject.sessionHolder.transaction.rollback()
@@ -163,11 +163,11 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
     }
   }
 
-  protected override def doSetRollbackOnly(status: DefaultTransactionStatus) {
+  protected override def doSetRollbackOnly(status: DefaultTransactionStatus): Unit = {
     status.getTransaction().asInstanceOf[HibernateTransactionObject].setRollbackOnly()
   }
 
-  protected override def doCleanupAfterCompletion(transaction: Object) {
+  protected override def doCleanupAfterCompletion(transaction: Object): Unit = {
     val txObject = transaction.asInstanceOf[HibernateTransactionObject]
     if (txObject.isNewSession) unbindResource(sessionFactory)
     unbindResource(dataSource)

@@ -18,12 +18,11 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import java.sql.Types
 import org.beangle.data.jdbc.meta.Engines
 
 class DB2Dialect extends AbstractDialect(Engines.DB2, "[8.0]") {
 
-  override def sequenceGrammar = {
+  override def sequenceGrammar: SequenceGrammar = {
     val ss = new SequenceGrammar()
     ss.querySequenceSql = "select name as sequence_name,start-1 as current_value,increment,cache from sysibm.syssequences where schema=':schema'"
     ss.nextValSql = "values nextval for :name"
@@ -33,10 +32,10 @@ class DB2Dialect extends AbstractDialect(Engines.DB2, "[8.0]") {
   }
 
   /**
-   * Render the <tt>rownumber() over ( .... ) as rownumber_,</tt> bit, that
-   * goes in the select list
-   */
-  private def getRowNumber(sql: String) = {
+    * Render the <tt>rownumber() over ( .... ) as rownumber_,</tt> bit, that
+    * goes in the select list
+    */
+  private def getRowNumber(sql: String): String = {
     val rownumber: StringBuilder = new StringBuilder(50).append("rownumber() over(")
     val orderByIndex: Int = sql.toLowerCase().indexOf("order by")
     if (orderByIndex > 0 && !hasDistinct(sql)) {
@@ -48,7 +47,7 @@ class DB2Dialect extends AbstractDialect(Engines.DB2, "[8.0]") {
 
   private def hasDistinct(sql: String) = sql.toLowerCase().indexOf("select distinct") >= 0
 
-  override def limitGrammar = {
+  override def limitGrammar: LimitGrammar = {
     class DB2LimitGrammar extends LimitGrammar {
       override def limit(sql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
         if (offset == 0) {

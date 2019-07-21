@@ -28,5 +28,5 @@ trait ImportPrepare {
   /**
    * prepare.
    */
-  def prepare(importer: Importer)
+  def prepare(importer: Importer): Unit
 }

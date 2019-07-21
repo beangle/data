@@ -18,9 +18,9 @@
  */
 package org.beangle.data.jdbc.meta
 
-import scala.collection.mutable.ListBuffer
-
 import org.beangle.commons.lang.Strings
+
+import scala.collection.mutable.ListBuffer
 
 object Table {
   def qualify(schema: Schema, name: Identifier): String = {
@@ -114,7 +114,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     primaryKey.isDefined
   }
 
-  override def toString = {
+  override def toString: String = {
     Table.qualify(schema, name)
   }
 
@@ -185,7 +185,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     indexes.find(f => f.name.value == indexName)
   }
 
-  def updateSchema(newSchema: Schema) {
+  def updateSchema(newSchema: Schema): Unit = {
     val oldSchema = this.schema
     this.schema = newSchema
     this.foreignKeys foreach { fk =>

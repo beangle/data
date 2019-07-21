@@ -71,7 +71,7 @@ class EnumType extends UserType with ParameterizedType {
     }
   }
 
-  override def setParameterValues(parameters: ju.Properties) {
+  override def setParameterValues(parameters: ju.Properties): Unit = {
     var enumClass = parameters.getProperty("enumClass")
     if (!enumClass.endsWith("$")) enumClass += "$"
     enum = Class.forName(enumClass).getDeclaredField("MODULE$").get(null).asInstanceOf[Enumeration]

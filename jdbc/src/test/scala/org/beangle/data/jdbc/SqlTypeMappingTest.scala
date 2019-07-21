@@ -18,15 +18,17 @@
  */
 package org.beangle.data.jdbc
 
+import java.sql.Types
+
 import org.beangle.commons.lang.annotation.value
 import org.beangle.data.jdbc.meta.Engines
 import org.junit.runner.RunWith
-import org.scalatest.{ FunSpec, Matchers }
-import org.scalatest.junit.JUnitRunner
-import java.sql.Types
+import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class SqlTypeMappingTest extends FunSpec with Matchers {
+class SqlTypeMappingTest extends AnyFunSpec with Matchers {
   describe("SqlTypeMapping") {
     it("test value type") {
       val mapping = new DefaultSqlTypeMapping(Engines.forName("h2"))

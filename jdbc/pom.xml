@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.beangle.data</groupId>
-    <artifactId>beangle-data-parent_2.12</artifactId>
+    <artifactId>beangle-data-parent_2.13</artifactId>
     <version>5.1.8-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>beangle-data-jdbc_2.12</artifactId>
+  <artifactId>beangle-data-jdbc_2.13</artifactId>
   <packaging>jar</packaging>
   <name>Beangle Data JDBC</name>
 
@@ -34,6 +34,11 @@
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>${hibernate.version}</version>
     </dependency>
   </dependencies>
 </project>

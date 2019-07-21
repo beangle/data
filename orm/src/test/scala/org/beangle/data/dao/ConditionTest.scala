@@ -19,11 +19,12 @@
 package org.beangle.data.dao
 
 import org.junit.runner.RunWith
-import org.scalatest.{ FunSpec, Matchers }
-import org.scalatest.junit.JUnitRunner
+import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class ConditionTest extends FunSpec with Matchers {
+class ConditionTest extends AnyFunSpec with Matchers {
 
   describe("Condition") {
     it("paramNames should given list string") {

@@ -27,7 +27,7 @@ import org.beangle.data.transfer.io.ItemReader
  */
 object EntityPrepare extends ImportPrepare {
 
-  def prepare(importer: Importer) {
+  def prepare(importer: Importer): Unit = {
     val entityImporter = importer.asInstanceOf[DefaultEntityImporter]
     entityImporter.addEntity(entityImporter.entityClass)
 

@@ -18,21 +18,19 @@
  */
 package org.beangle.data.hibernate.udt
 
-import java.io.{ Serializable => JSerializable }
+import java.io.{Serializable => JSerializable}
 import java.sql.ResultSet
-import java.{ util => ju }
-
-import scala.Range
-import scala.collection.JavaConverters
-import scala.collection.mutable.{ Buffer, ListBuffer }
+import java.{util => ju}
 
 import org.hibernate.`type`.Type
 import org.hibernate.collection.internal.AbstractPersistentCollection
-import org.hibernate.collection.internal.AbstractPersistentCollection.{ DelayedOperation, UNKNOWN }
-import org.hibernate.engine.spi.SessionImplementor
+import org.hibernate.collection.internal.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
-import org.hibernate.engine.spi.SharedSessionContractImplementor
+
+import scala.collection.mutable.{Buffer, ListBuffer}
+import scala.jdk.javaapi.CollectionConverters.asJava
 
 class PersistentSeq(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection(session) with collection.mutable.Buffer[Object] {
@@ -66,12 +64,13 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
-    (snapshot.asInstanceOf[Seq[_]]).isEmpty
+    (snapshot.asInstanceOf[collection.Seq[_]]).isEmpty
   }
 
-  override def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int) {
+  override def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int): Unit = {
     this.list = new ListBuffer[Object]
   }
+
   override def isWrapper(collection: Object): Boolean = {
     list eq collection
   }
@@ -90,10 +89,11 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def iterator: Iterator[Object] = {
-    read(); list.iterator
+    read();
+    list.iterator
   }
 
-  override def +=(ele: Object): this.type = {
+  override def addOne(ele: Object): this.type = {
     if (!isOperationQueueEnabled()) {
       write()
       list += ele
@@ -103,7 +103,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     this
   }
 
-  override def +=:(ele: Object): this.type = {
+  override def prepend(ele: Object): this.type = {
     if (!isOperationQueueEnabled()) {
       write()
       ele +=: list
@@ -113,7 +113,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     this
   }
 
-  override def -=(ele: Object): this.type = {
+  override def subtractOne(ele: Object): this.type = {
     val exists = if (isPutQueueEnabled()) readElementExistence(ele) else null;
     if (exists == null) {
       initialize(true)
@@ -128,7 +128,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     this
   }
 
-  override def clear() {
+  override def clear(): Unit = {
     if (isClearQueueEnabled()) {
       queueOperation(new Clear())
     } else {
@@ -145,13 +145,25 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     if (result eq UNKNOWN) list(index) else result
   }
 
-  override def update(n: Int, elem: Object) {
+  override def patchInPlace(from: Int, patch: collection.IterableOnce[Object], replaced: Int): this.type = {
+    remove(from, replaced)
+    list.insertAll(from,patch)
+    this
+  }
+
+  override def update(n: Int, elem: Object): Unit = {
     val old = if (isPutQueueEnabled()) readElementByIndex(n) else UNKNOWN
     if (old eq UNKNOWN) {
       write()
       list.update(n, elem)
     } else {
       queueOperation(new Set(n, elem, old))
+    }
+  }
+
+  override def remove(idx: Int, count: Int): Unit = {
+    (0 until count) foreach { i =>
+      remove(idx)
     }
   }
 
@@ -166,8 +178,15 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     }
   }
 
-  override def insertAll(n: Int, elems: Traversable[Object]) {
-    if (!elems.isEmpty) {
+  override def insert(idx: Int, elem: Object): Unit = {
+    if (null != elem) {
+      write()
+      list.insert(idx, elem)
+    }
+  }
+
+  override def insertAll(n: Int, elems: IterableOnce[Object]): Unit = {
+    if (!elems.iterator.isEmpty) {
       write()
       list.insertAll(n, elems)
     }
@@ -188,11 +207,12 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def toString: String = {
-    read(); list.toString()
+    read();
+    list.toString()
   }
 
   override def readFrom(rs: ResultSet, persister: CollectionPersister,
-    descriptor: CollectionAliases, owner: Object): Object = {
+                        descriptor: CollectionAliases, owner: Object): Object = {
     val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases, getSession)
     if (null == descriptor.getSuffixedIndexAliases()) {
       list += element
@@ -207,11 +227,11 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
-    JavaConverters.asJavaIterator(list.iterator)
+    asJava(list.iterator)
   }
 
   override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable,
-    owner: Object): Unit = {
+                                   owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
     val size = array.length
     beforeInitialize(persister, size)
@@ -266,11 +286,13 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def equals(other: Any): Boolean = {
-    read(); list.equals(other)
+    read();
+    list.equals(other)
   }
 
   override def hashCode(): Int = {
-    read(); list.hashCode()
+    read();
+    list.hashCode()
   }
 
   override def entryExists(entry: Object, i: Int): Boolean = {
@@ -278,33 +300,54 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   final class Clear extends DelayedOperation {
-    override def operate() { list.clear() }
+    override def operate(): Unit = {
+      list.clear()
+    }
+
     override def getAddedInstance(): Object = null
+
     override def getOrphan(): Object = {
       throw new UnsupportedOperationException("queued clear cannot be used with orphan delete")
     }
   }
 
   final class Add(val value: Object) extends DelayedOperation {
-    override def operate() { list += value }
+    override def operate(): Unit = {
+      list += value
+    }
+
     override def getAddedInstance(): Object = value
+
     override def getOrphan(): Object = null
   }
 
   final class Set(index: Int, value: Object, old: Object) extends DelayedOperation {
-    override def operate() { list.update(index, value) }
+    override def operate(): Unit = {
+      list.update(index, value)
+    }
+
     override def getAddedInstance(): Object = value
+
     override def getOrphan(): Object = null
   }
 
   final class Remove(index: Int, old: Object) extends DelayedOperation {
-    override def operate() { list.remove(index) }
+    override def operate(): Unit = {
+      list.remove(index)
+    }
+
     override def getAddedInstance(): Object = null
+
     override def getOrphan(): Object = old
   }
+
   final class SimpleRemove(old: Object) extends DelayedOperation {
-    override def operate() { list -= old }
+    override def operate(): Unit = {
+      list -= old
+    }
+
     override def getAddedInstance(): Object = null
+
     override def getOrphan(): Object = old
   }
 

@@ -25,19 +25,19 @@ import org.beangle.data.transfer.Format
 import org.beangle.data.transfer.exporter.ExportContext
 import org.beangle.data.transfer.io.Writer
 import org.jxls.util.JxlsHelper
-
+import scala.jdk.javaapi.CollectionConverters.asJava
 class ExcelTemplateWriter(val template: URL, val context: ExportContext, val outputStream: OutputStream)
   extends Writer {
 
   /**
-   * write.
-   */
-  def write() {
+    * write.
+    */
+  def write(): Unit = {
     val ctx = new org.jxls.common.Context()
     context.datas foreach {
       case (k, v) =>
         val nv = v match {
-          case i: Iterable[_] => scala.collection.JavaConverters.asJavaCollection(i)
+          case i: Iterable[_] => asJava(i)
           case _ => v
         }
         ctx.putVar(k, nv)
@@ -49,7 +49,7 @@ class ExcelTemplateWriter(val template: URL, val context: ExportContext, val out
     Format.Xls
   }
 
-  override def close() {
+  override def close(): Unit = {
 
   }
 }

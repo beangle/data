@@ -25,8 +25,8 @@ package org.beangle.data.transfer.io
  */
 trait ItemWriter extends Writer {
 
-  def write(obj: Any)
+  def write(obj: Any): Unit
 
-  def writeTitle(titleName: String, data: Any)
+  def writeTitle(titleName: String, data: Any): Unit
 
 }

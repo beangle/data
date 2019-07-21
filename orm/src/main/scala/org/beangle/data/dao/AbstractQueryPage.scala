@@ -20,51 +20,47 @@ package org.beangle.data.dao
 
 import org.beangle.commons.collection.page._
 
-/**
- * 基于查询的分页。<br>
- * 当使用或导出大批量数据时，使用者仍以List的方式进行迭代。<br>
- * 该实现则是内部采用分页方式。
- *
- * @author chaostone
- */
+/** 基于查询的分页
+  * 当使用或导出大批量数据时，使用者仍以List的方式进行迭代。<br>
+  * 该实现则是内部采用分页方式。
+  * @author chaostone
+  */
 abstract class AbstractQueryPage[T](val query: LimitQuery[T]) extends Page[T] {
 
   var page: Page[T] = _
 
-  var pageIndex = if (null != query.limit) query.limit.pageIndex - 1 else 0
+  var pageIndex: Int = if (null != query.limit) query.limit.pageIndex - 1 else 0
 
   var totalPages = 0
 
   if (null == query.limit) query.limit(PageLimit(Page.DefaultPageNo, Page.DefaultPageSize))
 
-  /**
-   * 按照单个分页数据设置.
-   *
-   * @param page a {@link org.beangle.commons.collection.page.SinglePage} object.
-   */
-  protected def updatePage(page: SinglePage[T]) {
+  /** 按照单个分页数据设置.
+    * @param page a { @link org.beangle.commons.collection.page.SinglePage} object.
+    */
+  protected def updatePage(page: SinglePage[T]): Unit = {
     this.page = page
     this.pageIndex = page.pageIndex
     this.totalPages = page.totalPages
   }
 
-  def next(): Page[T] = moveTo(pageIndex + 1)
+  override def next(): Page[T] = moveTo(pageIndex + 1)
 
-  def previous(): Page[T] = moveTo(pageIndex - 1)
+  override def previous(): Page[T] = moveTo(pageIndex - 1)
 
-  def hasNext: Boolean = totalPages > pageIndex
+  override def hasNext: Boolean = totalPages > pageIndex
 
-  def hasPrevious: Boolean = pageIndex > 1
+  override def hasPrevious: Boolean = pageIndex > 1
 
-  def pageSize: Int = query.limit.pageSize
+  override def pageSize: Int = query.limit.pageSize
 
-  def totalItems: Int = page.totalItems
+  override def totalItems: Int = page.totalItems
 
-  def items = page.items
+  override def items: collection.Seq[T] = page.items
 
-  def length = page.length
+  override def length: Int = page.length
 
-  def apply(index: Int): T = page(index)
+  override def apply(index: Int): T = page(index)
 
   override def iterator: Iterator[T] = new PageIterator[T](this)
 
@@ -76,9 +72,9 @@ class PageIterator[T](val queryPage: AbstractQueryPage[T]) extends Iterator[T] {
 
   private var innerIter: Iterator[T] = _
 
-  def hasNext: Boolean = (dataIndex < queryPage.page.items.size) || queryPage.hasNext
+  override def hasNext: Boolean = (dataIndex < queryPage.page.items.size) || queryPage.hasNext
 
-  def next(): T = {
+  override def next(): T = {
     if (dataIndex < queryPage.page.size) {
       dataIndex += 1
       innerIter.next
@@ -88,9 +84,6 @@ class PageIterator[T](val queryPage: AbstractQueryPage[T]) extends Iterator[T] {
       innerIter = queryPage.page.iterator
       innerIter.next
     }
-  }
-
-  def remove() {
   }
 
 }

@@ -28,22 +28,22 @@ trait ImportListener {
   /**
    * 开始转换
    */
-  def onStart(tr: ImportResult)
+  def onStart(tr: ImportResult): Unit
 
   /**
    * 结束转换
    */
-  def onFinish(tr: ImportResult)
+  def onFinish(tr: ImportResult): Unit
 
   /**
    * 开始转换单个项目
    */
-  def onItemStart(tr: ImportResult)
+  def onItemStart(tr: ImportResult): Unit
 
   /**
    * 结束转换单个项目
    */
-  def onItemFinish(tr: ImportResult)
+  def onItemFinish(tr: ImportResult): Unit
 
   /**
    * 设置转换器

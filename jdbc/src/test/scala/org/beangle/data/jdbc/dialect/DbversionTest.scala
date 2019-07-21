@@ -18,13 +18,13 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatestplus.junit.JUnitRunner
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class DbversionTest extends FlatSpec with Matchers {
+class DbversionTest extends AnyFlatSpec with Matchers {
 
   "version [1.0,2.0] " should "contain both boundary" in {
     val version = new Dbversion("[1.0,2.0]");

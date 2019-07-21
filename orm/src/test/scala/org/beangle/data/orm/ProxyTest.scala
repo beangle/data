@@ -20,14 +20,14 @@ package org.beangle.data.orm
 
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
-import org.scalatest.FunSpec
-import org.scalatest.junit.JUnitRunner
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
 /**
  * @author chaostone
  */
 @RunWith(classOf[JUnitRunner])
-class ProxyTest extends FunSpec with Matchers {
+class ProxyTest extends AnyFunSpec with Matchers {
   describe("Proxy") {
     it("access without component") {
       val proxy1 = Proxy.generate(classOf[TestUser])

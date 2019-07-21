@@ -18,17 +18,14 @@
  */
 package org.beangle.data.jdbc.meta
 
-import java.sql.Types
-import org.beangle.data.jdbc.dialect.OracleDialect
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.Matchers
-import org.scalatest.FlatSpec
+import org.beangle.data.jdbc.dialect.{OracleDialect, PostgreSQLDialect, SQL}
 import org.junit.runner.RunWith
-import org.beangle.data.jdbc.dialect.PostgreSQLDialect
-import org.beangle.data.jdbc.dialect.SQL
+import org.scalatest.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class ForeignKeyTest extends FlatSpec with Matchers {
+class ForeignKeyTest extends AnyFlatSpec with Matchers {
 
   "fk alter sql" should "corret" in {
     val tableA = buildTable()

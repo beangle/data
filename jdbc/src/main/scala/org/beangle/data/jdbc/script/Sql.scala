@@ -18,19 +18,15 @@
  */
 package org.beangle.data.jdbc.script
 
-import java.io.{ File, FileInputStream }
+import java.io.{File, FileInputStream}
 import java.net.URL
-import scala.Array.canBuildFrom
-import scala.annotation.elidable
-import scala.annotation.elidable.ASSERTION
-import org.beangle.commons.io.Files.{ / => / }
-import org.beangle.commons.lang.Consoles.{ prompt, readPassword, shell }
-import org.beangle.commons.lang.Numbers
-import org.beangle.commons.lang.Strings.{ isBlank, isNotEmpty, split, substringAfter, trim }
-import org.beangle.commons.lang.SystemInfo
+
+import org.beangle.commons.io.Files./
+import org.beangle.commons.lang.Consoles.{prompt, readPassword, shell}
+import org.beangle.commons.lang.Strings._
+import org.beangle.commons.lang.{Numbers, SystemInfo}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.ds.DataSourceUtils
-import org.beangle.data.jdbc.ds.DatasourceConfig
+import org.beangle.data.jdbc.ds.{DataSourceUtils, DatasourceConfig}
 import org.beangle.data.jdbc.vendor.UrlFormat
 
 object Sql extends Logging {
@@ -42,7 +38,7 @@ object Sql extends Logging {
   var workdir: String = _
   var sqlDir: String = _
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     workdir = if (args.length == 0) SystemInfo.user.dir else args(0)
     read()
     sqlDir = workdir + / + "sql" + /
@@ -62,14 +58,13 @@ object Sql extends Logging {
         if (null != datasource) datasource.name
         else "sql"
       prefix + " >"
-    }, Set("exit", "quit", "q"), command => command match {
-      case "ls"   => info()
+    }, Set("exit", "quit", "q"), {
+      case "ls" => info()
       case "help" => printHelp()
-      case t => {
+      case t =>
         if (t.startsWith("use")) use(Numbers.toInt(trim(substringAfter(t, "use")), 0))
         else if (t.startsWith("exec")) exec(trim(substringAfter(t, "exec")))
         else if (isNotEmpty(t)) println(t + ": command not found...")
-      }
     })
   }
 
@@ -81,7 +76,7 @@ object Sql extends Logging {
     } else Array.empty
   }
 
-  def exec(file: String = null) {
+  def exec(file: String = null): Unit = {
     if (isBlank(file)) {
       println("Usage exec all or exec file1 file2")
     } else {
@@ -91,13 +86,13 @@ object Sql extends Logging {
       for (name <- split(fileName, " ")) {
         val f = new File(sqlDir + (if (name.endsWith(".sql")) name else name + ".sql"))
         if (f.exists) {
-          urls += f.toURI().toURL()
+          urls += f.toURI.toURL
         } else {
-          println("file " + f.getAbsolutePath() + " doesn't exists")
+          println("file " + f.getAbsolutePath + " doesn't exists")
         }
       }
 
-      val runner = new Runner(OracleParser, urls: _*)
+      val runner = new Runner(OracleParser, urls.toSeq: _*)
       if (null == datasource) use(-1)
       if (null == datasource || urls.isEmpty) {
         println("Execute sql aborted.")
@@ -107,20 +102,21 @@ object Sql extends Logging {
           datasource.password = readPassword("enter datasource [%1$s] %2$s password:", datasource.name, datasource.user)
 
         val ds = DataSourceUtils.build(datasource.driver, datasource.user, datasource.password, datasource.props)
-        runner.execute(ds, true)
+        runner.execute(ds, ignoreError = true)
       }
     }
   }
 
-  def printHelp() {
-    println("""Avaliable command:
+  def printHelp(): Unit = {
+    println(
+      """Avaliable command:
   ls                        print datasource and sql file
   exec [sqlfile1,sqlfile2]  execute simple file
   exec all                  execute all sql file
   help              print this help conent""")
   }
 
-  def use(index: Int = 0) {
+  def use(index: Int = 0): Unit = {
     if (datasources.isEmpty) {
       println("datasource is empty")
     } else {
@@ -129,18 +125,18 @@ object Sql extends Logging {
       } else {
         val selectName = prompt("choose datasource index?", null, name => {
           val result = Numbers.convert2Int(name, null)
-          (result != null && result > -1 && result < datasources.size)
+          result != null && result > -1 && result < datasources.size
         })
         datasource = datasources(Numbers.toInt(selectName))
       }
     }
   }
 
-  def info() {
+  def info(): Unit = {
     val infos = new collection.mutable.ListBuffer[String]
     var index = 0
     for (ds <- datasources) {
-      var prefix = if (ds == datasource) "[*] " else "[" + index + "] "
+      val prefix = if (ds == datasource) "[*] " else "[" + index + "] "
       infos += prefix + ds.name
       index += 1
     }
@@ -151,11 +147,11 @@ object Sql extends Logging {
     println(sqlFiles.mkString(" "))
   }
 
-  private def config(resource: DatasourceConfig) {
+  private def config(resource: DatasourceConfig): Unit = {
     var url = resource.props.get("url").orNull
     if (null == url) {
       val format = new UrlFormat(url)
-      if (!format.params.isEmpty) {
+      if (format.params.nonEmpty) {
         val params = format.params
         val values = new collection.mutable.HashMap[String, String]
         params.foreach { param => values.put(param, prompt("enter " + param + ":")) }
@@ -168,7 +164,7 @@ object Sql extends Logging {
     }
   }
 
-  private def read() = {
+  private def read(): Unit = {
     assert(null != workdir)
     val target = new File(workdir + / + "datasources.xml")
     if (target.exists) {

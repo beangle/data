@@ -18,17 +18,17 @@
  */
 package org.beangle.data.jdbc.query
 
-import java.io.StringWriter
 import java.lang.reflect.Method
-import java.sql.{ BatchUpdateException, Connection, PreparedStatement, ResultSet, SQLException, Timestamp }
 import java.sql.Types.TIMESTAMP
+import java.sql.{BatchUpdateException, Connection, PreparedStatement, ResultSet, SQLException, Timestamp}
 
-import org.beangle.commons.lang.{ ClassLoaders, Strings }
+import javax.sql.DataSource
+import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.DefaultSqlTypeMapping
 import org.beangle.data.jdbc.meta.Engines
 
-import javax.sql.DataSource
+import scala.collection.immutable.ArraySeq
 
 object JdbcExecutor {
   var oracleTimestampMethod: Method = _
@@ -36,14 +36,13 @@ object JdbcExecutor {
     val clz = ClassLoaders.load("oracle.sql.TIMESTAMP")
     oracleTimestampMethod = clz.getMethod("timestampValue")
   } catch {
-    case e: Exception =>
+    case _: Exception =>
   }
 }
 
 class JdbcExecutor(dataSource: DataSource) extends Logging {
 
-  import JdbcExecutor._
-  val engine = Engines.forDataSource(dataSource)
+  private val engine = Engines.forDataSource(dataSource)
   val sqlTypeMapping = new DefaultSqlTypeMapping(engine)
   var showSql = false
 
@@ -57,7 +56,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     val num: Option[Number] = unique(sql)
     num match {
       case Some(n) => Some(n.intValue)
-      case None    => None
+      case None => None
     }
   }
 
@@ -65,23 +64,23 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     val num: Option[Number] = unique(sql)
     num match {
       case Some(n) => Some(n.longValue)
-      case None    => None
+      case None => None
     }
   }
 
-  def getConnection(): Connection = dataSource.getConnection()
+  def openConnection(): Connection = dataSource.getConnection()
 
   def statement(sql: String): Statement = {
     new Statement(sql, this)
   }
 
-  def query(sql: String, params: Any*): Seq[Array[Any]] = {
+  def query(sql: String, params: Any*): collection.Seq[Array[Any]] = {
     query(sql, TypeParamSetter(sqlTypeMapping, params))
   }
 
-  def query(sql: String, setter: PreparedStatement => Unit): Seq[Array[Any]] = {
+  def query(sql: String, setter: PreparedStatement => Unit): collection.Seq[Array[Any]] = {
     if (showSql) println("JdbcExecutor:" + sql)
-    val conn = getConnection()
+    val conn = openConnection()
     var stmt: PreparedStatement = null
     var rs: ResultSet = null
     try {
@@ -105,8 +104,8 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
   def update(sql: String, setter: PreparedStatement => Unit): Int = {
     if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
-    val conn = getConnection()
-    if (conn.getAutoCommit()) conn.setAutoCommit(false)
+    val conn = openConnection()
+    if (conn.getAutoCommit) conn.setAutoCommit(false)
     var rows = 0
     try {
       stmt = conn.prepareStatement(sql)
@@ -116,10 +115,9 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
       stmt = null
       conn.commit()
     } catch {
-      case e: SQLException => {
+      case e: SQLException =>
         conn.rollback()
         rethrow(e, sql)
-      }
     } finally {
       if (null != stmt) stmt.close()
       conn.close()
@@ -130,28 +128,26 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
   def batch(sql: String, datas: Seq[Array[_]], types: Seq[Int]): Seq[Int] = {
     if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
-    val conn = getConnection()
-    if (conn.getAutoCommit()) conn.setAutoCommit(false)
+    val conn = openConnection()
+    if (conn.getAutoCommit) conn.setAutoCommit(false)
     val rows = new collection.mutable.ListBuffer[Int]
     var curParam: Seq[_] = null
     try {
       stmt = conn.prepareStatement(sql)
       for (param <- datas) {
-        curParam = param
+        curParam = ArraySeq.unsafeWrapArray(param)
         ParamSetter.setParams(stmt, param, types)
         stmt.addBatch()
       }
       rows ++= stmt.executeBatch()
       conn.commit()
     } catch {
-      case be: BatchUpdateException => {
+      case be: BatchUpdateException =>
         conn.rollback()
         rethrow(be.getNextException, sql, curParam)
-      }
-      case e: SQLException => {
+      case e: SQLException =>
         conn.rollback()
         rethrow(e, sql, curParam)
-      }
     } finally {
       stmt.close()
       conn.close()
@@ -159,8 +155,8 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     rows.toList
   }
 
-  protected def rethrow(cause: SQLException, sql: String, params: Any*) {
-    var causeMessage = cause.getMessage()
+  protected def rethrow(cause: SQLException, sql: String, params: Any*): Unit = {
+    var causeMessage = cause.getMessage
     if (causeMessage == null) causeMessage = ""
     val msg = new StringBuffer(causeMessage)
 
@@ -168,14 +164,14 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     if (params == null) msg.append("[]")
     else msg.append(Strings.join(params, ","))
 
-    val e = new SQLException(msg.toString(), cause.getSQLState(), cause.getErrorCode())
+    val e = new SQLException(msg.toString, cause.getSQLState, cause.getErrorCode)
     e.setNextException(cause)
     throw e
   }
 
-  private def convertToSeq(rs: ResultSet): Seq[Array[Any]] = {
-    val meta = rs.getMetaData()
-    val cols = meta.getColumnCount()
+  private def convertToSeq(rs: ResultSet): collection.Seq[Array[Any]] = {
+    val meta = rs.getMetaData
+    val cols = meta.getColumnCount
     val rows = new collection.mutable.ListBuffer[Array[Any]]
     val start = if (meta.getColumnName(1) == "_row_nr_") 1 else 0
     val rowlength = cols - start

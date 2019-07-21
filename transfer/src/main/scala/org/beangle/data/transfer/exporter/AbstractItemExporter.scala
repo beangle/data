@@ -19,14 +19,14 @@
 package org.beangle.data.transfer.exporter
 
 import org.beangle.commons.logging.Logging
-import org.beangle.data.transfer.io.{ ItemWriter, Writer }
+import org.beangle.data.transfer.io.{ItemWriter, Writer}
 
 abstract class AbstractItemExporter extends Exporter with Logging {
   var current: Any = _
   var context: ExportContext = _
   var writer: ItemWriter = _
 
-  override def export(context: ExportContext, writer: Writer) {
+  override def export(context: ExportContext, writer: Writer): Unit = {
     this.context = context
     this.writer = writer.asInstanceOf[ItemWriter]
     var index = -1
@@ -48,7 +48,7 @@ abstract class AbstractItemExporter extends Exporter with Logging {
     true
   }
 
-  def exportItem() {
+  def exportItem() : Unit = {
     if (null == current) return
     writer.write(current)
   }

@@ -21,11 +21,7 @@ package org.beangle.data.dao
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.lang.Strings
 
-/**
- * <p>
- * QueryBean class.
- * </p>
- *
+/** QueryBean
  * @author chaostone
  */
 class QueryBean[T] extends LimitQuery[T] {
@@ -42,12 +38,11 @@ class QueryBean[T] extends LimitQuery[T] {
 
   var params: Map[String, Any] = _
 
-  /**
-   * Returns count query {@link org.beangle.data.dao.query.Query}.
+  /** Returns count query.
    */
   def countQuery: Query[T] = {
     if (Strings.isEmpty(countStatement)) return null
-    val bean = new QueryBean[T]();
+    val bean = new QueryBean[T]()
     bean.statement = countStatement
     bean.lang = lang
     bean.params = params
@@ -55,7 +50,6 @@ class QueryBean[T] extends LimitQuery[T] {
     bean
   }
 
-  /** {@inheritDoc} */
   def limit(limit: PageLimit): LimitQuery[T] = {
     this.limit = limit
     this

@@ -18,42 +18,26 @@
  */
 package org.beangle.data.dao
 
-import org.beangle.commons.collection.page.PageLimit;
+import org.beangle.commons.collection.page.PageLimit
 
-/**
- * <p>
- * LimitQuery interface.
- * </p>
- *
- * @author chaostone
- */
+/** LimitQuery interface.
+  * @author chaostone
+  */
 trait LimitQuery[T] extends Query[T] {
 
-  /**
-   * <p>
-   * getLimit.
-   * </p>
-   *
-   * @return a {@link org.beangle.commons.collection.page.PageLimit} object.
-   */
+  /** getLimit
+    * @return a { @link org.beangle.commons.collection.page.PageLimit} object.
+    */
   def limit: PageLimit
 
-  /**
-   * <p>
-   * limit.
-   * </p>
-   *
-   * @param limit a {@link org.beangle.commons.collection.page.PageLimit} object.
-   * @return a {@link org.beangle.data.dao.query.LimitQuery} object.
-   */
+  /** Set limit
+    * @param limit a { @link org.beangle.commons.collection.page.PageLimit} object.
+    * @return a { @link org.beangle.data.dao.query.LimitQuery} object.
+    */
   def limit(limit: PageLimit): LimitQuery[T]
 
-  /**
-   * <p>
-   * getCountQuery.
-   * </p>
-   *
-   * @return a {@link org.beangle.data.dao.query.Query} object.
-   */
+  /** getCountQuery
+    * @return a { @link org.beangle.data.dao.query.Query} object.
+    */
   def countQuery: Query[T]
 }
