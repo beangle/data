@@ -86,7 +86,7 @@ class Condition(val content: String, initParams: Any*) {
   /** 添加多个参数
     * params.
     */
-  def params(values: Seq[Any]): this.type = {
+  def params(values: collection.Seq[Any]): this.type = {
     params.clear()
     params ++= values
     this

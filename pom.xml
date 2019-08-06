@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>26.0-SNAPSHOT</version>
+    <version>26.2</version>
   </parent>
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent_2.13</artifactId>
@@ -38,15 +38,15 @@
   </scm>
 
   <properties>
-    <commons.version>5.1.8-SNAPSHOT</commons.version>
-    <cdi.version>0.1.0-SNAPSHOT</cdi.version>
-    <spring.version>5.1.8.RELEASE</spring.version>
+    <commons.version>5.1.8</commons.version>
+    <cdi.version>0.1.1</cdi.version>
+    <spring.version>5.1.9.RELEASE</spring.version>
     <HikariCP.version>3.3.1</HikariCP.version>
 
     <jpa.version>2.2</jpa.version>
-    <javassist.version>3.24.0-GA</javassist.version>
+    <javassist.version>3.25.0-GA</javassist.version>
     <!--<jta.version>1.1.1</jta.version>-->
-    <hibernate.version>5.4.3.Final</hibernate.version>
+    <hibernate.version>5.4.4.Final</hibernate.version>
     <poi.version>4.0.1</poi.version>
     <jxls.version>2.6.0</jxls.version>
     <jxls-poi.version>1.2.0</jxls-poi.version>

@@ -75,7 +75,7 @@ object MetadataBuildingProcess {
       metadataCollector.addAttributeConverter(converterInfo.toConverterDescriptor(rootContext))
     }
 
-    context.getTypeConfiguration().scope(rootContext)
+    context.getTypeConfiguration.scope(rootContext)
 
     val processor = new BindSourceProcessor(sources, rootContext)
 
@@ -131,7 +131,7 @@ object MetadataBuildingProcess {
         basicTypeRegistry.register(t, keys.toArray)
       }
 
-      override def contributeType(t: CompositeUserType, keys: String*) {
+      override def contributeType(t: CompositeUserType, keys: String*): Unit = {
         basicTypeRegistry.register(t, keys.toArray)
       }
 
