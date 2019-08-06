@@ -20,14 +20,15 @@ package org.beangle.data.hibernate.naming
 
 import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.orm.cfg.Profiles
 import org.beangle.data.hibernate.model.IdType
+import org.beangle.data.orm.cfg.Profiles
 import org.junit.runner.RunWith
-import org.scalatest.{ FunSpec, Matchers }
-import org.scalatest.junit.JUnitRunner
+import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class RailsNamingPolicyTest extends FunSpec with Matchers {
+class RailsNamingPolicyTest extends AnyFunSpec with Matchers {
 
   describe("RailsNamingPolicy") {
     it("Get Module") {

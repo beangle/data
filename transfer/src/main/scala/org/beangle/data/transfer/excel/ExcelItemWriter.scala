@@ -30,11 +30,10 @@ import org.beangle.data.transfer.io.ItemWriter
 import org.beangle.data.transfer.exporter.ExportContext
 
 /**
- * ExcelItemWriter class.
- *
- * @author chaostone
- * @version $Id: $
- */
+  * ExcelItemWriter class.
+  * @author chaostone
+  * @version $Id: $
+  */
 class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
 
   var countPerSheet = 50000
@@ -53,7 +52,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
 
   init()
 
-  def init() {
+  def init(): Unit = {
     if (null != context) {
       val count = context.datas.getOrElse("countPerSheet", "")
       if (null != count && Numbers.isDigits(count.toString)) {
@@ -63,11 +62,11 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     }
   }
 
-  def close() {
+  def close(): Unit = {
     workbook.write(outputStream)
   }
 
-  override def write(obj: Any) {
+  override def write(obj: Any): Unit = {
     if (index + 1 >= countPerSheet) {
       writeTitle(null, title)
     }
@@ -75,7 +74,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     index += 1
   }
 
-  override def writeTitle(titleName: String, data: Any) {
+  override def writeTitle(titleName: String, data: Any): Unit = {
     if (null != titleName) {
       sheet = workbook.createSheet(titleName)
     } else {
@@ -96,7 +95,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     Format.Xls
   }
 
-  protected def writeItem(datas: Any) {
+  protected def writeItem(datas: Any): Unit = {
     var row = sheet.createRow(index) // 建立新行
     if (datas != null) {
       if (datas.getClass.isArray) {
@@ -134,7 +133,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
         var cell = row.createCell(0)
         datas match {
           case n: Number => cell.setCellType(CellType.NUMERIC)
-          case _         =>
+          case _ =>
         }
         cell.setCellValue(new HSSFRichTextString(datas.toString))
       }

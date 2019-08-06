@@ -18,21 +18,19 @@
  */
 package org.beangle.data.hibernate.udt
 
-import java.io.{ Serializable => JSerializable }
+import java.io.{Serializable => JSerializable}
 import java.sql.ResultSet
-import java.{ util => ju }
-
-import scala.Range
-import scala.collection.JavaConverters
-import scala.collection.mutable
+import java.{util => ju}
 
 import org.hibernate.`type`.Type
 import org.hibernate.collection.internal.AbstractPersistentCollection
-import org.hibernate.collection.internal.AbstractPersistentCollection.{ DelayedOperation, UNKNOWN }
-import org.hibernate.engine.spi.SessionImplementor
+import org.hibernate.collection.internal.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
-import org.hibernate.engine.spi.SharedSessionContractImplementor
+
+import scala.collection.mutable
+import scala.jdk.javaapi.CollectionConverters.asJava
 
 class PersistentMap(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection(session) with mutable.Map[Object, Object] {
@@ -76,7 +74,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     map eq collection
   }
 
-  def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int) {
+  def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int): Unit = {
     this.map = persister.getCollectionType.instantiate(anticipatedSize).asInstanceOf[MM]
   }
 
@@ -98,7 +96,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     if (result eq UNKNOWN) map.get(key) else Some(result)
   }
 
-  def +=(kv: (Object, Object)): this.type = {
+  def addOne(kv: (Object, Object)): this.type = {
     if (isPutQueueEnabled()) {
       val old = readElementByIndex(kv._1)
       if (!(old eq UNKNOWN)) queueOperation(new Put(kv, old))
@@ -109,7 +107,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     this
   }
 
-  override def -=(key: Object): this.type = {
+  override def subtractOne(key: Object): this.type = {
     if (isPutQueueEnabled()) {
       val old = readElementByIndex(key)
       if (!(old eq UNKNOWN)) queueOperation(new Remove(key, old))
@@ -120,7 +118,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     this
   }
 
-  override def clear() {
+  override def clear(): Unit = {
     if (isClearQueueEnabled()) {
       queueOperation(new Clear())
     } else {
@@ -163,16 +161,16 @@ class PersistentMap(session: SharedSessionContractImplementor)
   }
 
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
-    JavaConverters.asJavaIterator(map.iterator)
+    asJava(map.iterator)
   }
 
-  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable, owner: Object) {
+  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
     val size = array.length
     beforeInitialize(persister, size)
     Range(0, size, 2) foreach { i =>
       map.put(
-        persister.getIndexType().assemble(array(i), getSession, owner),
+        persister.getIndexType.assemble(array(i), getSession, owner),
         persister.getElementType.assemble(array(i + 1), getSession, owner))
     }
   }
@@ -181,7 +179,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     val result = new Array[JSerializable](map.size * 2)
     var i = 0
     map foreach { e =>
-      result(i) = persister.getIndexType().disassemble(e._1, getSession, null)
+      result(i) = persister.getIndexType.disassemble(e._1, getSession, null)
       result(i + 1) = persister.getElementType.disassemble(e._2, getSession, null)
       i += 2
     }
@@ -196,7 +194,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
         deletes += (if (indexIsFormula) e._2 else e._1)
       }
     }
-    JavaConverters.asJavaIterator(deletes.iterator)
+    asJava(deletes.iterator)
   }
 
   override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
@@ -244,19 +242,19 @@ class PersistentMap(session: SharedSessionContractImplementor)
   }
 
   final class Put(val value: (Object, Object)) extends DelayedOperation {
-    override def operate() { map += value }
+    override def operate(): Unit = { map += value }
     override def getAddedInstance(): Object = value
     override def getOrphan(): Object = null
   }
 
   final class Remove(index: Object, old: Object) extends DelayedOperation {
-    override def operate() { map.remove(index) }
+    override def operate(): Unit = { map.remove(index) }
     override def getAddedInstance(): Object = null
     override def getOrphan(): Object = old
   }
 
   final class Clear extends DelayedOperation {
-    override def operate() { map.clear() }
+    override def operate(): Unit = { map.clear() }
     override def getAddedInstance(): Object = null
     override def getOrphan(): Object = {
       throw new UnsupportedOperationException("queued clear cannot be used with orphan delete")

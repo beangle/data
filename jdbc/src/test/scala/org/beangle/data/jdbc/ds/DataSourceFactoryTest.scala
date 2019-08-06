@@ -18,17 +18,18 @@
  */
 package org.beangle.data.jdbc.ds
 
-import org.scalatest.Matchers
-import org.scalatest.FlatSpec
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+
 import org.beangle.commons.lang.ClassLoaders
+import org.junit.runner.RunWith
+import org.scalatest.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatestplus.junit.JUnitRunner
 
 /**
- * @author chaostone
- */
+  * @author chaostone
+  */
 @RunWith(classOf[JUnitRunner])
-class DataSourceFactoryTest extends FlatSpec with Matchers {
+class DataSourceFactoryTest extends AnyFlatSpec with Matchers {
 
   "DataSourceFactory " should "build a datasource" in {
     val factory = new DataSourceFactory()

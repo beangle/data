@@ -18,8 +18,6 @@
  */
 package org.beangle.data.jdbc.script
 import org.beangle.commons.lang.Strings._
-import org.beangle.commons.io.Files
-import java.io.File
 
 class Parser {
   def parse(content: String): List[String] = {
@@ -29,10 +27,10 @@ class Parser {
     var tails: Seq[String] = List.empty
     for (l <- lines; line = trim(l); if isNotBlank(l) && !isComment(line)) {
       if (tails.isEmpty) tails = endOf(line)
-      if (!stateBuf.isEmpty) stateBuf += "\n"
+      if (stateBuf.nonEmpty) stateBuf += "\n"
       stateBuf += line
       val iter = tails.iterator
-      while (!tails.isEmpty && iter.hasNext) {
+      while (tails.nonEmpty && iter.hasNext) {
         val tail = iter.next()
         if (line.endsWith(tail)) {
           if (tail.length > 0) buf += substringBeforeLast(stateBuf.mkString, tail)
@@ -54,7 +52,7 @@ class Parser {
 
 object OracleParser extends Parser {
 
-  override def commands = Set("set", "prompt", "exit")
+  override def commands:Set[String] = Set("set", "prompt", "exit")
 
   override def endOf(line: String): Seq[String] = {
     val lower = line.toLowerCase()

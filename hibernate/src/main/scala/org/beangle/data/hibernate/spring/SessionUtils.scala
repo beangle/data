@@ -43,7 +43,7 @@ object SessionUtils extends Logging {
     }
   }
 
-  def enableBinding(factory: SessionFactory) {
+  def enableBinding(factory: SessionFactory): Unit = {
     var maps = threadBinding.get()
     if (null == maps) {
       maps = new collection.mutable.HashMap
@@ -57,7 +57,7 @@ object SessionUtils extends Logging {
     if (null == maps) false else None != maps.get(factory)
   }
 
-  def disableBinding(factory: SessionFactory) {
+  def disableBinding(factory: SessionFactory): Unit = {
     val maps = threadBinding.get()
     if (null != maps) maps.remove(factory)
   }
@@ -78,7 +78,7 @@ object SessionUtils extends Logging {
     getResource(factory).asInstanceOf[SessionHolder]
   }
 
-  def closeSession(factory: SessionFactory) {
+  def closeSession(factory: SessionFactory): Unit = {
     try {
       val holder = getResource(factory).asInstanceOf[SessionHolder]
       if (null != holder) {
@@ -91,7 +91,7 @@ object SessionUtils extends Logging {
     }
   }
 
-  def closeSession(session: Session) {
+  def closeSession(session: Session): Unit = {
     try {
       val holder = getResource(session.getSessionFactory()).asInstanceOf[SessionHolder]
       if (null != holder) unbindResource(session.getSessionFactory())

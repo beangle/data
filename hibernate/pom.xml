@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.beangle.data</groupId>
-    <artifactId>beangle-data-parent_2.12</artifactId>
-    <version>5.1.7</version>
+    <artifactId>beangle-data-parent_2.13</artifactId>
+    <version>5.1.8</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>beangle-data-hibernate_2.12</artifactId>
+  <artifactId>beangle-data-hibernate_2.13</artifactId>
   <packaging>jar</packaging>
   <name>Beangle Data Hibernate</name>
 
@@ -17,29 +17,19 @@
   <dependencies>
     <dependency>
       <groupId>org.beangle.commons</groupId>
-      <artifactId>beangle-commons-text_2.12</artifactId>
+      <artifactId>beangle-commons-text_2.13</artifactId>
     </dependency>
     <dependency>
       <groupId>org.beangle.cdi</groupId>
-      <artifactId>beangle-cdi-api_2.12</artifactId>
+      <artifactId>beangle-cdi-api_2.13</artifactId>
     </dependency>
     <dependency>
       <groupId>org.beangle.cdi</groupId>
-      <artifactId>beangle-cdi-spring_2.12</artifactId>
+      <artifactId>beangle-cdi-spring_2.13</artifactId>
     </dependency>
     <dependency>
       <groupId>org.beangle.data</groupId>
-      <artifactId>beangle-data-orm_2.12</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.hibernate.javax.persistence</groupId>
-      <artifactId>hibernate-jpa-2.1-api</artifactId>
-      <version>${jpa.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-jta_1.1_spec</artifactId>
-      <version>${jta.version}</version>
+      <artifactId>beangle-data-orm_2.13</artifactId>
     </dependency>
     <dependency>
       <groupId>org.hibernate</groupId>
@@ -64,7 +54,7 @@
     </dependency>
     <dependency>
       <groupId>org.beangle.data</groupId>
-      <artifactId>beangle-data-jdbc_2.12</artifactId>
+      <artifactId>beangle-data-jdbc_2.13</artifactId>
     </dependency>
     <dependency>
       <groupId>com.zaxxer</groupId>
@@ -90,7 +80,7 @@
 
     <dependency>
       <groupId>org.beangle.commons</groupId>
-      <artifactId>beangle-commons-web_2.12</artifactId>
+      <artifactId>beangle-commons-web_2.13</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>

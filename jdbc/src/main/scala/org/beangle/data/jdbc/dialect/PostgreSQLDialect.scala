@@ -18,12 +18,11 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import java.sql.Types._
 import org.beangle.data.jdbc.meta.Engines
 
 class PostgreSQLDialect extends AbstractDialect(Engines.PostgreSQL, "[8.4)") {
 
-  override def sequenceGrammar = {
+  override def sequenceGrammar: SequenceGrammar = {
     val ss = new SequenceGrammar()
     ss.querySequenceSql = "select sequence_name,start_value,increment increment_by,cycle_option cycle_flag" +
       " from information_schema.sequences where sequence_schema=':schema'"
@@ -32,9 +31,11 @@ class PostgreSQLDialect extends AbstractDialect(Engines.PostgreSQL, "[8.4)") {
     ss
   }
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
+  override def limitGrammar: LimitGrammar = {
+    new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
+  }
 
-  override def tableGrammar = {
+  override def tableGrammar: TableGrammar = {
     val bean = new TableGrammarBean()
     bean.dropSql = "drop table {} cascade"
     bean
@@ -44,5 +45,5 @@ class PostgreSQLDialect extends AbstractDialect(Engines.PostgreSQL, "[8.4)") {
     "public"
   }
 
-  override def supportsCommentOn = true
+  override def supportsCommentOn: Boolean = true
 }

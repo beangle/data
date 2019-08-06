@@ -19,15 +19,17 @@
 package org.beangle.data.orm.tool
 
 import org.junit.runner.RunWith
-import org.scalatest.{ FunSpec, Matchers }
-import org.scalatest.junit.JUnitRunner
+import org.scalatest. Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class DdlGeneratorTest extends FunSpec with Matchers {
+class DdlGeneratorTest extends AnyFunSpec with Matchers {
 
   describe("DdlGenerator") {
     it("generate") {
       DdlGenerator.main(Array("postgresql","/tmp","zh_CN"))
     }
   }
+
 }

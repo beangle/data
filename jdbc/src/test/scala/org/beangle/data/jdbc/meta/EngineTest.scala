@@ -19,7 +19,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.dialect.{ DB2Dialect, H2Dialect, MySQLDialect, OracleDialect, PostgreSQLDialect, SQLServerDialect }
+import org.beangle.data.jdbc.dialect.{DB2Dialect, H2Dialect, MySQLDialect, OracleDialect, PostgreSQLDialect, SQLServerDialect}
 
 object EngineTest {
 
@@ -27,9 +27,11 @@ object EngineTest {
     printTypeMatrix()
   }
 
-  private def printPad(name: String) { print(Strings.rightPad(name, 17, ' ')) }
+  private def printPad(name: String): Unit = {
+    print(Strings.rightPad(name, 17, ' '))
+  }
 
-  def printTypeMatrix() {
+  def printTypeMatrix(): Unit = {
     import java.sql.Types._
     val types = Array(BOOLEAN, BIT, CHAR, INTEGER, SMALLINT, TINYINT, BIGINT,
       FLOAT, DOUBLE, DECIMAL, NUMERIC, DATE, TIME, TIMESTAMP, VARCHAR, LONGVARCHAR,

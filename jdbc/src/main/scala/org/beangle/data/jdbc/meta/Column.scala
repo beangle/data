@@ -50,6 +50,6 @@ class Column(var name: Identifier, var sqlType: SqlType, var nullable: Boolean =
   }
 
   override def toString: String = {
-    name + " " + sqlType.toString
+    s"$name $sqlType"
   }
 }

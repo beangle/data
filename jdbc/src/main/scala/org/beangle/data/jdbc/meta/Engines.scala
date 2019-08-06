@@ -19,8 +19,9 @@
 package org.beangle.data.jdbc.meta
 
 import java.sql.Types._
-import org.beangle.commons.lang.Strings
+
 import javax.sql.DataSource
+import org.beangle.commons.lang.Strings
 
 object Engines {
 
@@ -74,11 +75,11 @@ object Engines {
     override def toType(sqlCode: Int, length: Int, precision: Int, scale: Int): SqlType = {
       if (sqlCode == DECIMAL) {
         val result = precision match {
-          case 1  => new SqlType(BOOLEAN, "boolean")
-          case 5  => new SqlType(SMALLINT, "int2")
+          case 1 => new SqlType(BOOLEAN, "boolean")
+          case 5 => new SqlType(SMALLINT, "int2")
           case 10 => new SqlType(INTEGER, "int4")
           case 19 => new SqlType(BIGINT, "int8")
-          case _  => super.toType(sqlCode, 0, precision, scale)
+          case _ => super.toType(sqlCode, 0, precision, scale)
         }
         result.length = Some(length)
         result
@@ -91,7 +92,7 @@ object Engines {
   }
 
   object MySQL extends AbstractEngine {
-    override def quoteChars: Tuple2[Char, Char] = {
+    override def quoteChars: (Char, Char) = {
       ('`', '`')
     }
 
@@ -186,7 +187,7 @@ object Engines {
   }
 
   object SQLServer extends AbstractEngine {
-    override def quoteChars: Tuple2[Char, Char] = {
+    override def quoteChars: (Char, Char) = {
       ('[', ']')
     }
 
@@ -199,11 +200,12 @@ object Engines {
       DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime2",
       BINARY -> "binary", VARBINARY -> "varbinary(MAX)",
       LONGVARCHAR -> "text", LONGVARBINARY -> "varbinary(MAX)",
-      BLOB -> "varbinary(MAX)", CLOB -> "varchar(MAX)");
+      BLOB -> "varbinary(MAX)", CLOB -> "varchar(MAX)")
 
     registerTypes2(
       (VARCHAR, 8000, "varchar($l)"),
       (VARBINARY, 8000, "varbinary($l)"),
       (NVARCHAR, 4000, "nvarchar($l)"))
   }
+
 }

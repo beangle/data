@@ -41,11 +41,11 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
 
   var result: SessionFactory = _
 
-  def init() {
+  def init(): Unit = {
     val cfgb = new ConfigurationBuilder(dataSource)
     //  provide the Beangle managed Session as context
-    cfgb.configLocations = configLocations.map(l => l.getURL())
-    cfgb.ormLocations = ormLocations.map(l => l.getURL())
+    cfgb.configLocations = configLocations.toIndexedSeq.map(l => l.getURL)
+    cfgb.ormLocations = ormLocations.toIndexedSeq.map(l => l.getURL)
     properties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[BeangleSessionContext].getName)
     cfgb.properties = properties
     val config = cfgb.build()

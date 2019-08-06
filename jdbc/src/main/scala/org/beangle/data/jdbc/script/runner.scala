@@ -18,16 +18,16 @@
  */
 package org.beangle.data.jdbc.script
 
-import java.io.{ InputStream, InputStreamReader }
-import java.net.{ URL }
+import java.io.{InputStream, InputStreamReader}
+import java.net.URL
 
-import org.beangle.commons.io.{ IOs, StringBuilderWriter }
+import javax.sql.DataSource
+import org.beangle.commons.io.{IOs, StringBuilderWriter}
 import org.beangle.commons.lang.Charsets
-import org.beangle.commons.lang.Strings.{ substringBefore, lowerCase, substringAfter, trim }
+import org.beangle.commons.lang.Strings.{lowerCase, substringAfter, substringBefore, trim}
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
-import Runner._
-import javax.sql.DataSource
+import org.beangle.data.jdbc.script.Runner._
 
 object Runner {
   def read(parser: Parser, urls: URL*): List[Script] = {
@@ -48,9 +48,9 @@ object Runner {
 }
 
 class Runner(parser: Parser, urls: URL*) extends Logging {
-  val list = read(parser, urls: _*)
+  private val list = read(parser, urls: _*)
 
-  def execute(dataSource: DataSource, ignoreError: Boolean) {
+  def execute(dataSource: DataSource, ignoreError: Boolean): Unit = {
     val watch = new Stopwatch(true)
 
     for (script <- list) {
@@ -71,10 +71,9 @@ class Runner(parser: Parser, urls: URL*) extends Logging {
           try {
             stm.execute(statement)
           } catch {
-            case e: Exception => {
+            case e: Exception =>
               logger.error(s"Failure when exceute sql $statement", e)
-              if (!ignoreError) terminated = true;
-            }
+              if (!ignoreError) terminated = true
           }
         }
       }

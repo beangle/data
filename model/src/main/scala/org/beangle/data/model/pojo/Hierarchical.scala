@@ -19,15 +19,11 @@
 package org.beangle.data.model.pojo
 
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.Strings
-import org.beangle.commons.lang.Numbers
-/**
- * <p>
- * Hierarchical interface.
- * </p>
- *
- * @author chaostone
- */
+import org.beangle.commons.lang.{Numbers, Strings}
+
+/** Hierarchical Entity
+  * @author chaostone
+  */
 trait Hierarchical[T] extends Ordered[T] {
 
   /** index no */
@@ -36,7 +32,7 @@ trait Hierarchical[T] extends Ordered[T] {
   /** 父级菜单 */
   var parent: Option[T] = None
 
-  var children = Collections.newBuffer[T]
+  var children: collection.mutable.Buffer[T] = Collections.newBuffer[T]
 
   def depth: Int = {
     Strings.count(indexno, ".") + 1

@@ -18,20 +18,19 @@
  */
 package org.beangle.data.orm
 
+import org.beangle.commons.io.ResourcePatternResolver
+import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.data.jdbc.meta.{Database, Engines}
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
-import org.scalatest.FunSpec
-import org.scalatest.junit.JUnitRunner
-import org.beangle.commons.io.ResourcePatternResolver
-import org.beangle.commons.lang.reflect.{ BeanInfo, BeanInfos }
-import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.dialect.{ Dialect, Dialects, SQL }
-import org.beangle.data.jdbc.meta.{ DBScripts, Database, Engines }
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
+
 /**
- * @author chaostone
- */
+  * @author chaostone
+  */
 @RunWith(classOf[JUnitRunner])
-class MappingTest extends FunSpec with Matchers {
+class MappingTest extends AnyFunSpec with Matchers {
   describe("Mapping") {
     it("bind") {
       val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")

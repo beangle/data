@@ -25,39 +25,39 @@ import org.beangle.data.model.util.Id
 trait Entity[ID] extends Serializable {
 
   /**
-   * Return Identifier
-   */
+    * Return Identifier
+    */
   def id: ID
 
   /**
-   * Return true if persisted
-   */
+    * Return true if persisted
+    */
   @Transient
   def persisted: Boolean = Id.isValid(id)
 
   /**
-   * @see java.lang.Object#hashCode()
-   */
+    * @see java.lang.Object#hashCode()
+    */
   override def hashCode: Int = {
     if (null == id) 629 else id.hashCode()
   }
 
-  /**
-   * <p>
-   * 比较id,如果任一方id是null,则不相等
-   * </p>
-   * 由于业务对象被CGlib或者javassist增强的原因，这里只提供一般的基于id的比较,不提供基于Class的比较。<br>
-   * 如果在存在继承结构， 请重置equals方法。
-   */
+  /** 比较id,如果任一方id是null,则不相等
+    * 由于业务对象被CGlib或者javassist增强的原因，这里只提供一般的基于id的比较,不提供基于Class的比较。<br>
+    * 如果在存在继承结构， 请重置equals方法。
+    */
   override def equals(other: Any): Boolean = other match {
     case that: Entity[_] => (this eq that) || (null != id && null != that.id && id == that.id)
-    case _               => false
+    case _ => false
   }
 }
 
 trait LongIdEntity extends Entity[Long]
+
 trait IntIdEntity extends Entity[Int]
+
 trait ShortIdEntity extends Entity[Short]
+
 trait StringIdEntity extends Entity[String]
 
 abstract class NumId[ID] extends Entity[ID] {

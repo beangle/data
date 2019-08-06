@@ -18,19 +18,18 @@
  */
 package org.beangle.data.hibernate
 
-import scala.collection.mutable.ListBuffer
+import java.time.YearMonth
 
 import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.dao.OqlBuilder
-import org.beangle.data.hibernate.model.{ ExtendRole, Member, Name, Role, User }
+import org.beangle.data.hibernate.model._
 import org.hibernate.SessionFactory
-import org.beangle.data.model.meta.Domain
-import java.time.YearMonth
-import java.time.LocalDate
+
+import scala.collection.mutable.ListBuffer
 
 object UserCrudTest {
 
-  def testCrud(sf: SessionFactory) {
+  def testCrud(sf: SessionFactory): Unit = {
     val entityDao = new HibernateEntityDao(sf)
     val session = sf.getCurrentSession
     val transaction = session.beginTransaction()

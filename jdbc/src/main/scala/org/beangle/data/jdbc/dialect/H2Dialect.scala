@@ -18,12 +18,11 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import java.sql.Types._
 import org.beangle.data.jdbc.meta.Engines
 
 class H2Dialect extends AbstractDialect(Engines.H2, "[1.3,)") {
 
-  override def sequenceGrammar = {
+  override def sequenceGrammar: SequenceGrammar = {
     val ss = new SequenceGrammar()
     ss.querySequenceSql = "select sequence_name,current_value,increment,cache from information_schema.sequences where sequence_schema=':schema'"
     ss.nextValSql = "call next value for :name"
@@ -35,7 +34,7 @@ class H2Dialect extends AbstractDialect(Engines.H2, "[1.3,)") {
 
   override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
 
-  override def tableGrammar = {
+  override def tableGrammar: TableGrammar = {
     val bean = new TableGrammarBean()
     bean.columnComent = " comment '{}'"
     bean

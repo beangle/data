@@ -20,58 +20,54 @@ package org.beangle.data.dao
 
 import org.beangle.data.model.Entity
 
-/**
- * <p>
- * Dao trait
- * [/p>
- *
- * @author chaostone
- */
+/** Dao trait
+  * @author chaostone
+  */
 trait Dao[T <: Entity[ID], ID] {
 
   /**
-   * get T by id.
-   */
+    * get T by id.
+    */
   def get(id: ID): T
 
   /**
-   * find T by id.
-   */
+    * find T by id.
+    */
   def find(id: ID): Option[T]
 
   /**
-   * search T by id.
-   */
+    * search T by id.
+    */
   def find(first: ID, ids: ID*): Seq[T]
 
   /**
-   * save or update entities
-   */
-  def saveOrUpdate(first: T, entities: T*)
+    * save or update entities
+    */
+  def saveOrUpdate(first: T, entities: T*): Unit
 
   /**
-   * save or update entities
-   */
-  def saveOrUpdate(entities: Seq[T]);
+    * save or update entities
+    */
+  def saveOrUpdate(entities: Seq[T]): Unit
 
   /**
-   * remove entities.
-   */
-  def remove(entities: Seq[T]);
+    * remove entities.
+    */
+  def remove(entities: Seq[T]): Unit
 
   /**
-   * remove entities.
-   */
-  def remove(first: T, others: T*);
+    * remove entities.
+    */
+  def remove(first: T, others: T*): Unit
 
   /**
-   * remove entities by id
-   */
-  def remove(id: ID, ids: ID*);
+    * remove entities by id
+    */
+  def remove(id: ID, ids: ID*): Unit
 
   /**
-   * get entity type
-   */
-  def entityClass: Class[T];
+    * get entity type
+    */
+  def entityClass: Class[T]
 
 }

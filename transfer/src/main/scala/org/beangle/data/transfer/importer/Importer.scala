@@ -31,7 +31,7 @@ trait Importer {
   /**
    * 启动转换
    */
-  def transfer(tr: ImportResult)
+  def transfer(tr: ImportResult): Unit
 
   /**
    * 转换一个对象
@@ -96,7 +96,7 @@ trait Importer {
   /**
    * 设置当前正在转换的对象
    */
-  def current_=(obj: AnyRef)
+  def current_=(obj: AnyRef): Unit
 
   var reader: Reader = _
 

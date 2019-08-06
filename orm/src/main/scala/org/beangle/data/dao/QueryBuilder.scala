@@ -20,10 +20,7 @@ package org.beangle.data.dao
 
 import org.beangle.commons.collection.page.PageLimit
 
-/**
- * <p>
- * QueryBuilder interface.
- * </p>
+/** QueryBuilder interface
  *
  * @author chaostone
  */

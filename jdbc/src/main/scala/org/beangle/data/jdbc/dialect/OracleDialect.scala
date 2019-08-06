@@ -18,43 +18,42 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import java.sql.Types._
 import org.beangle.data.jdbc.meta.Engines
 
 class OracleDialect() extends AbstractDialect(Engines.Oracle, "[10.1)") {
 
   override def limitGrammar: LimitGrammar = {
-
-    /**
-     * FIXME distinguish sql with order by or not
-     * @see http://blog.csdn.net/czp11210/article/details/23958065
-     */
-    class OracleLimitGrammar extends LimitGrammar {
-      override def limit(querySql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
-        var sql = querySql.trim()
-        var isForUpdate = false
-        if (sql.toLowerCase().endsWith(" for update")) {
-          sql = sql.substring(0, sql.length - 11)
-          isForUpdate = true
-        }
-        val pagingSelect = new StringBuilder(sql.length + 100)
-        val hasOffset = offset > 0
-        if (hasOffset) pagingSelect.append("select * from ( select row_.*, rownum rownum_ from ( ")
-        else pagingSelect.append("select * from ( ")
-
-        pagingSelect.append(sql)
-        if (hasOffset) pagingSelect.append(" ) row_ where rownum <= ?) where rownum_ > ?")
-        else pagingSelect.append(" ) where rownum <= ?")
-
-        if (isForUpdate) pagingSelect.append(" for update")
-        (pagingSelect.toString, if (hasOffset) List(limit + offset, offset) else List(limit))
-      }
-    }
-    new OracleLimitGrammar
+    OracleLimitGrammar
   }
 
-  override def sequenceGrammar = {
-    val ss = new SequenceGrammar();
+  /**
+    * FIXME distinguish sql with order by or not
+    * @see http://blog.csdn.net/czp11210/article/details/23958065
+    */
+  object OracleLimitGrammar extends LimitGrammar {
+    override def limit(querySql: String, offset: Int, limit: Int): (String, List[Int]) = {
+      var sql = querySql.trim()
+      var isForUpdate = false
+      if (sql.toLowerCase().endsWith(" for update")) {
+        sql = sql.substring(0, sql.length - 11)
+        isForUpdate = true
+      }
+      val pagingSelect = new StringBuilder(sql.length + 100)
+      val hasOffset = offset > 0
+      if (hasOffset) pagingSelect.append("select * from ( select row_.*, rownum rownum_ from ( ")
+      else pagingSelect.append("select * from ( ")
+
+      pagingSelect.append(sql)
+      if (hasOffset) pagingSelect.append(" ) row_ where rownum <= ?) where rownum_ > ?")
+      else pagingSelect.append(" ) where rownum <= ?")
+
+      if (isForUpdate) pagingSelect.append(" for update")
+      (pagingSelect.toString, if (hasOffset) List(limit + offset, offset) else List(limit))
+    }
+  }
+
+  override def sequenceGrammar: SequenceGrammar = {
+    val ss = new SequenceGrammar()
     ss.querySequenceSql = "select sequence_name,last_number as next_value,increment_by,cache_size,cycle_flag " +
       "from all_sequences where sequence_owner=':schema'"
     ss.createSql = "create sequence :name increment by :increment start with :start cache :cache :cycle"

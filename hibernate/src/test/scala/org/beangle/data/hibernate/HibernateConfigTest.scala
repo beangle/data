@@ -18,21 +18,19 @@
  */
 package org.beangle.data.hibernate
 
-import java.sql.{ Date, Timestamp }
-import java.util.{ Calendar, Date }
-
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.hibernate.model.{ ExtendRole, Role, User }
-import org.beangle.data.hibernate.spring.{ LocalSessionFactoryBean, SessionUtils }
+import org.beangle.data.hibernate.model.{ExtendRole, Role, User}
+import org.beangle.data.hibernate.spring.{LocalSessionFactoryBean, SessionUtils}
 import org.beangle.data.model.meta.SingularProperty
 import org.beangle.data.model.util.ConvertPopulator
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{ FunSpec, Matchers }
+import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 import org.springframework.core.io.UrlResource
 
 @RunWith(classOf[JUnitRunner])
-class HibernateConfigTest extends FunSpec with Matchers {
+class HibernateConfigTest extends AnyFunSpec with Matchers {
 
   val ormLocations = ClassLoaders.getResource("META-INF/beangle/orm.xml").toList
   val resouces = ormLocations map (url => new UrlResource(url.toURI))

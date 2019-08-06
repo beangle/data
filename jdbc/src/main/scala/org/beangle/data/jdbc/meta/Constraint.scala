@@ -74,14 +74,12 @@ class Constraint(var table: Table, var name: Identifier) extends Ordered[Constra
 import java.math.BigInteger
 import java.security.MessageDigest
 
-import org.beangle.commons.codec.digest.Digests
-
 object Constraint {
 
   def autoname(fk: ForeignKey): String = {
     val sb = new StringBuilder()
       .append("table`").append(fk.table.name).append("`")
-      .append("references`").append(fk.referencedTable.name).append("`");
+      .append("references`").append(fk.referencedTable.name).append("`")
     fk.columns foreach { fc =>
       sb.append("column`").append(fc.value).append("`");
     }

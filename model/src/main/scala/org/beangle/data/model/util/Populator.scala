@@ -20,35 +20,37 @@ package org.beangle.data.model.util
 
 import org.beangle.commons.collection.Collections
 import org.beangle.data.model.Entity
-import org.beangle.data.model.meta.{ EntityType, Property }
+import org.beangle.data.model.meta.{EntityType, Property}
 
 object Populator {
-  class CopyResult {
-    var fails = Collections.newMap[String, String]
 
-    def addFail(attr: String, cause: String) {
+  class CopyResult {
+    var fails: Map[String, String] = Map.empty
+
+    def addFail(attr: String, cause: String): Unit = {
       fails += (attr -> cause)
     }
   }
+
 }
+
 /**
- * Populator interface.
- *
- * @author chaostone
- */
+  * Populator interface.
+  * @author chaostone
+  */
 trait Populator {
   /**
-   * populate.
-   */
+    * populate.
+    */
   def populate(target: Entity[_], EntityType: EntityType, params: collection.Map[String, Any]): Populator.CopyResult
 
   /**
-   *
-   */
+    *
+    */
   def populate(target: Entity[_], EntityType: EntityType, attr: String, value: Any): Boolean
 
   /**
-   * initProperty.
-   */
+    * initProperty.
+    */
   def init(target: Entity[_], t: EntityType, attr: String): (Any, Property)
 }

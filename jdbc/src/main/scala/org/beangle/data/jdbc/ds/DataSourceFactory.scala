@@ -18,12 +18,11 @@
  */
 package org.beangle.data.jdbc.ds
 
-import java.io.{ BufferedReader, ByteArrayInputStream, FileInputStream, InputStreamReader }
-import java.io.InputStream
+import java.io.{ByteArrayInputStream, InputStream}
 import java.net.URL
-import javax.sql.DataSource
 
-import org.beangle.commons.bean.{ Disposable, Factory, Initializing }
+import javax.sql.DataSource
+import org.beangle.commons.bean.{Disposable, Factory, Initializing}
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.Strings
@@ -39,9 +38,9 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   var password: String = _
   var driver: String = _
   var name: String = _
-  var props = Collections.newMap[String, String]
+  var props:collection.mutable.Map[String,String] = Collections.newMap
 
-  private var _result: DataSource = null
+  private var _result: DataSource = _
 
   override def result: DataSource = {
     _result

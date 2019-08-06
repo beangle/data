@@ -18,29 +18,26 @@
  */
 package org.beangle.data.transfer.importer.listener
 
-import org.beangle.data.transfer.importer.AbstractImportListener
-import org.beangle.data.transfer.importer.ImportResult
+import org.beangle.data.transfer.importer.{AbstractImportListener, ImportResult}
 
-/**
- * 转换调试监听器
- *
- * @author chaostone
- */
+/** 转换调试监听器
+  * @author chaostone
+  */
 class DebugListener extends AbstractImportListener {
 
-  override def onStart(tr: ImportResult) {
+  override def onStart(tr: ImportResult): Unit = {
     tr.addMessage("start", transfer.dataName)
   }
 
-  override def onFinish(tr: ImportResult) {
+  override def onFinish(tr: ImportResult): Unit = {
     tr.addMessage("end", transfer.dataName)
   }
 
-  override def onItemStart(tr: ImportResult) {
-    tr.addMessage("start Item", transfer.tranferIndex + "")
+  override def onItemStart(tr: ImportResult): Unit = {
+    tr.addMessage("start Item", transfer.tranferIndex.toString)
   }
 
-  override def onItemFinish(tr: ImportResult) {
+  override def onItemFinish(tr: ImportResult): Unit = {
     tr.addMessage("end Item", transfer.current)
   }
 

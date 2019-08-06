@@ -40,5 +40,5 @@ trait Reader {
   /**
    * 关闭
    */
-  def close()
+  def close(): Unit
 }

@@ -18,15 +18,9 @@
  */
 package org.beangle.data.dao
 
-import org.beangle.commons.collection.Order
-import org.beangle.commons.collection.page.PageLimit
-import org.beangle.commons.lang.Assert
-import org.beangle.commons.lang.Strings
-
-/**
- * SqlBuilder
- * @author chaostone
- */
+/** SqlBuilder
+  * @author chaostone
+  */
 object SqlBuilder {
 
   def sql(queryStr: String): SqlBuilder = {
@@ -34,12 +28,15 @@ object SqlBuilder {
     sqlQuery.statement = queryStr
     sqlQuery
   }
+
   val Lang = Query.Lang("Sql")
 }
 
 class SqlBuilder extends AbstractQueryBuilder[Array[Any]] {
 
-  protected def genCountStatement() = "select count(*) from (" + genQueryStatement(false) + ")"
+  protected def genCountStatement(): String = {
+    "select count(*) from (" + genQueryStatement(false) + ")"
+  }
 
-  override def lang = SqlBuilder.Lang
+  override def lang: Query.Lang = SqlBuilder.Lang
 }

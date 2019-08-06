@@ -18,12 +18,11 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import scala.collection.mutable
-
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.vendor.VendorInfo
-import org.beangle.data.jdbc.vendor.Vendors
-import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.lang.reflect.Reflections
+import org.beangle.data.jdbc.vendor.{VendorInfo, Vendors}
+
+import scala.collection.mutable
 
 object Dialects {
 
@@ -35,14 +34,14 @@ object Dialects {
     None
   }
 
-  def register(product: VendorInfo, dialects: Dialect*) {
+  def register(product: VendorInfo, dialects: Dialect*): Unit = {
     registeredDialects.put(product, dialects.toList)
   }
 
   def forName(dialectName: String): Dialect = {
     var name = Strings.capitalize(dialectName)
     name = name.replace("sql", "SQL")
-    ClassLoaders.newInstance("org.beangle.data.jdbc.dialect." + name + "Dialect").asInstanceOf[Dialect]
+    Reflections.newInstance[Dialect]("org.beangle.data.jdbc.dialect." + name + "Dialect")
   }
 
   register(Vendors.oracle, new OracleDialect)

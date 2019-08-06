@@ -18,19 +18,19 @@
  */
 package org.beangle.data.hibernate.udt
 
-import java.{ util => ju }
+import java.{util => ju}
 
-import scala.collection.JavaConverters
-import scala.collection.mutable.{ Buffer, ListBuffer }
-
+import org.hibernate.collection.spi.PersistentCollection
 import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
-import org.hibernate.collection.spi.PersistentCollection
+
+import scala.collection.mutable.{Buffer, ListBuffer}
+import scala.jdk.javaapi.CollectionConverters.asJava
 
 /**
- * Mutable Seq Type
- */
+  * Mutable Seq Type
+  */
 class SeqType extends UserCollectionType {
 
   override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection = {
@@ -41,20 +41,20 @@ class SeqType extends UserCollectionType {
     new PersistentSeq(session, collection.asInstanceOf[Buffer[Object]])
   }
 
-  override def getElementsIterator(collection: Object) = {
-    JavaConverters.asJavaIterator(collection.asInstanceOf[Buffer[_]].iterator)
+  override def getElementsIterator(collection: Object): ju.Iterator[Any] = {
+    asJava(collection.asInstanceOf[Buffer[_]].iterator)
   }
 
-  override def contains(collection: Object, entity: Object) = {
+  override def contains(collection: Object, entity: Object): Boolean = {
     collection.asInstanceOf[Buffer[_]].contains(entity)
   }
 
-  override def indexOf(collection: Object, entity: Object) = {
+  override def indexOf(collection: Object, entity: Object): Integer = {
     Integer.valueOf(collection.asInstanceOf[Buffer[Object]].indexOf(entity))
   }
 
   override def replaceElements(original: Object, target: Object, persister: CollectionPersister,
-                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor) = {
+                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor): Unit = {
     val targetSeq = target.asInstanceOf[Buffer[Any]]
     targetSeq.clear()
     targetSeq ++= original.asInstanceOf[Seq[Any]]

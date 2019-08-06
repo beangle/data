@@ -18,12 +18,12 @@
  */
 package org.beangle.data.hibernate.udt
 
-import java.io.{ Serializable => JSerializable }
+import java.io.{Serializable => JSerializable}
 import java.sql.ResultSet
-import java.{ util => ju }
+import java.{util => ju}
 
-import scala.collection.JavaConverters
-import scala.collection.mutable.{ Buffer, HashMap => MHashMap, HashSet => MHashSet, ListBuffer, Set => MSet }
+import scala.jdk.javaapi.CollectionConverters.asJava
+import scala.collection.mutable.{Buffer, HashMap => MHashMap, HashSet => MHashSet, ListBuffer, Set => MSet}
 
 import org.hibernate.`type`.Type
 import org.hibernate.collection.internal.AbstractPersistentCollection
@@ -69,7 +69,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
     } else {
       !this.set.exists { e =>
         sn.get(e) match {
-          case None    => true
+          case None => true
           case Some(v) => elementType.isDirty(v, e, getSession)
         }
       }
@@ -85,7 +85,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable,
-    owner: Object) {
+                                   owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
     val size = array.length
     beforeInitialize(persister, size)
@@ -100,11 +100,11 @@ class PersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def size: Int = {
-    if (readSize()) getCachedSize() else set.size
+    if (readSize()) getCachedSize else set.size
   }
 
   override def isEmpty: Boolean = {
-    if (readSize()) getCachedSize() == 0 else this.set.isEmpty
+    if (readSize()) getCachedSize == 0 else this.set.isEmpty
   }
 
   override def contains(elem: Object): Boolean = {
@@ -113,10 +113,11 @@ class PersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def iterator: Iterator[Object] = {
-    read(); set.iterator
+    read()
+    set.iterator
   }
 
-  override def +=(elem: Object): this.type = {
+  override def addOne(elem: Object): this.type = {
     val exists = if (isOperationQueueEnabled()) readElementExistence(elem) else null
     if (exists == null) {
       initialize(true)
@@ -127,7 +128,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
     this
   }
 
-  override def -=(elem: Object): this.type = {
+  override def subtractOne(elem: Object): this.type = {
     val exists = if (isOperationQueueEnabled()) readElementExistence(elem) else null
     if (exists == null) {
       initialize(true)
@@ -138,7 +139,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
     this
   }
 
-  override def clear() {
+  override def clear(): Unit = {
     if (isClearQueueEnabled()) {
       queueOperation(new Clear())
     } else {
@@ -151,17 +152,18 @@ class PersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def toString: String = {
-    read(); set.toString
+    read();
+    set.toString
   }
 
   override def readFrom(rs: ResultSet, persister: CollectionPersister, descriptor: CollectionAliases,
-    owner: Object): Object = {
+                        owner: Object): Object = {
     val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases, getSession)
     if (null != element) tempList += element
     element
   }
 
-  override def beginRead() {
+  override def beginRead(): Unit = {
     super.beginRead()
     tempList = new ListBuffer[Object]
   }
@@ -174,7 +176,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
-    JavaConverters.asJavaIterator(set.iterator)
+    asJava(set.iterator)
   }
 
   override def disassemble(persister: CollectionPersister): JSerializable = {
@@ -186,9 +188,9 @@ class PersistentSet(session: SharedSessionContractImplementor)
     val elementType = persister.getElementType
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
     val deletes = new ListBuffer[Object]
-    deletes ++= sn.filterKeys(!set.contains(_)).keys
+    deletes ++= sn.keys.filter(!set.contains(_))
     deletes ++= set.filter { ele => sn.contains(ele) && elementType.isDirty(ele, sn(ele), getSession) }
-    JavaConverters.asJavaIterator(deletes.iterator)
+    asJava(deletes.iterator)
   }
 
   override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
@@ -217,11 +219,13 @@ class PersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def equals(other: Any): Boolean = {
-    read(); set.equals(other)
+    read()
+    set.equals(other)
   }
 
   override def hashCode(): Int = {
-    read(); set.hashCode()
+    read()
+    set.hashCode()
   }
 
   override def entryExists(entry: Object, i: Int): Boolean = {
@@ -233,18 +237,27 @@ class PersistentSet(session: SharedSessionContractImplementor)
   }
 
   final class Add(value: Object) extends AbstractValueDelayedOperation(value, null) {
-    override def operate() { set.add(getAddedInstance()) }
+    override def operate(): Unit = {
+      set.add(getAddedInstance())
+    }
   }
 
   final class Remove(orphan: Object) extends AbstractValueDelayedOperation(null, orphan) {
-    override def operate() { set.remove(orphan) }
+    override def operate(): Unit = {
+      set.remove(orphan)
+    }
   }
 
   final class Clear extends DelayedOperation {
-    override def operate() { set.clear() }
+    override def operate(): Unit = {
+      set.clear()
+    }
+
     override def getAddedInstance(): Object = null
+
     override def getOrphan(): Object = {
       throw new UnsupportedOperationException("queued clear cannot be used with orphan delete")
     }
   }
+
 }
