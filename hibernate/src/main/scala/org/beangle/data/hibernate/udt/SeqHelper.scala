@@ -18,23 +18,23 @@
  */
 package org.beangle.data.hibernate.udt
 
-import java.{ util => ju }
+import java.{util => ju}
 
 import org.hibernate.engine.internal.ForeignKeys
-import org.hibernate.engine.spi.{ SessionImplementor, Status, TypedValue }
+import org.hibernate.engine.spi.{SharedSessionContractImplementor, Status, TypedValue}
 import org.hibernate.internal.util.collections.IdentitySet
-import scala.collection.JavaConverters
-import org.hibernate.engine.spi.SharedSessionContractImplementor
+
+import scala.jdk.javaapi.CollectionConverters.asJava
 
 private[udt] object SeqHelper {
 
   def getOrphans(oldElements: Iterable[_], currentElements: Iterable[_], entityName: String, session: SharedSessionContractImplementor): ju.Collection[Any] = {
     // short-circuit(s)
-    if (currentElements.size == 0) return JavaConverters.asJavaCollection(oldElements)
-    if (oldElements.size == 0) return ju.Collections.emptyList()
+    if (currentElements.isEmpty) return asJava(oldElements.toSeq)
+    if (oldElements.isEmpty) return ju.Collections.emptyList()
 
     val entityPersister = session.getFactory.getMetamodel.entityPersister(entityName)
-    val idType = entityPersister.getIdentifierType()
+    val idType = entityPersister.getIdentifierType
 
     // create the collection holding the Orphans
     val res = new ju.ArrayList[Any]
@@ -44,8 +44,8 @@ private[udt] object SeqHelper {
     val currentSaving = new IdentitySet()
     currentElements foreach { current =>
       if (current != null && ForeignKeys.isNotTransient(entityName, current, null, session)) {
-        val ee = session.getPersistenceContext().getEntry(current)
-        if (ee != null && ee.getStatus() == Status.SAVING) {
+        val ee = session.getPersistenceContext.getEntry(current)
+        if (ee != null && ee.getStatus == Status.SAVING) {
           currentSaving.add(current)
         } else {
           val currentId = ForeignKeys.getEntityIdentifierIfNotUnsaved(entityName, current, session)

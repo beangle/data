@@ -18,9 +18,7 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import java.sql.Types
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.lang.Chars
 import org.beangle.data.jdbc.meta.Engine
 
 trait Dialect {
@@ -57,7 +55,7 @@ abstract class AbstractDialect(val engine: Engine, versions: String) extends Dia
     val res: StringBuffer = new StringBuffer(30)
     res.append(" add constraint ").append(constraintName).append(" foreign key (")
       .append(Strings.join(foreignKey, ", ")).append(") references ").append(referencedTable)
-    if (!primaryKey.isEmpty) {
+    if (primaryKey.nonEmpty) {
       res.append(" (").append(Strings.join(primaryKey, ", ")).append(')')
     }
     res.toString

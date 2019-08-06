@@ -18,8 +18,8 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.beangle.data.jdbc.meta.{ Column, ForeignKey, Index, PrimaryKey, Sequence, Table }
 import org.beangle.commons.collection.Collections
+import org.beangle.data.jdbc.meta._
 
 object SQL {
 
@@ -35,13 +35,12 @@ object SQL {
   }
 
   /**
-   * Table creation sql
-   */
+    * Table creation sql
+    */
   def createTable(table: Table, dialect: Dialect): String = {
     val grammar = dialect.tableGrammar
     val buf = new StringBuilder(grammar.createString).append(' ').append(table.qualifiedName).append(" (")
     val iter: Iterator[Column] = table.columns.iterator
-    val l = table.columns.toList
     while (iter.hasNext) {
       val col: Column = iter.next()
       buf.append(col.literalName(dialect.engine)).append(' ')
@@ -121,14 +120,14 @@ object SQL {
     sql = sql.replace(":increment", String.valueOf(seq.increment))
     sql = sql.replace(":cache", String.valueOf(seq.cache))
     sql = sql.replace(":cycle", if (seq.cycle) "cycle" else "")
-    return sql
+    sql
   }
 
   def dropSequence(seq: Sequence, dialect: Dialect): String = {
     if (null == dialect.sequenceGrammar) return null
-    var sql: String = dialect.sequenceGrammar.dropSql;
+    var sql: String = dialect.sequenceGrammar.dropSql
     sql = sql.replace(":name", seq.qualifiedName)
-    return sql
+    sql
   }
 
   def createIndex(i: Index): String = {
@@ -138,7 +137,7 @@ object SQL {
       .append(i.literalName)
       .append(" on ")
       .append(i.table.qualifiedName)
-      .append(" (");
+      .append(" (")
     val iter = i.columns.iterator
     while (iter.hasNext) {
       buf.append(iter.next)
@@ -154,8 +153,8 @@ object SQL {
 
   def alterTableAddforeignKey(fk: ForeignKey, dialect: Dialect): String = {
     require(null != fk.name && null != fk.table && null != fk.referencedTable)
-    require(!fk.referencedColumns.isEmpty, " reference columns is empty.")
-    require(!fk.columns.isEmpty, s"${fk.name} column's size should greate than 0")
+    require(fk.referencedColumns.nonEmpty, " reference columns is empty.")
+    require(fk.columns.nonEmpty, s"${fk.name} column's size should greate than 0")
 
     val engine = fk.table.engine
     val referencedColumnNames = fk.referencedColumns.map(x => x.toLiteral(engine)).toList
@@ -165,11 +164,11 @@ object SQL {
     if (fk.cascadeDelete && dialect.supportsCascadeDelete) result + " on delete cascade" else result
   }
 
-  def primaryKeySql(k: PrimaryKey, dialect: Dialect) = {
+  def primaryKeySql(k: PrimaryKey, dialect: Dialect): String = {
     val buf = new StringBuilder("primary key (")
     val engine = dialect.engine
-    k.columns.foreach(col => (buf.append(col.toLiteral(engine)).append(", ")))
-    if (!k.columns.isEmpty) buf.delete(buf.size - 2, buf.size);
+    k.columns.foreach(col => buf.append(col.toLiteral(engine)).append(", "))
+    if (k.columns.nonEmpty) buf.delete(buf.size - 2, buf.size)
     buf.append(')').result
   }
 }

@@ -19,8 +19,8 @@
 package org.beangle.data.model.meta
 
 import org.beangle.commons.bean.Properties
-import org.beangle.data.model.Entity
 import org.beangle.commons.collection.Collections
+import org.beangle.data.model.Entity
 
 object Domain {
 
@@ -43,7 +43,7 @@ object Domain {
   }
 
   class EntityTypeImpl(val entityName: String, var clazz: Class[_]) extends MutableStructType with EntityType {
-    val properties = Collections.newMap[String, Property]
+    val properties: collection.mutable.Map[String, Property] = Collections.newMap[String, Property]
     var idName: String = "id"
 
     def this(c: Class[_]) {
@@ -55,12 +55,12 @@ object Domain {
     }
 
     override def toString: String = {
-      s"${entityName}[${clazz.getName}]"
+      s"$entityName[${clazz.getName}]"
     }
   }
 
   final class EmbeddableTypeImpl(val clazz: Class[_]) extends MutableStructType with EmbeddableType {
-    val properties = Collections.newMap[String, Property]
+    val properties: collection.mutable.Map[String, Property] = Collections.newMap[String, Property]
     var parentName: Option[String] = None
   }
 
@@ -78,6 +78,7 @@ object Domain {
 
   final class MapPropertyImpl(name: String, clazz: Class[_], val key: Type, var element: Type)
     extends PropertyImpl(name, clazz) with MapProperty
+
 }
 
 trait Domain {
@@ -93,17 +94,16 @@ trait Domain {
   def newInstance[T <: Entity[_]](entityClass: Class[T]): Option[T] = {
     getEntity(entityClass) match {
       case Some(t) => Some(t.newInstance().asInstanceOf[T])
-      case _       => None
+      case _ => None
     }
   }
 
   def newInstance[T <: Entity[ID], ID](entityClass: Class[T], id: ID): Option[T] = {
     getEntity(entityClass) match {
-      case Some(t) => {
+      case Some(t) =>
         val obj = t.newInstance()
         Properties.set(obj, t.id.name, id)
         Some(obj.asInstanceOf[T])
-      }
       case _ => None
     }
   }
@@ -128,6 +128,7 @@ object ImmutableDomain {
     new ImmutableDomain(Map.empty[String, EntityType])
   }
 }
+
 class ImmutableDomain(val entities: Map[String, EntityType]) extends Domain {
   override def getEntity(name: String): Option[EntityType] = {
     entities.get(name)

@@ -18,14 +18,14 @@
  */
 package org.beangle.data.jdbc.meta
 
+import org.beangle.data.jdbc.dialect.OracleDialect
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.FunSpec
-import org.beangle.data.jdbc.dialect.OracleDialect
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class SchemaTest extends FunSpec with Matchers {
+class SchemaTest extends AnyFunSpec with Matchers {
 
   describe("Schema") {
     it("getTable") {

@@ -18,29 +18,30 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import java.sql.Types._
 import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.meta.Engines
 
 class MySQLDialect extends AbstractDialect(Engines.MySQL, "[5.0,)") {
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
+  override def limitGrammar: LimitGrammar = {
+    new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
+  }
 
   override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
-                             referencedTable: String, primaryKey: Iterable[String]) = {
+                             referencedTable: String, primaryKey: Iterable[String]): String = {
     val cols = Strings.join(foreignKey, ", ")
     new StringBuffer(30).append(" add index ").append(constraintName).append(" (").append(cols)
       .append("), add constraInt ").append(constraintName).append(" foreign key (").append(cols)
       .append(") references ").append(referencedTable).append(" (")
-      .append(Strings.join(primaryKey, ", ")).append(')').toString()
+      .append(Strings.join(primaryKey, ", ")).append(')').toString
   }
 
-  override def tableGrammar = {
+  override def tableGrammar: TableGrammar = {
     val bean = new TableGrammarBean()
     bean.columnComent = " comment '{}'"
     bean.tableComment = " comment '{}'"
     bean
   }
 
-  override def sequenceGrammar = null
+  override def sequenceGrammar: SequenceGrammar = null
 }

@@ -18,26 +18,17 @@
  */
 package org.beangle.data.hibernate.spring
 
-import org.hibernate.FlushMode
-import org.hibernate.Session
-import org.hibernate.SessionFactory
-import org.hibernate.context.spi.CurrentSessionContext
-import org.hibernate.engine.spi.SessionFactoryImplementor
+import org.hibernate.{FlushMode, Session, SessionFactory}
 import org.springframework.core.Ordered
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager._
-import org.hibernate.context.internal.JTASessionContext
-import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform
-import javax.transaction.TransactionManager
-import org.beangle.commons.logging.Logging
 
 /**
- * Borrow from Spring Session Synchronization
- *
- * @author chaostone
- */
+  * Borrow from Spring Session Synchronization
+  * @author chaostone
+  */
 class SessionSynchronization(val sessionHolder: SessionHolder, val sessionFactory: SessionFactory, val newSession: Boolean = false)
-    extends TransactionSynchronization with Ordered {
+  extends TransactionSynchronization with Ordered {
 
   var holderActive = true
 
@@ -45,7 +36,7 @@ class SessionSynchronization(val sessionHolder: SessionHolder, val sessionFactor
 
   def getOrder(): Int = 1000 - 100
 
-  def suspend() {
+  override def suspend(): Unit = {
     if (this.holderActive) {
       unbindResource(this.sessionFactory)
       // Eagerly disconnect the Session here, to make release mode "on_close" work on JBoss.
@@ -53,22 +44,22 @@ class SessionSynchronization(val sessionHolder: SessionHolder, val sessionFactor
     }
   }
 
-  def resume() {
+  override def resume(): Unit = {
     if (this.holderActive) bindResource(this.sessionFactory, this.sessionHolder)
   }
 
-  def flush() {
+  override def flush(): Unit = {
     currentSession.flush()
   }
 
-  def beforeCommit(readOnly: Boolean) {
+  override def beforeCommit(readOnly: Boolean): Unit = {
     if (!readOnly) {
       val session = currentSession
       if (FlushMode.MANUAL != session.getHibernateFlushMode) session.flush()
     }
   }
 
-  def beforeCompletion() {
+  override def beforeCompletion(): Unit = {
     try {
       val session = this.sessionHolder.session
       if (this.sessionHolder.previousFlushMode != null) {
@@ -83,10 +74,10 @@ class SessionSynchronization(val sessionHolder: SessionHolder, val sessionFactor
     }
   }
 
-  def afterCommit() {
+  override def afterCommit(): Unit = {
   }
 
-  def afterCompletion(status: Int) {
+  override def afterCompletion(status: Int): Unit = {
     try {
       if (status != TransactionSynchronization.STATUS_COMMITTED) {
         this.sessionHolder.session.clear()

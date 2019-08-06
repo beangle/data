@@ -72,7 +72,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   val collectMap = new mutable.HashMap[String, Collection]
 
   /** Only entities */
-  val entityMappings = Collections.newMap[String, EntityTypeMapping]
+  val entityMappings:mutable.Map[String,EntityTypeMapping] = Collections.newMap[String, EntityTypeMapping]
 
   private var messages: Messages = _
 
@@ -83,7 +83,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   def addMapping(mapping: EntityTypeMapping): this.type = {
     val cls = mapping.clazz
     classMappings.put(cls, mapping)
-    if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers)) {
+    if (!cls.isInterface && !Modifier.isAbstract(cls.getModifiers)) {
       //replace super entity with same entityName
       //It's very strange,hibnerate ClassMetadata with has same entityName and mappedClass in type overriding,
       //So, we leave  hibernate a  clean world.
@@ -96,7 +96,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   def addCollection(definition: Collection): this.type = {
-    collectMap.put(definition.clazz.getName() + definition.property, definition)
+    collectMap.put(definition.clazz.getName + definition.property, definition)
     this
   }
 
@@ -290,7 +290,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             }
           case ppm: PluralPropertyMapping[_] =>
             if (ppm.many2many) {
-              if (ppm.table.isEmpty) ppm.table = Some(table.name + "_" + Strings.unCamel(p, '_'))
+              if (ppm.table.isEmpty) ppm.table = Some(table.name.toString + "_" + Strings.unCamel(p, '_'))
               val collectTable = table.schema.createTable(ppm.table.get)
               collectTable.comment = Some(getComment(clazz, property.name))
               ppm.ownerColumn.comment = Some(getComment(clazz, clazz.getSimpleName) + "ID")
@@ -319,7 +319,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                   }
                 case _ =>
               }
-              collectTable.createPrimaryKey(collectTable.columns.map(_.name): _*)
+              collectTable.createPrimaryKey(collectTable.columns.map(_.name).toList: _*)
             }
         }
     }

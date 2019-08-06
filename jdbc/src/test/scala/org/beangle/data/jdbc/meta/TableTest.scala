@@ -20,13 +20,14 @@ package org.beangle.data.jdbc.meta
 
 import java.sql.Types
 
-import org.beangle.data.jdbc.dialect.{ PostgreSQLDialect, SQL }
+import org.beangle.data.jdbc.dialect.{PostgreSQLDialect, SQL}
 import org.junit.runner.RunWith
-import org.scalatest.{ FlatSpec, Matchers }
-import org.scalatest.junit.JUnitRunner
+import org.scalatest.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class TableTest extends FlatSpec with Matchers {
+class TableTest extends AnyFlatSpec with Matchers {
 
   val oracle = Engines.Oracle
   val oracleDb = new Database(oracle)

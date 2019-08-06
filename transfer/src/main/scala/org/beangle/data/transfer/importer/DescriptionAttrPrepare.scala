@@ -27,7 +27,7 @@ import org.beangle.data.transfer.io.ItemReader
  */
 class DescriptionAttrPrepare extends ImportPrepare {
 
-  def prepare(importer: Importer) {
+  def prepare(importer: Importer) : Unit = {
     val reader = importer.reader.asInstanceOf[ItemReader]
     importer.asInstanceOf[AbstractImporter].setAttrs(reader.readTitle(), reader.readDescription())
   }

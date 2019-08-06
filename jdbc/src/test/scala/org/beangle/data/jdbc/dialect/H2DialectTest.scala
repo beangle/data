@@ -18,24 +18,20 @@
  */
 package org.beangle.data.jdbc.dialect
 
+import javax.sql.DataSource
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.jdbc.ds.DataSourceUtils
+import org.beangle.data.jdbc.meta.{Database, Engines, Identifier, MetadataLoader}
 import org.junit.runner.RunWith
-import javax.sql.DataSource
-import org.scalatest.junit.JUnitRunner
-import org.beangle.data.jdbc.meta.Engines
-import org.beangle.data.jdbc.meta.Database
-import org.beangle.data.jdbc.meta.Schema
-import org.beangle.data.jdbc.meta.Identifier
-import org.beangle.data.jdbc.meta.MetadataLoader
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class H2DialectTest extends DialectTestCase {
 
   val properties = ClassLoaders.getResource("db.properties") match {
     case Some(r) => IOs.readJavaProperties(r)
-    case None    => Map.empty[String, String]
+    case None => Map.empty[String, String]
   }
 
   println(ClassLoaders.getResource("db.properties"))

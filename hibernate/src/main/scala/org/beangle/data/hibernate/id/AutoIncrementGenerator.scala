@@ -36,7 +36,7 @@ class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
   val sql = "{? = call next_id(?)}"
   var tableName: String = _
 
-  override def configure(t: Type, params: ju.Properties, serviceRegistry: ServiceRegistry) {
+  override def configure(t: Type, params: ju.Properties, serviceRegistry: ServiceRegistry): Unit = {
     this.identifierType = t
     val em = serviceRegistry.getService(classOf[MappingService]).mappings.entityMappings(params.getProperty(IdentifierGenerator.ENTITY_NAME))
     val ownerSchema = em.table.schema.name.toString

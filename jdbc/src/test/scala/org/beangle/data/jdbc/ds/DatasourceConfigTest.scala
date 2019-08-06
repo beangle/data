@@ -18,18 +18,19 @@
  */
 package org.beangle.data.jdbc.ds
 
-import org.junit.runner.RunWith
-import org.scalatest.{ FlatSpec, Matchers }
-import org.scalatest.junit.JUnitRunner
-import scala.xml.XML
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.collection.Properties
+import org.junit.runner.RunWith
+import org.scalatest.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatestplus.junit.JUnitRunner
+
+import scala.xml.XML
 
 /**
- * @author chaostone
- */
+  * @author chaostone
+  */
 @RunWith(classOf[JUnitRunner])
-class DatasourceConfigTest extends FlatSpec with Matchers {
+class DatasourceConfigTest extends AnyFlatSpec with Matchers {
   "DatasourceConfig " should "build a correct orace datasource" in {
     (XML.load(ClassLoaders.getResource("datasources.xml").get) \ "datasource") foreach { ds =>
       val config = DatasourceConfig.build(ds)

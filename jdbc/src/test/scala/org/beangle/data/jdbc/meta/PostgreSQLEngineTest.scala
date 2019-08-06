@@ -19,13 +19,14 @@
 package org.beangle.data.jdbc.meta
 
 import java.sql.Types
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
+
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatest.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class PostgreSQLEngineTest extends FlatSpec with Matchers {
+class PostgreSQLEngineTest extends AnyFlatSpec with Matchers {
 
   "big number (size >=65535) in postgresql " should " trip to less 1000 size" in {
     val dialect = Engines.PostgreSQL

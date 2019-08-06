@@ -18,7 +18,6 @@
  */
 package org.beangle.data.dao
 
-import org.beangle.commons.lang.Arrays
 import scala.collection.mutable.ListBuffer
 /**
  * Operation class.

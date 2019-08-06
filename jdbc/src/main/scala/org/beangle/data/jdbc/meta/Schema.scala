@@ -18,8 +18,9 @@
  */
 package org.beangle.data.jdbc.meta
 
-import scala.collection.mutable
 import org.beangle.commons.lang.Strings
+
+import scala.collection.mutable
 
 class Schema(var database: Database, var name: Identifier) {
 
@@ -32,7 +33,7 @@ class Schema(var database: Database, var name: Identifier) {
   val sequences = new mutable.HashSet[Sequence]
 
   def cleanEmptyTables(): Unit = {
-    tables.retain((name, table) => !table.columns.isEmpty)
+    tables.filterInPlace((_, table) => table.columns.nonEmpty)
   }
 
   def addTable(table: Table): this.type = {
@@ -52,8 +53,8 @@ class Schema(var database: Database, var name: Identifier) {
   }
 
   /**
-   * Using table literal (with or without schema) search table
-   */
+    * Using table literal (with or without schema) search table
+    */
   def getTable(tbname: String): Option[Table] = {
     val engine = database.engine
     if (tbname.contains(".")) {
@@ -101,7 +102,7 @@ class Schema(var database: Database, var name: Identifier) {
     def filter(tables: Iterable[Identifier]): List[Identifier] = {
       val results = new collection.mutable.ListBuffer[Identifier]
       for (tabId <- tables) {
-        val tabame = (if (lowercase) tabId.value.toLowerCase else tabId.value)
+        val tabame = if (lowercase) tabId.value.toLowerCase else tabId.value
         val tableName = if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame
         if (includes.exists(p => p == "*" || tableName.startsWith(p) && !excludes.contains(tableName)))
           results += tabId
@@ -109,11 +110,11 @@ class Schema(var database: Database, var name: Identifier) {
       results.toList
     }
 
-    def exclude(table: String) {
+    def exclude(table: String): Unit = {
       excludes += (if (lowercase) table.toLowerCase else table)
     }
 
-    def include(table: String) {
+    def include(table: String): Unit = {
       includes += (if (lowercase) table.toLowerCase else table)
     }
   }

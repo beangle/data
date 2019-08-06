@@ -20,7 +20,6 @@ package org.beangle.data.dao
 
 import org.beangle.commons.collection.Order
 import org.beangle.commons.collection.page.PageLimit
-import org.beangle.data.dao._
 import org.beangle.commons.lang.Assert
 import org.beangle.commons.lang.Strings._
 
@@ -183,7 +182,7 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
   }
 
   def having(what: String): this.type = {
-    Assert.isTrue(!groups.isEmpty)
+    Assert.isTrue(groups.nonEmpty)
     if (isNotEmpty(what)) having = what
     this
   }
@@ -196,18 +195,18 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
   protected def genCountStatement(): String
 
   protected def genQueryStatement(hasOrder: Boolean): String = {
-    if (null == from) statement
+    if (null == from) return statement
     val buf = new StringBuilder(50)
     if (null != select) buf.append(select + " ").append(from)
-    if (!conditions.isEmpty) buf.append(" where ").append(Conditions.toQueryString(conditions))
+    if (conditions.nonEmpty) buf.append(" where ").append(Conditions.toQueryString(conditions))
 
-    if (!groups.isEmpty) {
+    if (groups.nonEmpty) {
       buf.append(" group by ")
       for (groupBy <- groups) buf.append(groupBy).append(',')
       buf.deleteCharAt(buf.length() - 1)
     }
     if (null != having) buf.append(" having ").append(having)
-    if (hasOrder && !orders.isEmpty) buf.append(' ').append(Order.toSortString(orders))
+    if (hasOrder && orders.nonEmpty) buf.append(' ').append(Order.toSortString(orders))
     buf.mkString
   }
 

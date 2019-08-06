@@ -18,22 +18,19 @@
  */
 package org.beangle.data.orm
 
-import java.lang.reflect.Method
-
+import javassist.compiler.Javac
+import javassist._
+import javassist.util.proxy.FactoryHelper
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.{ ClassLoaders, Primitives }
-import org.beangle.commons.lang.reflect.{ BeanInfos, PropertyDescriptor }
+import org.beangle.commons.lang.reflect.{BeanInfos, PropertyDescriptor, Reflections}
 import org.beangle.commons.lang.time.Stopwatch
+import org.beangle.commons.lang.{ClassLoaders, Primitives}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.orm.Jpas.isComponent
-import org.beangle.data.orm.Proxy.{ ComponentProxy, EntityProxy, ModelProxy }
-
-import javassist.{ ClassPool, CtConstructor, CtField, CtMethod, LoaderClassPath }
-import javassist.compiler.Javac
 
 /**
- * @author chaostone
- */
+  * @author chaostone
+  */
 private[orm] object Proxy extends Logging {
 
   trait ModelProxy {
@@ -47,14 +44,14 @@ private[orm] object Proxy extends Logging {
   }
 
   private val proxies = new collection.mutable.HashMap[String, Class[_]]
-  private var pool = ClassPool.getDefault
+  private val pool = ClassPool.getDefault
   pool.appendClassPath(new LoaderClassPath(ClassLoaders.defaultClassLoader))
 
   def generate(clazz: Class[_]): EntityProxy = {
     val proxyClassName = clazz.getSimpleName + "_proxy"
     val classFullName = clazz.getName + "_proxy"
     val exised = proxies.getOrElse(classFullName, null)
-    if (null != exised) return exised.newInstance().asInstanceOf[EntityProxy]
+    if (null != exised) return Reflections.newInstance(exised).asInstanceOf[EntityProxy]
 
     val watch = new Stopwatch(true)
     val cct = pool.makeClass(classFullName)
@@ -105,7 +102,7 @@ private[orm] object Proxy extends Logging {
     val ctmod = javac.compile("public java.util.Set lastAccessed() { return null;}").asInstanceOf[CtMethod]
     ctmod.setBody("{return _lastAccessed;}")
     cct.addMethod(ctmod)
-    val maked = cct.toClass
+    val maked = cct.toClass(clazz)
     val proxy = maked.getConstructor().newInstance().asInstanceOf[EntityProxy]
     logger.debug(s"generate $classFullName using $watch")
     // cct.debugWriteFile("/tmp/model/")
@@ -176,7 +173,7 @@ private[orm] object Proxy extends Logging {
     ctmod.setBody("{return _parent.lastAccessed();}")
     cct.addMethod(ctmod)
 
-    val maked = cct.toClass()
+    val maked = cct.toClass(clazz)
     // cct.debugWriteFile("/tmp/model/")
     proxies.put(classFullName, maked)
     maked

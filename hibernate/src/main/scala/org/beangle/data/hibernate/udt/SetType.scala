@@ -18,20 +18,19 @@
  */
 package org.beangle.data.hibernate.udt
 
-import java.{ util => ju }
+import java.{util => ju}
 
-import scala.collection.JavaConverters
-import scala.collection.mutable
-
-import org.hibernate.engine.spi.SessionImplementor
+import org.hibernate.collection.spi.PersistentCollection
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
-import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.hibernate.collection.spi.PersistentCollection
+
+import scala.collection.mutable
+import scala.jdk.javaapi.CollectionConverters.asJava
 
 /**
- * Mutable Set Type
- */
+  * Mutable Set Type
+  */
 class SetType extends UserCollectionType {
   type MSet = mutable.Set[Object]
 
@@ -43,18 +42,18 @@ class SetType extends UserCollectionType {
     new PersistentSet(session, collection.asInstanceOf[MSet])
   }
 
-  override def getElementsIterator(collection: Object) = {
-    JavaConverters.asJavaIterator(collection.asInstanceOf[MSet].iterator)
+  override def getElementsIterator(collection: Object): ju.Iterator[Object] = {
+    asJava(collection.asInstanceOf[MSet].iterator)
   }
 
-  override def contains(collection: Object, entity: Object) = {
+  override def contains(collection: Object, entity: Object): Boolean = {
     collection.asInstanceOf[MSet].contains(entity)
   }
 
   override def indexOf(collection: Object, entity: Object): Object = null
 
   override def replaceElements(original: Object, target: Object, persister: CollectionPersister,
-                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor) = {
+                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor): Unit = {
     val targetSeq = target.asInstanceOf[MSet]
     targetSeq.clear()
     targetSeq ++= original.asInstanceOf[Seq[Object]]

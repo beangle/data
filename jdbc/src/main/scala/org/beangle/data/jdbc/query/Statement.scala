@@ -29,7 +29,7 @@ class Statement(sql: String, executor: JdbcExecutor) {
     this
   }
 
-  def query(): Seq[Array[Any]] = {
+  def query(): collection.Seq[Array[Any]] = {
     executor.query(sql, setter)
   }
 

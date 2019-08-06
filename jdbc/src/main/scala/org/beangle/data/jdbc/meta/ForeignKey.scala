@@ -21,10 +21,9 @@ package org.beangle.data.jdbc.meta
 import scala.collection.mutable.ListBuffer
 
 /**
- * JDBC foreign key metadata
- *
- * @author chaostone
- */
+  * JDBC foreign key metadata
+  * @author chaostone
+  */
 class ForeignKey(t: Table, n: Identifier, column: Identifier = null) extends Constraint(t, n) {
 
   var cascadeDelete: Boolean = false
@@ -53,7 +52,7 @@ class ForeignKey(t: Table, n: Identifier, column: Identifier = null) extends Con
   }
 
   override def clone(): this.type = {
-    val cloned = super.clone().asInstanceOf[this.type]
+    val cloned = super.clone()
     cloned.cascadeDelete = this.cascadeDelete
     cloned.referencedTable = this.referencedTable
     var newColumns = new ListBuffer[Identifier]
@@ -64,13 +63,13 @@ class ForeignKey(t: Table, n: Identifier, column: Identifier = null) extends Con
 
   def refer(table: Table, cols: Identifier*): Unit = {
     this.referencedTable = TableRef(table.schema, table.name)
-    if (!cols.isEmpty) referencedColumns ++= cols
+    if (cols.nonEmpty) referencedColumns ++= cols
   }
 
   def refer(table: TableRef, cols: Identifier*): Unit = {
     this.referencedTable = table
-    if (!cols.isEmpty) referencedColumns ++= cols
+    if (cols.nonEmpty) referencedColumns ++= cols
   }
 
-  override def toString = "Foreign key(" + name + ')'
+  override def toString: String = "Foreign key(" + name + ')'
 }

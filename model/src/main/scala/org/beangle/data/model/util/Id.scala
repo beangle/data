@@ -18,16 +18,18 @@
  */
 package org.beangle.data.model.util
 
-import org.beangle.commons.lang.functor.{ NotEmpty, NotZero }
+import org.beangle.commons.lang.functor.{NotEmpty, NotZero}
 
 /**
- * @author chaostone
- */
+  * @author chaostone
+  */
 object Id {
 
   def isValid(value: Any): Boolean = {
     if (null == value) return false
-    if (value.isInstanceOf[Number]) return NotZero(value.asInstanceOf[Number])
-    return NotEmpty(value.toString)
+    value match {
+      case n: Number => NotZero(n)
+      case _ => NotEmpty(value.toString)
+    }
   }
 }

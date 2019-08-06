@@ -18,12 +18,12 @@
  */
 package org.beangle.data.jdbc.ds
 
-import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.Strings.{ isEmpty, isNotEmpty, substringBetween }
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty, substringBetween}
+import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.data.jdbc.dialect.Dialect
-import org.beangle.data.jdbc.vendor.{ DriverInfo, Vendors }
 import org.beangle.data.jdbc.meta.Identifier
+import org.beangle.data.jdbc.vendor.{DriverInfo, Vendors}
 
 object DatasourceConfig {
 
@@ -39,12 +39,12 @@ object DatasourceConfig {
     }
     val dialect =
       if ((xml \ "@dialect").isEmpty) driver.vendor.dialect
-      else ClassLoaders.load((xml \\ "dialect").text.trim).newInstance().asInstanceOf[Dialect]
+      else Reflections.newInstance[Dialect]((xml \\ "dialect").text.trim)
 
     val dbconf = new DatasourceConfig(driverName, dialect)
     if (isNotEmpty(url)) dbconf.props.put("url", url)
 
-    if (!(xml \ "@name").isEmpty) dbconf.name = (xml \ "@name").text.trim
+    if ((xml \ "@name").nonEmpty) dbconf.name = (xml \ "@name").text.trim
     dbconf.user = (xml \\ "user").text.trim
     dbconf.password = (xml \\ "password").text.trim
     dbconf.catalog = dialect.engine.toIdentifier((xml \\ "catalog").text.trim)
@@ -61,18 +61,12 @@ object DatasourceConfig {
     }
 
     val processed = Set("url", "driver", "props", "user", "password", "catalog", "schema")
-    val dbNodeName = if ((xml \\ "datasource").isEmpty) "db" else "datasource";
+    val dbNodeName = if ((xml \\ "datasource").isEmpty) "db" else "datasource"
     xml \\ dbNodeName \ "_" foreach { n =>
       val label = n.label
       if (!processed.contains(label) && Strings.isNotEmpty(n.text)) dbconf.props.put(label, n.text)
     }
     dbconf
-  }
-
-  private def addProperty(dbconf: DatasourceConfig, xml: scala.xml.Node, attrs: String*): Unit = {
-    attrs foreach { attr =>
-      if (!(xml \\ attr).isEmpty) dbconf.props.put(attr, (xml \\ attr).text.trim)
-    }
   }
 
 }

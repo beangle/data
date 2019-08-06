@@ -20,7 +20,7 @@ package org.beangle.data.orm
 
 import java.sql.{Blob, Clob, Types}
 
-import scala.collection.JavaConverters.asScalaSet
+import scala.jdk.javaapi.CollectionConverters.asScala
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
@@ -157,7 +157,7 @@ object MappingModule {
     val idType = BeanInfos.get(holder.mapping.clazz).getPropertyType("id").get
     val colName = property match {
       case Some(p) => holder.mappings.columnName(holder.mapping.clazz, p, true)
-      case None    => holder.mappings.columnName(holder.mapping.clazz, holder.mapping.entityName, true)
+      case None => holder.mappings.columnName(holder.mapping.clazz, holder.mapping.entityName, true)
     }
     new Column(mappings.database.engine.toIdentifier(colName), mappings.sqlTypeMapping.sqlType(idType), false)
   }
@@ -169,7 +169,7 @@ object MappingModule {
       targetEntity foreach { clazz =>
         colpm.property match {
           case cp: CollectionPropertyImpl => cp.element = holder.mappings.refEntity(clazz, clazz.getName)
-          case mp: MapPropertyImpl        => mp.element = holder.mappings.refEntity(clazz, clazz.getName)
+          case mp: MapPropertyImpl => mp.element = holder.mappings.refEntity(clazz, clazz.getName)
         }
         colpm.element = holder.mappings.refToOneMapping(clazz, clazz.getName)
       }
@@ -234,7 +234,7 @@ object MappingModule {
   object Expression {
     // only apply unique on component properties
     def is(holder: EntityHolder[_], declarations: Seq[Declaration]): Unit = {
-      val lasts = asScalaSet(holder.proxy.lastAccessed)
+      val lasts = asScala(holder.proxy.lastAccessed)
       if (!declarations.isEmpty && lasts.isEmpty) {
         throw new RuntimeException("Cannot find access properties for " + holder.mapping.entityName + " with declarations:" + declarations)
       }
@@ -326,9 +326,9 @@ object MappingModule {
   }
 
   final class Entities(
-    val mappings: Mappings,
-    val entityMappings: collection.mutable.Map[String, EntityTypeMapping],
-    cacheConfig: CacheConfig) {
+                        val mappings: Mappings,
+                        val entityMappings: collection.mutable.Map[String, EntityTypeMapping],
+                        cacheConfig: CacheConfig) {
     def except(clazzes: Class[_]*): this.type = {
       clazzes foreach { c => entityMappings -= c.getName }
       this
@@ -346,9 +346,9 @@ object MappingModule {
     }
 
     def cacheAll(
-      region: String = cacheConfig.region,
-      usage: String = cacheConfig.usage,
-      excepts: Set[String] = Set.empty): this.type = {
+                  region: String = cacheConfig.region,
+                  usage: String = cacheConfig.usage,
+                  excepts: Set[String] = Set.empty): this.type = {
       entityMappings foreach { e =>
         val prefix = e._2.clazz.getSimpleName + "."
         val entityExcepts = excepts.filter(_.startsWith(prefix)).map(substringAfter(_, prefix))
@@ -382,6 +382,7 @@ object MappingModule {
 abstract class MappingModule extends Logging {
 
   import MappingModule._
+
   private var currentHolder: EntityHolder[_] = _
   private var defaultIdGenerator: Option[String] = None
   private val cacheConfig = new CacheConfig()
@@ -506,7 +507,7 @@ abstract class MappingModule extends Logging {
     if (null == mapping.idGenerator) {
       val unsaved = BeanInfos.get(cls, null).getPropertyType("id") match {
         case Some(idtype) => if (idtype.isPrimitive) "0" else "null"
-        case None         => "null"
+        case None => "null"
       }
       this.defaultIdGenerator foreach { a => mapping.idGenerator = new IdGenerator(a).unsaved(unsaved) }
     }
@@ -540,7 +541,7 @@ abstract class MappingModule extends Logging {
     definitions.toList
   }
 
-  protected final def defaultCache(region: String, usage: String) {
+  protected final def defaultCache(region: String, usage: String): Unit = {
     cacheConfig.region = region
     cacheConfig.usage = usage
   }

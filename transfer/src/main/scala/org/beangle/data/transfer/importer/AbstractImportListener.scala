@@ -19,23 +19,22 @@
 package org.beangle.data.transfer.importer
 
 /**
- * AbstractImporterListener class.
- *
- * @author chaostone
- */
+  * AbstractImporterListener class.
+  * @author chaostone
+  */
 class AbstractImportListener extends ImportListener {
 
-  def onFinish(tr: ImportResult) {
+  def onFinish(tr: ImportResult): Unit = {
   }
 
-  def onItemFinish(tr: ImportResult) {
+  def onItemFinish(tr: ImportResult): Unit = {
   }
 
-  def onStart(tr: ImportResult) {
+  def onStart(tr: ImportResult): Unit = {
 
   }
 
-  def onItemStart(tr: ImportResult) {
+  def onItemStart(tr: ImportResult): Unit = {
   }
 
 }

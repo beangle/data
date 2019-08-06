@@ -18,13 +18,13 @@
  */
 package org.beangle.data.model.meta
 
-import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.reflect.Reflections
 
 trait Type {
   def clazz: Class[_]
 
   def newInstance(): AnyRef = {
-    clazz.newInstance().asInstanceOf[AnyRef]
+    Reflections.newInstance(clazz).asInstanceOf[AnyRef]
   }
 }
 
@@ -40,14 +40,18 @@ trait EmbeddableType extends StructType {
 
 trait EntityType extends StructType {
   def id: Property
+
   def entityName: String
 }
 
 trait Property {
   def name: String
+
   def clazz: Class[_]
+
   def optional: Boolean
 }
+
 trait SingularProperty extends Property {
   def propertyType: Type
 }

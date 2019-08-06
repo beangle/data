@@ -19,12 +19,6 @@
 package org.beangle.data.jdbc.dialect
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.meta.Sequence
-import org.beangle.data.jdbc.meta.PrimaryKey
-import org.beangle.data.jdbc.meta.ForeignKey
-import org.beangle.data.jdbc.meta.Column
-import org.beangle.data.jdbc.meta.Table
-import org.beangle.data.jdbc.meta.Index
 
 trait TableGrammar {
 
@@ -47,8 +41,8 @@ trait TableGrammar {
 
 class TableGrammarBean extends TableGrammar {
   var nullColumnString: String = ""
-  var tableComment: String = null
-  var columnComent: String = null
+  var tableComment: String = _
+  var columnComent: String = _
   var supportsUnique: Boolean = true
   var supportsNullUnique: Boolean = true
   var supportsColumnCheck: Boolean = true
@@ -57,10 +51,10 @@ class TableGrammarBean extends TableGrammar {
 
   var createString: String = "create table"
 
-  def getComment(comment: String) =
+  def getComment(comment: String): String =
     if (null == this.tableComment) "" else Strings.replace(this.tableComment, "{}", comment)
 
-  def getColumnComment(comment: String) = {
+  def getColumnComment(comment: String): String = {
     if (null == this.columnComent) ""
     else {
       var newcomment = Strings.replace(comment, "'", "")
@@ -69,21 +63,21 @@ class TableGrammarBean extends TableGrammar {
     }
   }
 
-  def dropCascade(table: String) = Strings.replace(dropSql, "{}", table)
+  def dropCascade(table: String): String = Strings.replace(dropSql, "{}", table)
 }
 
 trait LimitGrammar {
 
   /**
-   * @param offset is 0 based
-   */
-  def limit(query: String, offset: Int, limit: Int): Tuple2[String, List[Int]]
+    * @param offset is 0 based
+    */
+  def limit(query: String, offset: Int, limit: Int): (String, List[Int])
 
 }
 
 class LimitGrammarBean(pattern: String, offsetPattern: String, val bindInReverseOrder: Boolean) extends LimitGrammar {
 
-  def limit(query: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
+  def limit(query: String, offset: Int, limit: Int): (String, List[Int]) = {
     val hasOffset = offset > 0
     val limitOrMax = if (null == offsetPattern) offset + limit else limit
 
@@ -99,9 +93,9 @@ class LimitGrammarBean(pattern: String, offsetPattern: String, val bindInReverse
 class SequenceGrammar {
   var createSql: String = "create sequence :name start with :start increment by :increment :cycle"
   var dropSql: String = "drop sequence :name"
-  var nextValSql: String = null
-  var selectNextValSql: String = null
-  var querySequenceSql: String = null
+  var nextValSql: String = _
+  var selectNextValSql: String = _
+  var querySequenceSql: String = _
 }
 
 class MetadataGrammar(val primaryKeysql: String, val importedKeySql: String, val indexInfoSql: String) {

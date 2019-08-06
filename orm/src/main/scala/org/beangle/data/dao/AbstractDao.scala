@@ -22,53 +22,45 @@ import org.beangle.data.model.Entity
 
 abstract class AbstractDao[T <: Entity[ID], ID <: java.io.Serializable](val entityClass: Class[T], val entityDao: EntityDao) extends Dao[T, ID] {
 
-  /**
-   * get T by id.
-   */
+  /** get T by id.
+    */
   def get(id: ID): T = entityDao.get(entityClass, id)
 
-  /**
-   * search T by id.
-   */
+  /** search T by id.
+    */
   def find(id: ID): Option[T] = entityDao.find(entityClass, id)
 
-  /**
-   * search T by id.
-   */
+  /** search T by id.
+    */
   def find(ids: Array[ID]): Seq[T] = entityDao.find(entityClass, ids)
 
-  /**
-   * save or update entities
-   */
-  def saveOrUpdate(first: T, entities: T*) {
+  /** save or update entities
+    */
+  def saveOrUpdate(first: T, entities: T*): Unit = {
     entityDao.saveOrUpdate(first, entities: _*)
   }
 
-  /**
-   * save or update entities
-   */
-  def saveOrUpdate(entities: Seq[T]) {
+  /** save or update entities
+    */
+  def saveOrUpdate(entities: Seq[T]): Unit = {
     entityDao.saveOrUpdate(entities)
   }
 
-  /**
-   * remove entities.
-   */
-  def remove(entities: Iterable[T]) {
+  /** remove entities.
+    */
+  def remove(entities: Iterable[T]): Unit = {
     entityDao.remove(entities)
   }
 
-  /**
-   * remove entities.
-   */
-  def remove(first: T, entities: T*) {
+  /** remove entities.
+    */
+  def remove(first: T, entities: T*): Unit = {
     entityDao.remove(first, entities: _*)
   }
 
-  /**
-   * remove entities by id
-   */
-  def remove(id: ID, ids: ID*) {
+  /** remove entities by id
+    */
+  def remove(id: ID, ids: ID*): Unit = {
     entityDao.remove(entityClass, id, ids: _*)
   }
 

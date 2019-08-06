@@ -18,14 +18,13 @@
  */
 package org.beangle.data.hibernate.udt
 
-import java.io.{ Serializable => JSerializable }
-import java.lang.reflect.{ Constructor, Field }
-import java.sql.{ PreparedStatement, ResultSet, Types }
-import java.{ util => ju }
+import java.io.{Serializable => JSerializable}
+import java.lang.reflect.{Constructor, Field}
+import java.sql.{PreparedStatement, ResultSet, Types}
+import java.{util => ju}
 
-import org.hibernate.engine.spi.SessionImplementor
-import org.hibernate.usertype.{ ParameterizedType, UserType }
 import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.usertype.{ParameterizedType, UserType}
 
 object ValueType {
   val types = Map[Class[_], Int]((classOf[Short], Types.SMALLINT), (classOf[Int], Types.INTEGER),
@@ -44,6 +43,7 @@ object ValueType {
       }
       constructor.newInstance(value)
     }
+
     def getValue(resultSet: ResultSet, name: String): Object
   }
 
@@ -52,31 +52,37 @@ object ValueType {
       java.lang.Short.valueOf(resultSet.getShort(name))
     }
   }
+
   class IntMapper extends ValueMapper {
     override def getValue(resultSet: ResultSet, name: String): Object = {
       java.lang.Integer.valueOf(resultSet.getInt(name))
     }
   }
+
   class LongMapper extends ValueMapper {
     override def getValue(resultSet: ResultSet, name: String): Object = {
       java.lang.Long.valueOf(resultSet.getLong(name))
     }
   }
+
   class FloatMapper extends ValueMapper {
     override def getValue(resultSet: ResultSet, name: String): Object = {
       java.lang.Float.valueOf(resultSet.getFloat(name))
     }
   }
+
   class DoubleMapper extends ValueMapper {
     override def getValue(resultSet: ResultSet, name: String): Object = {
       java.lang.Double.valueOf(resultSet.getDouble(name))
     }
   }
+
   class StringMapper extends ValueMapper {
     override def getValue(resultSet: ResultSet, name: String): Object = {
       resultSet.getString(name)
     }
   }
+
 }
 
 class ValueType extends UserType with ParameterizedType {
@@ -106,7 +112,7 @@ class ValueType extends UserType with ParameterizedType {
     }
   }
 
-  override def setParameterValues(parameters: ju.Properties) {
+  override def setParameterValues(parameters: ju.Properties): Unit = {
     this.returnedClass = Class.forName(parameters.getProperty("valueClass"))
     var underlyClass: Class[_] = null
     this.returnedClass.getDeclaredFields foreach { f =>
@@ -128,6 +134,7 @@ class ValueType extends UserType with ParameterizedType {
   override def disassemble(value: Object): JSerializable = {
     value.asInstanceOf[JSerializable]
   }
+
   override def assemble(cached: JSerializable, owner: Object): Object = {
     cached.asInstanceOf[Object]
   }

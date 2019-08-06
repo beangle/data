@@ -20,7 +20,6 @@ package org.beangle.data.model.event
 
 import org.beangle.commons.event.Event
 import org.beangle.data.model.Entity
-import org.beangle.data.model.annotation.config
 
 /**
  * 实体操作相关事件

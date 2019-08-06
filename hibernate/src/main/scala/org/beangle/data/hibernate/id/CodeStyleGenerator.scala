@@ -35,7 +35,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor
 class CodeStyleGenerator extends IdentifierGenerator with Configurable {
   var identifierType: Type = _
 
-  override def configure(t: Type, params: ju.Properties, sr: ServiceRegistry) {
+  override def configure(t: Type, params: ju.Properties, sr: ServiceRegistry): Unit = {
     this.identifierType = t;
   }
 

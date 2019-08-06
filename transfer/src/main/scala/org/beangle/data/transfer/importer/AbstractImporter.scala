@@ -26,11 +26,9 @@ import org.beangle.data.transfer.Format
 
 import scala.collection.mutable.ListBuffer
 
-/**
- * 导入的抽象和缺省实现
- *
- * @author chaostone
- */
+/** 导入的抽象和缺省实现
+  * @author chaostone
+  */
 abstract class AbstractImporter extends Importer with Logging {
   protected var transferResult: ImportResult = _
   protected val listeners = new ListBuffer[ImportListener]
@@ -41,8 +39,8 @@ abstract class AbstractImporter extends Importer with Logging {
   protected var index = 0
 
   /**
-   * 进行转换
-   */
+    * 进行转换
+    */
   def transfer(tr: ImportResult): Unit = {
     this.transferResult = tr
     this.transferResult.transfer = this
@@ -105,9 +103,10 @@ abstract class AbstractImporter extends Importer with Logging {
 
   protected def beforeImportItem(): Unit = {
   }
+
   /**
-   * 改变现有某个属性的值
-   */
+    * 改变现有某个属性的值
+    */
   def changeCurValue(attr: String, value: Any): Unit = {
     this.curData.put(attr, value)
   }
@@ -131,7 +130,7 @@ abstract class AbstractImporter extends Importer with Logging {
     this.curData.values exists { v =>
       v match {
         case tt: String => Strings.isNotBlank(tt)
-        case _          => null != v
+        case _ => null != v
       }
     }
   }

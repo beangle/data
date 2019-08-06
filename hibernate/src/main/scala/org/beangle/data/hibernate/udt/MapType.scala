@@ -18,18 +18,19 @@
  */
 package org.beangle.data.hibernate.udt
 
-import java.{ util => ju }
-
-import scala.collection.{ JavaConverters, mutable }
+import java.{util => ju}
 
 import org.hibernate.collection.spi.PersistentCollection
 import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
 
+import scala.collection.mutable
+import scala.jdk.javaapi.CollectionConverters.asJava
+
 /**
- * Mutable Map Type
- */
+  * Mutable Map Type
+  */
 class MapType extends UserCollectionType {
   type MMap = mutable.Map[Object, Object]
 
@@ -41,18 +42,18 @@ class MapType extends UserCollectionType {
     new PersistentMap(session, collection.asInstanceOf[MMap])
   }
 
-  def getElementsIterator(collection: Object) = {
-    JavaConverters.asJavaIterator(collection.asInstanceOf[MMap].iterator)
+  def getElementsIterator(collection: Object): ju.Iterator[ju.Map.Entry[Object, Object]] = {
+    asJava(collection.asInstanceOf[MMap]).entrySet().iterator()
   }
 
-  def contains(collection: Object, entity: Object) = {
+  def contains(collection: Object, entity: Object): Boolean = {
     collection.asInstanceOf[MMap].contains(entity)
   }
 
   def indexOf(collection: Object, entity: Object): Object = null
 
   def replaceElements(original: Object, target: Object, persister: CollectionPersister,
-                      owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor) = {
+                      owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor): Unit = {
     val targetSeq = target.asInstanceOf[MMap]
     targetSeq.clear()
     targetSeq ++= original.asInstanceOf[MMap]

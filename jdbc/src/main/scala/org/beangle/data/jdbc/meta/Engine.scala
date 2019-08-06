@@ -19,6 +19,7 @@
 package org.beangle.data.jdbc.meta
 
 import java.sql.Types
+
 import org.beangle.commons.lang.Strings
 
 trait Engine {
@@ -29,7 +30,7 @@ trait Engine {
 
   def typeNames: TypeNames
 
-  def quoteChars: Tuple2[Char, Char]
+  def quoteChars: (Char, Char)
 
   def toType(sqlCode: Int): SqlType
 
@@ -52,7 +53,7 @@ trait Engine {
   def quote(name: String): String = {
     if (needQuote(name)) {
       val qc = quoteChars
-      qc._1 + name + qc._2
+      s"${qc._1}$name${qc._2}"
     } else {
       name
     }
@@ -65,13 +66,13 @@ trait Engine {
       storeCase match {
         case StoreCase.Lower => Identifier(content, content == content.toLowerCase())
         case StoreCase.Upper => Identifier(content, content == content.toUpperCase())
-        case StoreCase.Mixed => Identifier(content, false)
+        case StoreCase.Mixed => Identifier(content)
       }
     } else {
       storeCase match {
-        case StoreCase.Lower => Identifier(literal.toLowerCase(), false)
-        case StoreCase.Upper => Identifier(literal.toUpperCase(), false)
-        case StoreCase.Mixed => Identifier(literal, false)
+        case StoreCase.Lower => Identifier(literal.toLowerCase())
+        case StoreCase.Upper => Identifier(literal.toUpperCase())
+        case StoreCase.Mixed => Identifier(literal)
       }
     }
   }
@@ -87,17 +88,17 @@ abstract class AbstractEngine extends Engine {
     keywords ++= words.toList
   }
 
-  override def quoteChars: Tuple2[Char, Char] = {
+  override def quoteChars: (Char, Char) = {
     ('\"', '\"')
   }
 
-  protected def registerTypes(tuples: Tuple2[Int, String]*): Unit = {
+  protected def registerTypes(tuples: (Int, String)*): Unit = {
     tuples foreach { tuple =>
       typeNames.put(tuple._1, tuple._2)
     }
   }
 
-  protected def registerTypes2(tuples: Tuple3[Int, Int, String]*): Unit = {
+  protected def registerTypes2(tuples: (Int, Int, String)*): Unit = {
     tuples foreach { tuple =>
       typeNames.put(tuple._1, tuple._2, tuple._3)
     }
@@ -131,7 +132,7 @@ abstract class AbstractEngine extends Engine {
         }
         result
       } catch {
-        case e: Exception => new SqlType(sqlCode, "unkown")
+        case _: Exception => new SqlType(sqlCode, "unkown")
       }
   }
 

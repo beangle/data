@@ -30,5 +30,5 @@ trait Writer {
 
   def format: Format.Value
 
-  def close()
+  def close(): Unit
 }

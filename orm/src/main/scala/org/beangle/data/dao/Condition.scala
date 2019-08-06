@@ -19,54 +19,51 @@
 package org.beangle.data.dao
 
 import org.beangle.commons.lang.Strings
+
 object Condition {
   def apply(content: String, initParams: Any*) = new Condition(content, initParams: _*)
 }
-/**
- * 查询条件 使用例子如下
- * <p>
- * <blockquote>
- *
- * <pre>
- *      new Condition(&quot;std.id=?&quot;,new Long(2));
- *      或者 Condition(&quot;std.id=:std_id&quot;,new Long(2));
- *      ?绑定单值.命名参数允许绑定多值.但是只能由字母,数组和下划线组成
- *      一组condition只能采取上面一种形式
- * </pre>
- *
- * </blockquote>
- * <p>
- *
- * @author chaostone
- */
+
+/** 查询条件
+  *
+  * 使用例子如下
+  * <p>
+  * <blockquote>
+  *
+  * <pre>
+  * new Condition(&quot;std.id=?&quot;,new Long(2));
+  * 或者 Condition(&quot;std.id=:std_id&quot;,new Long(2));
+  * ?绑定单值.命名参数允许绑定多值.但是只能由字母,数组和下划线组成
+  * 一组condition只能采取上面一种形式
+  * </pre>
+  *
+  * </blockquote>
+  * <p>
+  * @author chaostone
+  */
 class Condition(val content: String, initParams: Any*) {
 
   val params = new collection.mutable.ListBuffer[Any]
   params ++= initParams
 
-  /**
-   * <p>
-   * isNamed.
-   * </p>
-   *
-   * @return a boolean.
-   */
+  /** 是否是包含命名参数
+    * @return a boolean.
+    */
   def named: Boolean = !Strings.contains(content, "?")
 
-  /**
-   * 得到查询条件中所有的命名参数.
-   */
+  /** 得到查询条件中所有的命名参数.
+    */
   def paramNames: List[String] = {
     if (!Strings.contains(content, ":")) return Nil
     val names = new collection.mutable.ListBuffer[String]
-    var index = 0;
+    var index = 0
     var colonIndex = content.indexOf(':', index)
     while (index < content.length && colonIndex > -1) {
-      index = colonIndex + 1;
+      index = colonIndex + 1
       while (index < content.length && isValidIdentifierStarter(content.charAt(index))) {
         index += 1
       }
-      val paramName = content.substring(colonIndex + 1, index);
+      val paramName = content.substring(colonIndex + 1, index)
       if (!names.contains(paramName)) names += paramName
       colonIndex = content.indexOf(':', index)
     }
@@ -74,41 +71,33 @@ class Condition(val content: String, initParams: Any*) {
   }
 
   def isValidIdentifierStarter(ch: Char): Boolean = {
-    (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || (ch == '_') || ('0' <= ch && ch <= '9'));
+    ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || (ch == '_') || ('0' <= ch && ch <= '9')
   }
 
-  /**
-   * <p>
-   * param.
-   * </p>
-   *
-   * @param value a {@link java.lang.Object} object.
-   * @return a {@link org.beangle.data.dao.query.builder.Condition} object.
-   */
+  /** 添加参数
+    * @param value a { @link java.lang.Object} object.
+    * @return a { @link org.beangle.data.dao.query.builder.Condition} object.
+    */
   def param(value: Any): this.type = {
     params += value
     this
   }
 
-  /**
-   * params.
-   */
-  def params(values: Seq[Any]): this.type = {
+  /** 添加多个参数
+    * params.
+    */
+  def params(values: collection.Seq[Any]): this.type = {
     params.clear()
     params ++= values
     this
   }
 
-  /**
-   * <p>
-   * toString.
-   * </p>
-   *
-   * @see java.lang.Object#toString()
-   * @return a String object.
-   */
+  /** toString
+    * @see java.lang.Object#toString()
+    * @return a String object.
+    */
   override def toString: String = {
-    val str = new StringBuilder(content).append(" ");
+    val str = new StringBuilder(content).append(" ")
     for (value <- params) {
       str.append(value)
     }
@@ -120,12 +109,8 @@ class Condition(val content: String, initParams: Any*) {
     case _ => false
   }
 
-  /**
-   * <p>
-   * hashCode.
-   * </p>
-   *
-   * @return a int.
-   */
+  /** hashCode
+    * @return a int.
+    */
   override def hashCode(): Int = if (null == content) 0 else content.hashCode
 }

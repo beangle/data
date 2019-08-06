@@ -22,7 +22,7 @@ import org.beangle.data.jdbc.meta.Engines
 
 class HSQLDialect extends AbstractDialect(Engines.HSQL, "[2.0.0,)") {
 
-  override def sequenceGrammar = {
+  override def sequenceGrammar: SequenceGrammar = {
     val ss = new SequenceGrammar()
     ss.querySequenceSql = "select sequence_name,next_value,increment from information_schema.sequences where sequence_schema=':schema'"
     ss.nextValSql = "call next value for :name"
