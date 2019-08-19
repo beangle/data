@@ -27,13 +27,13 @@ import org.scalatestplus.junit.JUnitRunner
 import scala.xml.XML
 
 /**
-  * @author chaostone
-  */
+ * @author chaostone
+ */
 @RunWith(classOf[JUnitRunner])
 class DatasourceConfigTest extends AnyFlatSpec with Matchers {
   "DatasourceConfig " should "build a correct orace datasource" in {
     (XML.load(ClassLoaders.getResource("datasources.xml").get) \ "datasource") foreach { ds =>
-      val config = DatasourceConfig.build(ds)
+      val config = DataSourceUtils.parseXml(ds)
       if (config.name == "tigre") assert(config.props.contains("driverType"))
     }
   }
@@ -44,7 +44,7 @@ class DatasourceConfigTest extends AnyFlatSpec with Matchers {
     assert(!dsc.props.contains("driver"))
 
     val serverJson = """{"driver":"postgresql","serverName":"localhost","user":"test","databaseName":"postgres","password":"0420b13b9aa5256f73bcf9a670acd356","portNumber":5432}"""
-    val dsc2 = new DatasourceConfig(DataSourceUtils.parseJson(urlJson).asInstanceOf[collection.Map[String, String]])
+    val dsc2 = DataSourceUtils.parseJson(urlJson)
     assert(!dsc2.props.contains("driver"))
 
   }

@@ -18,14 +18,19 @@
  */
 package org.beangle.data.jdbc.ds
 
+import java.io.InputStream
 import java.util.Properties
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import javax.script.ScriptEngineManager
 import javax.sql.DataSource
-import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.commons.io.IOs
+import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty, substringBetween}
+import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.vendor.Vendors
+import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.data.jdbc.vendor.{DriverInfo, Vendors}
 
 import scala.language.existentials
 
@@ -71,7 +76,67 @@ object DataSourceUtils extends Logging {
     properties
   }
 
-  protected[ds] def parseJson(string: String): collection.mutable.HashMap[String, String] = {
+  def parseXml(is: InputStream, name: String): DatasourceConfig = {
+    var conf: DatasourceConfig = null
+    (scala.xml.XML.load(is) \\ "datasource") foreach { elem =>
+      val one = parseXml(elem)
+      if (name != null) {
+        if (name == one.name) conf = one
+      } else {
+        conf = one
+      }
+    }
+    conf
+  }
+
+  def parseXml(xml: scala.xml.Node): DatasourceConfig = {
+    var driver: DriverInfo = null
+    val url = (xml \\ "url").text.trim
+    var driverName = (xml \\ "driver").text.trim
+    if (isEmpty(driverName) && isNotEmpty(url)) driverName = substringBetween(url, "jdbc:", ":")
+
+    Vendors.drivers.get(driverName) match {
+      case Some(d) => driver = d
+      case None => throw new RuntimeException("Not Supported:[" + driverName + "] supports:" + Vendors.driverPrefixes)
+    }
+    val dialect =
+      if ((xml \ "@dialect").isEmpty) driver.vendor.dialect
+      else Reflections.newInstance[Dialect]((xml \\ "dialect").text.trim)
+
+    val dbconf = new DatasourceConfig(driverName, dialect)
+    if (isNotEmpty(url)) dbconf.props.put("url", url)
+
+    if ((xml \ "@name").nonEmpty) dbconf.name = (xml \ "@name").text.trim
+    dbconf.user = (xml \\ "user").text.trim
+    dbconf.password = (xml \\ "password").text.trim
+    dbconf.catalog = dialect.engine.toIdentifier((xml \\ "catalog").text.trim)
+
+    var schemaName = (xml \\ "schema").text.trim
+    if (isEmpty(schemaName)) {
+      schemaName = dialect.defaultSchema
+      if (schemaName == "$user") schemaName = dbconf.user
+    }
+    dbconf.schema = dialect.engine.toIdentifier(schemaName)
+
+    (xml \\ "props" \\ "prop").foreach { ele =>
+      dbconf.props.put((ele \ "@name").text, (ele \ "@value").text)
+    }
+
+    val processed = Set("url", "driver", "props", "user", "password", "catalog", "schema")
+    val dbNodeName = if ((xml \\ "datasource").isEmpty) "db" else "datasource"
+    xml \\ dbNodeName \ "_" foreach { n =>
+      val label = n.label
+      if (!processed.contains(label) && Strings.isNotEmpty(n.text)) dbconf.props.put(label, n.text)
+    }
+    dbconf
+  }
+
+  def parseJson(is: InputStream): DatasourceConfig = {
+    val string = IOs.readString(is)
+    parseJson(string)
+  }
+
+  def parseJson(string: String): DatasourceConfig = {
     val sem = new ScriptEngineManager()
     val engine = sem.getEngineByName("javascript")
     val result = new collection.mutable.HashMap[String, String]
@@ -89,6 +154,6 @@ object DataSourceUtils extends Logging {
       val key = if (one.getKey.toString == "maxActive") "maxTotal" else one.getKey.toString
       result.put(key, value)
     }
-    result
+    new DatasourceConfig(result)
   }
 }
