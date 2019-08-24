@@ -25,52 +25,6 @@ import org.beangle.data.jdbc.dialect.Dialect
 import org.beangle.data.jdbc.meta.Identifier
 import org.beangle.data.jdbc.vendor.{DriverInfo, Vendors}
 
-object DatasourceConfig {
-
-  def build(xml: scala.xml.Node): DatasourceConfig = {
-    var driver: DriverInfo = null
-    val url = (xml \\ "url").text.trim
-    var driverName = (xml \\ "driver").text.trim
-    if (isEmpty(driverName) && isNotEmpty(url)) driverName = substringBetween(url, "jdbc:", ":")
-
-    Vendors.drivers.get(driverName) match {
-      case Some(d) => driver = d
-      case None    => throw new RuntimeException("Not Supported:[" + driverName + "] supports:" + Vendors.driverPrefixes)
-    }
-    val dialect =
-      if ((xml \ "@dialect").isEmpty) driver.vendor.dialect
-      else Reflections.newInstance[Dialect]((xml \\ "dialect").text.trim)
-
-    val dbconf = new DatasourceConfig(driverName, dialect)
-    if (isNotEmpty(url)) dbconf.props.put("url", url)
-
-    if ((xml \ "@name").nonEmpty) dbconf.name = (xml \ "@name").text.trim
-    dbconf.user = (xml \\ "user").text.trim
-    dbconf.password = (xml \\ "password").text.trim
-    dbconf.catalog = dialect.engine.toIdentifier((xml \\ "catalog").text.trim)
-
-    var schemaName = (xml \\ "schema").text.trim
-    if (isEmpty(schemaName)) {
-      schemaName = dialect.defaultSchema
-      if (schemaName == "$user") schemaName = dbconf.user
-    }
-    dbconf.schema = dialect.engine.toIdentifier(schemaName)
-
-    (xml \\ "props" \\ "prop").foreach { ele =>
-      dbconf.props.put((ele \ "@name").text, (ele \ "@value").text)
-    }
-
-    val processed = Set("url", "driver", "props", "user", "password", "catalog", "schema")
-    val dbNodeName = if ((xml \\ "datasource").isEmpty) "db" else "datasource"
-    xml \\ dbNodeName \ "_" foreach { n =>
-      val label = n.label
-      if (!processed.contains(label) && Strings.isNotEmpty(n.text)) dbconf.props.put(label, n.text)
-    }
-    dbconf
-  }
-
-}
-
 /**
  * using serverName/database or url alternative
  */

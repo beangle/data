@@ -170,7 +170,7 @@ object Sql extends Logging {
     if (target.exists) {
       logger.info(s"Read config file ${target.getName}")
       (scala.xml.XML.load(new FileInputStream(target)) \\ "datasource") foreach { elem =>
-        datasources += DatasourceConfig.build(elem)
+        datasources += DataSourceUtils.parseXml(elem)
       }
     }
   }

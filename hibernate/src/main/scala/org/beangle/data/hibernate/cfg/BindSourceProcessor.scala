@@ -140,6 +140,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
         rc.setCacheConcurrencyStrategy(definition.cacheUsage)
         rc.setCacheRegionName(region)
         rc.setLazyPropertiesCacheable(true)
+        rc.setCached(true)
       }
     }
 

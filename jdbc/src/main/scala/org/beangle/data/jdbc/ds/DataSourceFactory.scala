@@ -79,16 +79,9 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   private def readConf(is: InputStream, isXML: Boolean): DatasourceConfig = {
     var conf: DatasourceConfig = null
     if (isXML) {
-      (scala.xml.XML.load(is) \\ "datasource") foreach { elem =>
-        val one = DatasourceConfig.build(elem)
-        if (name != null) {
-          if (name == one.name) conf = one
-        } else {
-          conf = one
-        }
-      }
+      conf=DataSourceUtils.parseXml(is,this.name)
     } else {
-      conf = new DatasourceConfig(DataSourceUtils.parseJson(IOs.readString(is)))
+      conf = DataSourceUtils.parseJson(is)
     }
     conf
   }
