@@ -40,7 +40,7 @@ class DatasourceConfigTest extends AnyFlatSpec with Matchers {
 
   "DatasourceConfig " should "build a url json" in {
     val urlJson = """{"driver":"postgresql","url":"jdbc:postgresql://localhost:5432/platform","user":"test","maximumPoolSize":10,"password":"0420b13b9aa5256f73bcf9a670acd356"}"""
-    val dsc = new DatasourceConfig(DataSourceUtils.parseJson(urlJson).asInstanceOf[collection.Map[String, String]])
+    val dsc = DataSourceUtils.parseJson(urlJson)
     assert(!dsc.props.contains("driver"))
 
     val serverJson = """{"driver":"postgresql","serverName":"localhost","user":"test","databaseName":"postgres","password":"0420b13b9aa5256f73bcf9a670acd356","portNumber":5432}"""
