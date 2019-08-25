@@ -18,11 +18,12 @@
  */
 package org.beangle.data.orm
 
-import scala.collection.mutable.Buffer
-
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.meta.{Column, Table}
-import org.beangle.data.model.meta.{BasicType, EmbeddableType, EntityType, Property, Type}
+import org.beangle.data.model.meta._
+
+import scala.collection.mutable
 
 trait ColumnHolder {
   def columns: Iterable[Column]
@@ -30,17 +31,19 @@ trait ColumnHolder {
 
 class SimpleColumn(column: Column) extends ColumnHolder {
   require(null != column)
-  val columns: Buffer[Column] = Buffer.empty[Column]
+  val columns: mutable.Buffer[Column] = mutable.Buffer.empty[Column]
   columns += column
 }
 
 trait TypeMapping extends Cloneable {
   def typ: Type
+
   def copy(): TypeMapping
 }
 
 trait StructTypeMapping extends TypeMapping {
-  var properties = Collections.newMap[String, PropertyMapping[_]]
+  var properties: mutable.Map[String, PropertyMapping[_]] = Collections.newMap[String, PropertyMapping[_]]
+
   def getPropertyMapping(property: String): PropertyMapping[_] = {
     val idx = property.indexOf(".")
     if (idx == -1) {
@@ -55,10 +58,15 @@ trait StructTypeMapping extends TypeMapping {
 final class EntityTypeMapping(var typ: EntityType, var table: Table) extends StructTypeMapping {
   var cacheUsage: String = _
   var cacheRegion: String = _
+  var cacheAll: Boolean = _
   var isLazy: Boolean = true
   var proxy: String = _
   var isAbstract: Boolean = _
   var idGenerator: IdGenerator = _
+
+  def cacheable: Boolean = {
+    Strings.isNotBlank(cacheUsage)
+  }
 
   def cache(region: String, usage: String): this.type = {
     this.cacheRegion = region
@@ -73,6 +81,7 @@ final class EntityTypeMapping(var typ: EntityType, var table: Table) extends Str
   def entityName: String = {
     typ.entityName
   }
+
   def copy(): this.type = {
     this
   }
@@ -81,13 +90,13 @@ final class EntityTypeMapping(var typ: EntityType, var table: Table) extends Str
 final class BasicTypeMapping(val typ: BasicType, column: Column)
   extends TypeMapping with Cloneable with ColumnHolder {
 
-  var columns: Buffer[Column] = Buffer.empty[Column]
+  var columns: mutable.Buffer[Column] = mutable.Buffer.empty[Column]
 
   if (null != column) columns += column
 
   def copy(): BasicTypeMapping = {
     val cloned = super.clone().asInstanceOf[BasicTypeMapping]
-    val cc = Buffer.empty[Column]
+    val cc = mutable.Buffer.empty[Column]
     columns foreach { c =>
       cc += c.clone()
     }
@@ -140,7 +149,7 @@ object IdGenerator {
 }
 
 final class IdGenerator(var name: String) {
-  val params = Collections.newMap[String, String]
+  val params: mutable.Map[String, String] = Collections.newMap[String, String]
   var nullValue: Option[String] = None
 
   def unsaved(value: String): this.type = {
