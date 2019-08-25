@@ -345,14 +345,9 @@ object MappingModule {
       this
     }
 
-    def cacheAll(
-                  region: String = cacheConfig.region,
-                  usage: String = cacheConfig.usage,
-                  excepts: Set[String] = Set.empty): this.type = {
+    def cacheAll( region: String = cacheConfig.region, usage: String = cacheConfig.usage): this.type = {
       entityMappings foreach { e =>
-        val prefix = e._2.clazz.getSimpleName + "."
-        val entityExcepts = excepts.filter(_.startsWith(prefix)).map(substringAfter(_, prefix))
-        mappings.cacheAll(e._2, cacheConfig.region, cacheConfig.usage, entityExcepts)
+        mappings.cacheAll(e._2, cacheConfig.region, cacheConfig.usage)
       }
       this
     }

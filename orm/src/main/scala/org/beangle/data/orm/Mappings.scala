@@ -22,26 +22,28 @@ import java.lang.reflect.Modifier
 import java.net.URL
 import java.util.Locale
 
+import org.beangle.commons.collection.Collections
+import org.beangle.commons.config.Resources
+import org.beangle.commons.lang.annotation.value
+import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.commons.lang.{ClassLoaders, Strings}
+import org.beangle.commons.logging.Logging
+import org.beangle.commons.text.i18n.Messages
+import org.beangle.data.jdbc.meta.{Column, Database, Table}
+import org.beangle.data.jdbc.{DefaultSqlTypeMapping, SqlTypeMapping}
+import org.beangle.data.model.meta.Domain._
+import org.beangle.data.model.meta._
+import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity}
+import org.beangle.data.orm.Jpas._
+import org.beangle.data.orm.cfg.Profiles
+
 import scala.collection.mutable
 import scala.reflect.runtime.{universe => ru}
 
-import org.beangle.commons.collection.Collections
-import org.beangle.commons.config.Resources
-import org.beangle.commons.lang.{ClassLoaders, Strings}
-import org.beangle.commons.lang.annotation.value
-import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.commons.logging.Logging
-import org.beangle.commons.text.i18n.Messages
-import org.beangle.data.jdbc.{DefaultSqlTypeMapping, SqlTypeMapping}
-import org.beangle.data.jdbc.meta.{Column, Database, Table}
-import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity}
-import org.beangle.data.model.meta.{BasicType, EntityType, PluralProperty, Property, SingularProperty, Type}
-import org.beangle.data.model.meta.Domain.{CollectionPropertyImpl, EmbeddableTypeImpl, EntityTypeImpl, MapPropertyImpl, MutableStructType, SingularPropertyImpl}
-import org.beangle.data.orm.Jpas.{isComponent, isEntity, isMap, isSeq, isSet}
-import org.beangle.data.orm.cfg.Profiles
-
 object Mappings {
+
   case class Holder(mapping: EntityTypeMapping, meta: MutableStructType)
+
 }
 
 final class Mappings(val database: Database, val profiles: Profiles) extends Logging {
@@ -56,23 +58,23 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
   val entities = new mutable.HashMap[String, EntityTypeImpl]
 
-  /**all type mappings(clazz -> Entity)*/
+  /** all type mappings(clazz -> Entity) */
   val classMappings = new mutable.HashMap[Class[_], EntityTypeMapping]
 
-  /**custome types*/
+  /** custome types */
   val typeDefs = new mutable.HashMap[String, TypeDef]
 
   /** Buildin value types */
   val valueTypes = new mutable.HashSet[Class[_]]
 
-  /**  Buildin enum types */
+  /** Buildin enum types */
   val enumTypes = new mutable.HashMap[String, String]
 
   /** Classname.property -> Collection */
   val collectMap = new mutable.HashMap[String, Collection]
 
   /** Only entities */
-  val entityMappings:mutable.Map[String,EntityTypeMapping] = Collections.newMap[String, EntityTypeMapping]
+  val entityMappings: mutable.Map[String, EntityTypeMapping] = Collections.newMap[String, EntityTypeMapping]
 
   private var messages: Messages = _
 
@@ -89,7 +91,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
       //So, we leave  hibernate a  clean world.
       entityMappings.get(mapping.entityName) match {
         case Some(o) => if (o.clazz.isAssignableFrom(mapping.clazz)) entityMappings.put(mapping.entityName, mapping)
-        case None    => entityMappings.put(mapping.entityName, mapping)
+        case None => entityMappings.put(mapping.entityName, mapping)
       }
     }
     this
@@ -106,19 +108,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     this
   }
 
-  def cacheAll(em: EntityTypeMapping, region: String, usage: String, excepts: Set[String]): this.type = {
-    em.properties foreach {
-      case (k, v) =>
-        if (!excepts.contains(k)) {
-          v match {
-            case pm: PluralPropertyMapping[_] =>
-              if (pm.many2many) {
-                this.addCollection(new Collection(em.clazz, k, region, usage))
-              }
-            case _ =>
-          }
-        }
-    }
+  def cacheAll(em: EntityTypeMapping, region: String, usage: String): this.type = {
+    em.cacheAll = true
     em.cacheRegion = region
     em.cacheUsage = usage
     this
@@ -138,7 +129,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
     //remove interface and abstract class binding
     val notEntities = entityMappings.filter {
-      case (n, c) => (c.clazz.isInterface() || Modifier.isAbstract(c.clazz.getModifiers))
+      case (n, c) => (c.clazz.isInterface || Modifier.isAbstract(c.clazz.getModifiers))
     }
     entityMappings --= notEntities.keys
 
@@ -236,6 +227,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     colName
   }
 
+  /** 查找实体主键
+   * */
   private def firstPass(etm: EntityTypeMapping): Unit = {
     val clazz = etm.typ.clazz
     if (null == etm.idGenerator) {
@@ -252,19 +245,42 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     etm.table.comment = Some(getComment(clazz, clazz.getSimpleName))
   }
 
+  /** 处理外键及其关联表格,以及集合的缓存设置
+   */
   private def secondPass(etm: EntityTypeMapping): Unit = {
     val clazz = etm.typ.clazz
     val table = etm.table
     processPropertyMappings(clazz, table, etm)
+    processCache(etm, etm)
   }
 
-  private def getComment(clazz: Class[_], key: String): String = {
-    getComment(clazz, key, key + "?")
-  }
-
-  private def getComment(clazz: Class[_], key: String, defaults: String): String = {
-    val comment = messages.get(clazz, key)
-    if (key == comment) defaults else comment
+  private def processCache(stm: StructTypeMapping, em: EntityTypeMapping): Unit = {
+    if (em.cacheAll) {
+      stm.properties foreach {
+        case (p, pm) =>
+          pm match {
+            case spm: SingularPropertyMapping =>
+              spm.mapping match {
+                case etm: EmbeddableTypeMapping =>
+                  processCache(etm, em)
+                case _ =>
+              }
+            case ppm: PluralPropertyMapping[_] =>
+              val canCache: Boolean = ppm.property match {
+                case e: CollectionPropertyImpl =>
+                  e.element match {
+                    case et: EntityType => entityMappings(et.entityName).cacheable
+                    case _ => true
+                  }
+                case _ =>
+                  true
+              }
+              if (canCache) {
+                addCollection(new Collection(em.clazz, p, em.cacheRegion, em.cacheUsage))
+              }
+          }
+      }
+    }
   }
 
   private def processPropertyMappings(clazz: Class[_], table: Table, stm: StructTypeMapping): Unit = {
@@ -315,7 +331,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                 case mm: MapPropertyMapping =>
                   mm.key match {
                     case pspm: BasicTypeMapping => collectTable.add(pspm.columns.head)
-                    case _                      =>
+                    case _ =>
                   }
                 case _ =>
               }
@@ -325,8 +341,18 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
   }
 
+
   private def createForeignKey(table: Table, columns: Iterable[Column], refTable: Table): Unit = {
     table.createForeignKey(columns.head.name, refTable)
+  }
+
+  private def getComment(clazz: Class[_], key: String): String = {
+    getComment(clazz, key, key + "?")
+  }
+
+  private def getComment(clazz: Class[_], key: String, defaults: String): String = {
+    val comment = messages.get(clazz, key)
+    if (key == comment) defaults else comment
   }
 
   /**
