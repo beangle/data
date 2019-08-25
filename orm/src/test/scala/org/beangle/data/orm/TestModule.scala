@@ -41,6 +41,6 @@ class TestModule extends MappingModule {
       c.url is (notnull, length(40)),
       c.parent is target[UrlMenu]))
 
-    all.cacheAll(excepts = Set("TestUser.friends"))
+    all.cacheAll()
   }
 }

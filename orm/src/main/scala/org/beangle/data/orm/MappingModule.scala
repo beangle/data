@@ -277,8 +277,8 @@ object MappingModule {
       this
     }
 
-    def cacheAll(region: String = module.cacheConfig.region, usage: String = module.cacheConfig.usage, excepts: Set[String] = Set.empty): this.type = {
-      mappings.cacheAll(mapping, region, usage, excepts)
+    def cacheAll(region: String = module.cacheConfig.region, usage: String = module.cacheConfig.usage): this.type = {
+      mappings.cacheAll(mapping, region, usage)
       this
     }
 
