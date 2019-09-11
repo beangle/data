@@ -125,7 +125,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     rows
   }
 
-  def batch(sql: String, datas: Seq[Array[_]], types: Seq[Int]): Seq[Int] = {
+  def batch(sql: String, datas: collection.Seq[Array[_]], types: collection.Seq[Int]): Seq[Int] = {
     if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
     val conn = openConnection()
