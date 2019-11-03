@@ -21,24 +21,24 @@ package org.beangle.data.transfer.excel
 import java.io.InputStream
 import java.text.NumberFormat
 
-import org.apache.poi.hssf.usermodel.{HSSFCell, HSSFSheet, HSSFWorkbook}
-import org.apache.poi.ss.usermodel.{CellType, DateUtil}
+import org.apache.poi.hssf.usermodel.HSSFWorkbook
+import org.apache.poi.ss.usermodel._
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
 import org.beangle.data.transfer.io.ItemReader
 
 object ExcelItemReader {
-  /** Constant <code>numberFormat</code> */
   val numberFormat: NumberFormat = NumberFormat.getInstance()
   numberFormat.setGroupingUsed(false)
 }
+
 /**
  * Excel的每行一条数据的读取器
- *
  * @author chaostone
  */
-class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
+class ExcelItemReader(is: InputStream, val format: Format.Value = Format.Xls) extends ItemReader with Logging {
 
   /** Constant <code>sheetNum=0</code> */
   val sheetNum = 0
@@ -59,10 +59,18 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   /**
    * 读取的工作表
    */
-  private val workbook: HSSFWorkbook = new HSSFWorkbook(is)
+  private val workbook = buildWorkbook(is)
 
-  def this(is: InputStream, headIndex: Int) {
-    this(is)
+  private def buildWorkbook(is: InputStream): Workbook = {
+    format match {
+      case Format.Xls => new HSSFWorkbook(is)
+      case Format.Xlsx => new XSSFWorkbook(is)
+      case _ => throw new RuntimeException("Cannot support excel format " + format)
+    }
+  }
+
+  def this(is: InputStream, format: Format.Value, headIndex: Int) {
+    this(is, format)
     this.headIndex = headIndex
     this.dataIndex = this.headIndex + 1
     this.indexInSheet = dataIndex
@@ -70,7 +78,6 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
 
   /**
    * 描述放在第一行
-   *
    * @return an array of String objects.
    */
   override def readDescription(): List[String] = {
@@ -94,7 +101,7 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   /**
    * 遇到空白单元格停止的读行操作
    */
-  protected def readLine(sheet: HSSFSheet, rowIndex: Int): List[String] = {
+  protected def readLine(sheet: Sheet, rowIndex: Int): List[String] = {
     val row = sheet.getRow(rowIndex)
     val attrList = new collection.mutable.ListBuffer[String]
     var hasEmptyCell = false
@@ -113,7 +120,7 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   /**
    * 读取注释
    */
-  def readComments(sheet: HSSFSheet, rowIndex: Int): List[String] = {
+  def readComments(sheet: Sheet, rowIndex: Int): List[String] = {
     val row = sheet.getRow(rowIndex)
     val attrList = new collection.mutable.ListBuffer[String]
     var hasEmptyCell = false
@@ -133,9 +140,11 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
     attrList.toList
   }
 
-  override def read(): Any = {
+  override def read(): Array[Object] = {
     val sheet = workbook.getSheetAt(sheetNum)
-    if (indexInSheet > sheet.getLastRowNum) { return null; }
+    if (indexInSheet > sheet.getLastRowNum) {
+      return null;
+    }
     val row = sheet.getRow(indexInSheet)
     indexInSheet += 1
     // 如果是个空行,返回空记录
@@ -153,10 +162,10 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   /**
    * 取cell单元格中的数据
    */
-  def getCellValue(cell: HSSFCell): Object = {
+  def getCellValue(cell: Cell): Object = {
     if (cell == null) return null
     cell.getCellType match {
-      case CellType.BLANK  => null
+      case CellType.BLANK => null
       case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
       case CellType.NUMERIC =>
         if (DateUtil.isCellDateFormatted(cell)) {
@@ -165,12 +174,8 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
           ExcelItemReader.numberFormat.format(cell.getNumericCellValue)
         }
       case CellType.BOOLEAN => if (cell.getBooleanCellValue) java.lang.Boolean.TRUE else java.lang.Boolean.FALSE
-      case _                => null
+      case _ => null
     }
-  }
-
-  override def format: Format.Value = {
-    Format.Xls
   }
 
   override def close(): Unit = {
