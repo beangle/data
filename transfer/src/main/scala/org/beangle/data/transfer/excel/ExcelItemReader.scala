@@ -47,13 +47,13 @@ class ExcelItemReader(is: InputStream, val format: Format.Value = Format.Xls) ex
   this.dataIndex = headIndex + 1
 
   /**
-   * 下一个要读取的位置 标题行和代码行分别默认占据0,1
-   */
+    * 下一个要读取的位置 标题行和代码行分别默认占据0,1
+    */
   private var indexInSheet: Int = dataIndex
 
   /**
-   * 属性的个数，0表示在读取值的是否不做读限制
-   */
+    * 属性的个数，0表示在读取值的是否不做读限制
+    */
   private var attrCount: Int = _
 
   /**
@@ -140,18 +140,18 @@ class ExcelItemReader(is: InputStream, val format: Format.Value = Format.Xls) ex
     attrList.toList
   }
 
-  override def read(): Array[Object] = {
+  override def read(): Array[String] = {
     val sheet = workbook.getSheetAt(sheetNum)
     if (indexInSheet > sheet.getLastRowNum) {
-      return null;
+      return null
     }
     val row = sheet.getRow(indexInSheet)
     indexInSheet += 1
     // 如果是个空行,返回空记录
     if (row == null) {
-      new Array[Object](attrCount)
+      new Array[String](attrCount)
     } else {
-      val values = new Array[Object](if (attrCount != 0) attrCount else row.getLastCellNum)
+      val values = new Array[String](if (attrCount != 0) attrCount else row.getLastCellNum)
       values.indices foreach { k =>
         values(k) = getCellValue(row.getCell(k));
       }
@@ -162,18 +162,28 @@ class ExcelItemReader(is: InputStream, val format: Format.Value = Format.Xls) ex
   /**
    * 取cell单元格中的数据
    */
-  def getCellValue(cell: Cell): Object = {
+  def getCellValue(cell: Cell): String = {
     if (cell == null) return null
+
     cell.getCellType match {
       case CellType.BLANK => null
       case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
       case CellType.NUMERIC =>
         if (DateUtil.isCellDateFormatted(cell)) {
-          cell.getDateCellValue
+          cell.getDateCellValue match {
+            case null => null
+            case d => new java.sql.Date(d.getTime).toLocalDate.toString
+          }
         } else {
           ExcelItemReader.numberFormat.format(cell.getNumericCellValue)
         }
-      case CellType.BOOLEAN => if (cell.getBooleanCellValue) java.lang.Boolean.TRUE else java.lang.Boolean.FALSE
+      case CellType.BOOLEAN => if (cell.getBooleanCellValue) "true" else "false"
+      case CellType.FORMULA =>
+        cell.getCachedFormulaResultType match {
+          case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
+          case CellType.NUMERIC => ExcelItemReader.numberFormat.format(cell.getNumericCellValue)
+          case _ => null
+        }
       case _ => null
     }
   }
