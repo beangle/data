@@ -44,11 +44,11 @@ object Constraints {
     col.formular2 match {
       case None =>
         constraint = helper.createDateConstraint(GREATER_OR_EQUAL, formual1Value, null, col.date.get)
-        prompt = "请输入大于等于" + col.formular1 + "的日期"
+        prompt = composeError("日期", col.formular1, None)
       case Some(f2) =>
         val formual2Value = DateUtil.getExcelDate(sdf.parse(f2)).toString
         constraint = helper.createDateConstraint(BETWEEN, formual1Value, formual2Value, col.date.get)
-        prompt = "请输入" + col.formular1 + "~" + f2 + "之间的日期"
+        prompt = composeError("日期", col.formular1, col.formular2)
     }
     createValidation(helper, col, startRowIdx, columnIdx, constraint, prompt)
   }
@@ -56,7 +56,7 @@ object Constraints {
   def asNumeric(helper: XSSFDataValidationHelper, col: ExcelColumn, validationType: Int, startRowIdx: Int, columnIdx: Int): DataValidation = {
     var prompt: String = null
     var constraint: DataValidationConstraint = null
-    var unit = ""
+    var unit = "值"
     val dataType = validationType match {
       case INTEGER => "整数"
       case DECIMAL => "小数"
@@ -68,13 +68,35 @@ object Constraints {
     col.formular2 match {
       case None =>
         constraint = helper.createNumericConstraint(validationType, GREATER_OR_EQUAL, col.formular1, null)
-        prompt = "请输入" + unit + "大于等于" + col.formular1 + "的" + dataType
+        prompt = composeError(dataType, col.formular1, None)
 
       case Some(f2) =>
         constraint = helper.createNumericConstraint(validationType, BETWEEN, col.formular1, f2)
-        prompt = "请输入" + unit + col.formular1 + "~" + f2 + "之间的" + dataType
+        prompt = composeError(dataType, col.formular1, col.formular2, unit)
     }
     createValidation(helper, col, startRowIdx, columnIdx, constraint, prompt)
+  }
+
+  def asUnique(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int, columnIdx: Int): DataValidation = {
+    val cn = ('A'.toInt + columnIdx).asInstanceOf[Char] //column name
+    val rn = startRowIdx + 1 //row name
+    //=COUNTIF($D$5:D5,D5)=1
+    var formular = "COUNTIF($" + cn + "$" + rn + ":" + cn + rn + "," + cn + rn + ")=1"
+    var error = "该列不允许有重复"
+    if (col.length.nonEmpty) {
+      val cname = cn.toString + rn.toString //cell name
+      formular = "AND(AND(LEN(" + cname + ") >= " + col.formular1 + ",LEN(" + cname + ") <= " + col.length.get + ")," + formular + ")"
+      error += ",并且" + composeError("文本", col.formular1, col.formular2, "长度")
+    }
+
+    val constraint = helper.createCustomConstraint("=" + formular)
+    val addressList = new CellRangeAddressList(startRowIdx, 1048576 - 1, columnIdx, columnIdx)
+    val validation = helper.createValidation(constraint, addressList)
+    validation.createErrorBox(col.name + "输入错误", error)
+    validation.setShowErrorBox(true)
+    validation.setShowPromptBox(true)
+    validation.setSuppressDropDownArrow(true)
+    validation
   }
 
   private def createValidation(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int,
@@ -88,5 +110,18 @@ object Constraints {
     validation.setEmptyCellAllowed(!col.required)
     validation
   }
+
+  def composeError(what: String, min: String, max: Option[String], quantifier: String = ""): String = {
+    max match {
+      case None => "请输入" + quantifier + "大于等于" + min + "的" + what
+      case Some(m) =>
+        if (m == min) {
+          "请输入" + quantifier + "为" + min + "的" + what
+        } else {
+          "请输入" + quantifier + "在" + min + "~" + m + "之间的" + what
+        }
+    }
+  }
+
 }
 

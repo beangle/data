@@ -21,7 +21,7 @@ package org.beangle.data.transfer.excel
 import java.io.File
 
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.{Numbers, Strings}
 
 import scala.collection.mutable
 
@@ -80,9 +80,9 @@ class ExcelScheet(var name: String) {
 class ExcelColumn(var name: String) {
   var comment: Option[String] = None
   var remark: Option[String] = None
-  /**文本长度*/
+  /** 文本长度 */
   var length: Option[Int] = None
-  /**日期格式*/
+  /** 日期格式 */
   var date: Option[String] = None
 
   var isInt: Boolean = _
@@ -92,9 +92,15 @@ class ExcelColumn(var name: String) {
   var formular1: String = _
   var formular2: Option[String] = None
   var required: Boolean = _
+  var unique: Boolean = _
 
   def remark(r: String): this.type = {
     this.remark = Some(r)
+    this
+  }
+
+  def unique(nv: Boolean = true): this.type = {
+    this.unique = nv
     this
   }
 
@@ -103,30 +109,36 @@ class ExcelColumn(var name: String) {
     this
   }
 
-  def length(l: Int): this.type = {
-    length = Some(l)
-    formular1 = "0"
-    formular2 = Some(l.toString)
-    this
-  }
-
-  def date(format: String="yyyy-MM-dd"): this.type = {
+  def date(format: String = "yyyy-MM-dd"): this.type = {
     date = Some(format)
     formular1 = format
-    formular1 = Strings.replace(formular1,"yyyy","1900")
-    formular1 = Strings.replace(formular1,"yy","00")
-    formular1 = Strings.replace(formular1,"MM","01")
-    formular1 = Strings.replace(formular1,"dd","01")
+    formular1 = Strings.replace(formular1, "yyyy", "1900")
+    formular1 = Strings.replace(formular1, "yy", "00")
+    formular1 = Strings.replace(formular1, "MM", "01")
+    formular1 = Strings.replace(formular1, "dd", "01")
     this
   }
 
-  def min(formular: String): this.type = {
-    this.formular1 = formular
+  def min(formular: Any): this.type = {
+    this.formular1 = formular.toString
     this
   }
 
-  def max(formular: String): this.type = {
-    this.formular2 = Some(formular)
+  def max(formular: Any): this.type = {
+    this.length = Some(Numbers.toInt(formular.toString))
+    if (null == this.formular1) {
+      this.formular1 = "0"
+    }
+    this.formular2 = Some(formular.toString)
+    this
+  }
+
+  def length(max: Int): this.type = {
+    length = Some(max)
+    if (null == formular1) {
+      formular1 = "0"
+    }
+    formular2 = Some(max.toString)
     this
   }
 

@@ -84,7 +84,11 @@ object ExcelSchemaWriter {
           } else if (col.date.nonEmpty) {
             sheet.addValidationData(Constraints.asDate(dvHelper, col, rowIdx + 1, curColumnIdx))
           } else if (col.length.nonEmpty) {
-            sheet.addValidationData(Constraints.asNumeric(dvHelper, col, TEXT_LENGTH, rowIdx + 1, curColumnIdx))
+            if (col.unique) {
+              sheet.addValidationData(Constraints.asUnique(dvHelper, col, rowIdx + 1, curColumnIdx))
+            } else {
+              sheet.addValidationData(Constraints.asNumeric(dvHelper, col, TEXT_LENGTH, rowIdx + 1, curColumnIdx))
+            }
           } else if (null != col.refs && col.refs.nonEmpty) {
             addRefValidation(schema, sheet, dvHelper, col, rowIdx + 1, curColumnIdx)
           }
@@ -119,7 +123,7 @@ object ExcelSchemaWriter {
       }
       if (finded) {
         val refColumn = (codeColIdx - 1).asInstanceOf[Char]
-        val formular = codeSheet.name + "!$" + refColumn + "$2:$" + refColumn + "$" + (col.refs.size + 1)
+        val formular = codeSheet.name + "!$" + refColumn + "$2:$" + refColumn + "$" + (col.refs.size + 1) //考虑有个标题，所以+1
         val validation = Constraints.asFormular(helper, formular, col, startRowIdx, columnIdx, "请选择合适的" + col.name)
         sheet.addValidationData(validation)
       }
