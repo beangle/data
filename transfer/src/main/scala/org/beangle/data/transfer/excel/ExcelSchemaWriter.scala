@@ -28,7 +28,7 @@ import org.beangle.commons.lang.Strings
 
 object ExcelSchemaWriter {
 
-  def generate(schema: ExcelSchema,os: OutputStream ): Unit = {
+  def generate(schema: ExcelSchema, os: OutputStream): Unit = {
     val workbook = new XSSFWorkbook()
     for (esheet <- schema.sheets) {
       val sheet = workbook.createSheet(esheet.name)
@@ -84,11 +84,16 @@ object ExcelSchemaWriter {
           } else if (col.date.nonEmpty) {
             sheet.addValidationData(Constraints.asDate(dvHelper, col, rowIdx + 1, curColumnIdx))
           } else if (col.length.nonEmpty) {
+            if (col.formular1 == "0" && col.required) {
+              col.formular1 = "1"
+            }
             if (col.unique) {
               sheet.addValidationData(Constraints.asUnique(dvHelper, col, rowIdx + 1, curColumnIdx))
             } else {
               sheet.addValidationData(Constraints.asNumeric(dvHelper, col, TEXT_LENGTH, rowIdx + 1, curColumnIdx))
             }
+          } else if (col.isBool) {
+            sheet.addValidationData(Constraints.asBoolean(dvHelper, col, rowIdx + 1, curColumnIdx))
           } else if (null != col.refs && col.refs.nonEmpty) {
             addRefValidation(schema, sheet, dvHelper, col, rowIdx + 1, curColumnIdx)
           }

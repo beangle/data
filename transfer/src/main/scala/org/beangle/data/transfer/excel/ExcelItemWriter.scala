@@ -88,10 +88,11 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
       titleRow.getCell(i).setCellStyle(titleStyle)
     }
     index += 1
+    sheet.createFreezePane(0, 1)
   }
 
   def format: Format.Value = {
-    Format.Xls
+    Format.Xlsx
   }
 
   protected def writeItem(datas: Any): Unit = {
@@ -124,6 +125,8 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
             case c: java.util.Calendar =>
               cell.setCellValue(c)
               cell.setCellStyle(getTimeStyle)
+            case c: java.lang.Boolean =>
+              cell.setCellValue(if(c)"Y"else "N")
             case _ =>
               cell.setCellValue(new XSSFRichTextString(if (v == null) "" else v.toString))
           }

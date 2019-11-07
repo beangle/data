@@ -44,6 +44,7 @@ class ExcelSchemaTest extends AnyFunSpec with Matchers {
       sheet.add("证件", "id").min(15).max(18).unique().remark("身份证必须是15位或18位\n否则请选其他")
       sheet.add("工资", "salary").decimal()
       sheet.add("出生日期", "birthday").date()
+      sheet.add("是否高管", "is_manager").bool()
       sheet.add("联系地址", "address").length(100)
       sheet.add("子女数目", "children_count").integer(0, 8)
 

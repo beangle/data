@@ -87,6 +87,7 @@ class ExcelColumn(var name: String) {
 
   var isInt: Boolean = _
   var isDecimal: Boolean = _
+  var isBool:Boolean=_
   var refs: collection.Seq[String] = _
   var datas: collection.Seq[String] = _
   var formular1: String = _
@@ -153,6 +154,11 @@ class ExcelColumn(var name: String) {
     assert(max >= min)
     formular1 = min.toString
     formular2 = Some(max.toString)
+    this
+  }
+
+  def bool(): this.type = {
+    isBool = true
     this
   }
 

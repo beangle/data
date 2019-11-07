@@ -27,6 +27,12 @@ import org.apache.poi.ss.util.CellRangeAddressList
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper
 
 object Constraints {
+  def asBoolean(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int, columnIdx: Int): DataValidation = {
+    val constraint = helper.createExplicitListConstraint(Array("Y", "N"))
+    val v=createValidation(helper, col, startRowIdx, columnIdx, constraint, "请选择Y/N")
+    v.setSuppressDropDownArrow(true)
+    v
+  }
 
   def asFormular(helper: XSSFDataValidationHelper, formular: String, col: ExcelColumn, startRowIdx: Int,
                  columnIdx: Int, prompt: String): DataValidation = {
