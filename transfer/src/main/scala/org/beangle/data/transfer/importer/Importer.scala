@@ -19,7 +19,8 @@
 package org.beangle.data.transfer.importer
 
 import java.util.Locale
-import org.beangle.data.transfer.io.Reader
+
+import org.beangle.data.transfer.io.{Attribute, Reader}
 import org.beangle.data.transfer.Format
 
 /**
@@ -100,7 +101,7 @@ trait Importer {
 
   var reader: Reader = _
 
-  var attrs: List[String] = _
+  var attrs: Array[Attribute] = _
 
   var curData: collection.mutable.Map[String, Any] = _
 

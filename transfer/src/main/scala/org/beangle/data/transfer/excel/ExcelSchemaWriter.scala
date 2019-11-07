@@ -18,7 +18,7 @@
  */
 package org.beangle.data.transfer.excel
 
-import java.io.{File, FileOutputStream}
+import java.io.OutputStream
 
 import org.apache.poi.ss.usermodel.DataValidationConstraint.ValidationType._
 import org.apache.poi.ss.usermodel._
@@ -28,7 +28,7 @@ import org.beangle.commons.lang.Strings
 
 object ExcelSchemaWriter {
 
-  def generate(schema: ExcelSchema, file: File): Unit = {
+  def generate(schema: ExcelSchema,os: OutputStream ): Unit = {
     val workbook = new XSSFWorkbook()
     for (esheet <- schema.sheets) {
       val sheet = workbook.createSheet(esheet.name)
@@ -105,7 +105,6 @@ object ExcelSchemaWriter {
         }
       }
     }
-    val os = new FileOutputStream(file)
     workbook.write(os)
     os.close()
   }

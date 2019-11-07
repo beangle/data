@@ -30,12 +30,11 @@ class ExcelReaderTest extends AnyFunSpec with Matchers {
   describe("ExcelReader") {
     it("reader") {
       val template = ClassLoaders.getResource("data.xlsx").get
-      val reader = new ExcelItemReader(template.openStream(),Format.Xlsx,0)
-      val title = reader.readDescription()
-      val data = reader.read().toSeq
+      val reader = new ExcelItemReader(template.openStream(),0,Format.Xlsx)
+      val title = reader.readAttributes()
+      val data = reader.read()
       println(title)
-      println(data)
-      //tempFile.toFile.delete()
+      println(data.toSeq)
     }
   }
 

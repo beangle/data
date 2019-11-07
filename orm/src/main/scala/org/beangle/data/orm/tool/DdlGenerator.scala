@@ -41,7 +41,7 @@ object DdlGenerator {
     if (args.length > 1) dir = args(1)
     var locale = Locale.getDefault
     if (args.length > 2) locale = Locales.toLocale(args(2))
-    var dialectName = args(0)
+    val dialectName = args(0)
 
     val dialect = Dialects.forName(dialectName)
     val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
@@ -60,14 +60,14 @@ object DdlGenerator {
   }
 
   private def writeTo(dir: String, file: String, contents: List[String]): Unit = {
-    if (null != contents && !contents.isEmpty) {
+    if (null != contents && contents.nonEmpty) {
       val writer = new FileWriter(dir + "/" + file, false)
       contents foreach { c =>
         writer.write(c)
         writer.write(";\n")
       }
-      writer.flush
-      writer.close
+      writer.flush()
+      writer.close()
     }
   }
 }
@@ -85,7 +85,7 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
   def generate(): DBScripts = {
     val database = mappings.database
     database.schemas.values foreach {
-      schema => schema.tables.values foreach (generateTableSql(_))
+      schema => schema.tables.values foreach (generateTableSql)
     }
     val scripts = new DBScripts()
     schemas ++= database.schemas.keys.filter(i => i.value.length > 0).map(s => s"create schema $s")

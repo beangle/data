@@ -19,19 +19,16 @@
 package org.beangle.data.transfer.io
 
 /**
- * ItemReader interface.
- *
- * @author chaostone
- */
+  * ItemReader interface.
+  *
+  * @author chaostone
+  */
 trait ItemReader extends Reader {
 
-  /** 标题所在行 */
-  var headIndex: Int = 0
-  /** 数据起始行 */
-  var dataIndex: Int = 1
+  def readAttributes(): List[Attribute]
 
-  def readDescription(): List[String]
+}
 
-  def readTitle(): List[String]
+case class Attribute(idx: Int, name: String, description: String) {
 
 }

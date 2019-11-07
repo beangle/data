@@ -18,7 +18,7 @@
  */
 package org.beangle.data.transfer.excel
 
-import java.io.File
+import java.io.OutputStream
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Numbers, Strings}
@@ -39,8 +39,8 @@ class ExcelSchema {
     sheet
   }
 
-  def generate(file: File): Unit = {
-    ExcelSchemaWriter.generate(this, file)
+  def generate(os: OutputStream): Unit = {
+    ExcelSchemaWriter.generate(this, os)
   }
 
   val sheets: mutable.Buffer[ExcelScheet] = Collections.newBuffer[ExcelScheet]

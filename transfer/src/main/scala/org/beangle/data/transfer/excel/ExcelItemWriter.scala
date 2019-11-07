@@ -18,15 +18,15 @@
  */
 package org.beangle.data.transfer.excel
 
-import java.time.{Instant, LocalDate}
 import java.io.OutputStream
+import java.time.{Instant, LocalDate}
 
-import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFRichTextString, XSSFSheet, XSSFWorkbook}
-import org.apache.poi.ss.usermodel.{CellType, FillPatternType, HorizontalAlignment, IndexedColors, VerticalAlignment}
+import org.apache.poi.ss.usermodel.{CellType, FillPatternType, HorizontalAlignment, VerticalAlignment}
+import org.apache.poi.xssf.usermodel._
 import org.beangle.commons.lang.Numbers
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.ItemWriter
 import org.beangle.data.transfer.exporter.ExportContext
+import org.beangle.data.transfer.io.ItemWriter
 
 /**
   * ExcelItemWriter class.
@@ -35,7 +35,7 @@ import org.beangle.data.transfer.exporter.ExportContext
   */
 class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
 
-  var countPerSheet = 50000
+  var countPerSheet = 100000
 
   var workbook = new XSSFWorkbook() // 建立新XSSFWorkbook对象
 
@@ -168,7 +168,8 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     style.setAlignment(HorizontalAlignment.CENTER) // 左右居中
     style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
     style.setFillPattern(FillPatternType.SOLID_FOREGROUND)
-    style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex)
+    val rgb = Array(221.toByte, 217.toByte, 196.toByte)
+    style.setFillForegroundColor(new XSSFColor(rgb, new DefaultIndexedColorMap))
     style
   }
 }

@@ -18,7 +18,7 @@
  */
 package org.beangle.data.transfer.excel
 
-import java.io.File
+import java.io.{File, FileOutputStream}
 
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
@@ -50,7 +50,8 @@ class ExcelSchemaTest extends AnyFunSpec with Matchers {
       val code = schema.createScheet("数据字典")
       code.add("性别名称").data(genderNames)
       code.add("证件类型名称").data(idTypeNames)
-      schema.generate(file)
+      val os = new FileOutputStream(file)
+      schema.generate(os)
       println("template located in " + file.getAbsolutePath)
     }
   }

@@ -55,7 +55,7 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
     // 过滤所有外键
     val iter = itermTranfer.attrs.iterator
     while (iter.hasNext) {
-      val attri = iter.next()
+      val attri = iter.next().name
       var foreigerKeyIndex = -1
       val isforeiger = foreigerKeys exists { fk =>
         foreigerKeyIndex += 1

@@ -24,38 +24,37 @@ import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.ItemReader
+import org.beangle.data.transfer.io.{Attribute, ItemReader}
 
 /**
   * CsvItemReader class.
+  *
   * @author chaostone
   */
 class CsvItemReader(reader: LineNumberReader) extends ItemReader with Logging {
 
+  private var headIndex = 0
   private var indexInCsv = 1
 
-  def readDescription(): List[String] = {
-    List.empty
-  }
-
-  def readTitle(): List[String] = {
-    reader.readLine()
-    Strings.split(reader.readLine(), ",").toList
-  }
-
-  private def preRead(): Unit = {
-    while (indexInCsv < dataIndex) {
+  override def readAttributes(): List[Attribute] = {
+    var line: String = null
+    while (indexInCsv < headIndex) {
       try {
-        reader.readLine()
+        line = reader.readLine()
       } catch {
         case e: Throwable => logger.error("read csv", e);
       }
       indexInCsv += 1
     }
+    val titles = Strings.split(line, ",")
+    val attrList = new collection.mutable.ListBuffer[Attribute]
+    titles.indices foreach { i =>
+      attrList += Attribute(i + 1, titles(i), titles(i))
+    }
+    attrList.toList
   }
 
   def read(): Any = {
-    preRead()
     var curData: String = null
     try {
       curData = reader.readLine()
@@ -70,13 +69,8 @@ class CsvItemReader(reader: LineNumberReader) extends ItemReader with Logging {
     }
   }
 
-  def setIndex(headIndex: Int, dataIndex: Int): Unit = {
-    if (this.dataIndex == this.indexInCsv) {
-      this.dataIndex = dataIndex
-      this.indexInCsv = dataIndex
-    }
+  def setIndex(headIndex: Int): Unit = {
     this.headIndex = headIndex
-    this.dataIndex = dataIndex
   }
 
   def format: Format.Value = {

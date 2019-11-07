@@ -26,10 +26,11 @@ import org.beangle.data.transfer.csv.CsvItemReader
 import org.beangle.data.transfer.excel.ExcelItemReader
 
 /**
- * Importer Factory
- * @author chaostone
- * @since 3.1
- */
+  * Importer Factory
+  *
+  * @author chaostone
+  * @since 3.1
+  */
 object ImporterFactory {
 
   def getEntityImporter(format: Format.Value, is: InputStream, clazz: Class[_],
@@ -38,9 +39,9 @@ object ImporterFactory {
     val importer = new DefaultEntityImporter(clazz, shortName)
     format match {
       case Format.Xls =>
-        importer.reader = new ExcelItemReader(is, Format.Xls, 0)
+        importer.reader = new ExcelItemReader(is, 0, Format.Xls)
       case Format.Xlsx =>
-        importer.reader = new ExcelItemReader(is, Format.Xlsx, 0)
+        importer.reader = new ExcelItemReader(is, 0, Format.Xlsx)
       case _ =>
         val reader = new LineNumberReader(new InputStreamReader(is))
         importer.reader = new CsvItemReader(reader)
