@@ -18,16 +18,15 @@
  */
 package org.beangle.data.transfer.excel
 
-import java.time.{Instant, LocalDate}
 import java.io.OutputStream
+import java.time.{Instant, LocalDate}
 
-import org.apache.poi.hssf.usermodel.{HSSFCellStyle, HSSFRichTextString, HSSFSheet, HSSFWorkbook}
-import org.apache.poi.hssf.util.HSSFColor.HSSFColorPredefined
 import org.apache.poi.ss.usermodel.{CellType, FillPatternType, HorizontalAlignment, VerticalAlignment}
+import org.apache.poi.xssf.usermodel._
 import org.beangle.commons.lang.Numbers
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.ItemWriter
 import org.beangle.data.transfer.exporter.ExportContext
+import org.beangle.data.transfer.io.ItemWriter
 
 /**
   * ExcelItemWriter class.
@@ -36,17 +35,17 @@ import org.beangle.data.transfer.exporter.ExportContext
   */
 class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
 
-  var countPerSheet = 50000
+  var countPerSheet = 100000
 
-  var workbook = new HSSFWorkbook() // 建立新HSSFWorkbook对象
+  var workbook = new XSSFWorkbook() // 建立新XSSFWorkbook对象
 
   var index = 0
 
-  var sheet: HSSFSheet = _
+  var sheet: XSSFSheet = _
 
-  var dateStyle: HSSFCellStyle = _
+  var dateStyle: XSSFCellStyle = _
 
-  var timeStyle: HSSFCellStyle = _
+  var timeStyle: XSSFCellStyle = _
 
   var title: Any = _
 
@@ -83,20 +82,21 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     title = data
     index = 0
     writeItem(data)
-    var titleRow = sheet.getRow(index)
-    var titleStyle = buildTitleStyle()
+    val titleRow = sheet.getRow(index)
+    val titleStyle = buildTitleStyle()
     for (i <- 0 until titleRow.getLastCellNum()) {
       titleRow.getCell(i).setCellStyle(titleStyle)
     }
     index += 1
+    sheet.createFreezePane(0, 1)
   }
 
   def format: Format.Value = {
-    Format.Xls
+    Format.Xlsx
   }
 
   protected def writeItem(datas: Any): Unit = {
-    var row = sheet.createRow(index) // 建立新行
+    val row = sheet.createRow(index) // 建立新行
     if (datas != null) {
       if (datas.getClass.isArray) {
         val values = datas.asInstanceOf[Array[_]]
@@ -125,22 +125,24 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
             case c: java.util.Calendar =>
               cell.setCellValue(c)
               cell.setCellStyle(getTimeStyle)
+            case c: java.lang.Boolean =>
+              cell.setCellValue(if(c)"Y"else "N")
             case _ =>
-              cell.setCellValue(new HSSFRichTextString(if (v == null) "" else v.toString))
+              cell.setCellValue(new XSSFRichTextString(if (v == null) "" else v.toString))
           }
         }
       } else {
-        var cell = row.createCell(0)
+        val cell = row.createCell(0)
         datas match {
-          case n: Number => cell.setCellType(CellType.NUMERIC)
+          case _: Number => cell.setCellType(CellType.NUMERIC)
           case _ =>
         }
-        cell.setCellValue(new HSSFRichTextString(datas.toString))
+        cell.setCellValue(new XSSFRichTextString(datas.toString))
       }
     }
   }
 
-  private def getDateStyle: HSSFCellStyle = {
+  private def getDateStyle: XSSFCellStyle = {
     if (null == dateStyle) {
       dateStyle = workbook.createCellStyle()
       dateStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateFormat))
@@ -148,7 +150,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     dateStyle
   }
 
-  private def getTimeStyle: HSSFCellStyle = {
+  private def getTimeStyle: XSSFCellStyle = {
     if (null == timeStyle) {
       timeStyle = workbook.createCellStyle()
       timeStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateTimeFormat))
@@ -164,12 +166,13 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     "YYYY-MM-DD HH:MM:SS"
   }
 
-  protected def buildTitleStyle(): HSSFCellStyle = {
+  protected def buildTitleStyle(): XSSFCellStyle = {
     val style = workbook.createCellStyle()
     style.setAlignment(HorizontalAlignment.CENTER) // 左右居中
     style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
     style.setFillPattern(FillPatternType.SOLID_FOREGROUND)
-    style.setFillForegroundColor(HSSFColorPredefined.GREY_25_PERCENT.getIndex)
+    val rgb = Array(221.toByte, 217.toByte, 196.toByte)
+    style.setFillForegroundColor(new XSSFColor(rgb, new DefaultIndexedColorMap))
     style
   }
 }

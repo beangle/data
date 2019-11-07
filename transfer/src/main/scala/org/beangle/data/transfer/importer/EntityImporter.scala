@@ -108,7 +108,7 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
     }
 
     if (!populator.populate(entity, etype, attr, value)) {
-      transferResult.addFailure(descriptions.getOrElse(attr, "") + " data format error.", value)
+      transferResult.addFailure(description(attr) + " data format error.", value)
     }
   }
 

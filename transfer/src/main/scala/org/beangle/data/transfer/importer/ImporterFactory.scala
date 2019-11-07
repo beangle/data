@@ -18,32 +18,33 @@
  */
 package org.beangle.data.transfer.importer
 
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.io.LineNumberReader
+import java.io.{InputStream, InputStreamReader, LineNumberReader}
 
+import org.beangle.commons.lang.Strings
+import org.beangle.data.transfer.Format
 import org.beangle.data.transfer.csv.CsvItemReader
 import org.beangle.data.transfer.excel.ExcelItemReader
-import org.beangle.data.transfer.Format
-import org.beangle.commons.lang.Strings
 
 /**
- * Importer Factory
- *
- * @author chaostone
- * @since 3.1
- */
+  * Importer Factory
+  *
+  * @author chaostone
+  * @since 3.1
+  */
 object ImporterFactory {
 
   def getEntityImporter(format: Format.Value, is: InputStream, clazz: Class[_],
                         params: Map[String, Any]): EntityImporter = {
     val shortName = Strings.uncapitalize(Strings.substringAfterLast(clazz.getName, "."))
     val importer = new DefaultEntityImporter(clazz, shortName)
-    if (format.equals(Format.Xls)) {
-      importer.reader = new ExcelItemReader(is, 1)
-    } else {
-      val reader = new LineNumberReader(new InputStreamReader(is))
-      importer.reader = new CsvItemReader(reader)
+    format match {
+      case Format.Xls =>
+        importer.reader = new ExcelItemReader(is, 0, Format.Xls)
+      case Format.Xlsx =>
+        importer.reader = new ExcelItemReader(is, 0, Format.Xlsx)
+      case _ =>
+        val reader = new LineNumberReader(new InputStreamReader(is))
+        importer.reader = new CsvItemReader(reader)
     }
     importer
   }

@@ -21,101 +21,61 @@ package org.beangle.data.transfer.excel
 import java.io.InputStream
 import java.text.NumberFormat
 
-import org.apache.poi.hssf.usermodel.{HSSFCell, HSSFSheet, HSSFWorkbook}
-import org.apache.poi.ss.usermodel.{CellType, DateUtil}
+import org.apache.poi.hssf.usermodel.HSSFWorkbook
+import org.apache.poi.ss.usermodel._
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.ItemReader
+import org.beangle.data.transfer.io.{Attribute, ItemReader}
 
 object ExcelItemReader {
-  /** Constant <code>numberFormat</code> */
   val numberFormat: NumberFormat = NumberFormat.getInstance()
   numberFormat.setGroupingUsed(false)
 }
+
 /**
- * Excel的每行一条数据的读取器
- *
- * @author chaostone
- */
-class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
+  * Excel的每行一条数据的读取器
+  *
+  * @author chaostone
+  */
+class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format.Value = Format.Xlsx) extends ItemReader with Logging {
 
-  /** Constant <code>sheetNum=0</code> */
-  val sheetNum = 0
+  /** 读取的工作表 */
+  private val sheet = buildSheet(is, sheetNum)
 
-  this.headIndex = 0
-  this.dataIndex = headIndex + 1
+  /** 下一个要读取的位置 标题行默认占据0 */
+  private var indexInSheet: Int = 1
 
-  /**
-   * 下一个要读取的位置 标题行和代码行分别默认占据0,1
-   */
-  private var indexInSheet: Int = dataIndex
+  /** 读取的属性 */
+  private var attrs: List[Attribute] = _
 
-  /**
-   * 属性的个数，0表示在读取值的是否不做读限制
-   */
-  private var attrCount: Int = _
-
-  /**
-   * 读取的工作表
-   */
-  private val workbook: HSSFWorkbook = new HSSFWorkbook(is)
-
-  def this(is: InputStream, headIndex: Int) {
-    this(is)
-    this.headIndex = headIndex
-    this.dataIndex = this.headIndex + 1
-    this.indexInSheet = dataIndex
-  }
-
-  /**
-   * 描述放在第一行
-   *
-   * @return an array of String objects.
-   */
-  override def readDescription(): List[String] = {
-    if (workbook.getNumberOfSheets < 1) {
-      List.empty
-    } else {
-      readLine(workbook.getSheetAt(0), headIndex)
+  private def buildSheet(is: InputStream, sheetNum: Int): Sheet = {
+    format match {
+      case Format.Xls => new HSSFWorkbook(is).getSheetAt(sheetNum)
+      case Format.Xlsx => new XSSFWorkbook(is).getSheetAt(sheetNum)
+      case _ => throw new RuntimeException("Cannot support excel format " + format)
     }
   }
 
-  override def readTitle(): List[String] = {
-    if (workbook.getNumberOfSheets < 1) {
-      List.empty
-    } else {
-      val comments = readComments(workbook.getSheetAt(0), headIndex)
-      attrCount = comments.length
-      comments
+  override def readAttributes(): List[Attribute] = {
+    var i = 0
+    var attrs: List[Attribute] = List.empty
+    while (i < 10 && attrs.isEmpty) {
+      attrs = this.readAttributes(sheet, i)
+      i += 1
     }
+    this.indexInSheet = i
+    this.attrs = attrs
+    attrs
   }
 
   /**
-   * 遇到空白单元格停止的读行操作
-   */
-  protected def readLine(sheet: HSSFSheet, rowIndex: Int): List[String] = {
+    * 读取注释
+    */
+   protected def readAttributes(sheet: Sheet, rowIndex: Int): List[Attribute] = {
     val row = sheet.getRow(rowIndex)
-    val attrList = new collection.mutable.ListBuffer[String]
-    var hasEmptyCell = false
-    for (i <- 0 until row.getLastCellNum; if !hasEmptyCell) {
-      val cell = row.getCell(i)
-      val attr = cell.getRichStringCellValue.getString
-      if (Strings.isEmpty(attr)) {
-        hasEmptyCell = true
-      } else {
-        attrList += attr.trim
-      }
-    }
-    attrList.toList
-  }
-
-  /**
-   * 读取注释
-   */
-  def readComments(sheet: HSSFSheet, rowIndex: Int): List[String] = {
-    val row = sheet.getRow(rowIndex)
-    val attrList = new collection.mutable.ListBuffer[String]
+    val attrList = new collection.mutable.ListBuffer[Attribute]
     var hasEmptyCell = false
     for (i <- 0 until row.getLastCellNum; if !hasEmptyCell) {
       val cell = row.getCell(i)
@@ -127,22 +87,24 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
         if (commentStr.indexOf(':') > 0) {
           commentStr = Strings.substringAfterLast(commentStr, ":")
         }
-        attrList += commentStr.trim()
+        attrList += Attribute(i + 1, commentStr.trim(), cell.getRichStringCellValue.getString)
       }
     }
     attrList.toList
   }
 
-  override def read(): Any = {
-    val sheet = workbook.getSheetAt(sheetNum)
-    if (indexInSheet > sheet.getLastRowNum) { return null; }
+  override def read(): Array[String] = {
+    if (indexInSheet > sheet.getLastRowNum) {
+      return null
+    }
     val row = sheet.getRow(indexInSheet)
     indexInSheet += 1
     // 如果是个空行,返回空记录
+    val attrCount = attrs.size
     if (row == null) {
-      new Array[Object](attrCount)
+      new Array[String](attrCount)
     } else {
-      val values = new Array[Object](if (attrCount != 0) attrCount else row.getLastCellNum)
+      val values = new Array[String](if (attrCount != 0) attrCount else row.getLastCellNum)
       values.indices foreach { k =>
         values(k) = getCellValue(row.getCell(k));
       }
@@ -151,30 +113,36 @@ class ExcelItemReader(is: InputStream) extends ItemReader with Logging {
   }
 
   /**
-   * 取cell单元格中的数据
-   */
-  def getCellValue(cell: HSSFCell): Object = {
+    * 取cell单元格中的数据
+    */
+  def getCellValue(cell: Cell): String = {
     if (cell == null) return null
+
     cell.getCellType match {
-      case CellType.BLANK  => null
+      case CellType.BLANK => null
       case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
       case CellType.NUMERIC =>
         if (DateUtil.isCellDateFormatted(cell)) {
-          cell.getDateCellValue
+          cell.getDateCellValue match {
+            case null => null
+            case d => new java.sql.Date(d.getTime).toLocalDate.toString
+          }
         } else {
           ExcelItemReader.numberFormat.format(cell.getNumericCellValue)
         }
-      case CellType.BOOLEAN => if (cell.getBooleanCellValue) java.lang.Boolean.TRUE else java.lang.Boolean.FALSE
-      case _                => null
+      case CellType.BOOLEAN => if (cell.getBooleanCellValue) "true" else "false"
+      case CellType.FORMULA =>
+        cell.getCachedFormulaResultType match {
+          case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
+          case CellType.NUMERIC => ExcelItemReader.numberFormat.format(cell.getNumericCellValue)
+          case _ => null
+        }
+      case _ => null
     }
   }
 
-  override def format: Format.Value = {
-    Format.Xls
-  }
-
   override def close(): Unit = {
-    this.workbook.cloneSheet(sheetNum)
+    this.sheet.getWorkbook.close()
   }
 
 }

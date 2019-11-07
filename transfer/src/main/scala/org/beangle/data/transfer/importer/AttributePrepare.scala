@@ -21,15 +21,15 @@ package org.beangle.data.transfer.importer
 import org.beangle.data.transfer.io.ItemReader
 
 /**
- * DescriptionAttrPrepare class.
+ * AttributePrepare class.
  *
  * @author chaostone
  */
-class DescriptionAttrPrepare extends ImportPrepare {
+class AttributePrepare extends ImportPrepare {
 
   def prepare(importer: Importer) : Unit = {
     val reader = importer.reader.asInstanceOf[ItemReader]
-    importer.asInstanceOf[AbstractImporter].setAttrs(reader.readTitle(), reader.readDescription())
+    importer.asInstanceOf[AbstractImporter].setAttrs(reader.readAttributes())
   }
 
 }

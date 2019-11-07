@@ -16,19 +16,26 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.transfer.io
+package org.beangle.data.transfer.excel
 
-/**
-  * ItemReader interface.
-  *
-  * @author chaostone
-  */
-trait ItemReader extends Reader {
+import org.beangle.commons.lang.ClassLoaders
+import org.beangle.data.transfer.Format
+import org.junit.runner.RunWith
+import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
-  def readAttributes(): List[Attribute]
-
-}
-
-case class Attribute(idx: Int, name: String, description: String) {
+@RunWith(classOf[JUnitRunner])
+class ExcelReaderTest extends AnyFunSpec with Matchers {
+  describe("ExcelReader") {
+    it("reader") {
+      val template = ClassLoaders.getResource("data.xlsx").get
+      val reader = new ExcelItemReader(template.openStream(),0,Format.Xlsx)
+      val title = reader.readAttributes()
+      val data = reader.read()
+      println(title)
+      println(data.toSeq)
+    }
+  }
 
 }

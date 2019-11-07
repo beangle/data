@@ -23,19 +23,19 @@ import java.util.Locale
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.io.Attribute
 
 import scala.collection.mutable.ListBuffer
 
 /** 导入的抽象和缺省实现
+  *
   * @author chaostone
   */
 abstract class AbstractImporter extends Importer with Logging {
   protected var transferResult: ImportResult = _
   protected val listeners = new ListBuffer[ImportListener]
   var success, fail = 0
-  this.prepare = new DescriptionAttrPrepare()
-  /** 属性说明[attr,description] */
-  protected val descriptions = new collection.mutable.HashMap[String, String]
+  this.prepare = new AttributePrepare()
   protected var index = 0
 
   /**
@@ -120,7 +120,7 @@ abstract class AbstractImporter extends Importer with Logging {
     } else {
       curData = new collection.mutable.HashMap[String, Any]
       data.indices foreach { i =>
-        this.curData.put(attrs(i), data(i))
+        this.curData.put(attrs(i).name, data(i))
       }
       true
     }
@@ -135,12 +135,15 @@ abstract class AbstractImporter extends Importer with Logging {
     }
   }
 
-  def setAttrs(attrs: List[String], descs: List[String]): Unit = {
-    val max = Math.min(attrs.length, descs.length)
-    (0 until max) foreach { i =>
-      descriptions.put(attrs(i), descs(i))
+  def setAttrs(attrs: List[Attribute]): Unit = {
+    this.attrs = attrs.toArray
+  }
+
+  def description(attr: String): String = {
+    attrs.find(_.name == attr) match {
+      case None => ""
+      case Some(e) => e.description
     }
-    this.attrs = attrs
   }
 
 }
