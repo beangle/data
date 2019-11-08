@@ -26,6 +26,7 @@ import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel._
 import org.beangle.commons.lang.Strings
 
+
 object ExcelSchemaWriter {
 
   def generate(schema: ExcelSchema, os: OutputStream): Unit = {
@@ -35,19 +36,23 @@ object ExcelSchemaWriter {
       sheet.setDefaultColumnWidth(15)
       var rowIdx = 0
 
+      // write title
       esheet.title foreach { title =>
         val cell = writeRow(sheet, title, rowIdx, esheet.columns.size)
         cell.setCellStyle(getTitleStyle(workbook))
         rowIdx += 1
       }
+      // write remark
       esheet.remark foreach { remark =>
-        writeRow(sheet, remark, rowIdx, esheet.columns.size)
+        val cell = writeRow(sheet, remark, rowIdx, esheet.columns.size)
+        cell.setCellStyle(getRemarkStyle(workbook))
         rowIdx += 1
       }
+      // write column remarks
       val existsColumnRemark = esheet.columns.exists(_.remark.nonEmpty)
       if (existsColumnRemark) {
         val remarkRow = sheet.createRow(rowIdx)
-        val remarkStyle = getRemarkStyle(workbook)
+        val remarkStyle = getColumnRemarkStyle(workbook)
         rowIdx += 1
         esheet.columns.indices foreach { i =>
           val col = esheet.columns(i)
@@ -56,9 +61,10 @@ object ExcelSchemaWriter {
         }
       }
 
+      // write column(name,comment)
       val columnRow = sheet.createRow(rowIdx)
-      val optionalStyle = getColumnStyle(workbook, required = false)
-      val requiredStyle = getColumnStyle(workbook, required = true)
+      val optionalStyle = getColumnTitleStyle(workbook, required = false)
+      val requiredStyle = getColumnTitleStyle(workbook, required = true)
 
       val drawing = sheet.createDrawingPatriarch
       val dvHelper = new XSSFDataValidationHelper(sheet)
@@ -110,6 +116,7 @@ object ExcelSchemaWriter {
         }
       }
     }
+
     workbook.write(os)
     os.close()
   }
@@ -138,9 +145,12 @@ object ExcelSchemaWriter {
 
   private def writeColumnRemark(sheet: Sheet, content: String, row: Row, columnIdx: Int): Cell = {
     val cell = row.createCell(columnIdx)
-    val newLines = Strings.count(content, "\n")
-    if (newLines > 1) {
-      row.setHeightInPoints((newLines + 1) * sheet.getDefaultRowHeightInPoints)
+    val newLines = Strings.count(content.trim(), "\n")
+    if (newLines > 0) {
+      val newHeight = (newLines + 1) * sheet.getDefaultRowHeightInPoints
+      if (newHeight > row.getHeightInPoints) {
+        row.setHeightInPoints(newHeight)
+      }
     }
     cell.setCellValue(content)
     cell
@@ -163,12 +173,9 @@ object ExcelSchemaWriter {
     val row = sheet.createRow(rowIdx)
     val cell = row.createCell(0)
 
-    val newLines = Strings.count(content, "\n")
-    if (newLines > 1) {
+    val newLines = Strings.count(content.trim(), "\n")
+    if (newLines > 0) {
       row.setHeightInPoints((newLines + 1) * sheet.getDefaultRowHeightInPoints)
-      val cs = sheet.getWorkbook.createCellStyle()
-      cs.setWrapText(true)
-      cell.setCellStyle(cs)
     }
     cell.setCellValue(content)
     cell
@@ -176,7 +183,7 @@ object ExcelSchemaWriter {
 
   private def getRemarkStyle(wb: Workbook): CellStyle = {
     val style = wb.createCellStyle
-    style.setAlignment(HorizontalAlignment.CENTER)
+    style.setAlignment(HorizontalAlignment.LEFT)
     style.setVerticalAlignment(VerticalAlignment.CENTER)
     style.setWrapText(true)
     style
@@ -186,6 +193,7 @@ object ExcelSchemaWriter {
     val style = wb.createCellStyle
     style.setAlignment(HorizontalAlignment.CENTER)
     style.setVerticalAlignment(VerticalAlignment.CENTER)
+    style.setWrapText(true)
     val font = wb.createFont
     font.setFontHeightInPoints(20.toShort)
     font.setFontName("宋体")
@@ -195,7 +203,16 @@ object ExcelSchemaWriter {
     style
   }
 
-  private def getColumnStyle(wb: Workbook, required: Boolean): CellStyle = {
+  private def getColumnRemarkStyle(wb: Workbook): CellStyle = {
+    val style = wb.createCellStyle.asInstanceOf[XSSFCellStyle]
+    style.setAlignment(HorizontalAlignment.CENTER)
+    style.setVerticalAlignment(VerticalAlignment.CENTER)
+    style.setWrapText(true)
+    style.setFillForegroundColor(IndexedColors.AUTOMATIC.index)
+    style
+  }
+
+  private def getColumnTitleStyle(wb: Workbook, required: Boolean): CellStyle = {
     val style = wb.createCellStyle.asInstanceOf[XSSFCellStyle]
     style.setAlignment(HorizontalAlignment.CENTER) // 左右居中
     style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
