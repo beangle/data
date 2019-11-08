@@ -78,22 +78,45 @@ class ExcelScheet(var name: String) {
 }
 
 class ExcelColumn(var name: String) {
+  /**批注*/
   var comment: Option[String] = None
+  /**说明*/
   var remark: Option[String] = None
+
+  /** 是否日期 */
+  var isDate: Boolean = _
+  /**是否整形*/
+  var isInt: Boolean = _
+  /**是否浮点型*/
+  var isDecimal: Boolean = _
+  /**是否布尔型*/
+  var isBool: Boolean = _
+
+  /**引用数据*/
+  var refs: collection.Seq[String] = _
+  /**本列的数据*/
+  var datas: collection.Seq[String] = _
+
+  /**约束的第一个公式*/
+  var formular1: String = _
+  /**约束的第一个公式*/
+  var formular2: Option[String] = None
+
   /** 文本长度 */
   var length: Option[Int] = None
-  /** 日期格式 */
-  var date: Option[String] = None
-
-  var isInt: Boolean = _
-  var isDecimal: Boolean = _
-  var isBool:Boolean=_
-  var refs: collection.Seq[String] = _
-  var datas: collection.Seq[String] = _
-  var formular1: String = _
-  var formular2: Option[String] = None
+  /**是否必须*/
   var required: Boolean = _
+  /**是否唯一*/
   var unique: Boolean = _
+
+  /**数据格式*/
+  var format: Option[String] = None
+
+
+  def format(f: String): this.type = {
+    this.format = Some(f)
+    this
+  }
 
   def remark(r: String): this.type = {
     this.remark = Some(r)
@@ -110,13 +133,14 @@ class ExcelColumn(var name: String) {
     this
   }
 
-  def date(format: String = "yyyy-MM-dd"): this.type = {
-    date = Some(format)
-    formular1 = format
-    formular1 = Strings.replace(formular1, "yyyy", "1900")
-    formular1 = Strings.replace(formular1, "yy", "00")
+  def date(f: String = "YYYY-MM-DD"): this.type = {
+    isDate=true
+    this.format = Some(f)
+    formular1 = f
+    formular1 = Strings.replace(formular1, "YYYY", "1900")
+    formular1 = Strings.replace(formular1, "YY", "00")
     formular1 = Strings.replace(formular1, "MM", "01")
-    formular1 = Strings.replace(formular1, "dd", "01")
+    formular1 = Strings.replace(formular1, "DD", "01")
     this
   }
 
@@ -136,6 +160,7 @@ class ExcelColumn(var name: String) {
 
   def length(max: Int): this.type = {
     length = Some(max)
+    format=Some("@")
     if (null == formular1) {
       formular1 = "0"
     }
@@ -143,14 +168,16 @@ class ExcelColumn(var name: String) {
     this
   }
 
-  def decimal(): this.type = {
+  def decimal(f:String="0.##"): this.type = {
     isDecimal = true
+    format=Some(f)
     formular1 = "0"
     this
   }
 
   def decimal(min: Float, max: Float): this.type = {
     isDecimal = true
+    format=Some("0.##")
     assert(max >= min)
     formular1 = min.toString
     formular2 = Some(max.toString)
@@ -162,14 +189,16 @@ class ExcelColumn(var name: String) {
     this
   }
 
-  def integer(): this.type = {
+  def integer(f:String="0"): this.type = {
     isInt = true
+    format=Some(f)
     formular1 = "0"
     this
   }
 
   def integer(min: Int, max: Int): this.type = {
     isInt = true
+    format=Some("0")
     assert(max >= min)
     formular1 = min.toString
     formular2 = Some(max.toString)

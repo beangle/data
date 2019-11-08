@@ -24,7 +24,11 @@ import org.apache.poi.ss.usermodel.DataValidationConstraint.ValidationType._
 import org.apache.poi.ss.usermodel._
 import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel._
+import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
+
+import scala.collection.mutable
+
 
 object ExcelSchemaWriter {
 
@@ -35,19 +39,24 @@ object ExcelSchemaWriter {
       sheet.setDefaultColumnWidth(15)
       var rowIdx = 0
 
+      // write title
       esheet.title foreach { title =>
         val cell = writeRow(sheet, title, rowIdx, esheet.columns.size)
+        cell.getRow.setHeightInPoints(15)
         cell.setCellStyle(getTitleStyle(workbook))
         rowIdx += 1
       }
+      // write remark
       esheet.remark foreach { remark =>
-        writeRow(sheet, remark, rowIdx, esheet.columns.size)
+        val cell = writeRow(sheet, remark, rowIdx, esheet.columns.size)
+        cell.setCellStyle(getRemarkStyle(workbook))
         rowIdx += 1
       }
+      // write column remarks
       val existsColumnRemark = esheet.columns.exists(_.remark.nonEmpty)
       if (existsColumnRemark) {
         val remarkRow = sheet.createRow(rowIdx)
-        val remarkStyle = getRemarkStyle(workbook)
+        val remarkStyle = getColumnRemarkStyle(workbook)
         rowIdx += 1
         esheet.columns.indices foreach { i =>
           val col = esheet.columns(i)
@@ -56,9 +65,11 @@ object ExcelSchemaWriter {
         }
       }
 
+      // write column(name,comment)
+      val defaultStyles = Collections.newMap[String, CellStyle]
       val columnRow = sheet.createRow(rowIdx)
-      val optionalStyle = getColumnStyle(workbook, required = false)
-      val requiredStyle = getColumnStyle(workbook, required = true)
+      val optionalStyle = getColumnTitleStyle(workbook, required = false)
+      val requiredStyle = getColumnTitleStyle(workbook, required = true)
 
       val drawing = sheet.createDrawingPatriarch
       val dvHelper = new XSSFDataValidationHelper(sheet)
@@ -69,6 +80,7 @@ object ExcelSchemaWriter {
           val comment = drawing.createCellComment(new XSSFClientAnchor(0, 0, 0, 0, curColumnIdx, rowIdx, curColumnIdx, rowIdx))
           comment.setString(new XSSFRichTextString(c))
           cell.setCellComment(comment)
+          comment.setVisible(false)
         }
         if (col.required) {
           cell.setCellStyle(requiredStyle)
@@ -79,10 +91,13 @@ object ExcelSchemaWriter {
         if (null == col.datas) {
           if (col.isInt) {
             sheet.addValidationData(Constraints.asNumeric(dvHelper, col, INTEGER, rowIdx + 1, curColumnIdx))
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,col.format.getOrElse("0"))
           } else if (col.isDecimal) {
             sheet.addValidationData(Constraints.asNumeric(dvHelper, col, DECIMAL, rowIdx + 1, curColumnIdx))
-          } else if (col.date.nonEmpty) {
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,col.format.getOrElse("General"))
+          } else if (col.isDate) {
             sheet.addValidationData(Constraints.asDate(dvHelper, col, rowIdx + 1, curColumnIdx))
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,col.format.get)
           } else if (col.length.nonEmpty) {
             if (col.formular1 == "0" && col.required) {
               col.formular1 = "1"
@@ -92,10 +107,12 @@ object ExcelSchemaWriter {
             } else {
               sheet.addValidationData(Constraints.asNumeric(dvHelper, col, TEXT_LENGTH, rowIdx + 1, curColumnIdx))
             }
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,"@")
           } else if (col.isBool) {
             sheet.addValidationData(Constraints.asBoolean(dvHelper, col, rowIdx + 1, curColumnIdx))
           } else if (null != col.refs && col.refs.nonEmpty) {
             addRefValidation(schema, sheet, dvHelper, col, rowIdx + 1, curColumnIdx)
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,"@")
           }
         } else {
           var dIdx = 1
@@ -110,8 +127,19 @@ object ExcelSchemaWriter {
         }
       }
     }
+
     workbook.write(os)
     os.close()
+  }
+
+  private def setDefaultStyle(sheet: Sheet, defaults: mutable.Map[String, CellStyle], columnIdx: Int, format: String): Unit = {
+    val style = defaults.getOrElseUpdate(format, {
+      val s = sheet.getWorkbook.createCellStyle()
+      val df = sheet.getWorkbook.createDataFormat()
+      s.setDataFormat(df.getFormat(format))
+      s
+    })
+    sheet.setDefaultColumnStyle(columnIdx, style)
   }
 
   private def addRefValidation(schema: ExcelSchema, sheet: Sheet, helper: XSSFDataValidationHelper,
@@ -138,9 +166,12 @@ object ExcelSchemaWriter {
 
   private def writeColumnRemark(sheet: Sheet, content: String, row: Row, columnIdx: Int): Cell = {
     val cell = row.createCell(columnIdx)
-    val newLines = Strings.count(content, "\n")
-    if (newLines > 1) {
-      row.setHeightInPoints((newLines + 1) * sheet.getDefaultRowHeightInPoints)
+    val newLines = Strings.count(content.trim(), "\n")
+    if (newLines > 0) {
+      val newHeight = (newLines + 1) * sheet.getDefaultRowHeightInPoints
+      if (newHeight > row.getHeightInPoints) {
+        row.setHeightInPoints(newHeight)
+      }
     }
     cell.setCellValue(content)
     cell
@@ -163,12 +194,9 @@ object ExcelSchemaWriter {
     val row = sheet.createRow(rowIdx)
     val cell = row.createCell(0)
 
-    val newLines = Strings.count(content, "\n")
-    if (newLines > 1) {
+    val newLines = Strings.count(content.trim(), "\n")
+    if (newLines > 0) {
       row.setHeightInPoints((newLines + 1) * sheet.getDefaultRowHeightInPoints)
-      val cs = sheet.getWorkbook.createCellStyle()
-      cs.setWrapText(true)
-      cell.setCellStyle(cs)
     }
     cell.setCellValue(content)
     cell
@@ -176,7 +204,7 @@ object ExcelSchemaWriter {
 
   private def getRemarkStyle(wb: Workbook): CellStyle = {
     val style = wb.createCellStyle
-    style.setAlignment(HorizontalAlignment.CENTER)
+    style.setAlignment(HorizontalAlignment.LEFT)
     style.setVerticalAlignment(VerticalAlignment.CENTER)
     style.setWrapText(true)
     style
@@ -186,8 +214,9 @@ object ExcelSchemaWriter {
     val style = wb.createCellStyle
     style.setAlignment(HorizontalAlignment.CENTER)
     style.setVerticalAlignment(VerticalAlignment.CENTER)
+    style.setWrapText(true)
     val font = wb.createFont
-    font.setFontHeightInPoints(20.toShort)
+    font.setFontHeightInPoints(15.toShort)
     font.setFontName("宋体")
     font.setItalic(false)
     font.setBold(true)
@@ -195,7 +224,16 @@ object ExcelSchemaWriter {
     style
   }
 
-  private def getColumnStyle(wb: Workbook, required: Boolean): CellStyle = {
+  private def getColumnRemarkStyle(wb: Workbook): CellStyle = {
+    val style = wb.createCellStyle.asInstanceOf[XSSFCellStyle]
+    style.setAlignment(HorizontalAlignment.CENTER)
+    style.setVerticalAlignment(VerticalAlignment.CENTER)
+    style.setWrapText(true)
+    style.setFillForegroundColor(IndexedColors.AUTOMATIC.index)
+    style
+  }
+
+  private def getColumnTitleStyle(wb: Workbook, required: Boolean): CellStyle = {
     val style = wb.createCellStyle.asInstanceOf[XSSFCellStyle]
     style.setAlignment(HorizontalAlignment.CENTER) // 左右居中
     style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
@@ -217,5 +255,6 @@ object ExcelSchemaWriter {
     style.setFont(font)
     style
   }
+
 
 }

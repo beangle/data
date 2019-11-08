@@ -27,6 +27,7 @@ import org.apache.poi.ss.util.CellRangeAddressList
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper
 
 object Constraints {
+
   def asBoolean(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int, columnIdx: Int): DataValidation = {
     val constraint = helper.createExplicitListConstraint(Array("Y", "N"))
     val v=createValidation(helper, col, startRowIdx, columnIdx, constraint, "请选择Y/N")
@@ -45,15 +46,16 @@ object Constraints {
   def asDate(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int, columnIdx: Int): DataValidation = {
     var prompt: String = null
     var constraint: DataValidationConstraint = null
-    val sdf = new SimpleDateFormat(col.date.get)
+    val format= col.format.get
+    val sdf = new SimpleDateFormat(format)
     val formual1Value = DateUtil.getExcelDate(sdf.parse(col.formular1)).toString
     col.formular2 match {
       case None =>
-        constraint = helper.createDateConstraint(GREATER_OR_EQUAL, formual1Value, null, col.date.get)
+        constraint = helper.createDateConstraint(GREATER_OR_EQUAL, formual1Value, null, format)
         prompt = composeError("日期", col.formular1, None)
       case Some(f2) =>
         val formual2Value = DateUtil.getExcelDate(sdf.parse(f2)).toString
-        constraint = helper.createDateConstraint(BETWEEN, formual1Value, formual2Value, col.date.get)
+        constraint = helper.createDateConstraint(BETWEEN, formual1Value, formual2Value, format)
         prompt = composeError("日期", col.formular1, col.formular2)
     }
     createValidation(helper, col, startRowIdx, columnIdx, constraint, prompt)
