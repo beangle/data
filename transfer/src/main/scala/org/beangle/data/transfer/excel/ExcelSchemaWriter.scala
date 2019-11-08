@@ -24,7 +24,10 @@ import org.apache.poi.ss.usermodel.DataValidationConstraint.ValidationType._
 import org.apache.poi.ss.usermodel._
 import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel._
+import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
+
+import scala.collection.mutable
 
 
 object ExcelSchemaWriter {
@@ -39,6 +42,7 @@ object ExcelSchemaWriter {
       // write title
       esheet.title foreach { title =>
         val cell = writeRow(sheet, title, rowIdx, esheet.columns.size)
+        cell.getRow.setHeightInPoints(15)
         cell.setCellStyle(getTitleStyle(workbook))
         rowIdx += 1
       }
@@ -62,6 +66,7 @@ object ExcelSchemaWriter {
       }
 
       // write column(name,comment)
+      val defaultStyles = Collections.newMap[String, CellStyle]
       val columnRow = sheet.createRow(rowIdx)
       val optionalStyle = getColumnTitleStyle(workbook, required = false)
       val requiredStyle = getColumnTitleStyle(workbook, required = true)
@@ -75,6 +80,7 @@ object ExcelSchemaWriter {
           val comment = drawing.createCellComment(new XSSFClientAnchor(0, 0, 0, 0, curColumnIdx, rowIdx, curColumnIdx, rowIdx))
           comment.setString(new XSSFRichTextString(c))
           cell.setCellComment(comment)
+          comment.setVisible(false)
         }
         if (col.required) {
           cell.setCellStyle(requiredStyle)
@@ -85,10 +91,13 @@ object ExcelSchemaWriter {
         if (null == col.datas) {
           if (col.isInt) {
             sheet.addValidationData(Constraints.asNumeric(dvHelper, col, INTEGER, rowIdx + 1, curColumnIdx))
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,col.format.getOrElse("0"))
           } else if (col.isDecimal) {
             sheet.addValidationData(Constraints.asNumeric(dvHelper, col, DECIMAL, rowIdx + 1, curColumnIdx))
-          } else if (col.date.nonEmpty) {
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,col.format.getOrElse("General"))
+          } else if (col.isDate) {
             sheet.addValidationData(Constraints.asDate(dvHelper, col, rowIdx + 1, curColumnIdx))
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,col.format.get)
           } else if (col.length.nonEmpty) {
             if (col.formular1 == "0" && col.required) {
               col.formular1 = "1"
@@ -98,10 +107,12 @@ object ExcelSchemaWriter {
             } else {
               sheet.addValidationData(Constraints.asNumeric(dvHelper, col, TEXT_LENGTH, rowIdx + 1, curColumnIdx))
             }
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,"@")
           } else if (col.isBool) {
             sheet.addValidationData(Constraints.asBoolean(dvHelper, col, rowIdx + 1, curColumnIdx))
           } else if (null != col.refs && col.refs.nonEmpty) {
             addRefValidation(schema, sheet, dvHelper, col, rowIdx + 1, curColumnIdx)
+            setDefaultStyle(sheet,defaultStyles,curColumnIdx,"@")
           }
         } else {
           var dIdx = 1
@@ -119,6 +130,16 @@ object ExcelSchemaWriter {
 
     workbook.write(os)
     os.close()
+  }
+
+  private def setDefaultStyle(sheet: Sheet, defaults: mutable.Map[String, CellStyle], columnIdx: Int, format: String): Unit = {
+    val style = defaults.getOrElseUpdate(format, {
+      val s = sheet.getWorkbook.createCellStyle()
+      val df = sheet.getWorkbook.createDataFormat()
+      s.setDataFormat(df.getFormat(format))
+      s
+    })
+    sheet.setDefaultColumnStyle(columnIdx, style)
   }
 
   private def addRefValidation(schema: ExcelSchema, sheet: Sheet, helper: XSSFDataValidationHelper,
@@ -195,7 +216,7 @@ object ExcelSchemaWriter {
     style.setVerticalAlignment(VerticalAlignment.CENTER)
     style.setWrapText(true)
     val font = wb.createFont
-    font.setFontHeightInPoints(20.toShort)
+    font.setFontHeightInPoints(15.toShort)
     font.setFontName("宋体")
     font.setItalic(false)
     font.setBold(true)
@@ -234,5 +255,6 @@ object ExcelSchemaWriter {
     style.setFont(font)
     style
   }
+
 
 }
