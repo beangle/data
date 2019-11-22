@@ -164,6 +164,15 @@ object SQL {
     if (fk.cascadeDelete && dialect.supportsCascadeDelete) result + " on delete cascade" else result
   }
 
+  def alterTableAddUnique(fk: UniqueKey, dialect: Dialect): String = {
+    require(null != fk.name && null != fk.table)
+    require(fk.columns.nonEmpty, s"${fk.name} column's size should greate than 0")
+
+    val engine = fk.table.engine
+    val columnNames = fk.columns.map(x => x.toLiteral(engine)).toList.mkString(",")
+    "alter table " + fk.table.qualifiedName + " add constraint " + fk.literalName + " unique (" + columnNames + ")"
+  }
+
   def primaryKeySql(k: PrimaryKey, dialect: Dialect): String = {
     val buf = new StringBuilder("primary key (")
     val engine = dialect.engine

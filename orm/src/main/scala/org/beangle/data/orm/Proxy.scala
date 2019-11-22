@@ -20,7 +20,6 @@ package org.beangle.data.orm
 
 import javassist.compiler.Javac
 import javassist._
-import javassist.util.proxy.FactoryHelper
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.reflect.{BeanInfos, PropertyDescriptor, Reflections}
 import org.beangle.commons.lang.time.Stopwatch
@@ -34,7 +33,7 @@ import org.beangle.data.orm.Jpas.isComponent
 private[orm] object Proxy extends Logging {
 
   trait ModelProxy {
-    def lastAccessed(): java.util.Set[String]
+    def lastAccessed: java.util.Set[String]
   }
 
   trait EntityProxy extends ModelProxy
@@ -69,7 +68,7 @@ private[orm] object Proxy extends Logging {
           val getter = p.getter.get
           val value = if (p.typeinfo.optional) "null" else Primitives.defaultLiteral(p.clazz)
           val javaTypeName = toJavaType(p)
-          val body = s"public ${javaTypeName} ${getter.getName}() { return $value;}"
+          val body = s"public $javaTypeName ${getter.getName}() { return $value;}"
           val ctmod = javac.compile(body).asInstanceOf[CtMethod]
           if (isComponent(p.clazz)) {
             componentTypes += (name -> generateComponent(p.clazz, name + "."))
@@ -87,15 +86,13 @@ private[orm] object Proxy extends Logging {
       case (name, componentClass) =>
         val p = manifest.properties(name)
         val setName = p.setter.get.getName
-        val getName = p.getter.get.getName
-
         //User component variale instead call get method,otherwise with add name into _lastAccessed.
         val componentVariable = "comp" + componentIdx
         ctorBody ++= componentClass.getName + " " + componentVariable + " = new " + componentClass.getName + "();"
         ctorBody ++= (setName + "(" + componentVariable + ");" + componentVariable + ".setParent(this," + "\"" + name + ".\");")
         componentIdx += 1
     }
-    ctorBody ++= ("}")
+    ctorBody ++= "}"
     ctor.setBody(ctorBody.toString)
     cct.addConstructor(ctor)
 
@@ -117,7 +114,7 @@ private[orm] object Proxy extends Logging {
     if (null != exised) return exised
 
     val cct = pool.makeClass(classFullName)
-    if (clazz.isInterface()) cct.addInterface(pool.get(clazz.getName))
+    if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
     else cct.setSuperclass(pool.get(clazz.getName))
     cct.addInterface(pool.get(classOf[ComponentProxy].getName))
     val javac = new Javac(cct)
@@ -133,7 +130,7 @@ private[orm] object Proxy extends Logging {
           val getter = p.getter.get
           val value = if (p.typeinfo.optional) "null" else Primitives.defaultLiteral(p.clazz)
           val javaTypeName = toJavaType(p)
-          val body = s"public ${javaTypeName} ${getter.getName}() { return $value;}"
+          val body = s"public $javaTypeName ${getter.getName}() { return $value;}"
           val ctmod = javac.compile(body).asInstanceOf[CtMethod]
           val accessed = "_parent.lastAccessed()"
           if (isComponent(p.clazz)) {
@@ -158,7 +155,6 @@ private[orm] object Proxy extends Logging {
       case (name, componentClass) =>
         val p = manifest.properties(name)
         val setName = p.setter.get.getName
-        val getName = p.getter.get.getName
         //User component variale instead call get method,otherwise with add name into _lastAccessed.
         val componentVariable = "comp" + componentIdx
         setParentBody ++= componentClass.getName + " " + componentVariable + " = new " + componentClass.getName + "();"

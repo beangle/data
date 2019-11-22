@@ -25,12 +25,11 @@ import java.{util => ju}
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.hibernate.ScalaPropertyAccessStrategy
-import org.beangle.data.hibernate.id.{AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, DateTimeStyleGenerator, SeqPerTableStyleGenerator}
-import org.beangle.data.hibernate.udt.{EnumType, MapType, SeqType, SetType, ValueType, YearMonthType}
+import org.beangle.data.hibernate.id._
+import org.beangle.data.hibernate.udt._
 import org.beangle.data.jdbc.meta.Column
 import org.beangle.data.model.meta.{BasicType, EntityType, PluralProperty, Property}
-import org.beangle.data.orm.{BasicTypeMapping, CollectionPropertyMapping, ColumnHolder, EmbeddableTypeMapping, EntityTypeMapping, Fetchable, IdGenerator, Jpas, MapPropertyMapping, PluralPropertyMapping, PropertyMapping, SimpleColumn, SingularPropertyMapping, TypeDef}
-import org.hibernate.{FetchMode, MappingException}
+import org.beangle.data.orm._
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.model.TypeDefinition
 import org.hibernate.boot.model.naming.{Identifier, ObjectNameNormalizer}
@@ -41,15 +40,15 @@ import org.hibernate.boot.spi.{InFlightMetadataCollector, MetadataBuildingContex
 import org.hibernate.cfg.CollectionSecondPass
 import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, IDENTIFIER_NORMALIZER, SCHEMA}
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory
-import org.hibernate.mapping.{Backref, Bag => HBag, Collection => HCollection}
-import org.hibernate.mapping.{Column => HColumn, Component => HComponent, DependantValue, Fetchable => HFetchable, IndexBackref}
-import org.hibernate.mapping.{KeyValue, List => HList, ManyToOne => HManyToOne, Map => HMap, OneToMany => HOneToMany, PersistentClass, Property => HProperty, RootClass, Set => HSet, SimpleValue, ToOne, Value}
 import org.hibernate.mapping.Collection.{DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_KEY_COLUMN_NAME}
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
+import org.hibernate.mapping.{Backref, DependantValue, Index, IndexBackref, KeyValue, PersistentClass, RootClass, SimpleValue, ToOne, UniqueKey, Value, Bag => HBag, Collection => HCollection, Column => HColumn, Component => HComponent, Fetchable => HFetchable, List => HList, ManyToOne => HManyToOne, Map => HMap, OneToMany => HOneToMany, Property => HProperty, Set => HSet}
 import org.hibernate.property.access.spi.PropertyAccessStrategy
 import org.hibernate.tuple.{GeneratedValueGeneration, GenerationTiming}
+import org.hibernate.{FetchMode, MappingException}
 
 /** Beangle Model Bind Metadadta processor.
+  *
   * @see org.hibernate.boot.model.source.internal.hbm.ModelBinder
   */
 class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBuildingContext) extends MetadataSourceProcessor {
@@ -59,7 +58,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
   private val mappings = metadataSources.getServiceRegistry.getService(classOf[MappingService]).mappings
 
   private val objectNameNormalizer = new ObjectNameNormalizer() {
-    protected override def getBuildingContext(): MetadataBuildingContext = {
+    protected override def getBuildingContext: MetadataBuildingContext = {
       context
     }
   }
@@ -96,7 +95,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     * prerequisites.
     */
   override def processTypeDefinitions(): Unit = {
-    val cls = context.getBuildingOptions().getServiceRegistry().getService(classOf[ClassLoaderService])
+    val cls = context.getBuildingOptions.getServiceRegistry.getService(classOf[ClassLoaderService])
 
     Map(
       (classOf[YearMonth].getName, classOf[YearMonthType])) foreach {
@@ -223,8 +222,29 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
 
     // trigger dynamic update
-    if (!entity.useDynamicUpdate && entity.getTable().getColumnSpan() >= minColumnEnableDynaUpdate) {
+    if (!entity.useDynamicUpdate && entity.getTable.getColumnSpan >= minColumnEnableDynaUpdate) {
       entity.setDynamicUpdate(true)
+    }
+
+    // add unique key
+    em.table.uniqueKeys foreach { uniqueKey =>
+      val uk = new UniqueKey()
+      uk.setTable(table)
+      uk.setName(uniqueKey.name.toString)
+      uniqueKey.columns foreach { c =>
+        uk.addColumn(table.getColumn(Identifier.toIdentifier(c.toString)))
+      }
+      table.addUniqueKey(uk)
+    }
+    //add indexes
+    em.table.indexes foreach { idx =>
+      val index = new Index()
+      index.setTable(table)
+      index.setName(idx.name.toString)
+      idx.columns foreach { c =>
+        index.addColumn(table.getColumn(Identifier.toIdentifier(c.toString)))
+      }
+      table.addIndex(index)
     }
     assert(null != entity.getIdentifier, s"${entity.getEntityName} requires identifier.")
     metadata.addEntityBinding(entity)
@@ -360,7 +380,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     value
   }
 
-  private def nameColumn(cm: Column, propertyPath: String): Tuple2[Identifier, String] = {
+  private def nameColumn(cm: Column, propertyPath: String): (Identifier, String) = {
     val db = metadata.getDatabase
     val logicalName = if (null == cm.name) db.toIdentifier(propertyPath) else db.toIdentifier(cm.name.value)
     (logicalName, logicalName.render(db.getDialect))

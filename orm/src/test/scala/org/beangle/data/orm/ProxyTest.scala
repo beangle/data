@@ -33,7 +33,7 @@ class ProxyTest extends AnyFunSpec with Matchers {
       val proxy1 = Proxy.generate(classOf[TestUser])
       val user1 = proxy1.asInstanceOf[TestUser]
       val ps = user1.properties
-      val accessed = proxy1.lastAccessed()
+      val accessed = proxy1.lastAccessed
       assert(accessed.size == 1)
       assert(accessed.contains("properties"))
     }
@@ -48,7 +48,7 @@ class ProxyTest extends AnyFunSpec with Matchers {
       assert(null != user1.member.name)
       assert(user1.member.name.firstName == null)
 
-      val accessed = proxy1.lastAccessed()
+      val accessed = proxy1.lastAccessed
       assert(accessed.size >= 2)
       assert(accessed.contains("member.name.firstName"))
 

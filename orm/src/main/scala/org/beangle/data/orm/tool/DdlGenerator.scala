@@ -92,6 +92,7 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
     scripts.schemas = schemas.sorted.toList
     scripts.comments = comments.toSet.toList.sorted
     scripts.tables = tables.sorted.toList
+    scripts.sequences=sequences.sorted.toList
     scripts.constraints = constraints.sorted.toList
     scripts
   }
@@ -104,6 +105,9 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
 
     table.foreignKeys foreach { fk =>
       constraints += SQL.alterTableAddforeignKey(fk, dialect)
+    }
+    table.uniqueKeys foreach{ uk=>
+      constraints += SQL.alterTableAddUnique(uk, dialect)
     }
 
     table.indexes foreach { idx =>

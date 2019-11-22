@@ -44,6 +44,11 @@ trait TypeMapping extends Cloneable {
 trait StructTypeMapping extends TypeMapping {
   var properties: mutable.Map[String, PropertyMapping[_]] = Collections.newMap[String, PropertyMapping[_]]
 
+  /** 获取属性对应的属性映射，支持嵌入式属性
+    *
+    * @param property
+    * @return
+    */
   def getPropertyMapping(property: String): PropertyMapping[_] = {
     val idx = property.indexOf(".")
     if (idx == -1) {
