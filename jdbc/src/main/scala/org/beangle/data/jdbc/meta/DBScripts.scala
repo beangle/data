@@ -25,4 +25,5 @@ class DBScripts {
   var constraints: List[String] = _
   var indices: List[String] = _
   var comments: List[String] = _
+  var auxiliaries: List[String] = _
 }

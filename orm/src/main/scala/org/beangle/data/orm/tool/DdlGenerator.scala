@@ -21,8 +21,9 @@ package org.beangle.data.orm.tool
 import java.io.FileWriter
 import java.util.Locale
 
-import org.beangle.commons.io.ResourcePatternResolver
-import org.beangle.commons.lang.{Locales, SystemInfo}
+import org.beangle.commons.collection.Collections
+import org.beangle.commons.io.{IOs, ResourcePatternResolver}
+import org.beangle.commons.lang.{ClassLoaders, Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.dialect.{Dialect, Dialects, SQL}
 import org.beangle.data.jdbc.meta.{DBScripts, Database, Table}
@@ -57,6 +58,20 @@ object DdlGenerator {
     writeTo(dir, "3-indices.sql", scripts.indices)
     writeTo(dir, "4-sequences.sql", scripts.sequences)
     writeTo(dir, "5-comments.sql", scripts.comments)
+    writeLinesTo(dir, "6-auxiliaries.sql", scripts.auxiliaries)
+  }
+
+  private def writeLinesTo(dir: String, file: String, contents: List[String]): Unit = {
+    if (contents.nonEmpty) {
+      val writer = new FileWriter(dir + "/" + file, false)
+      contents foreach { c =>
+        if (null != c && c.nonEmpty) {
+          writer.write(c)
+        }
+      }
+      writer.flush()
+      writer.close()
+    }
   }
 
   private def writeTo(dir: String, file: String, contents: List[String]): Unit = {
@@ -93,6 +108,12 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
     scripts.tables = tables.sorted.toList
     scripts.sequences = sequences.sorted.toList
     scripts.constraints = constraints.sorted.toList
+    val auxiliaries = Collections.newBuffer[String]
+    val dialectShortName = Strings.replace(dialect.getClass.getSimpleName, "Dialect", "").toLowerCase
+    ResourcePatternResolver.getResources(s"classpath*:META-INF/beangle/ddl/${dialectShortName}/*.sql") foreach { r =>
+      auxiliaries += IOs.readString(r.openStream())
+    }
+    scripts.auxiliaries = auxiliaries.toList
     scripts
   }
 
