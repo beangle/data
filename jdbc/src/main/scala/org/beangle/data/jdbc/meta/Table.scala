@@ -168,11 +168,10 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     key
   }
 
-  def add(column: Column): Boolean = {
-    if (!columns.exists(_.name == column.name)) {
-      columns += column
-      true
-    } else false
+  def add(column: Column): Column = {
+    columns.find (_.name == column.name) foreach columns.subtractOne
+    columns += column
+    column
   }
 
   def add(index: Index): Index = {

@@ -217,8 +217,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /**
-   * @param key 表示是否是一个外键
-   */
+    * @param key 表示是否是一个外键
+    */
   def columnName(clazz: Class[_], propertyName: String, key: Boolean = false): String = {
     val lastDot = propertyName.lastIndexOf(".")
     var colName = if (lastDot == -1) propertyName else propertyName.substring(lastDot + 1)
@@ -228,7 +228,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 查找实体主键
-   * */
+    * */
   private def firstPass(etm: EntityTypeMapping): Unit = {
     val clazz = etm.typ.clazz
     if (null == etm.idGenerator) {
@@ -246,7 +246,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 处理外键及其关联表格,以及集合的缓存设置
-   */
+    */
   private def secondPass(etm: EntityTypeMapping): Unit = {
     val clazz = etm.typ.clazz
     val table = etm.table
@@ -355,10 +355,9 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     if (key == comment) defaults else comment
   }
 
-  /**
-   * support features
-   * <li> buildin primary type will be not null
-   */
+  /** Support features inheritence
+    * <li> buildin primary type will be not null
+    */
   private def merge(entity: EntityTypeMapping): Unit = {
     val cls = entity.clazz
     // search parent and interfaces
@@ -373,18 +372,20 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
     val inheris = Collections.newMap[String, PropertyMapping[_]]
     supers.reverse foreach { e =>
-      inheris ++= e.properties
+      inheris ++= e.properties.filter(!_._2.mergeable) // filter not mergeable
       if (entity.idGenerator == null) entity.idGenerator = e.idGenerator
       if (null == entity.cacheRegion && null == entity.cacheUsage) entity.cache(e.cacheRegion, e.cacheUsage)
     }
 
     val inherited = Collections.newMap[String, PropertyMapping[_]]
-    entity.properties foreach {
-      case (name, p) =>
-        if (p.mergeable && inheris.contains(name)) inherited.put(name, inheris(name).copy())
+    inheris foreach { case (name, p) =>
+      if (entity.properties(name).mergeable) {
+        inherited.put(name, p.copy())
+      }
     }
-    entity.properties ++= inherited
+    entity.addProperties(inherited)
   }
+
 
   private def bindComponent(mh: Mappings.Holder, name: String, propertyType: Class[_], tpe: ru.Type): SingularPropertyMapping = {
     val ct = new EmbeddableTypeImpl(propertyType)

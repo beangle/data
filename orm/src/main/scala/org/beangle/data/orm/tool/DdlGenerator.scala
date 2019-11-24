@@ -73,7 +73,6 @@ object DdlGenerator {
 }
 
 class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
-
   private val schemas = new collection.mutable.ListBuffer[String]
   private val tables = new collection.mutable.ListBuffer[String]
   private val sequences = new collection.mutable.ListBuffer[String]

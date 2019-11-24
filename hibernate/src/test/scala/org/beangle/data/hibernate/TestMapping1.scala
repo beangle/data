@@ -32,7 +32,7 @@ object TestMapping1 extends MappingModule {
     bind[IntIdResource]
 
     bind[Coded].declare { c =>
-      c.code is(notnull, length(20))
+      c.code is(notnull, length(20), unique)
     }
 
     bind[Profile]

@@ -90,6 +90,31 @@ final class EntityTypeMapping(var typ: EntityType, var table: Table) extends Str
   def copy(): this.type = {
     this
   }
+
+  def addProperties(added: collection.Map[String, PropertyMapping[_]]): Unit = {
+    if (added.nonEmpty) {
+      properties ++= added
+      inheriteColumns(this.table, added)
+    }
+  }
+
+  private def inheriteColumns(table: Table, inheris: collection.Map[String, PropertyMapping[_]]): Unit = {
+    inheris.values foreach {
+      case spm: SingularPropertyMapping =>
+        spm.mapping match {
+          case btm: BasicTypeMapping =>
+            if (table.name == "exam_subjects") {
+              btm.columns foreach { col =>
+                println("add column " + col.name + "(" + col.sqlType + ") to table " + table.name)
+              }
+            }
+            btm.columns foreach (table.add(_))
+          case etm: EmbeddableTypeMapping => inheriteColumns(table, etm.properties)
+          case _ =>
+        }
+      case _ =>
+    }
+  }
 }
 
 final class BasicTypeMapping(val typ: BasicType, column: Column)
