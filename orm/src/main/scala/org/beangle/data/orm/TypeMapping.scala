@@ -102,13 +102,7 @@ final class EntityTypeMapping(var typ: EntityType, var table: Table) extends Str
     inheris.values foreach {
       case spm: SingularPropertyMapping =>
         spm.mapping match {
-          case btm: BasicTypeMapping =>
-            if (table.name == "exam_subjects") {
-              btm.columns foreach { col =>
-                println("add column " + col.name + "(" + col.sqlType + ") to table " + table.name)
-              }
-            }
-            btm.columns foreach (table.add(_))
+          case btm: BasicTypeMapping => btm.columns foreach (table.add(_))
           case etm: EmbeddableTypeMapping => inheriteColumns(table, etm.properties)
           case _ =>
         }

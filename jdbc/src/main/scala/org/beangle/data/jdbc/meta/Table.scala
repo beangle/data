@@ -36,7 +36,8 @@ object Table {
 }
 
 class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] with Cloneable with Comment {
-
+  /**虚拟表*/
+  var phantom: Boolean = _
   var primaryKey: Option[PrimaryKey] = None
   val columns = new ListBuffer[Column]
   val uniqueKeys = new ListBuffer[UniqueKey]
@@ -169,7 +170,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   }
 
   def add(column: Column): Column = {
-    columns.find (_.name == column.name) foreach columns.subtractOne
+    columns.find(_.name == column.name) foreach columns.subtractOne
     columns += column
     column
   }

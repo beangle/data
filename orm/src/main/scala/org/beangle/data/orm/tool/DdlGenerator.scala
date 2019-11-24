@@ -22,15 +22,15 @@ import java.io.FileWriter
 import java.util.Locale
 
 import org.beangle.commons.io.ResourcePatternResolver
-import org.beangle.commons.lang.{ Locales, SystemInfo }
+import org.beangle.commons.lang.{Locales, SystemInfo}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.dialect.{ Dialect, Dialects, SQL }
-import org.beangle.data.jdbc.meta.{ DBScripts, Database, Table }
+import org.beangle.data.jdbc.dialect.{Dialect, Dialects, SQL}
+import org.beangle.data.jdbc.meta.{DBScripts, Database, Table}
 import org.beangle.data.orm.Mappings
 
 /**
- * Generate DDL and Sequences and Comments
- */
+  * Generate DDL and Sequences and Comments
+  */
 object DdlGenerator {
   def main(args: Array[String]): Unit = {
     if (args.length < 3) {
@@ -84,14 +84,14 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
   def generate(): DBScripts = {
     val database = mappings.database
     database.schemas.values foreach {
-      schema => schema.tables.values foreach (generateTableSql)
+      schema => schema.tables.values foreach { t => if (!t.phantom) generateTableSql(t) }
     }
     val scripts = new DBScripts()
     schemas ++= database.schemas.keys.filter(i => i.value.length > 0).map(s => s"create schema $s")
     scripts.schemas = schemas.sorted.toList
     scripts.comments = comments.toSet.toList.sorted
     scripts.tables = tables.sorted.toList
-    scripts.sequences=sequences.sorted.toList
+    scripts.sequences = sequences.sorted.toList
     scripts.constraints = constraints.sorted.toList
     scripts
   }
@@ -105,7 +105,7 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
     table.foreignKeys foreach { fk =>
       constraints += SQL.alterTableAddforeignKey(fk, dialect)
     }
-    table.uniqueKeys foreach{ uk=>
+    table.uniqueKeys foreach { uk =>
       constraints += SQL.alterTableAddUnique(uk, dialect)
     }
 

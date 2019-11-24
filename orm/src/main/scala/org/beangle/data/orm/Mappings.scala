@@ -93,6 +93,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
         case Some(o) => if (o.clazz.isAssignableFrom(mapping.clazz)) entityMappings.put(mapping.entityName, mapping)
         case None => entityMappings.put(mapping.entityName, mapping)
       }
+    } else {
+      mapping.table.phantom = true
     }
     this
   }
@@ -203,6 +205,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             val e = new EntityTypeMapping(refEntity(clazz, entityName), table)
             if (clazz.isInterface || Modifier.isAbstract(clazz.getModifiers)) {
               e.isAbstract = true
+              table.phantom = true
             }
             entityMappings.put(entityName, e)
             e
