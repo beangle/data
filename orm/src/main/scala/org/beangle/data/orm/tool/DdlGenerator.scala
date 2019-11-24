@@ -84,7 +84,7 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
   def generate(): DBScripts = {
     val database = mappings.database
     database.schemas.values foreach {
-      schema => schema.tables.values foreach { t => if (!t.phantom) generateTableSql(t) }
+      schema => schema.tables.values foreach generateTableSql
     }
     val scripts = new DBScripts()
     schemas ++= database.schemas.keys.filter(i => i.value.length > 0).map(s => s"create schema $s")

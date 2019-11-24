@@ -126,15 +126,20 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     profiles.modules foreach { m =>
       m.configure(this)
     }
-    //superclass first
+    //superclass first,merge bingdings
     classMappings.keys.toList.sortWith { (a, b) => a.isAssignableFrom(b) } foreach (cls => merge(classMappings(cls)))
 
     //remove interface and abstract class binding
     val notEntities = entityMappings.filter {
-      case (n, c) => (c.clazz.isInterface || Modifier.isAbstract(c.clazz.getModifiers))
+      case (_, c) => c.clazz.isInterface || Modifier.isAbstract(c.clazz.getModifiers)
     }
     entityMappings --= notEntities.keys
-
+    //remove phantom tables
+    database.schemas.values foreach { s =>
+      val phantomTables = s.tables.filter(_._2.phantom)
+      s.tables.subtractAll(phantomTables.keys)
+    }
+    //create primary/foreign keys and cache
     entityMappings.values foreach (em => firstPass(em))
     entityMappings.values foreach (em => secondPass(em))
   }
@@ -249,11 +254,10 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 处理外键及其关联表格,以及集合的缓存设置
+    * 这些需要被引用方(各个表的主键)生成之后才能进行
     */
   private def secondPass(etm: EntityTypeMapping): Unit = {
-    val clazz = etm.typ.clazz
-    val table = etm.table
-    processPropertyMappings(clazz, table, etm)
+    processPropertyMappings(etm.typ.clazz, etm.table, etm)
     processCache(etm, etm)
   }
 

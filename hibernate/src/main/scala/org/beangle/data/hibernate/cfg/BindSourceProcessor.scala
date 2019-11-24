@@ -130,8 +130,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
   }
 
   override def processEntityHierarchies(processedEntityNames: java.util.Set[String]): Unit = {
-    for ((name, definition) <- mappings.entityMappings) {
-      val clazz = definition.clazz
+    for ((_, definition) <- mappings.entityMappings) {
       val rc = bindClass(definition)
 
       if (null != definition.cacheUsage) {
