@@ -16,24 +16,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.meta
+package org.beangle.data.jdbc.migration
 
-/**
-  * Unique Key
-  *
-  * @author chaostone
-  */
-class UniqueKey(table: Table, name: Identifier) extends Constraint(table, name) {
+class Migrator {
 
-  override def clone(): this.type = {
-    super.clone()
+  def sql(diff: DatabaseDiff): List[String] = {
+    diff.schemaDiffs
+    List.empty
   }
 
-  override def equals(other: Any): Boolean = {
-    other match {
-      case c: UniqueKey =>
-        this.name == c.name && this.enabled == c.enabled && this.columns == c.columns
-      case _ => false
-    }
-  }
 }

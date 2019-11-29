@@ -28,7 +28,7 @@ import org.beangle.commons.lang.time.{ HourMinute, WeekState }
 import org.beangle.data.jdbc.meta.{ Engine, SqlType }
 
 object SqlTypeMapping {
-  def DefaultStringSqlType = new SqlType(VARCHAR, "varchar(255)", 255)
+  def DefaultStringSqlType =  SqlType(VARCHAR, "varchar(255)", 255)
 }
 
 trait SqlTypeMapping {

@@ -19,7 +19,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.dialect.{DB2Dialect, H2Dialect, MySQLDialect, OracleDialect, PostgreSQLDialect, SQLServerDialect}
+import org.beangle.data.jdbc.dialect._
 
 object EngineTest {
 
@@ -28,17 +28,17 @@ object EngineTest {
   }
 
   private def printPad(name: String): Unit = {
-    print(Strings.rightPad(name, 17, ' '))
+    print(Strings.rightPad(name, 26, ' '))
   }
 
   def printTypeMatrix(): Unit = {
     import java.sql.Types._
-    val types = Array(BOOLEAN, BIT, CHAR, INTEGER, SMALLINT, TINYINT, BIGINT,
-      FLOAT, DOUBLE, DECIMAL, NUMERIC, DATE, TIME, TIMESTAMP, VARCHAR, LONGVARCHAR,
+    val types = Array(BOOLEAN, BIT, CHAR, TINYINT, SMALLINT, INTEGER, BIGINT,
+      FLOAT, REAL, DOUBLE, DECIMAL, NUMERIC, DATE, TIME, TIMESTAMP, VARCHAR, LONGVARCHAR,
       BINARY, VARBINARY, LONGVARBINARY, BLOB, CLOB)
 
-    val typeNames = Array("BOOLEAN", "BIT", "CHAR", "INTEGER", "SMALLINT", "TINYINT", "BIGINT",
-      "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "DATE", "TIME", "TIMESTAMP", "VARCHAR", "LONGVARCHAR",
+    val typeNames = Array("BOOLEAN", "BIT", "CHAR", "TINYINT", "SMALLINT", "INTEGER", "BIGINT",
+      "FLOAT", "REAL", "DOUBLE", "DECIMAL", "NUMERIC", "DATE", "TIME", "TIMESTAMP", "VARCHAR", "LONGVARCHAR",
       "BINARY", "VARBINARY", "LONGVARBINARY", "BLOB", "CLOB")
 
     val dialects = Array(new OracleDialect, new PostgreSQLDialect, new MySQLDialect,
@@ -50,12 +50,12 @@ object EngineTest {
     }
 
     println()
-    for (i <- 0 until types.length) {
+    for (i <- types.indices) {
       printPad(typeNames(i))
       for (dialect <- dialects) {
         val typeName =
           try {
-            dialect.engine.typeNames.get(types(i))
+            dialect.engine.typeNames.toName(types(i))
           } catch {
             case e: Exception => "error"
           }

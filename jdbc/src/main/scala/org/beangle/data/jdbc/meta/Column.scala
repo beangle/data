@@ -17,12 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.beangle.data.jdbc.meta
-
 /**
- * JDBC column metadata
- *
- * @author chaostone
- */
+  * JDBC column metadata
+  *
+  * @author chaostone
+  */
 class Column(var name: Identifier, var sqlType: SqlType, var nullable: Boolean = true) extends Cloneable with Comment {
 
   var unique: Boolean = false
@@ -51,5 +50,17 @@ class Column(var name: Identifier, var sqlType: SqlType, var nullable: Boolean =
 
   override def toString: String = {
     s"$name $sqlType"
+  }
+
+  def same(o: Column): Boolean = {
+    this.name == o.name && this.sqlType == o.sqlType && this.nullable == o.nullable &&
+      this.unique == o.unique && this.defaultValue == o.defaultValue && this.check == o.check
+  }
+
+  override def equals(other: Any): Boolean = {
+    other match {
+      case c: Column => same(c)
+      case _ => false
+    }
   }
 }

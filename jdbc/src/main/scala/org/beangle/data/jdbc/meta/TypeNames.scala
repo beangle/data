@@ -18,97 +18,186 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.commons.lang.Strings
+import java.sql.Types
+import java.sql.Types._
 
-/**
-  * This class maps a type to names. Associations may be marked with a capacity.
-  * Calling the get() method with a type and actual size n will return the
-  * associated name with smallest capacity >= n, if available and an unmarked
-  * default type otherwise. Eg, setting
-  * @define l $l
-  *           {{{
-  * names.put(type, &quot;TEXT&quot;);
-  * names.put(type, 255, &quot;VARCHAR($l)&quot;);
-  * names.put(type, 65534, &quot;LONGVARCHAR($l)&quot;);
-  * }}}
-  *
-  *           will give you back the following:
-  *
-  *           {{{
-  * names.get(type)         // --&gt; &quot;TEXT&quot; (default)
-  * names.get(type,    100) // --&gt; &quot;VARCHAR(100)&quot; (100 is in [0:255])
-  * names.get(type,   1000) // --&gt; &quot;LONGVARCHAR(1000)&quot; (1000 is in [256:65534])
-  * names.get(type, 100000) // --&gt; &quot;TEXT&quot; (default)
-  * }}}
-  *
-  *           On the other hand, simply putting
-  *
-  *           {{{
-  * names.put(type, &quot;VARCHAR($l)&quot;);
-  * }}}
-  *
-  *           would result in
-  *
-  *           {{{
-  * names.get(type)        // --&gt; &quot;VARCHAR($l)&quot; (will cause trouble)
-  * names.get(type, 100)   // --&gt; &quot;VARCHAR(100)&quot;
-  * names.get(type, 10000) // --&gt; &quot;VARCHAR(10000)&quot;
-  * }}}
-  * @author chaostone
-  */
-class TypeNames {
+import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.{Numbers, Strings}
 
-  var weighted: Map[Int, Map[Int, String]] = Map.empty
-  var defaults: Map[Int, String] = Map.empty
+import scala.collection.mutable
 
-  /**
-    * get default type name for specified type
+object TypeNames {
+
+  case class TypeInfo(name: String, category: String, precision: Option[String], scale: Option[String]) {
+    def precisionValue: Int = {
+      precision match {
+        case Some(p) => if (Numbers.isDigits(p)) Numbers.toInt(p) else throw new RuntimeException("Cannot parse precision $p")
+        case None => 0
+      }
+    }
+
+    def scaleValue: Int = {
+      scale match {
+        case Some(p) => if (Numbers.isDigits(p)) Numbers.toInt(p) else throw new RuntimeException("Cannot parse scale $p")
+        case None => 0
+      }
+    }
+
+  }
+
+  class Builder {
+    private val code2names = Collections.newMap[Int, mutable.Buffer[(Int, String)]]
+    private val name2codes = Collections.newMap[String, mutable.Buffer[(Int, Int)]]
+
+    def put(typecode: Int, value: String): Unit = {
+      put(typecode, 0, value)
+    }
+
+    /** 注册类型代码和模式
+      *
+      * @param typecode 类型代码
+      * @param capacity 该类型的length或者precision
+      * @param pattern  类型的模式
+      */
+    def put(typecode: Int, capacity: Int, pattern: String): Unit = {
+      val info = parse(pattern)
+
+      val names = code2names.getOrElseUpdate(typecode, new mutable.ArrayBuffer[Tuple2[Int, String]])
+      names += (capacity -> info.name)
+
+      val codes = name2codes.getOrElseUpdate(info.category, new mutable.ArrayBuffer[Tuple2[Int, Int]])
+      val precision = info.precision match {
+        case Some(p) =>
+          if (capacity == 0) {
+            if (Numbers.isDigits(p)) Numbers.toInt(p) else 0
+          } else {
+            capacity
+          }
+        case None => capacity
+      }
+      codes += (precision -> typecode)
+    }
+
+    def build(): TypeNames = {
+      val names = code2names.map { case (code, names) =>
+        (code, names.sortBy(_._1).toList)
+      }
+      val codes = name2codes.map { case (name, codes) =>
+        (name, codes.sortBy(_._1).toList)
+      }
+      new TypeNames(names.toMap, codes.toMap)
+    }
+  }
+
+  protected[TypeNames] def parse(pattern: String): TypeInfo = {
+    var precision = ""
+    var scale = ""
+    val category = if (pattern.contains("(")) {
+      if (pattern.contains(",")) {
+        precision = Strings.substringBetween(pattern, "(", ",")
+        if (pattern.contains(")")) {
+          scale = Strings.substringBetween(pattern, ",", ")")
+        } else {
+          throw new RuntimeException(s"Unrecoganize sql type $pattern")
+        }
+      } else if (pattern.contains(")")) {
+        precision = Strings.substringBetween(pattern, "(", ")")
+      } else {
+        throw new RuntimeException(s"Unrecoganize sql type $pattern")
+      }
+      Strings.substringBefore(pattern, "(").toLowerCase
+    } else {
+      pattern.toLowerCase()
+    }
+    TypeInfo(pattern.toLowerCase, category, if (precision.isBlank) None else Some(precision), if (scale.isBlank) None else Some(scale))
+
+  }
+}
+
+class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
+                private val name2codes: Map[String, List[(Int, Int)]]) {
+
+  /** get default type name for specified type
+    *
     * @param typecode the type key
     * @return the default type name associated with specified key
     */
-  def get(typecode: Int): String = defaults(typecode)
+  def toType(typecode: Int): SqlType = {
+    toType(typecode, 0, 0)
+  }
+
+  def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
+    val targetCode = translate(sqlCode, precision)
+    SqlType(targetCode, toName(targetCode, precision, scale), precision, scale)
+  }
+
+  def toType(typeName: String): SqlType = {
+    val info = TypeNames.parse(typeName)
+    val precision = info.precisionValue
+    val code = toCode(info.category, precision)
+    SqlType(code, typeName, precision, info.scaleValue)
+  }
+
+
+  protected[meta] def toName(typecode: Int): String = {
+    code2names.get(translate(typecode, 0)) match {
+      case None => "other"
+      case Some(l) => l.head._2
+    }
+  }
 
   /**
     * get type name for specified type and size
+    *
     * @param typecode  the type key
-    * @param size      the SQL length
     * @param precision the SQL precision
     * @param scale     the SQL scale
     * @return the associated name with smallest capacity >= size, if available
     *         and the default type name otherwise
     */
-  def get(typecode: Int, size: Int, precision: Int, scale: Int): String = {
-    val map = weighted.get(typecode).orNull //Map[Int, String]
-    if (map != null && map.nonEmpty) {
-      val weight = if (SqlType.isNumberType(typecode)) precision else size
-      val rs = map.find(weight <= _._1)
-      if (rs.nonEmpty) {
-        return replace(rs.get._2, size, precision, scale)
-      }
+  protected[meta] def toName(typecode: Int, precision: Int, scale: Int): String = {
+    code2names.get(typecode) match {
+      case None => "other"
+      case Some(l) =>
+        l.find(precision <= _._1) match {
+          case None => replace(l.head._2, precision, scale)
+          case Some(n) => replace(n._2, precision, scale)
+        }
     }
-    replace(get(typecode), size, precision, scale)
   }
 
-  private def replace(typeString: String, size: Int, precision: Int, scale: Int) = {
+
+  protected[meta] def toCode(typeName: String, precision: Int): Int = {
+    name2codes.get(typeName) match {
+      case None => Types.OTHER
+      case Some(l) =>
+        l.find(precision <= _._1) match {
+          case None => l.head._2
+          case Some(n) => n._2
+        }
+    }
+  }
+
+  private def translate(sqlCode: Int, precision: Int) = {
+    sqlCode match {
+      case DECIMAL | NUMERIC =>
+        precision match {
+          case 1 => BOOLEAN
+          case 5 => SMALLINT
+          case 10 => INTEGER
+          case 19 => BIGINT
+          case _ => sqlCode
+        }
+      case REAL => FLOAT
+      case _ => sqlCode
+    }
+  }
+
+  private def replace(typeString: String, precision: Int, scale: Int) = {
     var finalType = typeString
     finalType = Strings.replace(finalType, "$s", scale.toString)
-    finalType = Strings.replace(finalType, "$l", size.toString)
+    finalType = Strings.replace(finalType, "$l", precision.toString)
     Strings.replace(finalType, "$p", precision.toString)
   }
 
-  /**
-    * set a type name for specified type key and capacity
-    *
-    */
-  def put(typecode: Int, capacity: Int, value: String): Unit = {
-    val map = weighted.getOrElse(typecode, new collection.immutable.TreeMap[Int, String]) //Map[Int, String]
-    weighted += (typecode -> (map + (capacity -> value)))
-  }
-
-  /**
-    * set a default type name for specified type key
-    */
-  def put(typecode: Int, value: String): Unit = {
-    defaults += (typecode -> value)
-  }
 }

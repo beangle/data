@@ -16,24 +16,22 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.meta
+package org.beangle.data.jdbc.migration
 
-/**
-  * Unique Key
-  *
-  * @author chaostone
-  */
-class UniqueKey(table: Table, name: Identifier) extends Constraint(table, name) {
+import org.beangle.data.jdbc.meta.{Database, Engine, Engines}
+import org.junit.runner.RunWith
+import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.junit.JUnitRunner
 
-  override def clone(): this.type = {
-    super.clone()
-  }
-
-  override def equals(other: Any): Boolean = {
-    other match {
-      case c: UniqueKey =>
-        this.name == c.name && this.enabled == c.enabled && this.columns == c.columns
-      case _ => false
+@RunWith(classOf[JUnitRunner])
+class MigratorTest extends AnyFunSpec with Matchers {
+  describe("Migrator") {
+    it("test diff") {
+      val migrator= new Migrator
+      val newer=new Database(Engines.PostgreSQL)
+      val older=new Database(Engines.PostgreSQL)
+     // val diff=migrator.sql(newer,older)
     }
   }
 }

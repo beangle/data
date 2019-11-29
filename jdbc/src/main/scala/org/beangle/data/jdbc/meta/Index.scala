@@ -40,6 +40,7 @@ import org.beangle.commons.collection.Collections
 
 /**
   * JDBC index metadata
+  *
   * @author chaostone
   */
 class Index(var table: Table, var name: Identifier) extends Cloneable {
@@ -82,6 +83,14 @@ class Index(var table: Table, var name: Identifier) extends Cloneable {
 
   def literalName: String = {
     name.toLiteral(table.schema.database.engine)
+  }
+
+  override def equals(other: Any): Boolean = {
+    other match {
+      case c: Index =>
+        this.name == c.name && this.columns == c.columns && this.unique == c.unique && this.ascOrDesc == c.ascOrDesc
+      case _ => false
+    }
   }
 
 }

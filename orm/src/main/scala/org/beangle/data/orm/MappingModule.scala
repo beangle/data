@@ -44,12 +44,14 @@ object MappingModule {
 
   class IndexDeclaration(name: String, unique: Boolean) {
     def apply(holder: EntityHolder[_], pms: Iterable[PropertyMapping[_]]): Unit = {
+      // hibernate的index注解里没有支持unique，而是通过unique key支持的，为了保持一直，这里也类似处理
+      // 这样和hibernate的sql输出思路类似
       if (unique) {
         val uk = new UniqueKey(holder.mapping.table, Identifier(name))
         pms.foreach { pm =>
           val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
-          ch.columns.find(_.nullable) foreach{nullCol=>
-            throw  new RuntimeException(s"Cannot create unique index $name on ${holder.mapping.table.name},nullable column ${nullCol.name} finded!")
+          ch.columns.find(_.nullable) foreach { nullCol =>
+            throw new RuntimeException(s"Cannot create unique index $name on ${holder.mapping.table.name},nullable column ${nullCol.name} finded!")
           }
           ch.columns.foreach(e => uk.addColumn(e.name))
         }
@@ -246,7 +248,7 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
       val engine = holder.mappings.database.engine
-      ch.columns foreach (c => c.sqlType = engine.toType(c.sqlType.code, len, c.sqlType.precision.getOrElse(0), c.sqlType.scale.getOrElse(0)))
+      ch.columns foreach (c => c.sqlType = engine.toType(c.sqlType.code, len, c.sqlType.scale.getOrElse(0)))
     }
   }
 

@@ -56,37 +56,25 @@ object Engines {
     registerTypes(
       CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "text",
       BOOLEAN -> "boolean", BIT -> "boolean",
-      SMALLINT -> "int2", TINYINT -> "int2", INTEGER -> "int4", BIGINT -> "int8",
-      FLOAT -> "float4", REAL -> "float4", DOUBLE -> "float8",
+      SMALLINT -> "smallint", TINYINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
+      FLOAT -> "float4",  DOUBLE -> "float8",
       DECIMAL -> "numeric($p,$s)", NUMERIC -> "numeric($p,$s)",
       DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
       BINARY -> "bytea", VARBINARY -> "bytea", LONGVARBINARY -> "bytea",
       CLOB -> "text", BLOB -> "bytea")
 
-    registerTypes2(
-      (DECIMAL, 1, "boolean"), (DECIMAL, 10, "integer"),
-      (DECIMAL, 19, "bigint"), (NUMERIC, 1000, "numeric($p, $s)"),
+    registerTypes2((NUMERIC, 1000, "numeric($p, $s)"),
       (NUMERIC, Int.MaxValue, "numeric(1000, $s)"))
 
     override def storeCase: StoreCase.Value = {
       StoreCase.Lower
     }
 
-    override def toType(sqlCode: Int, length: Int, precision: Int, scale: Int): SqlType = {
-      if (sqlCode == DECIMAL) {
-        val result = precision match {
-          case 1 => new SqlType(BOOLEAN, "boolean")
-          case 5 => new SqlType(SMALLINT, "int2")
-          case 10 => new SqlType(INTEGER, "int4")
-          case 19 => new SqlType(BIGINT, "int8")
-          case _ => super.toType(sqlCode, 0, precision, scale)
-        }
-        result.length = Some(length)
-        result
-      } else if (sqlCode == BLOB) {
-        super.toType(VARBINARY, length, precision, scale)
+    override def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
+       if (sqlCode == BLOB) {
+        super.toType(VARBINARY, precision, scale)
       } else {
-        super.toType(sqlCode, length, precision, scale)
+        super.toType(sqlCode, precision, scale)
       }
     }
   }
@@ -125,7 +113,7 @@ object Engines {
       CHAR -> "char($l)", VARCHAR -> "varchar2($l)", LONGVARCHAR -> "long",
       BOOLEAN -> "number(1,0)", BIT -> "number(1,0)",
       SMALLINT -> "number(5,0)", TINYINT -> "number(3,0)", INTEGER -> "number(10,0)", BIGINT -> "number(19,0)",
-      FLOAT -> "float", REAL -> "float", DOUBLE -> "double precision",
+      FLOAT -> "float", DOUBLE -> "double precision",
       DECIMAL -> "number($p,$s)", NUMERIC -> "number($p,$s)",
       DATE -> "date", TIME -> "date", TIMESTAMP -> "date",
       BINARY -> "raw", VARBINARY -> "long raw", LONGVARBINARY -> "long raw",
@@ -157,7 +145,7 @@ object Engines {
   object H2 extends AbstractEngine {
     registerTypes(
       CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "longvarchar",
-      BOOLEAN -> "Boolean", BIT -> "bit",
+      BOOLEAN -> "boolean", BIT -> "bit",
       TINYINT -> "tinyint", SMALLINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
       FLOAT -> "float", DOUBLE -> "double",
       DECIMAL -> "decimal", NUMERIC -> "numeric",

@@ -18,9 +18,8 @@
  */
 package org.beangle.data.jdbc.meta
 
-import java.sql.Types
-
 import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.meta
 
 trait Engine {
 
@@ -32,13 +31,13 @@ trait Engine {
 
   def quoteChars: (Char, Char)
 
+  def toType(typeName: String): SqlType
+
   def toType(sqlCode: Int): SqlType
 
-  def toType(sqlCode: Int, length: Int): SqlType
+  def toType(sqlCode: Int, precision: Int): SqlType
 
   def toType(sqlCode: Int, precision: Int, scale: Int): SqlType
-
-  def toType(sqlCode: Int, length: Int, precision: Int, scale: Int): SqlType
 
   def needQuote(name: String): Boolean = {
     val rs = (name.indexOf(' ') > -1) || keywords.contains(name.toLowerCase)
@@ -80,7 +79,9 @@ trait Engine {
 }
 
 abstract class AbstractEngine extends Engine {
-  val typeNames = new TypeNames()
+  var typeNames: TypeNames = _
+
+  private var typeMappingBuilder = new meta.TypeNames.Builder()
 
   var keywords: Set[String] = Set.empty[String]
 
@@ -94,46 +95,36 @@ abstract class AbstractEngine extends Engine {
 
   protected def registerTypes(tuples: (Int, String)*): Unit = {
     tuples foreach { tuple =>
-      typeNames.put(tuple._1, tuple._2)
+      typeMappingBuilder.put(tuple._1, tuple._2)
     }
+    typeNames = typeMappingBuilder.build()
   }
 
+  /** 按照该类型的容量进行登记
+    *
+    * @param tuples
+    */
   protected def registerTypes2(tuples: (Int, Int, String)*): Unit = {
     tuples foreach { tuple =>
-      typeNames.put(tuple._1, tuple._2, tuple._3)
+      typeMappingBuilder.put(tuple._1, tuple._2, tuple._3)
     }
+    typeNames = typeMappingBuilder.build()
+  }
+
+  def toType(typeName: String): SqlType = {
+    typeNames.toType(typeName)
   }
 
   override final def toType(sqlCode: Int): SqlType = {
     toType(sqlCode, 0, 0)
   }
 
-  override final def toType(sqlCode: Int, length: Int): SqlType = {
-    if (SqlType.isNumberType(sqlCode)) {
-      toType(sqlCode, 0, length, 0)
-    } else {
-      toType(sqlCode, length, 0, 0)
-    }
+  override final def toType(sqlCode: Int, precision: Int): SqlType = {
+    toType(sqlCode, precision, 0)
   }
 
-  override final def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
-    toType(sqlCode, 0, precision, scale)
-  }
-
-  override def toType(sqlCode: Int, length: Int, precision: Int, scale: Int): SqlType = {
-    if (sqlCode == Types.OTHER) new SqlType(sqlCode, "other") else
-      try {
-        val result = new SqlType(sqlCode, typeNames.get(sqlCode, length, precision, scale))
-        if (precision > 0) {
-          result.precision = Some(precision)
-          result.scale = Some(scale)
-        } else {
-          if (length > 0) result.length = Some(length)
-        }
-        result
-      } catch {
-        case _: Exception => new SqlType(sqlCode, "unkown")
-      }
+  override def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
+    typeNames.toType(sqlCode, precision, scale)
   }
 
   def storeCase: StoreCase.Value = {

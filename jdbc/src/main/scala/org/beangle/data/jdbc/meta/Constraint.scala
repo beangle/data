@@ -21,10 +21,10 @@ package org.beangle.data.jdbc.meta
 import scala.collection.mutable.ListBuffer
 
 /**
- * Table Constraint Metadata
- *
- * @author chaostone
- */
+  * Table Constraint Metadata
+  *
+  * @author chaostone
+  */
 class Constraint(var table: Table, var name: Identifier) extends Ordered[Constraint] with Cloneable {
 
   var columns = new ListBuffer[Identifier]
@@ -84,6 +84,29 @@ object Constraint {
       sb.append("column`").append(fc.value).append("`");
     }
     "fk_" + hashedName(sb.toString)
+  }
+
+  def autoname(uk: Constraint): String = {
+    uk match {
+      case _: PrimaryKey => uk.table.name + "_pkey"
+      case uk: UniqueKey =>
+        val sb = new StringBuilder()
+          .append("table`").append(uk.table.name).append("`")
+        uk.columns foreach { fc =>
+          sb.append("column`").append(fc.value).append("`");
+        }
+        "uk_" + hashedName(sb.toString)
+      case _ => ""
+    }
+  }
+
+  def autoname(idx: Index): String = {
+    val sb = new StringBuilder()
+      .append("table`").append(idx.table.name).append("`")
+    idx.columns foreach { fc =>
+      sb.append("column`").append(fc.value).append("`");
+    }
+    "idx_" + hashedName(sb.toString)
   }
 
   def hashedName(s: String): String = {

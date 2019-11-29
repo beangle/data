@@ -21,6 +21,7 @@ package org.beangle.data.jdbc.meta
 import java.sql.{DatabaseMetaData, ResultSet, Statement}
 import java.util.concurrent.ConcurrentLinkedQueue
 
+import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings.replace
 import org.beangle.commons.lang.ThreadTasks
 import org.beangle.commons.lang.time.Stopwatch
@@ -83,14 +84,18 @@ class MetadataLoader(meta: DatabaseMetaData, dialect: Dialect) extends Logging {
     sw.reset().start()
     rs = meta.getColumns(newCatalog, newSchema, "%", "%")
     var cols = 0
+    val types=Collections.newMap[String,SqlType]
     import java.util.StringTokenizer
     while (rs.next()) {
       val colName = rs.getString(ColumnName)
       if (null != colName) {
         getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
+          val typecode = rs.getInt(DataType)
+          val typename = new StringTokenizer(rs.getString(TypeName), "() ").nextToken()
           val length = rs.getInt(ColumnSize)
           val scale = rs.getInt(DecimalDigits)
-          val sqlType = new SqlType(rs.getInt(DataType), new StringTokenizer(rs.getString(TypeName), "() ").nextToken(), length, scale)
+          val key=s"$typecode-$typename-$length-$scale"
+          val sqlType= types.getOrElseUpdate(key, SqlType(typecode,typename , length, scale))
           val nullable = "yes".equalsIgnoreCase(rs.getString(IsNullable))
           val col = new Column(Identifier(rs.getString(ColumnName)), sqlType, nullable)
           //          col.position = rs.getInt(OrdinalPosition)

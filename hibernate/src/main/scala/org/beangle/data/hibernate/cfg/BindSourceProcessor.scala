@@ -409,8 +409,11 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
   def bindColumn(cm: Column, column: HColumn): Unit = {
     val sqlType = cm.sqlType
     column.setSqlTypeCode(sqlType.code)
-    column.setLength(sqlType.length.getOrElse(0))
-    column.setPrecision(sqlType.precision.getOrElse(0))
+    if (sqlType.isNumberType) {
+      column.setPrecision(sqlType.precision.getOrElse(0))
+    } else {
+      column.setLength(sqlType.precision.getOrElse(0))
+    }
     column.setScale(sqlType.scale.getOrElse(0))
     column.setNullable(cm.nullable)
     column.setUnique(cm.unique)

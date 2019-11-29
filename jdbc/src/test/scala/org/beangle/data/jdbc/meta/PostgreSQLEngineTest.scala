@@ -19,6 +19,7 @@
 package org.beangle.data.jdbc.meta
 
 import java.sql.Types
+import java.sql.Types.{BIGINT, BOOLEAN, INTEGER, SMALLINT}
 
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
@@ -29,11 +30,15 @@ import org.scalatestplus.junit.JUnitRunner
 class PostgreSQLEngineTest extends AnyFlatSpec with Matchers {
 
   "big number (size >=65535) in postgresql " should " trip to less 1000 size" in {
-    val dialect = Engines.PostgreSQL
+    val engine = Engines.PostgreSQL
     val scale = 0
     val precision = 65535
-    val size = 65535
-    dialect.typeNames.get(Types.NUMERIC, size, precision, scale) equals "numeric(1000, 0)" should be(true)
-    dialect.typeNames.get(Types.DECIMAL, 1, 1, 0) equals "boolean" should be(true)
+    engine.typeNames.toName(Types.NUMERIC, precision, scale) equals "numeric(1000, 0)" should be(true)
+    engine.toType(Types.DECIMAL,  1, 0).name shouldEqual  "boolean"
+
+    //engine.toType(Types.DECIMAL,1,0) shouldEqual SqlType(BOOLEAN, "boolean", 1)
+    engine.toType(Types.DECIMAL,5,0) shouldEqual SqlType(SMALLINT, "int2", 5)
+    engine.toType(Types.DECIMAL,10,0) shouldEqual SqlType(INTEGER, "int4", 10)
+    engine.toType(Types.DECIMAL,19,0) shouldEqual SqlType(BIGINT, "int8", 19)
   }
 }

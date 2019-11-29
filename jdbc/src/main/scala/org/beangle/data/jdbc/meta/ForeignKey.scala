@@ -22,6 +22,7 @@ import scala.collection.mutable.ListBuffer
 
 /**
   * JDBC foreign key metadata
+  *
   * @author chaostone
   */
 class ForeignKey(t: Table, n: Identifier, column: Identifier = null) extends Constraint(t, n) {
@@ -72,4 +73,14 @@ class ForeignKey(t: Table, n: Identifier, column: Identifier = null) extends Con
   }
 
   override def toString: String = "Foreign key(" + name + ')'
+
+  override def equals(other: Any): Boolean = {
+    other match {
+      case c: ForeignKey =>
+        this.name == c.name && this.enabled == c.enabled && this.columns == c.columns &&
+          this.cascadeDelete == c.cascadeDelete && this.referencedColumns == c.columns &&
+          this.referencedTable.qualifiedName == c.referencedTable.qualifiedName
+      case _ => false
+    }
+  }
 }
