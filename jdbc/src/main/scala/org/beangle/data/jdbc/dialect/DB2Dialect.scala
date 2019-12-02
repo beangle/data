@@ -18,52 +18,23 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.engine.Engines
 
-class DB2Dialect extends AbstractDialect(Engines.DB2, "[8.0]") {
+class DB2Dialect extends AbstractDialect(Engines.DB2) {
 
-  override def sequenceGrammar: SequenceGrammar = {
-    val ss = new SequenceGrammar()
-    ss.querySequenceSql = "select name as sequence_name,start-1 as current_value,increment,cache from sysibm.syssequences where schema=':schema'"
-    ss.nextValSql = "values nextval for :name"
-    ss.dropSql = "drop sequence :name restrict"
-    ss.selectNextValSql = "nextval for :name"
-    ss
-  }
+  options.sequence.nextValSql = "values nextval for :name"
+  options.sequence.dropSql = "drop sequence :name restrict"
+  options.sequence.selectNextValSql = "nextval for :name"
+  options.comment.supportsCommentOn = true
 
-  /**
-    * Render the <tt>rownumber() over ( .... ) as rownumber_,</tt> bit, that
-    * goes in the select list
-    */
-  private def getRowNumber(sql: String): String = {
-    val rownumber: StringBuilder = new StringBuilder(50).append("rownumber() over(")
-    val orderByIndex: Int = sql.toLowerCase().indexOf("order by")
-    if (orderByIndex > 0 && !hasDistinct(sql)) {
-      rownumber.append(sql.substring(orderByIndex))
+  override def limit(sql: String, offset: Int, limit: Int): (String, List[Int]) = {
+    if (offset == 0) {
+      (sql + " fetch first " + limit + " rows only", List.empty)
+    } else {
+      //nest the main query in an outer select
+      ("select * from ( select inner2_.*, rownumber() over(order by order of inner2_) as rownumber_ from ( "
+        + sql + " fetch first " + limit + " rows only ) as inner2_ ) as inner1_ where rownumber_ > "
+        + offset + " order by rownumber_", List.empty)
     }
-    rownumber.append(") as rownumber_,")
-    rownumber.toString()
   }
-
-  private def hasDistinct(sql: String) = sql.toLowerCase().indexOf("select distinct") >= 0
-
-  override def limitGrammar: LimitGrammar = {
-    class DB2LimitGrammar extends LimitGrammar {
-      override def limit(sql: String, offset: Int, limit: Int): Tuple2[String, List[Int]] = {
-        if (offset == 0) {
-          (sql + " fetch first " + limit + " rows only", List.empty)
-        } else {
-          //nest the main query in an outer select
-          ("select * from ( select inner2_.*, rownumber() over(order by order of inner2_) as rownumber_ from ( "
-            + sql + " fetch first " + limit + " rows only ) as inner2_ ) as inner1_ where rownumber_ > "
-            + offset + " order by rownumber_", List.empty)
-        }
-      }
-    }
-    new DB2LimitGrammar
-  }
-
-  override def defaultSchema: String = null
-
-  override def supportsCommentOn = true
 }

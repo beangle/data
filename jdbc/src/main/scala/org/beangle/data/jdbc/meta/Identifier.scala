@@ -18,6 +18,8 @@
  */
 package org.beangle.data.jdbc.meta
 
+import org.beangle.data.jdbc.engine.Engine
+
 object Identifier {
   val empty = Identifier("")
 }

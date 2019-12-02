@@ -30,7 +30,6 @@ import org.beangle.data.model.meta.Property
 
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asScala
-import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => ru}
 

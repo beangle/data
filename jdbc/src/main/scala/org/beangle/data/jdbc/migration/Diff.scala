@@ -23,7 +23,7 @@ import org.beangle.data.jdbc.meta._
 
 class Diff {
 
-  def diff(newer: Database, older: Database): Option[DatabaseDiff] = {
+  def diff(newer: Database, older: Database): DatabaseDiff = {
     val newSchemaSet = newer.schemas.keySet.map(_.value)
     val oldSchemaSet = older.schemas.keySet.map(_.value)
 
@@ -57,14 +57,12 @@ class Diff {
         schemaDiffs.put(s, schemaDiff)
       }
     }
-    if (newSchemas.isEmpty && removedSchemas.isEmpty && schemaDiffs.isEmpty) {
-      None
-    } else {
-      val dbDiff = new DatabaseDiff(newer, older)
+    val dbDiff = new DatabaseDiff(newer, older)
+    if (!(newSchemas.isEmpty && removedSchemas.isEmpty && schemaDiffs.isEmpty)) {
       dbDiff.schemas = NameDiff(newSchemas, removedSchemas, schemaDiffs.keySet)
       dbDiff.schemaDiffs = schemaDiffs.toMap
-      Some(dbDiff)
     }
+    dbDiff
   }
 
   protected[migration] def diff(newer: Table, older: Table): Option[TableDiff] = {
@@ -100,8 +98,12 @@ class Diff {
 }
 
 class DatabaseDiff(val newer: Database, val older: Database) {
-  var schemas: NameDiff = _
-  var schemaDiffs: Map[String, SchemaDiff] = _
+  var schemas: NameDiff = NameDiff(Set.empty, Set.empty, Set.empty)
+  var schemaDiffs: Map[String, SchemaDiff] = Map.empty
+
+  def isEmpty: Boolean = {
+    (schemaDiffs == null || schemaDiffs.isEmpty) && (schemas == null || schemas.isEmpty)
+  }
 }
 
 class SchemaDiff(val newer: Schema, val older: Schema) {

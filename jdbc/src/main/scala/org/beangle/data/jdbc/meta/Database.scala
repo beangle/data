@@ -19,6 +19,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.engine.Engine
 
 class Database(val engine: Engine) {
 
@@ -42,6 +43,18 @@ class Database(val engine: Engine) {
   def addTable(schema: String, table: Table): Table = {
     getOrCreateSchema(schema).addTable(table)
     table
+  }
+
+
+  def refTable(tableQualifier:String):TableRef={
+    var referSchemaName = ""
+    var referTableName = tableQualifier
+    if (tableQualifier.contains(".")) {
+      referSchemaName = Strings.substringBefore(tableQualifier, ".")
+      referTableName = Strings.substringAfter(tableQualifier, ".")
+    }
+    val referSchema = this.getOrCreateSchema(referSchemaName)
+    TableRef(referSchema, engine.toIdentifier(referTableName))
   }
 
   def getOrCreateSchema(schema: String): Schema = {

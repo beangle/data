@@ -16,13 +16,32 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.meta
+package org.beangle.data.jdbc.internal
 
-/**
- * Store identifiers in which case
- */
-object StoreCase extends Enumeration {
+import scala.xml.Node
 
-  val Lower, Upper, Mixed = Value
+object NodeOps {
+
+  implicit def node2Ops(n: Node): NodeOps = {
+    new NodeOps(n)
+  }
+}
+
+class NodeOps(val n: Node) extends AnyVal {
+  @inline
+  def attr(name: String): String = {
+    (n \ s"@$name").text
+  }
+
+  @inline
+  def name: String = {
+    (n \ s"@name").text
+  }
+
+  @inline
+  def get(name: String): Option[String] = {
+    (n \ s"@$name").map(_.text).headOption
+  }
+
 
 }

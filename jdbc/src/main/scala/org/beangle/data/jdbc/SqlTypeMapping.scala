@@ -19,16 +19,17 @@
 package org.beangle.data.jdbc
 
 import java.math.BigInteger
-import java.sql.Types.{ BIGINT, BLOB, BOOLEAN, CHAR, CLOB, DATE, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, SMALLINT, TIME, TIMESTAMP, TINYINT, VARCHAR, VARBINARY }
+import java.sql.Types._
 import java.time.Year
 
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.value
-import org.beangle.commons.lang.time.{ HourMinute, WeekState }
-import org.beangle.data.jdbc.meta.{ Engine, SqlType }
+import org.beangle.commons.lang.time.{HourMinute, WeekState}
+import org.beangle.data.jdbc.engine.Engine
+import org.beangle.data.jdbc.meta.SqlType
 
 object SqlTypeMapping {
-  def DefaultStringSqlType =  SqlType(VARCHAR, "varchar(255)", 255)
+  def DefaultStringSqlType = SqlType(VARCHAR, "varchar(255)", 255)
 }
 
 trait SqlTypeMapping {
@@ -109,7 +110,7 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
                 if (params.length == 1) find = params(0).getType
                 i += 1
               }
-              concretTypes.getOrElse(find,raiseMappingError(clazz))
+              concretTypes.getOrElse(find, raiseMappingError(clazz))
             } else if (clazz.getName.contains("$")) {
               // convert A$Val to A$
               val containerClass = Class.forName(Strings.substringBefore(clazz.getName, "$") + "$")

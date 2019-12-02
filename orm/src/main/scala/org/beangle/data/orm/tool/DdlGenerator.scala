@@ -23,9 +23,9 @@ import java.util.Locale
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.{IOs, ResourcePatternResolver}
-import org.beangle.commons.lang.{ClassLoaders, Locales, Strings, SystemInfo}
+import org.beangle.commons.lang.{Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.dialect.{Dialect, Dialects, SQL}
+import org.beangle.data.jdbc.dialect.{Dialect, Dialects}
 import org.beangle.data.jdbc.meta.{DBScripts, Database, Table}
 import org.beangle.data.orm.Mappings
 
@@ -120,18 +120,18 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
   private def generateTableSql(table: Table): Unit = {
     if (processed.contains(table)) return
     processed.add(table)
-    comments ++= SQL.commentsOnTable(table, dialect)
-    tables += SQL.createTable(table, dialect)
+    comments ++= dialect.commentsOnTable(table)
+    tables += dialect.createTable(table)
 
     table.foreignKeys foreach { fk =>
-      constraints += SQL.alterTableAddforeignKey(fk, dialect)
+      constraints += dialect.alterTableAddForeignKey(fk)
     }
     table.uniqueKeys foreach { uk =>
-      constraints += SQL.alterTableAddUnique(uk, dialect)
+      constraints += dialect.alterTableAddUnique(uk)
     }
 
     table.indexes foreach { idx =>
-      indexes += SQL.createIndex(idx)
+      indexes += dialect.createIndex(idx)
     }
   }
 

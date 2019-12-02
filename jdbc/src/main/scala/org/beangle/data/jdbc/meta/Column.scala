@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.beangle.data.jdbc.meta
+
+import org.beangle.data.jdbc.engine.Engine
+
 /**
   * JDBC column metadata
   *
@@ -42,10 +45,6 @@ class Column(var name: Identifier, var sqlType: SqlType, var nullable: Boolean =
 
   def hasCheck: Boolean = {
     check != null && check.isDefined
-  }
-
-  def literalName(engine: Engine): String = {
-    name.toLiteral(engine)
   }
 
   override def toString: String = {

@@ -18,65 +18,43 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.meta.Engine
+import org.beangle.data.jdbc.engine.Engine
+import org.beangle.data.jdbc.meta._
 
+
+/** RDBMS Dialect
+  * Focus on ddl and dml sql generation.
+  */
 trait Dialect {
-
-  def tableGrammar: TableGrammar
-
-  def limitGrammar: LimitGrammar
-
-  def sequenceGrammar: SequenceGrammar
-
-  def defaultSchema: String
-
-  def supportsCascadeDelete: Boolean
-
-  def supportsCommentOn: Boolean
-
-  def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
-    referencedTable: String, primaryKey: Iterable[String]): String
-
-  def metadataGrammar: MetadataGrammar
-
-  def support(version: String): Boolean
-
   def engine: Engine
 
-}
+  def createTable(table: Table): String
 
-abstract class AbstractDialect(val engine: Engine, versions: String) extends Dialect {
+  def dropTable(table: String): String
 
-  val version: Dbversion = new Dbversion(versions)
+  def alterTableAddColumn(table: Table, col: Column): String
 
-  override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
-    referencedTable: String, primaryKey: Iterable[String]): String = {
-    val res: StringBuffer = new StringBuffer(30)
-    res.append(" add constraint ").append(constraintName).append(" foreign key (")
-      .append(Strings.join(foreignKey, ", ")).append(") references ").append(referencedTable)
-    if (primaryKey.nonEmpty) {
-      res.append(" (").append(Strings.join(primaryKey, ", ")).append(')')
-    }
-    res.toString
-  }
+  def alterTableDropColumn(table: Table, col: Column): String
 
-  override def supportsCascadeDelete = true
+  def alterTableModifyColumnNotNull(table: Table, col: Column): String
 
-  override def supportsCommentOn = false
+  def alterTableAddForeignKey(fk: ForeignKey): String
 
-  def support(dbversion: String): Boolean = {
-    if (null != version) version.contains(dbversion) else false
-  }
+  def alterTableAddUnique(fk: UniqueKey): String
 
-  override def defaultSchema: String = null
+  def createSequence(seq: Sequence): String
 
-  override def tableGrammar: TableGrammar = {
-    new TableGrammarBean()
-  }
+  def dropSequence(seq: Sequence): String
 
-  def metadataGrammar: MetadataGrammar = {
-    null
-  }
+  /** generate limit sql
+    *
+    * @param offset is 0 based
+    */
+  def limit(query: String, offset: Int, limit: Int): (String, List[Int])
 
+  def commentsOnTable(table: Table): List[String]
+
+  def createIndex(i: Index): String
+
+  def dropIndex(i: Index): String
 }

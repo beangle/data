@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.meta
+package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.dialect._
@@ -55,7 +55,7 @@ object EngineTest {
       for (dialect <- dialects) {
         val typeName =
           try {
-            dialect.engine.typeNames.toName(types(i))
+            dialect.engine.toType(types(i)).name
           } catch {
             case e: Exception => "error"
           }

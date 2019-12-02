@@ -16,39 +16,46 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.dialect
+package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.lang.Strings
+
+object Version {
+  def apply(version: String): Version = {
+    val containStart = !version.startsWith("(")
+    val containEnd = !version.endsWith(")")
+    var start: String = null
+    var end: String = null
+
+    val commaIndex: Int = version.indexOf(',')
+
+    if (-1 == commaIndex) {
+      start = version
+      end = version
+    } else {
+      if ('[' == version.charAt(0) || '(' == version.charAt(0)) {
+        start = version.substring(1, commaIndex)
+      } else {
+        start = version.substring(0, commaIndex)
+      }
+      if (']' == version.charAt(version.length() - 1) || ')' == version.charAt(version.length() - 1)) {
+        end = version.substring(commaIndex + 1, version.length() - 1)
+      } else {
+        end = version.substring(commaIndex + 1)
+      }
+
+    }
+    new Version(start, end, containStart, containEnd)
+  }
+}
 
 /**
   * User [a,b] or (a,b) or a,b to discribe jdbc version range.
   * a,b should not all empty.
+  *
   * @author chaostone
   */
-class Dbversion(version: String) {
-
-  val containStart: Boolean = !version.startsWith("(")
-  val containEnd: Boolean = !version.endsWith(")")
-  var start: String = _
-  var end: String = _
-
-  var commaIndex: Int = version.indexOf(',')
-  if (-1 == commaIndex) {
-    start = version
-    end = version
-  } else {
-    if ('[' == version.charAt(0) || '(' == version.charAt(0)) {
-      start = version.substring(1, commaIndex)
-    } else {
-      start = version.substring(0, commaIndex)
-    }
-    if (']' == version.charAt(version.length() - 1) || ')' == version.charAt(version.length() - 1)) {
-      end = version.substring(commaIndex + 1, version.length() - 1)
-    } else {
-      end = version.substring(commaIndex + 1)
-    }
-
-  }
+class Version(start: String, end: String, containStart: Boolean, containEnd: Boolean) {
 
   def contains(given: String): Boolean = {
     if (Strings.isNotEmpty(start)) {

@@ -18,31 +18,17 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.engine.Engines
 
-class H2Dialect extends AbstractDialect(Engines.H2, "[1.3,)") {
+class H2Dialect extends AbstractDialect(Engines.H2) {
+  options.sequence.nextValSql = "call next value for :name"
+  options.sequence.selectNextValSql = "next value for :name"
+  options.sequence.createSql = "create sequence :name start with :start increment by :increment cache :cache"
+  options.sequence.dropSql = "drop sequence if exists :name"
 
-  override def sequenceGrammar: SequenceGrammar = {
-    val ss = new SequenceGrammar()
-    ss.querySequenceSql = "select sequence_name,current_value,increment,cache from information_schema.sequences where sequence_schema=':schema'"
-    ss.nextValSql = "call next value for :name"
-    ss.selectNextValSql = "next value for :name"
-    ss.createSql = "create sequence :name start with :start increment by :increment cache :cache"
-    ss.dropSql = "drop sequence if exists :name"
-    ss
-  }
+  options.limit.pattern = "{} limit ?"
+  options.limit.offsetPattern = "{} limit ? offset ?"
+  options.limit.bindInReverseOrder = true
+  options.comment.supportsCommentOn = true
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
-
-  override def tableGrammar: TableGrammar = {
-    val bean = new TableGrammarBean()
-    bean.columnComent = " comment '{}'"
-    bean
-  }
-
-  override def defaultSchema: String = {
-    "PUBLIC"
-  }
-
-  override def supportsCommentOn = true
 }

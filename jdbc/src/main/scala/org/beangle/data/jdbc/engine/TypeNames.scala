@@ -16,13 +16,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.meta
+package org.beangle.data.jdbc.engine
 
 import java.sql.Types
 import java.sql.Types._
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Numbers, Strings}
+import org.beangle.data.jdbc.meta._
 
 import scala.collection.mutable
 
@@ -139,7 +140,7 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
   }
 
 
-  protected[meta] def toName(typecode: Int): String = {
+  protected[engine] def toName(typecode: Int): String = {
     code2names.get(translate(typecode, 0)) match {
       case None => "other"
       case Some(l) => l.head._2
@@ -155,7 +156,7 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
     * @return the associated name with smallest capacity >= size, if available
     *         and the default type name otherwise
     */
-  protected[meta] def toName(typecode: Int, precision: Int, scale: Int): String = {
+  protected[engine] def toName(typecode: Int, precision: Int, scale: Int): String = {
     code2names.get(typecode) match {
       case None => "other"
       case Some(l) =>
@@ -167,7 +168,7 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
   }
 
 
-  protected[meta] def toCode(typeName: String, precision: Int): Int = {
+  protected[engine] def toCode(typeName: String, precision: Int): Int = {
     name2codes.get(typeName) match {
       case None => Types.OTHER
       case Some(l) =>

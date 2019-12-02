@@ -21,6 +21,7 @@ package org.beangle.data.jdbc.meta
 import java.io.File
 
 import org.beangle.commons.io.Files
+import org.beangle.data.jdbc.engine.{Engines, PostgreSQL}
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
 import org.scalatest.funspec.AnyFunSpec
@@ -42,7 +43,7 @@ class SerializerTest extends AnyFunSpec with Matchers {
 
       val user = Table(security, "user")
       val column = user.addColumn("name", "varchar(30)")
-      column.comment = Some("login \n name")
+      column.comment = Some("login  name")
       column.nullable = false
 
       user.addColumn("id", "bigint").nullable = false
@@ -58,10 +59,13 @@ class SerializerTest extends AnyFunSpec with Matchers {
       user.createUniqueKey("\"key\"")
       user.createIndex(true, "code")
       security.addTable(user)
-      val xml = new Serializer(db).toXML()
+      val xml = Serializer.toXml(db)
       val file = File.createTempFile("database", ".xml")
       Files.writeString(file, xml)
       println("db xml is writed in " + file.getAbsolutePath)
+      val db2 = Serializer.fromXml(xml)
+      val xml2 = Serializer.toXml(db2)
+      assert(xml == xml2)
     }
   }
 }

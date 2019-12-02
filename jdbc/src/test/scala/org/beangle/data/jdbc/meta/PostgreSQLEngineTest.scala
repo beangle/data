@@ -21,6 +21,7 @@ package org.beangle.data.jdbc.meta
 import java.sql.Types
 import java.sql.Types.{BIGINT, BOOLEAN, INTEGER, SMALLINT}
 
+import org.beangle.data.jdbc.engine.{Engines, PostgreSQL}
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
@@ -33,7 +34,7 @@ class PostgreSQLEngineTest extends AnyFlatSpec with Matchers {
     val engine = Engines.PostgreSQL
     val scale = 0
     val precision = 65535
-    engine.typeNames.toName(Types.NUMERIC, precision, scale) equals "numeric(1000, 0)" should be(true)
+    engine.toType(Types.NUMERIC, precision, scale).name equals "numeric(1000, 0)" should be(true)
     engine.toType(Types.DECIMAL,  1, 0).name shouldEqual  "boolean"
 
     //engine.toType(Types.DECIMAL,1,0) shouldEqual SqlType(BOOLEAN, "boolean", 1)

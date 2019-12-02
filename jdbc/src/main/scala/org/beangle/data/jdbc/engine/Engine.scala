@@ -16,18 +16,25 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.meta
+package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.meta
+import org.beangle.data.jdbc.meta.{Identifier, MetadataLoadSql, SqlType}
 
+/** RDBMS engine interface
+  * It provides type mapping,default schema definition,key words,version etc.
+  */
 trait Engine {
+
+  def name: String
+
+  def version: Version
+
+  def defaultSchema: String
 
   def storeCase: StoreCase.Value
 
   def keywords: Set[String]
-
-  def typeNames: TypeNames
 
   def quoteChars: (Char, Char)
 
@@ -76,58 +83,5 @@ trait Engine {
     }
   }
 
-}
-
-abstract class AbstractEngine extends Engine {
-  var typeNames: TypeNames = _
-
-  private var typeMappingBuilder = new meta.TypeNames.Builder()
-
-  var keywords: Set[String] = Set.empty[String]
-
-  def registerKeywords(words: String*): Unit = {
-    keywords ++= words.toList
-  }
-
-  override def quoteChars: (Char, Char) = {
-    ('\"', '\"')
-  }
-
-  protected def registerTypes(tuples: (Int, String)*): Unit = {
-    tuples foreach { tuple =>
-      typeMappingBuilder.put(tuple._1, tuple._2)
-    }
-    typeNames = typeMappingBuilder.build()
-  }
-
-  /** 按照该类型的容量进行登记
-    *
-    * @param tuples
-    */
-  protected def registerTypes2(tuples: (Int, Int, String)*): Unit = {
-    tuples foreach { tuple =>
-      typeMappingBuilder.put(tuple._1, tuple._2, tuple._3)
-    }
-    typeNames = typeMappingBuilder.build()
-  }
-
-  def toType(typeName: String): SqlType = {
-    typeNames.toType(typeName)
-  }
-
-  override final def toType(sqlCode: Int): SqlType = {
-    toType(sqlCode, 0, 0)
-  }
-
-  override final def toType(sqlCode: Int, precision: Int): SqlType = {
-    toType(sqlCode, precision, 0)
-  }
-
-  override def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
-    typeNames.toType(sqlCode, precision, scale)
-  }
-
-  def storeCase: StoreCase.Value = {
-    StoreCase.Mixed
-  }
+  def metadataLoadSql: MetadataLoadSql
 }

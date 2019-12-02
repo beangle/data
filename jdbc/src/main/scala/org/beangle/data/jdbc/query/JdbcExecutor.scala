@@ -26,7 +26,7 @@ import javax.sql.DataSource
 import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.DefaultSqlTypeMapping
-import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.engine.Engines
 
 import scala.collection.immutable.ArraySeq
 

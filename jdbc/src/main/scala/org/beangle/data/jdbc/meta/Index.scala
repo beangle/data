@@ -37,6 +37,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.collection.Collections
+import org.beangle.data.jdbc.engine.Engine
 
 /**
   * JDBC index metadata

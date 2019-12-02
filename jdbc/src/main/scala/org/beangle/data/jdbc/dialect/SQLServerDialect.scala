@@ -18,52 +18,39 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.engine.Engines
 
-class SQLServerDialect(version: String) extends AbstractDialect(Engines.SQLServer, version) {
+class SQLServerDialect extends AbstractDialect(Engines.SQLServer) {
 
   val SELECT: String = "select"
   val FROM: String = "from"
   val DISTINCT: String = "distinct"
 
-  def this() {
-    this("[2005,2012)")
-  }
+  options.comment.supportsCommentOn = false
+  options.sequence.supports = false
 
-  override def defaultSchema: String = {
-    "dbo"
-  }
+  override def limit(querySql: String, offset: Int, limit: Int): (String, List[Int]) = {
+    val sb: StringBuilder = new StringBuilder(querySql)
 
-  override def sequenceGrammar: SequenceGrammar = null
+    val orderByIndex: Int = querySql.toLowerCase().indexOf("order by")
+    var orderby: CharSequence = "ORDER BY CURRENT_TIMESTAMP"
+    if (orderByIndex > 0) orderby = sb.subSequence(orderByIndex, sb.length())
 
-  override def limitGrammar: LimitGrammar = {
-    SqlServerLimitGrammar
-  }
-
-  object SqlServerLimitGrammar extends LimitGrammar {
-    override def limit(querySql: String, offset: Int, limit: Int): (String, List[Int]) = {
-      val sb: StringBuilder = new StringBuilder(querySql)
-
-      val orderByIndex: Int = querySql.toLowerCase().indexOf("order by")
-      var orderby: CharSequence = "ORDER BY CURRENT_TIMESTAMP"
-      if (orderByIndex > 0) orderby = sb.subSequence(orderByIndex, sb.length())
-
-      // Delete the order by clause at the end of the query
-      if (orderByIndex > 0) {
-        sb.delete(orderByIndex, orderByIndex + orderby.length())
-      }
-
-      // HHH-5715 bug fix
-      replaceDistinctWithGroupBy(sb)
-
-      insertRowNumberFunction(sb, orderby)
-
-      // Wrap the query within a with statement:
-      sb.insert(0, "WITH query AS (").append(") SELECT * FROM query ")
-      sb.append("WHERE _row_nr_ BETWEEN ? AND ?")
-
-      (sb.toString(), List(offset + 1, offset + limit))
+    // Delete the order by clause at the end of the query
+    if (orderByIndex > 0) {
+      sb.delete(orderByIndex, orderByIndex + orderby.length())
     }
+
+    // HHH-5715 bug fix
+    replaceDistinctWithGroupBy(sb)
+
+    insertRowNumberFunction(sb, orderby)
+
+    // Wrap the query within a with statement:
+    sb.insert(0, "WITH query AS (").append(") SELECT * FROM query ")
+    sb.append("WHERE _row_nr_ BETWEEN ? AND ?")
+
+    (sb.toString(), List(offset + 1, offset + limit))
   }
 
   protected def replaceDistinctWithGroupBy(sql: StringBuilder): Unit = {

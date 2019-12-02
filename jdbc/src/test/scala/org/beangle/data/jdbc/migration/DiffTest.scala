@@ -20,7 +20,8 @@ package org.beangle.data.jdbc.migration
 
 import java.sql.Types
 
-import org.beangle.data.jdbc.meta.{Column, Engines, Identifier, Table}
+import org.beangle.data.jdbc.engine.{Engines, PostgreSQL}
+import org.beangle.data.jdbc.meta.{Column, Identifier, Table}
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
 import org.scalatest.funspec.AnyFunSpec

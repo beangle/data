@@ -18,144 +18,148 @@
  */
 package org.beangle.data.jdbc.meta
 
-import scala.xml.Utility.escape
+import java.io.StringReader
 
-class Serializer(db: Database) {
+import org.beangle.commons.lang.Strings.split
+import org.beangle.data.jdbc.engine.Engines
+import org.beangle.data.jdbc.internal.NodeOps._
+import org.beangle.data.jdbc.internal.XmlNode
 
-  private val engine = db.engine
+object Serializer {
 
-  def toXML(): String = {
-    val sb = new StringBuilder
-    sb ++= "<db>"
-    if (db.schemas.nonEmpty) {
-      sb ++= "<schemas>"
-      db.schemas foreach { case (name, schema) =>
-        sb ++= s"""<schema name="$name">"""
-        if (schema.tables.nonEmpty) {
-          sb ++= "<tables>"
-          schema.tables foreach { case (i, table) =>
-            sb ++= toXml(table, db.engine)
-          }
-          sb ++= "</tables>"
+  def fromXml(content: String): Database = {
+    val root = scala.xml.XML.load(new StringReader(content))
+    val engine = Engines.forName(root.attr("engine"))
+    val database = new Database(engine)
+    (root \\ "schema") foreach { schemaElem =>
+      val schema = database.getOrCreateSchema(schemaElem.name)
+      (schemaElem \ "tables" \ "table") foreach { tableElem =>
+        val table = schema.createTable(tableElem.name)
+        tableElem.get("comment").foreach(n => table.comment = Some(n))
+        (tableElem \ "columns" \ "column") foreach { colElem =>
+          val col = table.addColumn(colElem.name, colElem.attr("type"))
+          colElem.get("nullable").foreach(n => col.nullable = n.toBoolean)
+          colElem.get("unique").foreach(n => col.unique = n.toBoolean)
+          colElem.get("check").foreach(n => col.check = Some(n))
+          colElem.get("comment").foreach(n => col.comment = Some(n))
         }
-        sb ++= "</schema>"
+        (tableElem \ "primary-key") foreach { pkElem =>
+          table.addPrimaryKey(pkElem.name, split(pkElem.attr("columns")): _*)
+        }
+        (tableElem \ "foreign-keys" \ "foreign-key") foreach { fkElem =>
+          val name = fkElem.name
+          val column = fkElem.attr("column")
+          val referTable = fkElem.attr("referenced-table")
+          val referColumn = fkElem.attr("referenced-column")
+          val fk = table.addForeignKey(name, column, database.refTable(referTable), referColumn)
+          fkElem.get("enabled").foreach(n => fk.enabled = n.toBoolean)
+          fkElem.get("cascadeDelete").foreach(n => fk.cascadeDelete = n.toBoolean)
+        }
+        (tableElem \ "unique-keys" \ "unique-key") foreach { ukElem =>
+          val uk = table.addUniqueKey(ukElem.name, split(ukElem.attr("columns")): _*)
+          ukElem.get("enabled").foreach(n => uk.enabled = n.toBoolean)
+        }
+        (tableElem \ "indexes" \ "index") foreach { idxElem =>
+          var unique = false
+          idxElem.get("unique").foreach(n => unique = n.toBoolean)
+          table.addIndex(idxElem.name, unique, split(idxElem.attr("columns")): _*)
+        }
       }
-      sb ++= "</schemas>"
-
     }
-    sb ++= "</db>"
-    sb.mkString
+    database
   }
 
-  def toXml(table: Table, engine: Engine): String = {
-    val sb = new StringBuilder
-    sb ++= s"""<table name="${table.name.toLiteral(engine)}""""
-    table.comment foreach { c =>
-      sb ++= s""" comment="$c" """
-    }
-    sb ++= ">"
-    sb ++= "<columns>"
-    table.columns foreach { col =>
-      sb ++= toXml(col)
-    }
-    sb ++= "</columns>"
-    table.primaryKey foreach { pk =>
-      sb ++= "<primary-key"
-      if (null != pk.name && !pk.name.value.isBlank) {
-        sb ++= s""" name="${name(pk.name)}" """
+  def toXml(database: Database): String = {
+    new Exporter(database).toXml
+  }
+
+  private class Exporter(db: Database) {
+    def toXml: String = {
+      val dbNode = XmlNode("db", ("engine", db.engine.name))
+      if (db.schemas.nonEmpty) {
+        val schemasNode = dbNode.createChild("schemas")
+        db.schemas foreach { case (name, schema) =>
+          val schemaNode = schemasNode.createChild("schema", ("name", name))
+          if (schema.tables.nonEmpty) {
+            val tablesNode = schemaNode.createChild("tables")
+            schema.tables.values.toBuffer.sorted foreach { table =>
+              appendXml(table, tablesNode)
+            }
+          }
+        }
       }
-      sb ++= s""" columns="${collectNames(pk.columns)}"/>"""
+      dbNode.toXml
     }
-    if (table.foreignKeys.nonEmpty) {
-      sb ++= "<foreign-keys>"
-      table.foreignKeys foreach { fk =>
-        sb ++= toXml(fk)
+
+    private def appendXml(table: Table, tablesNode: XmlNode): Unit = {
+      val tableNode = tablesNode.createChild("table", "name" -> table.name)
+      tableNode.attr("comment", table.comment)
+      val columnsNode = tableNode.createChild("columns")
+      table.columns foreach { col =>
+        val colNode = columnsNode.createChild("column")
+        colNode.attr("name", col.name)
+        colNode.attr("type", col.sqlType.name)
+        if (!col.nullable) {
+          colNode.attr("nullable", col.nullable.toString)
+        }
+        if (col.unique) {
+          colNode.attr("unique", col.unique.toString)
+        }
+        colNode.attr("check", col.check)
+        colNode.attr("defaultValue", col.defaultValue)
+        colNode.attr("comment", col.comment)
       }
-      sb ++= "</foreign-keys>"
-    }
-    if (table.uniqueKeys.nonEmpty) {
-      sb ++= "<unique-keys>"
-      table.uniqueKeys foreach { uk =>
-        sb ++= toXml(uk)
+      table.primaryKey foreach { pk =>
+        val pkNode = tableNode.createChild("primary-key")
+        if (null != pk.name && !pk.name.value.isBlank) {
+          pkNode.attr("name", pk.name)
+        }
+        pkNode.attr("columns", collectNames(pk.columns))
       }
-      sb ++= "</unique-keys>"
-    }
-    if (table.indexes.nonEmpty) {
-      sb ++= "<indexes>"
-      table.indexes foreach { idx =>
-        sb ++= toXml(idx)
+      if (table.foreignKeys.nonEmpty) {
+        val fkNodes = tableNode.createChild("foreign-keys")
+        table.foreignKeys foreach { fk =>
+          val fkNode = fkNodes.createChild("foreign-key", "name" -> fk.name)
+          fkNode.attr("column", collectNames(fk.columns))
+          fkNode.attr("referenced-table", fk.referencedTable.qualifiedName)
+          fkNode.attr("referenced-column", collectNames(fk.referencedColumns))
+          if (fk.cascadeDelete) {
+            fkNode.attr("cascade-delete", "true")
+          }
+          if (!fk.enabled) {
+            fkNode.attr("enabled", "false")
+          }
+        }
       }
-      sb ++= "</indexes>"
+      if (table.uniqueKeys.nonEmpty) {
+        val ukNodes = tableNode.createChild("unique-keys")
+        table.uniqueKeys foreach { uk =>
+          val ukNode = ukNodes.createChild("unique-key", "name" -> uk.name)
+          ukNode.attr("columns", collectNames(uk.columns))
+          if (!uk.enabled) {
+            ukNode.attr("enabled", uk.enabled.toString)
+          }
+        }
+      }
+      if (table.indexes.nonEmpty) {
+        val idxNodes = tableNode.createChild("indexes")
+        table.indexes foreach { idx =>
+          val idxNode = idxNodes.createChild("index", "name" -> idx.name)
+          idxNode.attr("columns", collectNames(idx.columns))
+          if (idx.unique) {
+            idxNode.attr("unique", idx.unique.toString)
+          }
+        }
+      }
     }
-    sb ++= "</table>"
-    sb.mkString
+
+    def collectNames(cols: Iterable[Identifier]): String = {
+      cols.map(_.toLiteral(db.engine)).mkString(",")
+    }
+
+    implicit def identifier2String(i: Identifier): String = {
+      i.toLiteral(db.engine)
+    }
   }
 
-  def collectNames(cols: Iterable[Identifier]): String = {
-    cols.map(name).mkString(",")
-  }
-
-  def toXml(col: Column): String = {
-    val sb = new StringBuilder
-    sb ++= s"""<column name="${name(col.name)}""""
-    sb ++= s""" type="${col.sqlType.name}""""
-    if (!col.nullable) {
-      sb ++= """ nullable="false""""
-    }
-    if (col.unique) {
-      sb ++= """ unique="true""""
-    }
-    col.check foreach { c =>
-      sb ++= s""" check="$c""""
-    }
-    col.defaultValue foreach { c =>
-      sb ++= s""" default="$c""""
-    }
-    col.comment foreach { c =>
-      sb ++= s""" comment="${escape(c)}""""
-    }
-    sb ++= "/>"
-    sb.mkString
-  }
-
-
-  def toXml(fk: ForeignKey): String = {
-    val sb = new StringBuilder(
-      s"""<foreign-key name="${name(fk.name)}" columns="${collectNames(fk.columns)}" """)
-    sb ++= s""" referenced-table="${fk.referencedTable.qualifiedName}" referenced-columns="${collectNames(fk.referencedColumns)}" """
-    if (fk.cascadeDelete) {
-      sb ++= """ cascade-delete="true" """
-    }
-    if (!fk.enabled) {
-      sb ++= """ enabled="false" """
-    }
-    sb ++= "/>"
-    sb.mkString
-  }
-
-  def toXml(uk: UniqueKey): String = {
-    val sb = new StringBuilder(
-      s"""<unique-key name="${name(uk.name)}" """)
-    sb ++= s""" columns="${collectNames(uk.columns)}" """
-    if (!uk.enabled) {
-      sb ++= """ enabled="false" """
-    }
-    sb ++= "/>"
-    sb.mkString
-  }
-
-  def toXml(idx: Index): String = {
-    val sb = new StringBuilder(
-      s"""<index name="${name(idx.name)}" """)
-    sb ++= s""" columns="${collectNames(idx.columns)}" """
-    if (idx.unique) {
-      sb ++= """ unique="true" """
-    }
-    sb ++= "/>"
-    sb.mkString
-  }
-
-  def name(i: Identifier): String = {
-    escape(i.toLiteral(engine))
-  }
 }

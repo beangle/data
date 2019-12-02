@@ -18,18 +18,19 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.junit.runner.RunWith
-import org.scalatest.Matchers
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatestplus.junit.JUnitRunner
-import org.beangle.data.jdbc.dialect.SQL
-import org.beangle.data.jdbc.dialect.OracleDialect
+import org.beangle.commons.lang.Strings
 
-@RunWith(classOf[JUnitRunner])
-class PrimaryKeyTest extends AnyFlatSpec with Matchers {
+class MetadataLoadSql {
 
-  def testSqlConstraintString = {
-    val pk = new PrimaryKey(null, Identifier("pk_sometable"), Identifier("id"))
-    assert(SQL.primaryKeySql(pk, new OracleDialect) == "primary key (id)")
+  var primaryKeySql: String = _
+
+  var importedKeySql: String = _
+
+  var indexInfoSql: String = _
+
+  var sequenceSql: String = _
+
+  def supportsTableExtra: Boolean = {
+    Strings.isNotBlank(primaryKeySql) && Strings.isNotBlank(importedKeySql) && Strings.isNotBlank(indexInfoSql)
   }
 }

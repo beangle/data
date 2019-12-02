@@ -19,13 +19,16 @@
 package org.beangle.data.jdbc.dialect
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.engine.Engines
 
-class MySQLDialect extends AbstractDialect(Engines.MySQL, "[5.0,)") {
+class MySQLDialect extends AbstractDialect(Engines.MySQL) {
 
-  override def limitGrammar: LimitGrammar = {
-    new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
-  }
+  options.sequence.supports = false
+  options.limit.pattern = "{} limit ?"
+  options.limit.offsetPattern = "{} limit ? offset ?"
+  options.limit.bindInReverseOrder = true
+
+  options.comment.supportsCommentOn = false
 
   override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
                              referencedTable: String, primaryKey: Iterable[String]): String = {
@@ -36,12 +39,4 @@ class MySQLDialect extends AbstractDialect(Engines.MySQL, "[5.0,)") {
       .append(Strings.join(primaryKey, ", ")).append(')').toString
   }
 
-  override def tableGrammar: TableGrammar = {
-    val bean = new TableGrammarBean()
-    bean.columnComent = " comment '{}'"
-    bean.tableComment = " comment '{}'"
-    bean
-  }
-
-  override def sequenceGrammar: SequenceGrammar = null
 }

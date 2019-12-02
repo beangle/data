@@ -113,7 +113,7 @@ object DataSourceUtils extends Logging {
 
     var schemaName = (xml \\ "schema").text.trim
     if (isEmpty(schemaName)) {
-      schemaName = dialect.defaultSchema
+      schemaName = dialect.engine.defaultSchema
       if (schemaName == "$user") schemaName = dbconf.user
     }
     dbconf.schema = dialect.engine.toIdentifier(schemaName)

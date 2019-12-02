@@ -18,7 +18,8 @@
  */
 package org.beangle.data.jdbc.migration
 
-import org.beangle.data.jdbc.meta.{Database, Engine, Engines}
+import org.beangle.data.jdbc.engine.{Engines}
+import org.beangle.data.jdbc.meta.Database
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
 import org.scalatest.funspec.AnyFunSpec
@@ -28,10 +29,10 @@ import org.scalatestplus.junit.JUnitRunner
 class MigratorTest extends AnyFunSpec with Matchers {
   describe("Migrator") {
     it("test diff") {
-      val migrator= new Migrator
-      val newer=new Database(Engines.PostgreSQL)
-      val older=new Database(Engines.PostgreSQL)
-     // val diff=migrator.sql(newer,older)
+      val migrator = new Migrator
+      val newer = new Database(Engines.PostgreSQL)
+      val older = new Database(Engines.PostgreSQL)
+      val diff = migrator.sql(new Diff().diff(newer, older))
     }
   }
 }

@@ -22,7 +22,8 @@ import javax.sql.DataSource
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.jdbc.ds.DataSourceUtils
-import org.beangle.data.jdbc.meta.{Database, Engines, Identifier, MetadataLoader}
+import org.beangle.data.jdbc.engine.Engines
+import org.beangle.data.jdbc.meta.{Database, Identifier, MetadataLoader}
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 
@@ -41,7 +42,7 @@ class H2DialectTest extends DialectTestCase {
     val meta = ds.getConnection().getMetaData()
     val database = new Database(Engines.H2)
     schema = database.getOrCreateSchema(Identifier("PUBLIC"))
-    val loader = new MetadataLoader(meta, new H2Dialect)
+    val loader = new MetadataLoader(meta, Engines.H2)
     loader.loadTables(schema, false)
     loader.loadSequences(schema)
     listTableAndSequences

@@ -19,6 +19,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.engine.Engine
 
 import scala.collection.mutable.ListBuffer
 
@@ -137,7 +138,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
 
   def addPrimaryKey(keyName: String, columnNames: String*): PrimaryKey = {
     val pk = createPrimaryKey(columnNames: _*)
-    pk.name = engine.toIdentifier(keyName)
+    pk.name = if (Strings.isBlank(keyName)) Identifier.empty else engine.toIdentifier(keyName)
     pk
   }
 
@@ -145,6 +146,12 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     val uk = createUniqueKey(columnNames: _*)
     uk.name = engine.toIdentifier(keyName)
     uk
+  }
+
+  def addForeignKey(keyName: String, columnName: String, refTable: TableRef, referencedColumn: String): ForeignKey = {
+    val fk = createForeignKey(columnName, refTable, referencedColumn)
+    fk.name = engine.toIdentifier(keyName)
+    fk
   }
 
   def addForeignKey(keyName: String, columnName: String, refTable: Table): ForeignKey = {
@@ -186,6 +193,13 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     uk
   }
 
+  def createForeignKey(columnName: String, refTable: TableRef, refencedColumn: String): ForeignKey = {
+    val eng = engine
+    val fk = new ForeignKey(this, Identifier("fk_temp"), eng.toIdentifier(columnName))
+    fk.refer(refTable, eng.toIdentifier(refencedColumn))
+    this.add(fk)
+  }
+
   def createForeignKey(columnName: String, refTable: Table): ForeignKey = {
     val eng = engine
     refTable.primaryKey match {
@@ -206,7 +220,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
       index.addColumn(eng.toIdentifier(colName))
     }
     index.unique = unique
-    index.name =  eng.toIdentifier(Constraint.autoname(index))
+    index.name = eng.toIdentifier(Constraint.autoname(index))
     this.indexes += index
     index
   }

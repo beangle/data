@@ -18,7 +18,8 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.dialect.{OracleDialect, PostgreSQLDialect, SQL}
+import org.beangle.data.jdbc.dialect.{OracleDialect, PostgreSQLDialect}
+import org.beangle.data.jdbc.engine.Engines
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
@@ -30,7 +31,7 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
   "fk alter sql" should "corret" in {
     val tableA = buildTable()
     val fk = tableA.foreignKeys.head
-    SQL.alterTableAddforeignKey(fk, new OracleDialect)
+    new OracleDialect().alterTableAddForeignKey(fk)
   }
 
   "drop table " should "corret" in {
@@ -38,7 +39,7 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
     val pgdialect = new PostgreSQLDialect()
     tableA.attach(pgdialect.engine)
     tableA.schema.name = Identifier("lowercase_a")
-    println(pgdialect.tableGrammar.dropCascade(tableA.qualifiedName))
+    println(pgdialect.dropTable(tableA.qualifiedName))
     val fk = tableA.foreignKeys.head
     //assert(fk.alterSql == "alter table lowercase_a.\"SYS_TABLEA\" add constraInt \"FKXYZ\" foreign key (\"FKID\") references \"PUBLIC\".\"SYS_TABLE\" (\"ID\")")
   }

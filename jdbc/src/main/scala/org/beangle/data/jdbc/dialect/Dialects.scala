@@ -27,12 +27,12 @@ import scala.collection.mutable
 object Dialects {
 
   val registeredDialects = new mutable.HashMap[VendorInfo, List[Dialect]]
-
-  def getDialect(vendor: VendorInfo, version: String): Option[Dialect] = {
-    for (dialects <- registeredDialects.get(vendor))
-      return dialects.find(d => d.support(version))
-    None
-  }
+//
+//  def getDialect(vendor: VendorInfo, version: String): Option[Dialect] = {
+//    for (dialects <- registeredDialects.get(vendor))
+//      return dialects.find(d => d.support(version))
+//    None
+//  }
 
   def register(product: VendorInfo, dialects: Dialect*): Unit = {
     registeredDialects.put(product, dialects.toList)

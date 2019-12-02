@@ -19,22 +19,18 @@
 package org.beangle.data.hibernate
 
 import java.net.URL
-import java.{ util => ju }
-
-import org.beangle.commons.bean.Factory
-import org.beangle.commons.io.ResourcePatternResolver
-import org.beangle.data.jdbc.meta.{ Database, Engines }
-import org.beangle.commons.logging.Logging
-import org.beangle.data.orm.Mappings
-import org.beangle.data.hibernate.cfg.MappingService
-import org.hibernate.SessionFactory
-import org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder
-import org.hibernate.cfg.{ AvailableSettings, Configuration }
+import java.{util => ju}
 
 import javax.sql.DataSource
-import org.beangle.data.model.meta.Domain
+import org.beangle.commons.io.ResourcePatternResolver
+import org.beangle.commons.logging.Logging
+import org.beangle.data.hibernate.cfg.MappingService
+import org.beangle.data.jdbc.engine.Engines
+import org.beangle.data.jdbc.meta.Database
+import org.beangle.data.orm.Mappings
 import org.hibernate.boot.MetadataSources
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder
+import org.hibernate.cfg.{AvailableSettings, Configuration}
 
 object ConfigurationBuilder {
   def default: Configuration = {
@@ -57,8 +53,8 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
   var engine: Option[String] = None
 
   /**
-   * Import System properties and disable jdbc metadata lookup
-   */
+    * Import System properties and disable jdbc metadata lookup
+    */
   protected def importSysProperties(): Unit = {
     // 1. Import system properties
     val sysProps = System.getProperties
@@ -102,7 +98,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
     val standardRegistry = standardRegistryBuilder.build()
 
     val metadataSources = new MetadataSources(standardRegistry)
-    //metadataSources.getMetadataBuilder.applyImplicitNamingStrategy(ImplicitNamingStrategyJpaCompliantImpl.INSTANCE)
     val configuration = new Configuration(metadataSources)
 
     configuration.addProperties(this.properties)

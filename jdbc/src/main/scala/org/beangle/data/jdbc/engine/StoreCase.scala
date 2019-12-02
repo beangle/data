@@ -16,19 +16,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.dialect
+package org.beangle.data.jdbc.engine
 
-import org.beangle.data.jdbc.engine.Engines
+/**
+ * Store identifiers in which case
+ */
+object StoreCase extends Enumeration {
 
-class PostgreSQLDialect extends AbstractDialect(Engines.PostgreSQL) {
+  val Lower, Upper, Mixed = Value
 
-   options.sequence.nextValSql = "select nextval (':name')"
-  options.sequence.selectNextValSql = "nextval (':name')"
-
-  options.comment.supportsCommentOn = true
-  options.limit.pattern = "{} limit ?"
-  options.limit.offsetPattern = "{} limit ? offset ?"
-  options.limit.bindInReverseOrder = true
-
-  options.drop.table.sql = "drop table {} cascade"
 }
