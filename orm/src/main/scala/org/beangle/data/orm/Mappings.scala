@@ -249,7 +249,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val pm = etm.getPropertyMapping(idName)
     val column = pm.asInstanceOf[SingularPropertyMapping].columns.head
     column.comment = Some(getComment(clazz, idName) + (":" + etm.idGenerator.name))
-    etm.table.createPrimaryKey(column.name.toLiteral(etm.table.engine))
+    etm.table.createPrimaryKey("",column.name.toLiteral(etm.table.engine))
     etm.table.comment = Some(getComment(clazz, clazz.getSimpleName))
   }
 
@@ -342,7 +342,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                   }
                 case _ =>
               }
-              collectTable.createPrimaryKey(collectTable.columns.map(_.name.toLiteral(table.engine)).toList: _*)
+              collectTable.createPrimaryKey(null,collectTable.columns.map(_.name.toLiteral(table.engine)).toList: _*)
             }
         }
     }
@@ -350,7 +350,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
 
   private def createForeignKey(table: Table, columns: Iterable[Column], refTable: Table): Unit = {
-    table.createForeignKey(columns.head.name.toLiteral(table.engine), refTable)
+    table.createForeignKey(null,columns.head.name.toLiteral(table.engine), refTable)
   }
 
   private def getComment(clazz: Class[_], key: String): String = {

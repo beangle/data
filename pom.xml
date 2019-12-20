@@ -45,7 +45,6 @@
 
     <jpa.version>2.2</jpa.version>
     <javassist.version>3.25.0-GA</javassist.version>
-    <!--<jta.version>1.1.1</jta.version>-->
     <hibernate.version>5.4.4.Final</hibernate.version>
     <poi.version>4.0.1</poi.version>
     <jxls.version>2.6.0</jxls.version>
