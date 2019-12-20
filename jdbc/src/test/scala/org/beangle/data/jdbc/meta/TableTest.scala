@@ -55,8 +55,7 @@ class TableTest extends AnyFlatSpec with Matchers {
     table.add(ageCol)
 
     table.attach(Engines.PostgreSQL)
-    assert("create table TEST.\"USER\" (\"NAME\" varchar(30) not null, \"ID\" int8 not null, \"ENABLED\" boolean not null, \"AGE\" int4 not null," +
-      " primary key (\"ID\"))" == new PostgreSQLDialect().createTable(table))
+    assert("create table TEST.\"USER\" (\"NAME\" varchar(30) not null, \"ID\" bigint not null, \"ENABLED\" boolean not null, \"AGE\" integer not null)" == new PostgreSQLDialect().createTable(table))
   }
 
   "lowercase " should "corrent" in {

@@ -34,11 +34,15 @@ object Options {
   }
 
   class AlterTableOption {
-    var changeType="{}"
-    var setNotNull:String=_
-    var dropNotNull:String=_
-    var setDefault:String=_
-    var dropDefault:String=_
+    var changeType: String = _
+    var setNotNull: String = _
+    var dropNotNull: String = _
+    var setDefault: String = _
+    var dropDefault: String = _
+    var addPrimaryKey: String = _
+    var dropConstraint: String = _
+    var addColumn:String=_
+    var dropColumn: String = _
   }
 
   class CreateTableOption {
@@ -52,7 +56,7 @@ object Options {
   }
 
   class DropTableOption {
-    var sql = "drop table {}"
+    var sql = "drop table {name}"
   }
 
   class ConstraintOption {
@@ -67,8 +71,8 @@ object Options {
 
   class SequenceOption {
     var supports = true
-    var createSql: String = "create sequence :name start with :start increment by :increment :cycle"
-    var dropSql: String = "drop sequence :name"
+    var createSql: String = "create sequence {name} start with {start} increment by {increment} {cycle}"
+    var dropSql: String = "drop sequence {name}"
     var nextValSql: String = _
     var selectNextValSql: String = _
   }
@@ -91,4 +95,32 @@ class Options {
 
   var sequence = new Options.SequenceOption
 
+  def create(f: Options.CreateOption => Unit): Unit = {
+    f(this.create)
+  }
+
+  def sequence(f: Options.SequenceOption => Unit): Unit = {
+    f(this.sequence)
+  }
+
+  def limit(f: Options.LimitOption => Unit): Unit = {
+    f(this.limit)
+  }
+
+  def alter(f: Options.AlterOption => Unit): Unit = {
+    f(this.alter)
+  }
+
+  def validate(): Unit = {
+    require(null != alter.table.changeType, "Alter column type sql is required")
+    require(null != alter.table.setNotNull, "Alter column set not null sql is required")
+    require(null != alter.table.dropNotNull, "Alter column drop not null sql is required")
+    require(null != alter.table.setDefault, "Alter column set default sql is required")
+    require(null != alter.table.dropDefault, "Alter column drop default sql is required")
+    require(null != alter.table.addColumn, "Add column sql is required")
+    require(null != alter.table.dropColumn, "Drop column sql is required")
+
+    require(null!= alter.table.addPrimaryKey,"Add primary key sql is required")
+    require(null != alter.table.dropConstraint,"Drop constraint sql is required")
+  }
 }

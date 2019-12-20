@@ -32,8 +32,14 @@ object SqlType {
     "identity"
   )
 
+  private val stringTypeCodes = Set(CHAR, VARCHAR, LONGNVARCHAR)
+
   def isNumberType(code: Int): Boolean = {
     numberTypeCodes.contains(code)
+  }
+
+  def isStringType(code: Int): Boolean = {
+    stringTypeCodes.contains(code)
   }
 
   def isNumberType(name: String): Boolean = {
@@ -75,4 +81,7 @@ case class SqlType(code: Int, name: String, precision: Option[Int], scale: Optio
     SqlType.isNumberType(code)
   }
 
+  def isStringType: Boolean = {
+    SqlType.isStringType(code)
+  }
 }

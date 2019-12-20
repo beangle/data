@@ -22,14 +22,31 @@ import org.beangle.data.jdbc.engine.Engines
 
 class HSQLDialect extends AbstractDialect(Engines.HSQL) {
 
-  options.sequence.nextValSql = "call next value for :name"
-  options.sequence.selectNextValSql = "next value for :name"
-  options.sequence.createSql = "create sequence :name start with :start increment by :increment"
-  options.sequence.dropSql = "drop sequence if exists :name"
+  options.sequence { s =>
+    s.nextValSql = "call next value for {name}"
+    s.selectNextValSql = "next value for {name}"
+    s.createSql = "create sequence {name} start with {start} increment by {increment}"
+    s.dropSql = "drop sequence if exists {name}"
+  }
 
   options.limit.pattern="{} limit ?"
   options.limit.offsetPattern="{} limit ? offset ?"
   options.limit.bindInReverseOrder=true
 
   options.comment.supportsCommentOn=true
+
+  options.alter { a =>
+    a.table.changeType = "alter {column} {type}"
+    a.table.setDefault="alter {column} set default {value}"
+    a.table.dropDefault="alter {column} set default null"
+    a.table.setNotNull = "alter {column} set not null"
+    a.table.dropNotNull = "alter {column} set null"
+    a.table.addColumn = "add {column} {type}"
+    a.table.dropColumn = "drop column {column}"
+
+    a.table.addPrimaryKey="add constraint {name} primary key ({column-list})"
+    a.table.dropConstraint="drop constraint {name}"
+  }
+
+  options.validate()
 }

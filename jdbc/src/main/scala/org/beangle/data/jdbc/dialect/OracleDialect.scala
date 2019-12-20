@@ -22,11 +22,28 @@ import org.beangle.data.jdbc.engine.Engines
 
 class OracleDialect extends AbstractDialect(Engines.Oracle) {
 
-  options.sequence.createSql = "create sequence :name increment by :increment start with :start cache :cache :cycle"
-  options.sequence.nextValSql = "select :name.nextval from dual"
-  options.sequence.selectNextValSql = ":name.nextval"
+  options.sequence { s =>
+    s.createSql = "create sequence {name} increment by {increment} start with {start} cache {cache} {cycle}"
+    s.nextValSql = "select {name}.nextval from dual"
+    s.selectNextValSql = "{name}.nextval"
+  }
+
+  options.alter { a =>
+    a.table.addColumn = "add {column} {type}"
+    a.table.changeType = "modify {column} {type}"
+    a.table.setDefault = "modify {column} default {value}"
+    a.table.dropDefault = "modify {column} default null"
+    a.table.setNotNull = "modify {column} not null"
+    a.table.dropNotNull = "modify {column} null"
+    a.table.dropColumn = "drop column {column}"
+
+    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.table.dropConstraint = "drop constraint {name}"
+  }
 
   options.comment.supportsCommentOn = true
+
+  options.validate()
 
   /** limit offset
     * FIXME distinguish sql with order by or not

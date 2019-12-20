@@ -37,32 +37,32 @@ object Serializer {
         val table = schema.createTable(tableElem.name)
         tableElem.get("comment").foreach(n => table.comment = Some(n))
         (tableElem \ "columns" \ "column") foreach { colElem =>
-          val col = table.addColumn(colElem.name, colElem.attr("type"))
+          val col = table.createColumn(colElem.name, colElem.attr("type"))
           colElem.get("nullable").foreach(n => col.nullable = n.toBoolean)
           colElem.get("unique").foreach(n => col.unique = n.toBoolean)
           colElem.get("check").foreach(n => col.check = Some(n))
           colElem.get("comment").foreach(n => col.comment = Some(n))
         }
         (tableElem \ "primary-key") foreach { pkElem =>
-          table.addPrimaryKey(pkElem.name, split(pkElem.attr("columns")): _*)
+          table.createPrimaryKey(pkElem.name, split(pkElem.attr("columns")): _*)
         }
         (tableElem \ "foreign-keys" \ "foreign-key") foreach { fkElem =>
           val name = fkElem.name
           val column = fkElem.attr("column")
           val referTable = fkElem.attr("referenced-table")
           val referColumn = fkElem.attr("referenced-column")
-          val fk = table.addForeignKey(name, column, database.refTable(referTable), referColumn)
+          val fk = table.createForeignKey(name, column, database.refTable(referTable), referColumn)
           fkElem.get("enabled").foreach(n => fk.enabled = n.toBoolean)
           fkElem.get("cascadeDelete").foreach(n => fk.cascadeDelete = n.toBoolean)
         }
         (tableElem \ "unique-keys" \ "unique-key") foreach { ukElem =>
-          val uk = table.addUniqueKey(ukElem.name, split(ukElem.attr("columns")): _*)
+          val uk = table.createUniqueKey( ukElem.name, split(ukElem.attr("columns")): _*)
           ukElem.get("enabled").foreach(n => uk.enabled = n.toBoolean)
         }
         (tableElem \ "indexes" \ "index") foreach { idxElem =>
           var unique = false
           idxElem.get("unique").foreach(n => unique = n.toBoolean)
-          table.addIndex(idxElem.name, unique, split(idxElem.attr("columns")): _*)
+          table.createIndex(idxElem.name, unique, split(idxElem.attr("columns")): _*)
         }
       }
     }

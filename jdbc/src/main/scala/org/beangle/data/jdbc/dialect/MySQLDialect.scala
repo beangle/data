@@ -20,10 +20,24 @@ package org.beangle.data.jdbc.dialect
 
 import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.engine.Engines
+import org.beangle.data.jdbc.meta.{PrimaryKey, Table}
 
 class MySQLDialect extends AbstractDialect(Engines.MySQL) {
 
   options.sequence.supports = false
+  options.alter { a =>
+    a.table.addColumn = "add {column} {type}"
+    a.table.changeType = "modify column {column} {type}"
+    a.table.setDefault = "alter {column} set default {value}"
+    a.table.dropDefault = "alter {column} drop default"
+    a.table.setNotNull = "modify {column} {type} not null"
+    a.table.dropNotNull = "modify {column} {type}"
+    a.table.dropColumn = "drop column {column}"
+
+    a.table.addPrimaryKey = "add primary key ({column-list})"
+    a.table.dropConstraint = "drop constraint {name}"
+  }
+
   options.limit.pattern = "{} limit ?"
   options.limit.offsetPattern = "{} limit ? offset ?"
   options.limit.bindInReverseOrder = true
@@ -37,6 +51,10 @@ class MySQLDialect extends AbstractDialect(Engines.MySQL) {
       .append("), add constraInt ").append(constraintName).append(" foreign key (").append(cols)
       .append(") references ").append(referencedTable).append(" (")
       .append(Strings.join(primaryKey, ", ")).append(')').toString
+  }
+
+  override def alterTableDropPrimaryKey(table: Table, pk: PrimaryKey): String = {
+    s"alter table ${table.qualifiedName}  drop primary key"
   }
 
 }

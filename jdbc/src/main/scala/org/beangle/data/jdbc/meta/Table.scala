@@ -125,104 +125,99 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   }
 
   def column(columnName: String): Column = {
-    columns.find(f => f.name.value == columnName).get
+    columns.find(f => f.name.toLiteral(engine) == columnName).get
   }
 
   def getColumn(columnName: String): Option[Column] = {
-    columns.find(f => f.name.value == columnName)
+    columns.find(f => f.name.toLiteral(engine) == columnName)
   }
 
   def getForeignKey(keyName: String): Option[ForeignKey] = {
-    foreignKeys.find(f => f.name.value == keyName)
+    foreignKeys.find(f => f.name.toLiteral(engine) == keyName)
   }
 
-  def addPrimaryKey(keyName: String, columnNames: String*): PrimaryKey = {
-    val pk = createPrimaryKey(columnNames: _*)
-    pk.name = if (Strings.isBlank(keyName)) Identifier.empty else engine.toIdentifier(keyName)
-    pk
+  def getUniqueKey(keyName: String): Option[UniqueKey] = {
+    uniqueKeys.find(f => f.name.toLiteral(engine) == keyName)
   }
 
-  def addUniqueKey(keyName: String, columnNames: String*): UniqueKey = {
-    val uk = createUniqueKey(columnNames: _*)
-    uk.name = engine.toIdentifier(keyName)
-    uk
-  }
-
-  def addForeignKey(keyName: String, columnName: String, refTable: TableRef, referencedColumn: String): ForeignKey = {
-    val fk = createForeignKey(columnName, refTable, referencedColumn)
-    fk.name = engine.toIdentifier(keyName)
-    fk
-  }
-
-  def addForeignKey(keyName: String, columnName: String, refTable: Table): ForeignKey = {
-    val fk = createForeignKey(columnName, refTable)
-    fk.name = engine.toIdentifier(keyName)
-    fk
-  }
-
-  def addIndex(indexName: String, unique: Boolean, columnNames: String*): Index = {
-    val idx = createIndex(unique, columnNames: _*)
-    idx.name = engine.toIdentifier(indexName)
-    idx
-  }
-
-  def createPrimaryKey(columnNames: String*): PrimaryKey = {
-    val egn = engine
-    val pk = if (columnNames.size == 1) {
-      new PrimaryKey(this, Identifier.empty, egn.toIdentifier(columnNames.head))
-    } else {
-      val pk2 = new PrimaryKey(this, Identifier.empty, null.asInstanceOf[Identifier])
-      columnNames.foreach { cn =>
-        val cnName = egn.toIdentifier(cn)
-        this.columns foreach (c => if (c.name == cnName) pk2.addColumn(c))
-      }
-      pk2
-    }
-    this.primaryKey = Some(pk)
-    pk
-  }
-
-  def createUniqueKey(columnNames: String*): UniqueKey = {
+  def createUniqueKey(keyName: String, columnNames: String*): UniqueKey = {
     val eng = engine
     val uk = new UniqueKey(this, Identifier("uk_temp"))
     columnNames foreach { colName =>
       uk.addColumn(eng.toIdentifier(colName))
     }
-    uk.name = eng.toIdentifier(Constraint.autoname(uk))
+    if (Strings.isBlank(keyName)) {
+      uk.name = eng.toIdentifier(Constraint.autoname(uk))
+    } else {
+      uk.name = eng.toIdentifier(keyName)
+    }
     this.add(uk)
     uk
   }
 
-  def createForeignKey(columnName: String, refTable: TableRef, refencedColumn: String): ForeignKey = {
-    val eng = engine
-    val fk = new ForeignKey(this, Identifier("fk_temp"), eng.toIdentifier(columnName))
-    fk.refer(refTable, eng.toIdentifier(refencedColumn))
-    this.add(fk)
-  }
-
-  def createForeignKey(columnName: String, refTable: Table): ForeignKey = {
-    val eng = engine
-    refTable.primaryKey match {
-      case Some(pk) =>
-        val fk = new ForeignKey(this, Identifier("fk_temp"), eng.toIdentifier(columnName))
-        fk.refer(refTable, pk.columns.head)
-        fk.name = eng.toIdentifier(Constraint.autoname(fk))
-        this.add(fk)
-      case None =>
-        throw new RuntimeException("Cannot refer on a table without primary key")
-    }
-  }
-
-  def createIndex(unique: Boolean, columnNames: String*): Index = {
+  def createIndex(indexName: String, unique: Boolean, columnNames: String*): Index = {
     val index = new Index(this, Identifier("indx_temp"))
     val eng = engine
     columnNames foreach { colName =>
       index.addColumn(eng.toIdentifier(colName))
     }
     index.unique = unique
-    index.name = eng.toIdentifier(Constraint.autoname(index))
+    if (Strings.isBlank(indexName)) {
+      index.name = eng.toIdentifier(Constraint.autoname(index))
+    } else {
+      index.name = eng.toIdentifier(indexName)
+    }
     this.indexes += index
     index
+  }
+
+  def createPrimaryKey(keyName: String, columnNames: String*): PrimaryKey = {
+    val egn = engine
+    val pk = if (columnNames.size == 1) {
+      new PrimaryKey(this, Identifier.empty, egn.toIdentifier(columnNames.head))
+    } else {
+      val pk2 = new PrimaryKey(this, Identifier.empty, null)
+      columnNames.foreach { cn =>
+        val cnName = egn.toIdentifier(cn)
+        this.columns foreach (c => if (c.name == cnName) pk2.addColumn(c))
+      }
+      pk2
+    }
+    pk.name = engine.toIdentifier(if (Strings.isBlank(keyName)) Constraint.autoname(pk) else keyName)
+    this.primaryKey = Some(pk)
+    pk.columns foreach { c =>
+      this.column(c.toLiteral(engine)).nullable = false
+    }
+    pk
+  }
+
+  def createForeignKey(keyName: String, columnName: String, refTable: TableRef, refencedColumn: String): ForeignKey = {
+    val eng = engine
+    val fk = new ForeignKey(this, Identifier("fk_temp"), eng.toIdentifier(columnName))
+    fk.refer(refTable, eng.toIdentifier(refencedColumn))
+    fk.name = if (Strings.isNotBlank(keyName)) {
+      engine.toIdentifier(keyName)
+    } else {
+      engine.toIdentifier(Constraint.autoname(fk))
+    }
+    this.add(fk)
+  }
+
+  def createForeignKey(keyName: String, columnName: String, refTable: Table): ForeignKey = {
+    val eng = engine
+    refTable.primaryKey match {
+      case Some(pk) =>
+        val fk = new ForeignKey(this, Identifier("fk_temp"), eng.toIdentifier(columnName))
+        fk.refer(refTable, pk.columns.head)
+        if (Strings.isBlank(keyName)) {
+          fk.name = eng.toIdentifier(Constraint.autoname(fk))
+        } else {
+          fk.name = eng.toIdentifier(keyName)
+        }
+        this.add(fk)
+      case None =>
+        throw new RuntimeException("Cannot refer on a table without primary key")
+    }
   }
 
   def add(key: ForeignKey): ForeignKey = {
@@ -256,7 +251,15 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     index
   }
 
-  def addColumn(name: String, typeName: String): Column = {
+
+  def createColumn(name: String, sqlType: SqlType): Column = {
+    val egn = engine
+    val col = new Column(egn.toIdentifier(name), sqlType)
+    this.add(col)
+    col
+  }
+
+  def createColumn(name: String, typeName: String): Column = {
     val egn = engine
     val col = new Column(egn.toIdentifier(name), egn.toType(typeName))
     this.add(col)

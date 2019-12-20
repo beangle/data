@@ -26,21 +26,34 @@ import org.beangle.data.jdbc.meta._
   * Focus on ddl and dml sql generation.
   */
 trait Dialect {
+
   def engine: Engine
 
   def createTable(table: Table): String
 
   def dropTable(table: String): String
 
-  def alterTableAddColumn(table: Table, col: Column): String
+  def alterTableAddColumn(table: Table, col: Column): List[String]
 
   def alterTableDropColumn(table: Table, col: Column): String
 
-  def alterTableModifyColumnNotNull(table: Table, col: Column): String
+  def alterTableModifyColumnType(table: Table, col: Column, sqlType: SqlType): String
+
+  def alterTableModifyColumnSetNotNull(table: Table, col: Column): String
+
+  def alterTableModifyColumnDropNotNull(table: Table, col: Column): String
+
+  def alterTableModifyColumnDefault(table: Table, col: Column, v: Option[String]): String
 
   def alterTableAddForeignKey(fk: ForeignKey): String
 
   def alterTableAddUnique(fk: UniqueKey): String
+
+  def alterTableAddPrimaryKey(table: Table, pk: PrimaryKey): String
+
+  def alterTableDropPrimaryKey(table: Table, pk: PrimaryKey): String
+
+  def alterTableDropConstraint(table: Table, name: String): String
 
   def createSequence(seq: Sequence): String
 
@@ -52,7 +65,11 @@ trait Dialect {
     */
   def limit(query: String, offset: Int, limit: Int): (String, List[Int])
 
+  def commentsOnColumn(table: Table, column: Column, comment: Option[String]): Option[String]
+
   def commentsOnTable(table: Table): List[String]
+
+  def commentsOnTable(table: String, comment: Option[String]): Option[String]
 
   def createIndex(i: Index): String
 

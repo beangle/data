@@ -38,8 +38,8 @@ class PostgreSQLEngineTest extends AnyFlatSpec with Matchers {
     engine.toType(Types.DECIMAL,  1, 0).name shouldEqual  "boolean"
 
     //engine.toType(Types.DECIMAL,1,0) shouldEqual SqlType(BOOLEAN, "boolean", 1)
-    engine.toType(Types.DECIMAL,5,0) shouldEqual SqlType(SMALLINT, "int2", 5)
-    engine.toType(Types.DECIMAL,10,0) shouldEqual SqlType(INTEGER, "int4", 10)
-    engine.toType(Types.DECIMAL,19,0) shouldEqual SqlType(BIGINT, "int8", 19)
+    engine.toType(Types.DECIMAL,5,0) shouldEqual SqlType(SMALLINT, "smallint", 5)
+    engine.toType(Types.DECIMAL,10,0) shouldEqual SqlType(INTEGER, "integer", 10)
+    engine.toType(Types.DECIMAL,19,0) shouldEqual SqlType(BIGINT, "bigint", 19)
   }
 }

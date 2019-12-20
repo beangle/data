@@ -22,10 +22,27 @@ import org.beangle.data.jdbc.engine.Engines
 
 class DB2Dialect extends AbstractDialect(Engines.DB2) {
 
-  options.sequence.nextValSql = "values nextval for :name"
-  options.sequence.dropSql = "drop sequence :name restrict"
-  options.sequence.selectNextValSql = "nextval for :name"
+  options.sequence { s =>
+    s.nextValSql = "values nextval for {name}"
+    s.dropSql = "drop sequence {name} restrict"
+    s.selectNextValSql = "nextval for {name}"
+  }
   options.comment.supportsCommentOn = true
+
+  // 和 postgresql 比较接近
+  options.alter { a =>
+    a.table.addColumn = "add {column} {type}"
+    a.table.changeType = "alter column {column} set data type {type}"
+    a.table.setDefault = "alter column {column} set default {value}"
+    a.table.dropDefault = "alter column {column} drop default"
+    a.table.setNotNull = "alter column {column} set not null"
+    a.table.dropNotNull = "alter column {column} drop not null"
+    a.table.dropColumn = "drop column {column}"
+
+    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.table.dropConstraint = "drop constraint {name}"
+  }
+  options.validate()
 
   override def limit(sql: String, offset: Int, limit: Int): (String, List[Int]) = {
     if (offset == 0) {

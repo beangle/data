@@ -37,27 +37,27 @@ class SerializerTest extends AnyFunSpec with Matchers {
       val security = db.getOrCreateSchema("TEST")
 
       val category = Table(security, "user-categories")
-      category.addColumn("id", "integer")
-      category.createPrimaryKey("id")
+      category.createColumn("id", "integer")
+      category.createPrimaryKey("","id")
       security.addTable(category)
 
       val user = Table(security, "user")
-      val column = user.addColumn("name", "varchar(30)")
+      val column = user.createColumn("name", "varchar(30)")
       column.comment = Some("login  name")
       column.nullable = false
 
-      user.addColumn("id", "bigint").nullable = false
-      user.addColumn("enabled", "boolean").nullable = false
-      user.addColumn("code", "varchar(20)").nullable = false
+      user.createColumn("id", "bigint").nullable = false
+      user.createColumn("enabled", "boolean").nullable = false
+      user.createColumn("code", "varchar(20)").nullable = false
 
-      user.addColumn("age", "integer").nullable = false
-      user.addColumn("category_id", "integer")
-      user.addColumn("\"key\"", "integer").comment = Some("""RSA key <expired="2019-09-09">""")
+      user.createColumn("age", "integer").nullable = false
+      user.createColumn("category_id", "integer")
+      user.createColumn("\"key\"", "integer").comment = Some("""RSA key <expired="2019-09-09">""")
 
-      user.createPrimaryKey("id")
-      user.createForeignKey("category_id", category)
-      user.createUniqueKey("\"key\"")
-      user.createIndex(true, "code")
+      user.createPrimaryKey(null,"id")
+      user.createForeignKey(null,"category_id", category)
+      user.createUniqueKey(null,"\"key\"")
+      user.createIndex(null,true, "code")
       security.addTable(user)
       val xml = Serializer.toXml(db)
       val file = File.createTempFile("database", ".xml")

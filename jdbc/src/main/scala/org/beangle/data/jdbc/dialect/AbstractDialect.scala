@@ -53,20 +53,15 @@ class AbstractDialect(val engine: Engine) extends Dialect {
       }
       if (!options.comment.supportsCommentOn) {
         col.comment foreach { c =>
-          buf.append(" comment '$c'")
+          buf.append(s" comment '$c'")
         }
       }
       if (iter.hasNext) buf.append(", ")
     }
-    table.primaryKey foreach { pk =>
-      if (pk.enabled) {
-        buf.append(", ").append(primaryKeySql(pk))
-      }
-    }
     buf.append(')')
     if (!options.comment.supportsCommentOn) {
       table.comment foreach { c =>
-        buf.append(" comment '$c'")
+        buf.append(s" comment '$c'")
       }
     }
     buf.toString
@@ -74,16 +69,32 @@ class AbstractDialect(val engine: Engine) extends Dialect {
 
   /** Table removal sql
     */
-  def dropTable(table: String): String = {
-    Strings.replace(options.drop.table.sql, "{}", table)
+  override def dropTable(table: String): String = {
+    Strings.replace(options.drop.table.sql, "{name}", table)
   }
 
-  def commentsOnTable(table: Table): List[String] = {
+  override def commentsOnColumn(table: Table, column: Column, comment: Option[String]): Option[String] = {
+    if (options.comment.supportsCommentOn) {
+      Some("comment on column " + table.qualifiedName + '.' + column.name.toLiteral(table.engine) + " is '" + comment.getOrElse("") + "'")
+    } else {
+      None
+    }
+  }
+
+  override def commentsOnTable(table: String, comment: Option[String]): Option[String] = {
+    if (options.comment.supportsCommentOn) {
+      Some("comment on table " + table + " is '" + comment.getOrElse("") + "'")
+    } else {
+      None
+    }
+  }
+
+  override def commentsOnTable(table: Table): List[String] = {
     if (options.comment.supportsCommentOn) {
       val comments = Collections.newBuffer[String]
       val tableName = table.qualifiedName
       table.comment foreach { c =>
-        comments += ("comment on table " + tableName + " is '" + c + "'");
+        comments += ("comment on table " + tableName + " is '" + c + "'")
       }
       table.columns foreach { c =>
         c.comment foreach { cc =>
@@ -96,16 +107,66 @@ class AbstractDialect(val engine: Engine) extends Dialect {
     }
   }
 
-  override def alterTableAddColumn(table: Table, col: Column): String = {
-    s"alter table ${table.qualifiedName} add column ${col.name} ${col.sqlType.name}"
+  override def alterTableAddColumn(table: Table, col: Column): List[String] = {
+    val buf = Collections.newBuffer[String]
+    options.alter.table.addColumn
+    var sql = s"alter table ${table.qualifiedName} add column ${col.name} ${col.sqlType.name}"
+    col.defaultValue foreach { v =>
+      if (col.sqlType.isStringType) {
+        sql += s" default '$v''"
+      } else {
+        sql += s" default $v"
+      }
+    }
+    if (options.create.table.supportsColumnCheck) {
+      col.check foreach { c =>
+        sql += s" check $c"
+      }
+    }
+    buf += sql
+    if (!col.nullable) {
+      buf += alterTableModifyColumnSetNotNull(table, col)
+    }
+    buf.toList
   }
 
   override def alterTableDropColumn(table: Table, col: Column): String = {
-    s"alter table ${table.qualifiedName} drop column ${col.name} ${col.sqlType.name}"
+    var alterClause = options.alter.table.dropColumn
+    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    s"alter table ${table.qualifiedName} $alterClause"
   }
 
-  override def alterTableModifyColumnNotNull(table: Table, col: Column): String = {
-    s"alter table ${table.qualifiedName} drop column ${col.name} ${col.sqlType.name}"
+  override def alterTableModifyColumnSetNotNull(table: Table, col: Column): String = {
+    var alterClause = options.alter.table.setNotNull
+    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    alterClause = Strings.replace(alterClause, "{type}", col.sqlType.name)
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def alterTableModifyColumnDropNotNull(table: Table, col: Column): String = {
+    var alterClause = options.alter.table.dropNotNull
+    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    alterClause = Strings.replace(alterClause, "{type}", col.sqlType.name)
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def alterTableModifyColumnDefault(table: Table, col: Column, v: Option[String]): String = {
+    var alterClause = v match {
+      case Some(_) => options.alter.table.setDefault
+      case None => options.alter.table.dropNotNull
+    }
+    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    var value = v.getOrElse("null")
+    if (col.sqlType.isStringType) value = s"'$value'"
+    alterClause = Strings.replace(alterClause, "{value}", value)
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def alterTableModifyColumnType(table: Table, col: Column, sqlType: SqlType): String = {
+    var alterClause = options.alter.table.changeType
+    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    alterClause = Strings.replace(alterClause, "{type}", sqlType.name)
+    s"alter table ${table.qualifiedName} $alterClause"
   }
 
   override def alterTableAddForeignKey(fk: ForeignKey): String = {
@@ -121,13 +182,28 @@ class AbstractDialect(val engine: Engine) extends Dialect {
     if (fk.cascadeDelete && options.constraint.supportsCascadeDelete) result + " on delete cascade" else result
   }
 
+  override def alterTableAddPrimaryKey(table: Table, pk: PrimaryKey): String = {
+    var alterClause = options.alter.table.addPrimaryKey
+    alterClause = Strings.replace(alterClause, "{name}", pk.name.toLiteral(table.engine))
+    alterClause = Strings.replace(alterClause, "{column-list}", nameList(pk.columns, table.engine))
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def alterTableDropPrimaryKey(table: Table, pk: PrimaryKey): String = {
+    this.alterTableDropConstraint(table, pk.name.toLiteral(table.engine))
+  }
+
+  override def alterTableDropConstraint(table: Table, name: String): String = {
+    var alterClause = options.alter.table.dropConstraint
+    alterClause = Strings.replace(alterClause, "{name}", name)
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
   override def alterTableAddUnique(fk: UniqueKey): String = {
     require(null != fk.name && null != fk.table)
     require(fk.columns.nonEmpty, s"${fk.name} column's size should greate than 0")
-
     val engine = fk.table.engine
-    val columnNames = fk.columns.map(x => x.toLiteral(engine)).toList.mkString(",")
-    "alter table " + fk.table.qualifiedName + " add constraint " + fk.literalName + " unique (" + columnNames + ")"
+    "alter table " + fk.table.qualifiedName + " add constraint " + fk.literalName + " unique (" + nameList(fk.columns, engine) + ")"
   }
 
   override def limit(query: String, offset: Int, size: Int): (String, List[Int]) = {
@@ -145,17 +221,17 @@ class AbstractDialect(val engine: Engine) extends Dialect {
   override def createSequence(seq: Sequence): String = {
     if (!options.sequence.supports) return null
     var sql: String = options.sequence.createSql
-    sql = sql.replace(":name", seq.qualifiedName)
-    sql = sql.replace(":start", String.valueOf(seq.current + 1))
-    sql = sql.replace(":increment", String.valueOf(seq.increment))
-    sql = sql.replace(":cache", String.valueOf(seq.cache))
-    sql = sql.replace(":cycle", if (seq.cycle) "cycle" else "")
+    sql = sql.replace("{name}", seq.qualifiedName)
+    sql = sql.replace("{start}", String.valueOf(seq.current + 1))
+    sql = sql.replace("{increment}", String.valueOf(seq.increment))
+    sql = sql.replace("{cache}", String.valueOf(seq.cache))
+    sql = sql.replace("{cycle}", if (seq.cycle) "cycle" else "")
     sql
   }
 
   override def dropSequence(seq: Sequence): String = {
     if (!options.sequence.supports) return null
-    options.sequence.dropSql.replace(":name", seq.qualifiedName)
+    options.sequence.dropSql.replace("{name}", seq.qualifiedName)
   }
 
   override def createIndex(i: Index): String = {
@@ -176,7 +252,11 @@ class AbstractDialect(val engine: Engine) extends Dialect {
   }
 
   override def dropIndex(i: Index): String = {
-    "drop index " + i.table.qualifiedName + "." + i.literalName
+    if (i.table.schema.name.value.length > 0) {
+      "drop index " + i.table.schema.database.toString + "." + i.literalName
+    } else {
+      "drop index " + i.literalName
+    }
   }
 
 
@@ -214,10 +294,7 @@ class AbstractDialect(val engine: Engine) extends Dialect {
     res.toString
   }
 
-  protected def primaryKeySql(k: PrimaryKey): String = {
-    val buf = new StringBuilder("primary key (")
-    k.columns.foreach(col => buf.append(col.toLiteral(engine)).append(", "))
-    if (k.columns.nonEmpty) buf.delete(buf.size - 2, buf.size)
-    buf.append(')').result
+  private def nameList(seq: Iterable[Identifier], engine: Engine): String = {
+    seq.map(_.toLiteral(engine)).mkString(",")
   }
 }
