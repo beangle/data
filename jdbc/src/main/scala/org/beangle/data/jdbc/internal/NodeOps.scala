@@ -22,12 +22,12 @@ import scala.xml.Node
 
 object NodeOps {
 
-  implicit def node2Ops(n: Node): NodeOps = {
+  @inline implicit def node2Ops(n: Node): NodeOps = {
     new NodeOps(n)
   }
 }
 
-class NodeOps(val n: Node) extends AnyVal {
+final class NodeOps(val n: Node) extends AnyVal {
   @inline
   def attr(name: String): String = {
     (n \ s"@$name").text

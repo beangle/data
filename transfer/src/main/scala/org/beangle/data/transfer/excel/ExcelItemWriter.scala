@@ -19,44 +19,94 @@
 package org.beangle.data.transfer.excel
 
 import java.io.OutputStream
-import java.time.{Instant, LocalDate}
+import java.time._
+import java.time.temporal.Temporal
 
 import org.apache.poi.ss.usermodel.{CellType, FillPatternType, HorizontalAlignment, VerticalAlignment}
 import org.apache.poi.xssf.usermodel._
 import org.beangle.commons.lang.Numbers
 import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.excel.CellOps._
 import org.beangle.data.transfer.exporter.ExportContext
 import org.beangle.data.transfer.io.ItemWriter
 
 /**
   * ExcelItemWriter class.
+  *
   * @author chaostone
   * @version $Id: $
   */
 class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
 
-  var countPerSheet = 100000
+  private var workbook: XSSFWorkbook = _ // 建立新XSSFWorkbook对象
 
-  var workbook = new XSSFWorkbook() // 建立新XSSFWorkbook对象
+  private var sheet: XSSFSheet = _
 
-  var index = 0
-
-  var sheet: XSSFSheet = _
-
-  var dateStyle: XSSFCellStyle = _
-
-  var timeStyle: XSSFCellStyle = _
+  private implicit var registry: ExcelStyleRegistry = _
 
   var title: Any = _
 
+  var flushCount = 1000
+
+  var countPerSheet = 100000
+
+  var index = 0
+
   init()
 
+
   def init(): Unit = {
+    workbook = new XSSFWorkbook()
+    registry = new ExcelStyleRegistry(workbook)
+
     if (null != context) {
       val count = context.datas.getOrElse("countPerSheet", "")
       if (null != count && Numbers.isDigits(count.toString)) {
         val countParam = Numbers.toInt(count.toString)
         if (countParam > 0) this.countPerSheet = countParam
+      }
+    }
+  }
+
+
+  def fillin(cell: XSSFCell, value: Any): Unit = {
+    val v =
+      value match {
+        case o: Option[_] => o.orNull
+        case _ => value
+      }
+
+    if (null == v) {
+      cell.setCellValue("")
+    } else {
+      v match {
+        case d: java.util.Date =>
+          d match {
+            case sd: java.sql.Date => cell.fill(sd)
+            case st: java.sql.Timestamp => cell.fill(st)
+            case stt: java.sql.Time => cell.fill(stt)
+            case _ => cell.fill(d)
+          }
+        case uc: java.util.Calendar => cell.fill(uc.getTime)
+        case t: Temporal =>
+          t match {
+            case ld: LocalDate => cell.fill(java.sql.Date.valueOf(ld))
+            case i: Instant => cell.fill(java.util.Date.from(i))
+            case ldt: LocalDateTime => cell.fill(java.util.Date.from(ldt.atZone(ZoneId.systemDefault).toInstant))
+            case zdt: ZonedDateTime => cell.fill(java.util.Date.from(zdt.toInstant))
+            case lt: LocalTime => cell.fill(java.sql.Time.valueOf(lt))
+            case y: Year => cell.fill(y.getValue)
+            case yt: YearMonth => cell.fill(yt)
+          }
+        case n: Number =>
+          n match {
+            case i: Integer => cell.fill(i.intValue())
+            case f: java.lang.Float => cell.fill(f.floatValue())
+            case d: java.lang.Double => cell.fill(d.doubleValue())
+            case _ => cell.fill(n.intValue())
+          }
+        case b: java.lang.Boolean => cell.fill(b.booleanValue())
+        case _ => cell.fill(v.toString)
       }
     }
   }
@@ -101,35 +151,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
       if (datas.getClass.isArray) {
         val values = datas.asInstanceOf[Array[_]]
         values.indices foreach { i =>
-          val cell = row.createCell(i)
-          var v = values(i)
-          if (null != v && v.isInstanceOf[Option[_]]) {
-            v = v.asInstanceOf[Option[_]].orNull
-          }
-          v match {
-            case n: Number =>
-              cell.setCellType(CellType.NUMERIC)
-              cell.setCellValue(n.doubleValue())
-            case d: java.sql.Date =>
-              cell.setCellValue(d)
-              cell.setCellStyle(getDateStyle)
-            case t: java.util.Date =>
-              cell.setCellValue(t)
-              cell.setCellStyle(getTimeStyle)
-            case t: LocalDate =>
-              cell.setCellValue(java.sql.Date.valueOf(t))
-              cell.setCellStyle(getDateStyle)
-            case t: Instant =>
-              cell.setCellValue(java.util.Date.from(t))
-              cell.setCellStyle(getTimeStyle)
-            case c: java.util.Calendar =>
-              cell.setCellValue(c)
-              cell.setCellStyle(getTimeStyle)
-            case c: java.lang.Boolean =>
-              cell.setCellValue(if(c)"Y"else "N")
-            case _ =>
-              cell.setCellValue(new XSSFRichTextString(if (v == null) "" else v.toString))
-          }
+          fillin(row.createCell(i), values(i))
         }
       } else {
         val cell = row.createCell(0)
@@ -142,29 +164,6 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     }
   }
 
-  private def getDateStyle: XSSFCellStyle = {
-    if (null == dateStyle) {
-      dateStyle = workbook.createCellStyle()
-      dateStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateFormat))
-    }
-    dateStyle
-  }
-
-  private def getTimeStyle: XSSFCellStyle = {
-    if (null == timeStyle) {
-      timeStyle = workbook.createCellStyle()
-      timeStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateTimeFormat))
-    }
-    timeStyle
-  }
-
-  protected def getDateFormat: String = {
-    "YYYY-MM-DD"
-  }
-
-  protected def getDateTimeFormat: String = {
-    "YYYY-MM-DD HH:MM:SS"
-  }
 
   protected def buildTitleStyle(): XSSFCellStyle = {
     val style = workbook.createCellStyle()

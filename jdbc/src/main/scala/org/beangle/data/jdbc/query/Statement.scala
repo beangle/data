@@ -29,9 +29,9 @@ class Statement(sql: String, executor: JdbcExecutor) {
     this
   }
 
-  def query(): collection.Seq[Array[Any]] = {
-    executor.query(sql, setter)
-  }
+//  def query(): collection.Seq[Array[Any]] = {
+//    executor.query(sql, setter)
+//  }
 
   def execute(): Int = {
     executor.update(sql, setter)
