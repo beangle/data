@@ -30,7 +30,7 @@ object Constraints {
 
   def asBoolean(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int, columnIdx: Int): DataValidation = {
     val constraint = helper.createExplicitListConstraint(Array("Y", "N"))
-    val v=createValidation(helper, col, startRowIdx, columnIdx, constraint, "请选择Y/N")
+    val v = createValidation(helper, col, startRowIdx, columnIdx, constraint, "请选择Y/N")
     v.setSuppressDropDownArrow(true)
     v
   }
@@ -46,17 +46,23 @@ object Constraints {
   def asDate(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int, columnIdx: Int): DataValidation = {
     var prompt: String = null
     var constraint: DataValidationConstraint = null
-    val format= col.format.get
+    val format = col.format.get
     val sdf = new SimpleDateFormat(format)
     val formual1Value = DateUtil.getExcelDate(sdf.parse(col.formular1)).toString
+    val lf = format.toLowerCase()
+    val cellContent = if (lf.contains("yyyy")) {
+      if (lf.contains("hh")) "日期时间" else "日期"
+    } else {
+      "时间"
+    }
     col.formular2 match {
       case None =>
         constraint = helper.createDateConstraint(GREATER_OR_EQUAL, formual1Value, null, format)
-        prompt = composeError("日期", col.formular1, None)
+        prompt = composeError(cellContent, col.formular1, None)
       case Some(f2) =>
         val formual2Value = DateUtil.getExcelDate(sdf.parse(f2)).toString
         constraint = helper.createDateConstraint(BETWEEN, formual1Value, formual2Value, format)
-        prompt = composeError("日期", col.formular1, col.formular2)
+        prompt = composeError(cellContent, col.formular1, col.formular2)
     }
     createValidation(helper, col, startRowIdx, columnIdx, constraint, prompt)
   }

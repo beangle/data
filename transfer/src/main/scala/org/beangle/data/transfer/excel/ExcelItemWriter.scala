@@ -72,42 +72,41 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
   def fillin(cell: XSSFCell, value: Any): Unit = {
     val v =
       value match {
-        case o: Option[_] => o.orNull
+        case Some(s) => s
+        case None => null
         case _ => value
       }
 
-    if (null == v) {
-      cell.setCellValue("")
-    } else {
-      v match {
-        case d: java.util.Date =>
-          d match {
-            case sd: java.sql.Date => cell.fill(sd)
-            case st: java.sql.Timestamp => cell.fill(st)
-            case stt: java.sql.Time => cell.fill(stt)
-            case _ => cell.fill(d)
-          }
-        case uc: java.util.Calendar => cell.fill(uc.getTime)
-        case t: Temporal =>
-          t match {
-            case ld: LocalDate => cell.fill(java.sql.Date.valueOf(ld))
-            case i: Instant => cell.fill(java.util.Date.from(i))
-            case ldt: LocalDateTime => cell.fill(java.util.Date.from(ldt.atZone(ZoneId.systemDefault).toInstant))
-            case zdt: ZonedDateTime => cell.fill(java.util.Date.from(zdt.toInstant))
-            case lt: LocalTime => cell.fill(java.sql.Time.valueOf(lt))
-            case y: Year => cell.fill(y.getValue)
-            case yt: YearMonth => cell.fill(yt)
-          }
-        case n: Number =>
-          n match {
-            case i: Integer => cell.fill(i.intValue())
-            case f: java.lang.Float => cell.fill(f.floatValue())
-            case d: java.lang.Double => cell.fill(d.doubleValue())
-            case _ => cell.fill(n.intValue())
-          }
-        case b: java.lang.Boolean => cell.fill(b.booleanValue())
-        case _ => cell.fill(v.toString)
-      }
+    v match {
+      case null => cell.fillBlank()
+      case d: java.util.Date =>
+        d match {
+          case sd: java.sql.Date => cell.fill(sd)
+          case st: java.sql.Timestamp => cell.fill(st)
+          case stt: java.sql.Time => cell.fill(stt)
+          case _ => cell.fill(d)
+        }
+      case uc: java.util.Calendar => cell.fill(uc.getTime)
+      case t: Temporal =>
+        t match {
+          case ld: LocalDate => cell.fill(java.sql.Date.valueOf(ld))
+          case i: Instant => cell.fill(java.util.Date.from(i))
+          case ldt: LocalDateTime => cell.fill(java.util.Date.from(ldt.atZone(ZoneId.systemDefault).toInstant))
+          case zdt: ZonedDateTime => cell.fill(java.util.Date.from(zdt.toInstant))
+          case lt: LocalTime => cell.fill(java.sql.Time.valueOf(lt))
+          case y: Year => cell.fill(y)
+          case yt: YearMonth => cell.fill(yt)
+        }
+      case md: MonthDay => cell.fill(md)
+      case n: Number =>
+        n match {
+          case i: Integer => cell.fill(i.intValue())
+          case f: java.lang.Float => cell.fill(f.floatValue())
+          case d: java.lang.Double => cell.fill(d.doubleValue())
+          case _ => cell.fill(n.intValue())
+        }
+      case b: java.lang.Boolean => cell.fill(b.booleanValue())
+      case _ => cell.fill(v.toString)
     }
   }
 

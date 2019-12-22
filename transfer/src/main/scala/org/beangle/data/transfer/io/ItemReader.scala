@@ -29,6 +29,4 @@ trait ItemReader extends Reader {
 
 }
 
-case class Attribute(idx: Int, name: String, description: String) {
 
-}

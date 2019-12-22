@@ -3,31 +3,37 @@ package org.beangle.data.transfer.excel
 import org.apache.poi.ss.usermodel.CellStyle
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFWorkbook}
 import org.beangle.commons.collection.Collections
+import org.beangle.data.transfer.io.DataType
+import org.beangle.data.transfer.io.DataType._
 
 class ExcelStyleRegistry(workbook: XSSFWorkbook) {
 
   private val dataFormat = workbook.createDataFormat()
 
-  private val styles = Collections.newMap[String, XSSFCellStyle]
+  private val styles = Collections.newMap[DataType.Value, XSSFCellStyle]
 
-  def get(pattern:String): CellStyle={
-    styles.get(pattern)match {
-      case Some(s)=> s
-      case None=>registerFormat(pattern,pattern)
-    }
+  private val formats = Map(String -> "@", Boolean -> "@", Short -> "0", Integer -> "0", Long -> "#,##0",
+    Float -> "#,##0.##", Double -> "#,##0.##",
+    Date -> "YYYY-MM-D", Time -> "HH:MM:SS", DateTime -> "YYYY-MM-DD HH:MM:SS",
+    YearMonth -> "YYYY-MM", MonthDay -> "MM-DD")
+
+  def defaultFormat(dt: DataType.Value): String = {
+    formats(dt)
   }
 
-  def registerFormat(name: String, pattern: String): CellStyle = {
+  def get(dt: DataType.Value): CellStyle = {
+    styles(dt)
+  }
+
+  def registerFormat(dt: DataType.Value, pattern: String): CellStyle = {
     val style = workbook.createCellStyle()
     style.setDataFormat(dataFormat.getFormat(pattern))
-    styles.put(name, style)
+    styles.put(dt, style)
     style
   }
 
-  registerFormat("yearmonth", "YYYY-MM")
-  registerFormat("date", "YYYY-MM-DD")
-  registerFormat("time", "HH:MM:SS")
-  registerFormat("datetime", "YYYY-MM-DD HH:MM:SS")
-  registerFormat("float", "#,##0.00")
-  registerFormat("integer", "#,##0")
+  DataType.values foreach { dt =>
+    registerFormat(dt, defaultFormat(dt))
+  }
+
 }
