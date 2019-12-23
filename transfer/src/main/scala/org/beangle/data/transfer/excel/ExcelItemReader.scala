@@ -26,6 +26,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.excel.CellOps._
 import org.beangle.data.transfer.io.{Attribute, DataType, ItemReader}
 
 /**
@@ -77,10 +78,11 @@ class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format.Val
       if (null == comment || Strings.isEmpty(comment.getString.getString)) {
         hasEmptyCell = true
       } else {
-        val commentStr = comment.getString.getString.trim()
+        var commentStr = comment.getString.getString.trim()
         var dataType = DataType.String
         if (commentStr.indexOf(':') > 0) {
           dataType = DataType.withName(Strings.substringAfterLast(commentStr, ":"))
+          commentStr = Strings.substringBefore(commentStr, ":")
         }
         attrList += Attribute(i + 1, commentStr.trim(), dataType, cell.getRichStringCellValue.getString)
       }
@@ -112,25 +114,7 @@ class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format.Val
     */
   def getCellValue(cell: Cell, attribute: Attribute): Any = {
     if (cell == null) return null
-
-    cell.getCellType match {
-      case CellType.BLANK => null
-      case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
-      case CellType.NUMERIC =>
-        if (DateUtil.isCellDateFormatted(cell)) {
-          cell.getDateCellValue
-        } else {
-          cell.getNumericCellValue
-        }
-      case CellType.BOOLEAN => if (cell.getBooleanCellValue) true else false
-      case CellType.FORMULA =>
-        cell.getCachedFormulaResultType match {
-          case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
-          case CellType.NUMERIC => cell.getNumericCellValue
-          case _ => null
-        }
-      case _ => null
-    }
+    cell.getValue(attribute.dataType)
   }
 
   override def close(): Unit = {

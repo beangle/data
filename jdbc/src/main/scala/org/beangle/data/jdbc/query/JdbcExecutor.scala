@@ -97,7 +97,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     query(sql, TypeParamSetter(sqlTypeMapping, params))
   }
 
-  def query(sql: String, setter: PreparedStatement => Unit): Iterator[Array[Any]] = {
+  def query(sql: String, setter: PreparedStatement => Unit): ResultSetIterator = {
     if (showSql) println("JdbcExecutor:" + sql)
     val conn = openConnection()
     conn.setAutoCommit(false)

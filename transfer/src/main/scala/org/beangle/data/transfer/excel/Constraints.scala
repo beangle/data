@@ -26,8 +26,20 @@ import org.apache.poi.ss.usermodel.{DataValidation, DataValidationConstraint, Da
 import org.apache.poi.ss.util.CellRangeAddressList
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper
 
+/** 构建Excel约束
+  * 生成的约束需要添加到工作表中
+  * @see org.apache.poi.xssf.usermodel.XSSFSheet.addValidationData
+  */
 object Constraints {
 
+  /** 构建Bool约束
+    *
+    * @param helper
+    * @param col
+    * @param startRowIdx
+    * @param columnIdx
+    * @return
+    */
   def asBoolean(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int, columnIdx: Int): DataValidation = {
     val constraint = helper.createExplicitListConstraint(Array("Y", "N"))
     val v = createValidation(helper, col, startRowIdx, columnIdx, constraint, "请选择Y/N")
