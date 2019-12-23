@@ -24,7 +24,6 @@ import java.net.URL
 import javax.sql.DataSource
 import org.beangle.commons.bean.{Disposable, Factory, Initializing}
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.net.http.HttpUtils
 

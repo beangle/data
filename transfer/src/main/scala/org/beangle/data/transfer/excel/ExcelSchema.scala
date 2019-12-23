@@ -19,12 +19,25 @@
 package org.beangle.data.transfer.excel
 
 import java.io.OutputStream
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Numbers, Strings}
+import org.beangle.data.transfer.io.DataType
+import org.beangle.data.transfer.io.DataType._
 
 import scala.collection.mutable
 
+/** Excel 导入格式
+  *
+  * 样式如下：
+  * 0     title
+  * 1    some remark
+  * 2  column_1 remark,column_2 remark,...,column_n remark
+  * 3  column_1 name,column_2 name,...,column_n name
+  *
+  */
 class ExcelSchema {
 
   def createScheet(name: String = ""): ExcelScheet = {
@@ -136,12 +149,11 @@ class ExcelColumn(var name: String) {
 
   def date(f: String = "YYYY-MM-DD"): this.type = {
     isDate = true
+    dataType = DataType.Date
+
     this.format = Some(f)
-    formular1 = f
-    formular1 = Strings.replace(formular1, "YYYY", "1900")
-    formular1 = Strings.replace(formular1, "YY", "00")
-    formular1 = Strings.replace(formular1, "MM", "01")
-    formular1 = Strings.replace(formular1, "DD", "01")
+    val start = LocalDate.of(1900, 1, 1)
+    formular1 = start.format(DateTimeFormatter.ofPattern(f))
     this
   }
 
@@ -171,7 +183,7 @@ class ExcelColumn(var name: String) {
 
   def decimal(f: String = "0.##"): this.type = {
     isDecimal = true
-    dataType=DataType.Float
+    dataType = DataType.Double
     format = Some(f)
     formular1 = "0"
     this
@@ -179,7 +191,7 @@ class ExcelColumn(var name: String) {
 
   def decimal(min: Float, max: Float): this.type = {
     isDecimal = true
-    dataType=DataType.Float
+    dataType = DataType.Double
     format = Some("0.##")
     assert(max >= min)
     formular1 = min.toString
@@ -189,13 +201,13 @@ class ExcelColumn(var name: String) {
 
   def bool(): this.type = {
     isBool = true
-    dataType=DataType.Boolean
+    dataType = DataType.Boolean
     this
   }
 
   def integer(f: String = "0"): this.type = {
     isInt = true
-    dataType=DataType.Integer
+    dataType = DataType.Integer
     format = Some(f)
     formular1 = "0"
     this
@@ -203,7 +215,7 @@ class ExcelColumn(var name: String) {
 
   def integer(min: Int, max: Int): this.type = {
     isInt = true
-    dataType=DataType.Integer
+    dataType = DataType.Integer
     format = Some("0")
     assert(max >= min)
     formular1 = min.toString
@@ -222,12 +234,25 @@ class ExcelColumn(var name: String) {
   }
 
   def asType(clazz: Class[_]): this.type = {
-    this.dataType = DataType.toType(clazz)
-    this
+    asType(DataType.toType(clazz))
   }
 
   def asType(dt: DataType.Value): this.type = {
     this.dataType = dt
+    this.format = Some(ExcelStyleRegistry.defaultFormat(this.dataType))
+    dt match {
+      case Boolean => this.isBool = true
+      case Short | Integer | Long =>
+        this.isInt = true
+        this.formular1="0"
+      case Float | Double =>
+        this.isDecimal = true
+        this.formular1="0"
+      case Date | DateTime | Time | YearMonth | MonthDay =>
+        this.isDate = true
+        val start = LocalDate.of(1900, 1, 1)
+        this.formular1 = start.format(DateTimeFormatter.ofPattern(this.format.get))
+    }
     this
   }
 }

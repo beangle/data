@@ -78,7 +78,7 @@ object ExcelSchemaWriter {
         val cell = writeColumn(sheet, col.name, columnRow, curColumnIdx, col.required)
         col.comment foreach { c =>
           val comment = drawing.createCellComment(new XSSFClientAnchor(0, 0, 0, 0, curColumnIdx, rowIdx, curColumnIdx, rowIdx))
-          comment.setString(new XSSFRichTextString(c))
+          comment.setString(new XSSFRichTextString(c + ":" + col.dataType))
           cell.setCellComment(comment)
           comment.setVisible(false)
         }
@@ -91,13 +91,13 @@ object ExcelSchemaWriter {
         if (null == col.datas) {
           if (col.isInt) {
             sheet.addValidationData(Constraints.asNumeric(dvHelper, col, INTEGER, rowIdx + 1, curColumnIdx))
-            setDefaultStyle(sheet,defaultStyles,curColumnIdx,col.format.getOrElse("0"))
+            setDefaultStyle(sheet, defaultStyles, curColumnIdx, col.format.getOrElse("0"))
           } else if (col.isDecimal) {
             sheet.addValidationData(Constraints.asNumeric(dvHelper, col, DECIMAL, rowIdx + 1, curColumnIdx))
-            setDefaultStyle(sheet,defaultStyles,curColumnIdx,col.format.getOrElse("General"))
+            setDefaultStyle(sheet, defaultStyles, curColumnIdx, col.format.getOrElse("General"))
           } else if (col.isDate) {
             sheet.addValidationData(Constraints.asDate(dvHelper, col, rowIdx + 1, curColumnIdx))
-            setDefaultStyle(sheet,defaultStyles,curColumnIdx,col.format.get)
+            setDefaultStyle(sheet, defaultStyles, curColumnIdx, col.format.get)
           } else if (col.length.nonEmpty) {
             if (col.formular1 == "0" && col.required) {
               col.formular1 = "1"
@@ -107,12 +107,12 @@ object ExcelSchemaWriter {
             } else {
               sheet.addValidationData(Constraints.asNumeric(dvHelper, col, TEXT_LENGTH, rowIdx + 1, curColumnIdx))
             }
-            setDefaultStyle(sheet,defaultStyles,curColumnIdx,"@")
+            setDefaultStyle(sheet, defaultStyles, curColumnIdx, "@")
           } else if (col.isBool) {
             sheet.addValidationData(Constraints.asBoolean(dvHelper, col, rowIdx + 1, curColumnIdx))
           } else if (null != col.refs && col.refs.nonEmpty) {
             addRefValidation(schema, sheet, dvHelper, col, rowIdx + 1, curColumnIdx)
-            setDefaultStyle(sheet,defaultStyles,curColumnIdx,"@")
+            setDefaultStyle(sheet, defaultStyles, curColumnIdx, "@")
           }
         } else {
           var dIdx = 1

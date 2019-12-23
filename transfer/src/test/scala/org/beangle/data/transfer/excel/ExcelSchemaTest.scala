@@ -19,6 +19,7 @@
 package org.beangle.data.transfer.excel
 
 import java.io.{File, FileOutputStream}
+import java.time.YearMonth
 
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
@@ -47,6 +48,7 @@ class ExcelSchemaTest extends AnyFunSpec with Matchers {
       sheet.add("是否高管", "is_manager").bool()
       sheet.add("联系地址", "address").length(100)
       sheet.add("子女数目", "children_count").integer(0, 8)
+      sheet.add("毕业年月","graduated_on").asType(classOf[YearMonth])
 
       val code = schema.createScheet("数据字典")
       code.add("性别名称").data(genderNames)
