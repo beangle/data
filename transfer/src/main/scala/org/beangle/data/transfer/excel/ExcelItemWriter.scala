@@ -19,35 +19,37 @@
 package org.beangle.data.transfer.excel
 
 import java.io.OutputStream
-import java.time.{Instant, LocalDate}
 
 import org.apache.poi.ss.usermodel.{CellType, FillPatternType, HorizontalAlignment, VerticalAlignment}
+import org.apache.poi.xssf.streaming.{SXSSFSheet, SXSSFWorkbook}
 import org.apache.poi.xssf.usermodel._
 import org.beangle.commons.lang.Numbers
 import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.excel.CellOps._
 import org.beangle.data.transfer.exporter.ExportContext
 import org.beangle.data.transfer.io.ItemWriter
 
 /**
   * ExcelItemWriter class.
+  *
   * @author chaostone
   * @version $Id: $
   */
 class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
 
-  var countPerSheet = 100000
+  private var workbook: SXSSFWorkbook = _ // 建立新XSSFWorkbook对象
 
-  var workbook = new XSSFWorkbook() // 建立新XSSFWorkbook对象
+  private var sheet: SXSSFSheet = _
 
-  var index = 0
-
-  var sheet: XSSFSheet = _
-
-  var dateStyle: XSSFCellStyle = _
-
-  var timeStyle: XSSFCellStyle = _
+  private implicit var registry: ExcelStyleRegistry = _
 
   var title: Any = _
+
+  var flushCount = 1000
+
+  var countPerSheet = 100000
+
+  private var index = 0
 
   init()
 
@@ -59,10 +61,16 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
         if (countParam > 0) this.countPerSheet = countParam
       }
     }
+    workbook = new SXSSFWorkbook(flushCount)
+    registry = new ExcelStyleRegistry(workbook)
   }
 
+
   def close(): Unit = {
-    workbook.write(outputStream)
+    try {
+      workbook.write(outputStream)
+    } finally {}
+    workbook.dispose()
   }
 
   override def write(obj: Any): Unit = {
@@ -101,35 +109,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
       if (datas.getClass.isArray) {
         val values = datas.asInstanceOf[Array[_]]
         values.indices foreach { i =>
-          val cell = row.createCell(i)
-          var v = values(i)
-          if (null != v && v.isInstanceOf[Option[_]]) {
-            v = v.asInstanceOf[Option[_]].orNull
-          }
-          v match {
-            case n: Number =>
-              cell.setCellType(CellType.NUMERIC)
-              cell.setCellValue(n.doubleValue())
-            case d: java.sql.Date =>
-              cell.setCellValue(d)
-              cell.setCellStyle(getDateStyle)
-            case t: java.util.Date =>
-              cell.setCellValue(t)
-              cell.setCellStyle(getTimeStyle)
-            case t: LocalDate =>
-              cell.setCellValue(java.sql.Date.valueOf(t))
-              cell.setCellStyle(getDateStyle)
-            case t: Instant =>
-              cell.setCellValue(java.util.Date.from(t))
-              cell.setCellStyle(getTimeStyle)
-            case c: java.util.Calendar =>
-              cell.setCellValue(c)
-              cell.setCellStyle(getTimeStyle)
-            case c: java.lang.Boolean =>
-              cell.setCellValue(if(c)"Y"else "N")
-            case _ =>
-              cell.setCellValue(new XSSFRichTextString(if (v == null) "" else v.toString))
-          }
+          row.createCell(i).fillin(values(i))
         }
       } else {
         val cell = row.createCell(0)
@@ -142,32 +122,9 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     }
   }
 
-  private def getDateStyle: XSSFCellStyle = {
-    if (null == dateStyle) {
-      dateStyle = workbook.createCellStyle()
-      dateStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateFormat))
-    }
-    dateStyle
-  }
-
-  private def getTimeStyle: XSSFCellStyle = {
-    if (null == timeStyle) {
-      timeStyle = workbook.createCellStyle()
-      timeStyle.setDataFormat(workbook.createDataFormat().getFormat(getDateTimeFormat))
-    }
-    timeStyle
-  }
-
-  protected def getDateFormat: String = {
-    "YYYY-MM-DD"
-  }
-
-  protected def getDateTimeFormat: String = {
-    "YYYY-MM-DD HH:MM:SS"
-  }
 
   protected def buildTitleStyle(): XSSFCellStyle = {
-    val style = workbook.createCellStyle()
+    val style = workbook.createCellStyle().asInstanceOf[XSSFCellStyle]
     style.setAlignment(HorizontalAlignment.CENTER) // 左右居中
     style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
     style.setFillPattern(FillPatternType.SOLID_FOREGROUND)

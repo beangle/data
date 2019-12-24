@@ -20,7 +20,8 @@ package org.beangle.data.orm
 
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.data.jdbc.meta.{Database, Engines}
+import org.beangle.data.jdbc.engine.Engines
+import org.beangle.data.jdbc.meta.Database
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
 import org.scalatest.funspec.AnyFunSpec

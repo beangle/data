@@ -19,13 +19,21 @@
 package org.beangle.data.jdbc.meta
 
 /**
- * Unique Key
- *
- * @author chaostone
- */
+  * Unique Key
+  *
+  * @author chaostone
+  */
 class UniqueKey(table: Table, name: Identifier) extends Constraint(table, name) {
 
   override def clone(): this.type = {
     super.clone()
+  }
+
+  override def equals(other: Any): Boolean = {
+    other match {
+      case c: UniqueKey =>
+        this.name == c.name && this.enabled == c.enabled && this.columns == c.columns
+      case _ => false
+    }
   }
 }

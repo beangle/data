@@ -44,6 +44,11 @@ trait TypeMapping extends Cloneable {
 trait StructTypeMapping extends TypeMapping {
   var properties: mutable.Map[String, PropertyMapping[_]] = Collections.newMap[String, PropertyMapping[_]]
 
+  /** 获取属性对应的属性映射，支持嵌入式属性
+    *
+    * @param property
+    * @return
+    */
   def getPropertyMapping(property: String): PropertyMapping[_] = {
     val idx = property.indexOf(".")
     if (idx == -1) {
@@ -84,6 +89,25 @@ final class EntityTypeMapping(var typ: EntityType, var table: Table) extends Str
 
   def copy(): this.type = {
     this
+  }
+
+  def addProperties(added: collection.Map[String, PropertyMapping[_]]): Unit = {
+    if (added.nonEmpty) {
+      properties ++= added
+      inheriteColumns(this.table, added)
+    }
+  }
+
+  private def inheriteColumns(table: Table, inheris: collection.Map[String, PropertyMapping[_]]): Unit = {
+    inheris.values foreach {
+      case spm: SingularPropertyMapping =>
+        spm.mapping match {
+          case btm: BasicTypeMapping => btm.columns foreach (table.add(_))
+          case etm: EmbeddableTypeMapping => inheriteColumns(table, etm.properties)
+          case _ =>
+        }
+      case _ =>
+    }
   }
 }
 

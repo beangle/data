@@ -19,6 +19,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.data.jdbc.dialect.OracleDialect
+import org.beangle.data.jdbc.engine.{Engines, Oracle}
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
 import org.scalatest.funspec.AnyFunSpec

@@ -16,10 +16,10 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.meta
+package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.dialect.{DB2Dialect, H2Dialect, MySQLDialect, OracleDialect, PostgreSQLDialect, SQLServerDialect}
+import org.beangle.data.jdbc.dialect._
 
 object EngineTest {
 
@@ -28,17 +28,17 @@ object EngineTest {
   }
 
   private def printPad(name: String): Unit = {
-    print(Strings.rightPad(name, 17, ' '))
+    print(Strings.rightPad(name, 26, ' '))
   }
 
   def printTypeMatrix(): Unit = {
     import java.sql.Types._
-    val types = Array(BOOLEAN, BIT, CHAR, INTEGER, SMALLINT, TINYINT, BIGINT,
-      FLOAT, DOUBLE, DECIMAL, NUMERIC, DATE, TIME, TIMESTAMP, VARCHAR, LONGVARCHAR,
+    val types = Array(BOOLEAN, BIT, CHAR, TINYINT, SMALLINT, INTEGER, BIGINT,
+      FLOAT, REAL, DOUBLE, DECIMAL, NUMERIC, DATE, TIME, TIMESTAMP, VARCHAR, LONGVARCHAR,
       BINARY, VARBINARY, LONGVARBINARY, BLOB, CLOB)
 
-    val typeNames = Array("BOOLEAN", "BIT", "CHAR", "INTEGER", "SMALLINT", "TINYINT", "BIGINT",
-      "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "DATE", "TIME", "TIMESTAMP", "VARCHAR", "LONGVARCHAR",
+    val typeNames = Array("BOOLEAN", "BIT", "CHAR", "TINYINT", "SMALLINT", "INTEGER", "BIGINT",
+      "FLOAT", "REAL", "DOUBLE", "DECIMAL", "NUMERIC", "DATE", "TIME", "TIMESTAMP", "VARCHAR", "LONGVARCHAR",
       "BINARY", "VARBINARY", "LONGVARBINARY", "BLOB", "CLOB")
 
     val dialects = Array(new OracleDialect, new PostgreSQLDialect, new MySQLDialect,
@@ -50,12 +50,12 @@ object EngineTest {
     }
 
     println()
-    for (i <- 0 until types.length) {
+    for (i <- types.indices) {
       printPad(typeNames(i))
       for (dialect <- dialects) {
         val typeName =
           try {
-            dialect.engine.typeNames.get(types(i))
+            dialect.engine.toType(types(i)).name
           } catch {
             case e: Exception => "error"
           }

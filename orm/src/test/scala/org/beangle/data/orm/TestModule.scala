@@ -18,29 +18,30 @@
  */
 package org.beangle.data.orm
 
-import org.beangle.data.model.Entity
-
 class TestModule extends MappingModule {
 
   override def binding(): Unit = {
     autoIncrement()
 
-    bind[TestUser].on(e => declare(
-      e.properties is depends("user"),
-      e.friends is eleColumn("friend_user_id"),
-      e.tags is (table("users_tags"), keyLength(30), eleColumn("value2"), eleLength(200))))
+    bind[TestUser].declare { e =>
+      e.properties is(depends("user"), readOnly)
+      e.friends is eleColumn("friend_user_id")
+      e.tags is(table("users_tags"), keyLength(30), eleColumn("value2"), eleLength(200))
+    }
 
-    bind[TestRole].on(e => declare(
-      e.name is unique,
-      e.vocations is (joinColumn("role_id"), eleColumn("exclude_on")),
-      e.properties is keyColumn("type_id")))
+    bind[TestRole].declare { e =>
+      e.name is unique
+      e.vocations is(joinColumn("role_id"), eleColumn("exclude_on"))
+      e.properties is keyColumn("type_id")
+    }
 
     bind[UserProperty]
 
-    bind[UrlMenu].on(c => declare(
-      c.url is (notnull, length(40)),
-      c.parent is target[UrlMenu]))
-
+    bind[UrlMenu].declare { c =>
+      c.url is(notnull, length(40))
+      c.parent is target[UrlMenu]
+      index("idx_menu_name", true, c.name)
+    }
     all.cacheAll()
   }
 }

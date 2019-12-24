@@ -93,6 +93,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
         case Some(o) => if (o.clazz.isAssignableFrom(mapping.clazz)) entityMappings.put(mapping.entityName, mapping)
         case None => entityMappings.put(mapping.entityName, mapping)
       }
+    } else {
+      mapping.table.phantom = true
     }
     this
   }
@@ -124,15 +126,20 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     profiles.modules foreach { m =>
       m.configure(this)
     }
-    //superclass first
+    //superclass first,merge bingdings
     classMappings.keys.toList.sortWith { (a, b) => a.isAssignableFrom(b) } foreach (cls => merge(classMappings(cls)))
 
     //remove interface and abstract class binding
     val notEntities = entityMappings.filter {
-      case (n, c) => (c.clazz.isInterface || Modifier.isAbstract(c.clazz.getModifiers))
+      case (_, c) => c.clazz.isInterface || Modifier.isAbstract(c.clazz.getModifiers)
     }
     entityMappings --= notEntities.keys
-
+    //remove phantom tables
+    database.schemas.values foreach { s =>
+      val phantomTables = s.tables.filter(_._2.phantom)
+      s.tables.subtractAll(phantomTables.keys)
+    }
+    //create primary/foreign keys and cache
     entityMappings.values foreach (em => firstPass(em))
     entityMappings.values foreach (em => secondPass(em))
   }
@@ -203,6 +210,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             val e = new EntityTypeMapping(refEntity(clazz, entityName), table)
             if (clazz.isInterface || Modifier.isAbstract(clazz.getModifiers)) {
               e.isAbstract = true
+              table.phantom = true
             }
             entityMappings.put(entityName, e)
             e
@@ -217,8 +225,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /**
-   * @param key 表示是否是一个外键
-   */
+    * @param key 表示是否是一个外键
+    */
   def columnName(clazz: Class[_], propertyName: String, key: Boolean = false): String = {
     val lastDot = propertyName.lastIndexOf(".")
     var colName = if (lastDot == -1) propertyName else propertyName.substring(lastDot + 1)
@@ -228,7 +236,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 查找实体主键
-   * */
+    * */
   private def firstPass(etm: EntityTypeMapping): Unit = {
     val clazz = etm.typ.clazz
     if (null == etm.idGenerator) {
@@ -241,16 +249,15 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val pm = etm.getPropertyMapping(idName)
     val column = pm.asInstanceOf[SingularPropertyMapping].columns.head
     column.comment = Some(getComment(clazz, idName) + (":" + etm.idGenerator.name))
-    etm.table.createPrimaryKey(column.name)
+    etm.table.createPrimaryKey("",column.name.toLiteral(etm.table.engine))
     etm.table.comment = Some(getComment(clazz, clazz.getSimpleName))
   }
 
   /** 处理外键及其关联表格,以及集合的缓存设置
-   */
+    * 这些需要被引用方(各个表的主键)生成之后才能进行
+    */
   private def secondPass(etm: EntityTypeMapping): Unit = {
-    val clazz = etm.typ.clazz
-    val table = etm.table
-    processPropertyMappings(clazz, table, etm)
+    processPropertyMappings(etm.typ.clazz, etm.table, etm)
     processCache(etm, etm)
   }
 
@@ -335,7 +342,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                   }
                 case _ =>
               }
-              collectTable.createPrimaryKey(collectTable.columns.map(_.name).toList: _*)
+              collectTable.createPrimaryKey(null,collectTable.columns.map(_.name.toLiteral(table.engine)).toList: _*)
             }
         }
     }
@@ -343,7 +350,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
 
   private def createForeignKey(table: Table, columns: Iterable[Column], refTable: Table): Unit = {
-    table.createForeignKey(columns.head.name, refTable)
+    table.createForeignKey(null,columns.head.name.toLiteral(table.engine), refTable)
   }
 
   private def getComment(clazz: Class[_], key: String): String = {
@@ -355,10 +362,9 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     if (key == comment) defaults else comment
   }
 
-  /**
-   * support features
-   * <li> buildin primary type will be not null
-   */
+  /** Support features inheritence
+    * <li> buildin primary type will be not null
+    */
   private def merge(entity: EntityTypeMapping): Unit = {
     val cls = entity.clazz
     // search parent and interfaces
@@ -373,18 +379,20 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
     val inheris = Collections.newMap[String, PropertyMapping[_]]
     supers.reverse foreach { e =>
-      inheris ++= e.properties
+      inheris ++= e.properties.filter(!_._2.mergeable) // filter not mergeable
       if (entity.idGenerator == null) entity.idGenerator = e.idGenerator
       if (null == entity.cacheRegion && null == entity.cacheUsage) entity.cache(e.cacheRegion, e.cacheUsage)
     }
 
     val inherited = Collections.newMap[String, PropertyMapping[_]]
-    entity.properties foreach {
-      case (name, p) =>
-        if (p.mergeable && inheris.contains(name)) inherited.put(name, inheris(name).copy())
+    inheris foreach { case (name, p) =>
+      if (entity.properties(name).mergeable) {
+        inherited.put(name, p.copy())
+      }
     }
-    entity.properties ++= inherited
+    entity.addProperties(inherited)
   }
+
 
   private def bindComponent(mh: Mappings.Holder, name: String, propertyType: Class[_], tpe: ru.Type): SingularPropertyMapping = {
     val ct = new EmbeddableTypeImpl(propertyType)

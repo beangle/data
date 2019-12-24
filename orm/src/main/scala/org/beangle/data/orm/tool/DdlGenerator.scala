@@ -21,11 +21,12 @@ package org.beangle.data.orm.tool
 import java.io.FileWriter
 import java.util.Locale
 
-import org.beangle.commons.io.ResourcePatternResolver
-import org.beangle.commons.lang.{ Locales, SystemInfo }
+import org.beangle.commons.collection.Collections
+import org.beangle.commons.io.{IOs, ResourcePatternResolver}
+import org.beangle.commons.lang.{Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.dialect.{ Dialect, Dialects, SQL }
-import org.beangle.data.jdbc.meta.{ DBScripts, Database, Table }
+import org.beangle.data.jdbc.dialect.{Dialect, Dialects}
+import org.beangle.data.jdbc.meta.{DBScripts, Database, Table}
 import org.beangle.data.orm.Mappings
 
 /**
@@ -57,6 +58,20 @@ object DdlGenerator {
     writeTo(dir, "3-indices.sql", scripts.indices)
     writeTo(dir, "4-sequences.sql", scripts.sequences)
     writeTo(dir, "5-comments.sql", scripts.comments)
+    writeLinesTo(dir, "6-auxiliaries.sql", scripts.auxiliaries)
+  }
+
+  private def writeLinesTo(dir: String, file: String, contents: List[String]): Unit = {
+    if (contents.nonEmpty) {
+      val writer = new FileWriter(dir + "/" + file, false)
+      contents foreach { c =>
+        if (null != c && c.nonEmpty) {
+          writer.write(c)
+        }
+      }
+      writer.flush()
+      writer.close()
+    }
   }
 
   private def writeTo(dir: String, file: String, contents: List[String]): Unit = {
@@ -73,7 +88,6 @@ object DdlGenerator {
 }
 
 class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
-
   private val schemas = new collection.mutable.ListBuffer[String]
   private val tables = new collection.mutable.ListBuffer[String]
   private val sequences = new collection.mutable.ListBuffer[String]
@@ -85,29 +99,45 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
   def generate(): DBScripts = {
     val database = mappings.database
     database.schemas.values foreach {
-      schema => schema.tables.values foreach (generateTableSql)
+      schema => schema.tables.values foreach generateTableSql
     }
     val scripts = new DBScripts()
     schemas ++= database.schemas.keys.filter(i => i.value.length > 0).map(s => s"create schema $s")
     scripts.schemas = schemas.sorted.toList
     scripts.comments = comments.toSet.toList.sorted
     scripts.tables = tables.sorted.toList
+    scripts.indices = indexes.sorted.toList
+    scripts.sequences = sequences.sorted.toList
     scripts.constraints = constraints.sorted.toList
+    val auxiliaries = Collections.newBuffer[String]
+    val dialectShortName = Strings.replace(dialect.getClass.getSimpleName, "Dialect", "").toLowerCase
+    ResourcePatternResolver.getResources(s"classpath*:META-INF/beangle/ddl/${dialectShortName}/*.sql") foreach { r =>
+      auxiliaries += IOs.readString(r.openStream())
+    }
+    scripts.auxiliaries = auxiliaries.toList
     scripts
   }
 
   private def generateTableSql(table: Table): Unit = {
     if (processed.contains(table)) return
     processed.add(table)
-    comments ++= SQL.commentsOnTable(table, dialect)
-    tables += SQL.createTable(table, dialect)
+    comments ++= dialect.commentsOnTable(table)
+    tables += dialect.createTable(table)
+
+    table.primaryKey foreach { pk =>
+      constraints += dialect.alterTableAddPrimaryKey(table, pk)
+    }
 
     table.foreignKeys foreach { fk =>
-      constraints += SQL.alterTableAddforeignKey(fk, dialect)
+      constraints += dialect.alterTableAddForeignKey(fk)
+    }
+
+    table.uniqueKeys foreach { uk =>
+      constraints += dialect.alterTableAddUnique(uk)
     }
 
     table.indexes foreach { idx =>
-      indexes += SQL.createIndex(idx)
+      indexes += dialect.createIndex(idx)
     }
   }
 

@@ -19,7 +19,6 @@
 package org.beangle.data.transfer.excel
 
 import java.io.InputStream
-import java.text.NumberFormat
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel._
@@ -27,12 +26,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.{Attribute, ItemReader}
-
-object ExcelItemReader {
-  val numberFormat: NumberFormat = NumberFormat.getInstance()
-  numberFormat.setGroupingUsed(false)
-}
+import org.beangle.data.transfer.excel.CellOps._
+import org.beangle.data.transfer.io.{Attribute, DataType, ItemReader}
 
 /**
   * Excel的每行一条数据的读取器
@@ -73,7 +68,7 @@ class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format.Val
   /**
     * 读取注释
     */
-   protected def readAttributes(sheet: Sheet, rowIndex: Int): List[Attribute] = {
+  protected def readAttributes(sheet: Sheet, rowIndex: Int): List[Attribute] = {
     val row = sheet.getRow(rowIndex)
     val attrList = new collection.mutable.ListBuffer[Attribute]
     var hasEmptyCell = false
@@ -83,17 +78,19 @@ class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format.Val
       if (null == comment || Strings.isEmpty(comment.getString.getString)) {
         hasEmptyCell = true
       } else {
-        var commentStr = comment.getString.getString
+        var commentStr = comment.getString.getString.trim()
+        var dataType = DataType.String
         if (commentStr.indexOf(':') > 0) {
-          commentStr = Strings.substringAfterLast(commentStr, ":")
+          dataType = DataType.withName(Strings.substringAfterLast(commentStr, ":"))
+          commentStr = Strings.substringBefore(commentStr, ":")
         }
-        attrList += Attribute(i + 1, commentStr.trim(), cell.getRichStringCellValue.getString)
+        attrList += Attribute(i + 1, commentStr.trim(), dataType, cell.getRichStringCellValue.getString)
       }
     }
     attrList.toList
   }
 
-  override def read(): Array[String] = {
+  override def read(): Array[Any] = {
     if (indexInSheet > sheet.getLastRowNum) {
       return null
     }
@@ -102,11 +99,11 @@ class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format.Val
     // 如果是个空行,返回空记录
     val attrCount = attrs.size
     if (row == null) {
-      new Array[String](attrCount)
+      new Array[Any](attrCount)
     } else {
-      val values = new Array[String](if (attrCount != 0) attrCount else row.getLastCellNum)
+      val values = new Array[Any](attrCount)
       values.indices foreach { k =>
-        values(k) = getCellValue(row.getCell(k));
+        values(k) = getCellValue(row.getCell(k), attrs(k))
       }
       values
     }
@@ -115,30 +112,9 @@ class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format.Val
   /**
     * 取cell单元格中的数据
     */
-  def getCellValue(cell: Cell): String = {
+  def getCellValue(cell: Cell, attribute: Attribute): Any = {
     if (cell == null) return null
-
-    cell.getCellType match {
-      case CellType.BLANK => null
-      case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
-      case CellType.NUMERIC =>
-        if (DateUtil.isCellDateFormatted(cell)) {
-          cell.getDateCellValue match {
-            case null => null
-            case d => new java.sql.Date(d.getTime).toLocalDate.toString
-          }
-        } else {
-          ExcelItemReader.numberFormat.format(cell.getNumericCellValue)
-        }
-      case CellType.BOOLEAN => if (cell.getBooleanCellValue) "true" else "false"
-      case CellType.FORMULA =>
-        cell.getCachedFormulaResultType match {
-          case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
-          case CellType.NUMERIC => ExcelItemReader.numberFormat.format(cell.getNumericCellValue)
-          case _ => null
-        }
-      case _ => null
-    }
+    cell.getValue(attribute.dataType)
   }
 
   override def close(): Unit = {

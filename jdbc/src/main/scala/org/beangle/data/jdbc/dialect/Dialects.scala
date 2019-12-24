@@ -27,12 +27,12 @@ import scala.collection.mutable
 object Dialects {
 
   val registeredDialects = new mutable.HashMap[VendorInfo, List[Dialect]]
-
-  def getDialect(vendor: VendorInfo, version: String): Option[Dialect] = {
-    for (dialects <- registeredDialects.get(vendor))
-      return dialects.find(d => d.support(version))
-    None
-  }
+  //
+  //  def getDialect(vendor: VendorInfo, version: String): Option[Dialect] = {
+  //    for (dialects <- registeredDialects.get(vendor))
+  //      return dialects.find(d => d.support(version))
+  //    None
+  //  }
 
   def register(product: VendorInfo, dialects: Dialect*): Unit = {
     registeredDialects.put(product, dialects.toList)
@@ -41,7 +41,14 @@ object Dialects {
   def forName(dialectName: String): Dialect = {
     var name = Strings.capitalize(dialectName)
     name = name.replace("sql", "SQL")
-    Reflections.newInstance[Dialect]("org.beangle.data.jdbc.dialect." + name + "Dialect")
+    name = name.replace("Sql", "SQL")
+    if (dialectName.startsWith("DB2")) {
+      new DB2Dialect
+    } else if (dialectName.startsWith("Microsoft SQL Server")) {
+      new SQLServerDialect
+    } else {
+      Reflections.newInstance[Dialect]("org.beangle.data.jdbc.dialect." + name + "Dialect")
+    }
   }
 
   register(Vendors.oracle, new OracleDialect)

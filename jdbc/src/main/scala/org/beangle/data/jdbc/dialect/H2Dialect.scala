@@ -18,31 +18,33 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.engine.Engines
 
-class H2Dialect extends AbstractDialect(Engines.H2, "[1.3,)") {
-
-  override def sequenceGrammar: SequenceGrammar = {
-    val ss = new SequenceGrammar()
-    ss.querySequenceSql = "select sequence_name,current_value,increment,cache from information_schema.sequences where sequence_schema=':schema'"
-    ss.nextValSql = "call next value for :name"
-    ss.selectNextValSql = "next value for :name"
-    ss.createSql = "create sequence :name start with :start increment by :increment cache :cache"
-    ss.dropSql = "drop sequence if exists :name"
-    ss
+class H2Dialect extends AbstractDialect(Engines.H2) {
+  options.sequence { s =>
+    s.nextValSql = "call next value for {name}"
+    s.selectNextValSql = "next value for {name}"
+    s.createSql = "create sequence {name} start with {start} increment by {increment} cache {cache}"
+    s.dropSql = "drop sequence if exists {name}"
   }
 
-  override def limitGrammar = new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
+  options.limit.pattern = "{} limit ?"
+  options.limit.offsetPattern = "{} limit ? offset ?"
+  options.limit.bindInReverseOrder = true
+  options.comment.supportsCommentOn = true
 
-  override def tableGrammar: TableGrammar = {
-    val bean = new TableGrammarBean()
-    bean.columnComent = " comment '{}'"
-    bean
+  options.alter { a =>
+    a.table.changeType = "alter {column} {type}"
+    a.table.setDefault="alter {column} set default {value}"
+    a.table.dropDefault="alter {column} set default null"
+    a.table.setNotNull = "alter {column} set not null"
+    a.table.dropNotNull = "alter {column} set null"
+    a.table.addColumn = "add {column} {type}"
+    a.table.dropColumn = "drop column {column}"
+
+    a.table.addPrimaryKey="add constraint {name} primary key ({column-list})"
+    a.table.dropConstraint="drop constraint {name}"
   }
 
-  override def defaultSchema: String = {
-    "PUBLIC"
-  }
-
-  override def supportsCommentOn = true
+  options.validate()
 }

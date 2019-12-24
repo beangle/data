@@ -30,7 +30,7 @@ import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.SqlTypeMapping
 
 object TypeParamSetter {
-  def apply(sqlTypeMapping: SqlTypeMapping, params: collection.Seq[Any]): TypeParamSetter = {
+    def apply(sqlTypeMapping: SqlTypeMapping, params: collection.Seq[Any]): TypeParamSetter = {
     val types = new Array[Int](params.length)
     types.indices foreach { i =>
       types(i) = if (null == params(i)) VARCHAR else sqlTypeMapping.sqlCode(params(i).getClass)

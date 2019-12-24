@@ -18,6 +18,8 @@
  */
 package org.beangle.data.jdbc.meta
 
+import org.beangle.data.jdbc.engine.Engine
+
 class Sequence(var schema: Schema, var name: Identifier) extends Ordered[Sequence] {
 
   var current: Long = 0

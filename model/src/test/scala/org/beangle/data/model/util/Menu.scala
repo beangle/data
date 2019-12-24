@@ -22,6 +22,8 @@ import org.beangle.data.model.pojo.Hierarchical
 import org.beangle.data.model.IntId
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
+
+import scala.collection.mutable
 import scala.collection.mutable.Buffer
 
 object Menu {
@@ -44,7 +46,7 @@ object Menu {
 }
 
 class Menu extends IntId with Hierarchical[Menu] {
-  override def toString = {
+  override def toString: String = {
     "id:" + id + " indexno:" + indexno
   }
 }
@@ -55,8 +57,8 @@ class Profile {
   def menu(id: Int): Menu = {
     menus.find(m => m.id == id).get
   }
-  def tops(): Buffer[Menu] = {
-    menus.filter(m => m.parent == None)
+  def tops(): mutable.Buffer[Menu] = {
+    menus.filter(m => m.parent.isEmpty)
   }
 
   def move(menuId: Int, parentId: Option[Int], idx: Int): Iterable[Menu] = {

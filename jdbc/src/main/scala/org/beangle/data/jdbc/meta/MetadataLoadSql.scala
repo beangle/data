@@ -18,11 +18,19 @@
  */
 package org.beangle.data.jdbc.meta
 
-/**
- * Store identifiers in which case
- */
-object StoreCase extends Enumeration {
+import org.beangle.commons.lang.Strings
 
-  val Lower, Upper, Mixed = Value
+class MetadataLoadSql {
 
+  var primaryKeySql: String = _
+
+  var importedKeySql: String = _
+
+  var indexInfoSql: String = _
+
+  var sequenceSql: String = _
+
+  def supportsTableExtra: Boolean = {
+    Strings.isNotBlank(primaryKeySql) && Strings.isNotBlank(importedKeySql) && Strings.isNotBlank(indexInfoSql)
+  }
 }

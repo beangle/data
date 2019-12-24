@@ -18,12 +18,7 @@
  */
 package org.beangle.data.hibernate
 
-import scala.reflect.runtime.universe
-import org.beangle.commons.lang.annotation.beta
-import org.beangle.commons.lang.time.WeekState
-import org.beangle.data.hibernate.model.{ Coded, IntIdResource, LongDateIdResource, LongIdResource, Skill, SkillType, User }
-import org.beangle.commons.lang.time.WeekDay
-import org.beangle.data.hibernate.model.Profile
+import org.beangle.data.hibernate.model._
 import org.beangle.data.orm.MappingModule
 
 object TestMapping1 extends MappingModule {
@@ -36,16 +31,18 @@ object TestMapping1 extends MappingModule {
     bind[LongDateIdResource]
     bind[IntIdResource]
 
-    bind[Coded].on(c => declare(
-      c.code is (notnull, length(20))))
+    bind[Coded].declare { c =>
+      c.code is(notnull, length(20), unique)
+    }
 
     bind[Profile]
-    bind[User].on(e => declare(
-      e.name.first is (unique, column("first_name")),
-      e.name.first & e.name.last & e.createdOn are notnull,
-      e.roleList is (ordered, table("users_roles_list")),
-      e.profiles is depends("user"),
-      e.properties is (table("users_props"), eleColumn("value2"), eleLength(200)))).generator("native")
+    bind[User].declare { e =>
+      e.name.first is(unique, column("first_name"))
+      e.name.first & e.name.last & e.createdOn are notnull
+      e.roleList is(ordered, table("users_roles_list"))
+      e.profiles is depends("user")
+      e.properties is(table("users_props"), eleColumn("value2"), eleLength(200))
+    }.generator("native")
 
     bind[SkillType]
     bind[Skill].table("skill_list")

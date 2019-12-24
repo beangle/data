@@ -18,11 +18,7 @@
  */
 package org.beangle.data.hibernate
 
-import scala.reflect.runtime.universe
-
-import org.beangle.commons.lang.annotation.beta
-import org.beangle.data.hibernate.model.{ CodedEntity, Department, ExtendRole, Menu, Role, StringIdCodedEntity }
-import org.beangle.commons.lang.reflect.ClassInfos
+import org.beangle.data.hibernate.model._
 import org.beangle.data.orm.MappingModule
 
 object TestMapping2 extends MappingModule {
@@ -31,25 +27,31 @@ object TestMapping2 extends MappingModule {
     defaultIdGenerator("seq_per_table")
     defaultCache("test_cache_region", "read-write")
 
-    bind[Role].on(r => declare(
-      r.name is (length(112), unique),
-      r.parent is target[Role],
-      r.properties is (keyColumn("tag_id")),
-      r.children is (depends("parent"), cacheable))).generator("assigned")
+    bind[Role].declare { r =>
+      r.name is(length(112), unique)
+      //r.code is (length(20 + 1), unique) //override bingding in Coded
+      r.parent is target[Role]
+      r.properties is keyColumn("tag_id")
+      r.children is(depends("parent"), cacheable)
+    }.generator("assigned")
 
     bind[ExtendRole](classOf[Role].getName)
 
-    bind[CodedEntity].on(c => declare(
-      c.code is (length(22))))
+    bind[CodedEntity].declare { c =>
+      c.code is(length(22), unique)
+    }
 
-    bind[StringIdCodedEntity].on(c => declare(
-      c.code is (length(28)))).generator("native")
+    bind[StringIdCodedEntity].declare { c =>
+      c.code is length(28)
+    }.generator("native")
 
     bind[Menu]
+
     cache().add(collection[Role]("children"))
 
-    bind[Department].on(e => declare(
-      e.children is (one2many("parent"))))
-
+    bind[Department].declare { e =>
+      e.children is one2many("parent")
+      index("idx_department_name", true, e.name)
+    }
   }
 }

@@ -18,32 +18,35 @@
  */
 package org.beangle.data.jdbc.dialect
 
-import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.engine.Engines
 
-class PostgreSQLDialect extends AbstractDialect(Engines.PostgreSQL, "[8.4)") {
+class PostgreSQLDialect extends AbstractDialect(Engines.PostgreSQL) {
 
-  override def sequenceGrammar: SequenceGrammar = {
-    val ss = new SequenceGrammar()
-    ss.querySequenceSql = "select sequence_name,start_value,increment increment_by,cycle_option cycle_flag" +
-      " from information_schema.sequences where sequence_schema=':schema'"
-    ss.nextValSql = "select nextval (':name')"
-    ss.selectNextValSql = "nextval (':name')"
-    ss
+  options.sequence { s =>
+    s.nextValSql = "select nextval ('{name}')"
+    s.selectNextValSql = "nextval ('{name}')"
   }
 
-  override def limitGrammar: LimitGrammar = {
-    new LimitGrammarBean("{} limit ?", "{} limit ? offset ?", true)
+  options.comment.supportsCommentOn = true
+  options.limit { l =>
+    l.pattern = "{} limit ?"
+    l.offsetPattern = "{} limit ? offset ?"
+    l.bindInReverseOrder = true
   }
 
-  override def tableGrammar: TableGrammar = {
-    val bean = new TableGrammarBean()
-    bean.dropSql = "drop table {} cascade"
-    bean
-  }
+  options.drop.table.sql = "drop table {name} cascade"
 
-  override def defaultSchema: String = {
-    "public"
-  }
+  options.alter { a =>
+    a.table.changeType = "alter {column} type {type}"
+    a.table.setDefault="alter {column} set default {value}"
+    a.table.dropDefault="alter {column} drop default"
+    a.table.setNotNull = "alter {column} set not null"
+    a.table.dropNotNull = "alter {column} drop not null"
+    a.table.addColumn = "add {column} {type}"
+    a.table.dropColumn = "drop {column} cascade"
 
-  override def supportsCommentOn: Boolean = true
+    a.table.addPrimaryKey="add constraint {name} primary key ({column-list})"
+    a.table.dropConstraint="drop constraint {name} cascade"
+  }
+  options.validate()
 }

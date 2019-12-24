@@ -21,7 +21,7 @@ package org.beangle.data.jdbc
 import java.sql.Types
 
 import org.beangle.commons.lang.annotation.value
-import org.beangle.data.jdbc.meta.Engines
+import org.beangle.data.jdbc.engine.Engines
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
 import org.scalatest.funspec.AnyFunSpec

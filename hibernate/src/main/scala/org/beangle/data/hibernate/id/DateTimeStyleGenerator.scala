@@ -26,7 +26,7 @@ package org.beangle.data.hibernate.id
  *      YYYYMMDDHH24MISS sequence
  *   }}}
  *
- *   default function is date_id
+ *   default function is datetime_id
  */
 class DateTimeStyleGenerator extends SqlStyleGenerator  {
 

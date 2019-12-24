@@ -16,20 +16,32 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.meta
+package org.beangle.data.jdbc.internal
 
-import org.junit.runner.RunWith
-import org.scalatest.Matchers
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatestplus.junit.JUnitRunner
-import org.beangle.data.jdbc.dialect.SQL
-import org.beangle.data.jdbc.dialect.OracleDialect
+import scala.xml.Node
 
-@RunWith(classOf[JUnitRunner])
-class PrimaryKeyTest extends AnyFlatSpec with Matchers {
+object NodeOps {
 
-  def testSqlConstraintString = {
-    val pk = new PrimaryKey(null, Identifier("pk_sometable"), Identifier("id"))
-    assert(SQL.primaryKeySql(pk, new OracleDialect) == "primary key (id)")
+  @inline implicit def node2Ops(n: Node): NodeOps = {
+    new NodeOps(n)
   }
+}
+
+final class NodeOps(val n: Node) extends AnyVal {
+  @inline
+  def attr(name: String): String = {
+    (n \ s"@$name").text
+  }
+
+  @inline
+  def name: String = {
+    (n \ s"@name").text
+  }
+
+  @inline
+  def get(name: String): Option[String] = {
+    (n \ s"@$name").map(_.text).headOption
+  }
+
+
 }

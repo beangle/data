@@ -19,6 +19,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.engine.Engine
 
 import scala.collection.mutable.ListBuffer
 
@@ -33,10 +34,15 @@ object Table {
     if (Strings.isNotEmpty(schema)) qualifiedName.append(schema).append('.')
     qualifiedName.append(name).toString
   }
+
+  def apply(schema: Schema, name: String): Table = {
+    new Table(schema, Identifier(name))
+  }
 }
 
 class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] with Cloneable with Comment {
-
+  /** 虚拟表 */
+  var phantom: Boolean = _
   var primaryKey: Option[PrimaryKey] = None
   val columns = new ListBuffer[Column]
   val uniqueKeys = new ListBuffer[UniqueKey]
@@ -59,7 +65,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   def attach(engine: Engine): this.type = {
     columns foreach { col =>
       val st = col.sqlType
-      col.sqlType = engine.toType(st.code, st.length.getOrElse(0), st.precision.getOrElse(0), st.scale.getOrElse(0))
+      col.sqlType = engine.toType(st.code, st.precision.getOrElse(0), st.scale.getOrElse(0))
       col.name = col.name.attach(engine)
     }
     this.name = this.name.attach(engine)
@@ -119,37 +125,95 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   }
 
   def column(columnName: String): Column = {
-    columns.find(f => f.name.value == columnName).get
+    columns.find(f => f.name.toLiteral(engine) == columnName).get
   }
 
   def getColumn(columnName: String): Option[Column] = {
-    columns.find(f => f.name.value == columnName)
+    columns.find(f => f.name.toLiteral(engine) == columnName)
   }
 
   def getForeignKey(keyName: String): Option[ForeignKey] = {
-    foreignKeys.find(f => f.name.value == keyName)
+    foreignKeys.find(f => f.name.toLiteral(engine) == keyName)
   }
 
-  def createPrimaryKey(columnNames: Identifier*): PrimaryKey = {
-    val pk = if (columnNames.size == 1) {
-      new PrimaryKey(this, null.asInstanceOf[Identifier], columnNames.head)
+  def getUniqueKey(keyName: String): Option[UniqueKey] = {
+    uniqueKeys.find(f => f.name.toLiteral(engine) == keyName)
+  }
+
+  def createUniqueKey(keyName: String, columnNames: String*): UniqueKey = {
+    val eng = engine
+    val uk = new UniqueKey(this, Identifier("uk_temp"))
+    columnNames foreach { colName =>
+      uk.addColumn(eng.toIdentifier(colName))
+    }
+    if (Strings.isBlank(keyName)) {
+      uk.name = eng.toIdentifier(Constraint.autoname(uk))
     } else {
-      val pk2 = new PrimaryKey(this, null.asInstanceOf[Identifier], null.asInstanceOf[Identifier])
+      uk.name = eng.toIdentifier(keyName)
+    }
+    this.add(uk)
+    uk
+  }
+
+  def createIndex(indexName: String, unique: Boolean, columnNames: String*): Index = {
+    val index = new Index(this, Identifier("indx_temp"))
+    val eng = engine
+    columnNames foreach { colName =>
+      index.addColumn(eng.toIdentifier(colName))
+    }
+    index.unique = unique
+    if (Strings.isBlank(indexName)) {
+      index.name = eng.toIdentifier(Constraint.autoname(index))
+    } else {
+      index.name = eng.toIdentifier(indexName)
+    }
+    this.indexes += index
+    index
+  }
+
+  def createPrimaryKey(keyName: String, columnNames: String*): PrimaryKey = {
+    val egn = engine
+    val pk = if (columnNames.size == 1) {
+      new PrimaryKey(this, Identifier.empty, egn.toIdentifier(columnNames.head))
+    } else {
+      val pk2 = new PrimaryKey(this, Identifier.empty, null)
       columnNames.foreach { cn =>
-        this.columns foreach (c => if (c.name == cn) pk2.addColumn(c))
+        val cnName = egn.toIdentifier(cn)
+        this.columns foreach (c => if (c.name == cnName) pk2.addColumn(c))
       }
       pk2
     }
+    pk.name = engine.toIdentifier(if (Strings.isBlank(keyName)) Constraint.autoname(pk) else keyName)
     this.primaryKey = Some(pk)
+    pk.columns foreach { c =>
+      this.column(c.toLiteral(engine)).nullable = false
+    }
     pk
   }
 
-  def createForeignKey(columnName: Identifier, refTable: Table): ForeignKey = {
+  def createForeignKey(keyName: String, columnName: String, refTable: TableRef, refencedColumn: String): ForeignKey = {
+    val eng = engine
+    val fk = new ForeignKey(this, Identifier("fk_temp"), eng.toIdentifier(columnName))
+    fk.refer(refTable, eng.toIdentifier(refencedColumn))
+    fk.name = if (Strings.isNotBlank(keyName)) {
+      engine.toIdentifier(keyName)
+    } else {
+      engine.toIdentifier(Constraint.autoname(fk))
+    }
+    this.add(fk)
+  }
+
+  def createForeignKey(keyName: String, columnName: String, refTable: Table): ForeignKey = {
+    val eng = engine
     refTable.primaryKey match {
       case Some(pk) =>
-        val fk = new ForeignKey(this, Identifier("fk_temp"), columnName)
+        val fk = new ForeignKey(this, Identifier("fk_temp"), eng.toIdentifier(columnName))
         fk.refer(refTable, pk.columns.head)
-        fk.name = Identifier(Constraint.autoname(fk))
+        if (Strings.isBlank(keyName)) {
+          fk.name = eng.toIdentifier(Constraint.autoname(fk))
+        } else {
+          fk.name = eng.toIdentifier(keyName)
+        }
         this.add(fk)
       case None =>
         throw new RuntimeException("Cannot refer on a table without primary key")
@@ -168,17 +232,38 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     key
   }
 
-  def add(column: Column): Boolean = {
-    if (!columns.exists(_.name == column.name)) {
-      columns += column
-      true
-    } else false
+  def add(column: Column): Column = {
+    columns.find(_.name == column.name) foreach columns.subtractOne
+    columns += column
+    column
+  }
+
+  def add(cols: Column*): Unit = {
+    cols foreach { col =>
+      columns.find(_.name == col.name) foreach columns.subtractOne
+      columns += col
+    }
   }
 
   def add(index: Index): Index = {
     index.table = this
     indexes += index
     index
+  }
+
+
+  def createColumn(name: String, sqlType: SqlType): Column = {
+    val egn = engine
+    val col = new Column(egn.toIdentifier(name), sqlType)
+    this.add(col)
+    col
+  }
+
+  def createColumn(name: String, typeName: String): Column = {
+    val egn = engine
+    val col = new Column(egn.toIdentifier(name), egn.toType(typeName))
+    this.add(col)
+    col
   }
 
   def getIndex(indexName: String): Option[Index] = {

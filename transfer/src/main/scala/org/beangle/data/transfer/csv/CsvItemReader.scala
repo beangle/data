@@ -24,7 +24,7 @@ import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.{Attribute, ItemReader}
+import org.beangle.data.transfer.io.{Attribute, DataType, ItemReader}
 
 /**
   * CsvItemReader class.
@@ -49,7 +49,7 @@ class CsvItemReader(reader: LineNumberReader) extends ItemReader with Logging {
     val titles = Strings.split(line, ",")
     val attrList = new collection.mutable.ListBuffer[Attribute]
     titles.indices foreach { i =>
-      attrList += Attribute(i + 1, titles(i), titles(i))
+      attrList += Attribute(i + 1, titles(i), DataType.String, titles(i))
     }
     attrList.toList
   }

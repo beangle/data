@@ -1,4 +1,3 @@
-
 CREATE SEQUENCE public.seq_date
     CYCLE
     INCREMENT 1
@@ -12,8 +11,6 @@ CREATE SEQUENCE public.seq_datetime
     START 1
     MINVALUE 1
     MAXVALUE 99999;
-
-
 
 CREATE or replace FUNCTION public.date_id()
     RETURNS bigint
@@ -37,14 +34,12 @@ begin
 end;
 $BODY$;
 
-
 CREATE TABLE public.table_sequences
 (
     table_name character varying(60)  NOT NULL,
     currval bigint NOT NULL,
     CONSTRAINT table_sequences_pkey PRIMARY KEY (table_name)
 );
-
 
 CREATE OR REPLACE FUNCTION public.next_id(text)
 RETURNS bigint
