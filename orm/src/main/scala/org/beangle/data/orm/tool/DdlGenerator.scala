@@ -30,8 +30,8 @@ import org.beangle.data.jdbc.meta.{DBScripts, Database, Table}
 import org.beangle.data.orm.Mappings
 
 /**
-  * Generate DDL and Sequences and Comments
-  */
+ * Generate DDL and Sequences and Comments
+ */
 object DdlGenerator {
   def main(args: Array[String]): Unit = {
     if (args.length < 3) {
@@ -106,6 +106,7 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
     scripts.schemas = schemas.sorted.toList
     scripts.comments = comments.toSet.toList.sorted
     scripts.tables = tables.sorted.toList
+    scripts.indices = indexes.sorted.toList
     scripts.sequences = sequences.sorted.toList
     scripts.constraints = constraints.sorted.toList
     val auxiliaries = Collections.newBuffer[String]
@@ -123,9 +124,14 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
     comments ++= dialect.commentsOnTable(table)
     tables += dialect.createTable(table)
 
+    table.primaryKey foreach { pk =>
+      constraints += dialect.alterTableAddPrimaryKey(table, pk)
+    }
+
     table.foreignKeys foreach { fk =>
       constraints += dialect.alterTableAddForeignKey(fk)
     }
+
     table.uniqueKeys foreach { uk =>
       constraints += dialect.alterTableAddUnique(uk)
     }

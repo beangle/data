@@ -41,6 +41,12 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit
   }
 
+  /** 创建索引
+   *
+   * 针对唯一索引，目前不支持空列
+   * @param name
+   * @param unique
+   */
   class IndexDeclaration(name: String, unique: Boolean) {
     def apply(holder: EntityHolder[_], pms: Iterable[PropertyMapping[_]]): Unit = {
       // hibernate的index注解里没有支持unique，而是通过unique key支持的，为了保持一直，这里也类似处理
@@ -400,6 +406,8 @@ abstract class MappingModule extends Logging {
   private val cacheConfig = new CacheConfig()
   private val entityMappings = Collections.newMap[String, EntityTypeMapping]
 
+  import scala.language.implicitConversions
+
   implicit def any2Expression(i: Any): Expression = {
     new Expression(currentHolder)
   }
@@ -562,12 +570,17 @@ abstract class MappingModule extends Logging {
   }
 
   def index(name: String, unique: Boolean, properties: Any*): Unit = {
-    val lasts = asScala(currentHolder.proxy.lastAccessed)
+    val lasts = currentHolder.proxy.lastAccessed
     if (lasts.isEmpty) {
       throw new RuntimeException("Cannot find access properties for " + currentHolder.mapping.entityName + " with index declarations")
     }
     val mapping = currentHolder.mapping
-    val pms = lasts.map(mapping.getPropertyMapping(_))
+    val pms = Collections.newBuffer[PropertyMapping[_]]
+    //Don't wrap java.util.LinkedHashSet to scala set,It will lost order.
+    val i = lasts.iterator()
+    while (i.hasNext) {
+      pms += mapping.getPropertyMapping(i.next())
+    }
     new IndexDeclaration(name, unique).apply(currentHolder, pms)
     lasts.clear()
   }

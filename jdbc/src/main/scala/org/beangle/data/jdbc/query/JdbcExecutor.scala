@@ -66,7 +66,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     if (rs.isEmpty) {
       None
     } else {
-      val o = rs.next()
+      val o = rs.head
       Some(o.head.asInstanceOf[T])
     }
   }
@@ -93,19 +93,28 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     new Statement(sql, this)
   }
 
-  def query(sql: String, params: Any*): Iterator[Array[Any]] = {
-    query(sql, TypeParamSetter(sqlTypeMapping, params))
-  }
-
-  def query(sql: String, setter: PreparedStatement => Unit): ResultSetIterator = {
+  def iterate(sql: String, params: Any*): ResultSetIterator = {
     if (showSql) println("JdbcExecutor:" + sql)
     val conn = openConnection()
     conn.setAutoCommit(false)
     val stmt = conn.prepareStatement(sql)
     stmt.setFetchSize(fetchSize)
-    setter(stmt)
+    TypeParamSetter(sqlTypeMapping, params)(stmt)
     val rs = stmt.executeQuery()
     new ResultSetIterator(rs)
+  }
+
+  def query(sql: String, params: Any*): collection.Seq[Array[Any]] = {
+    query(sql, TypeParamSetter(sqlTypeMapping, params))
+  }
+
+  def query(sql: String, setter: PreparedStatement => Unit): collection.Seq[Array[Any]] = {
+    if (showSql) println("JdbcExecutor:" + sql)
+    val conn = openConnection()
+    val stmt = conn.prepareStatement(sql)
+    stmt.setFetchSize(fetchSize)
+    setter(stmt)
+    new ResultSetIterator(stmt.executeQuery()).listAll()
   }
 
   def update(sql: String, params: Any*): Int = {
