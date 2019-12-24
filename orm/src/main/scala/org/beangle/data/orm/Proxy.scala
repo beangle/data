@@ -33,7 +33,7 @@ import org.beangle.data.orm.Jpas.isComponent
 private[orm] object Proxy extends Logging {
 
   trait ModelProxy {
-    def lastAccessed: java.util.Set[String]
+    def lastAccessed: java.util.LinkedHashSet[String]
   }
 
   trait EntityProxy extends ModelProxy
@@ -58,7 +58,7 @@ private[orm] object Proxy extends Logging {
     else cct.setSuperclass(pool.get(clazz.getName))
     cct.addInterface(pool.get(classOf[EntityProxy].getName))
     val javac = new Javac(cct)
-    cct.addField(javac.compile("public java.util.Set _lastAccessed;").asInstanceOf[CtField])
+    cct.addField(javac.compile("public java.util.LinkedHashSet _lastAccessed;").asInstanceOf[CtField])
 
     val manifest = BeanInfos.get(clazz)
     val componentTypes = Collections.newMap[String, Class[_]]
@@ -80,7 +80,7 @@ private[orm] object Proxy extends Logging {
         }
     }
     val ctor = javac.compile("public " + proxyClassName + "(){}").asInstanceOf[CtConstructor]
-    val ctorBody = new StringBuilder("{ _lastAccessed = new java.util.HashSet();")
+    val ctorBody = new StringBuilder("{ _lastAccessed = new java.util.LinkedHashSet();")
     var componentIdx = 0
     componentTypes foreach {
       case (name, componentClass) =>
@@ -96,13 +96,13 @@ private[orm] object Proxy extends Logging {
     ctor.setBody(ctorBody.toString)
     cct.addConstructor(ctor)
 
-    val ctmod = javac.compile("public java.util.Set lastAccessed() { return null;}").asInstanceOf[CtMethod]
+    val ctmod = javac.compile("public java.util.LinkedHashSet lastAccessed() { return null;}").asInstanceOf[CtMethod]
     ctmod.setBody("{return _lastAccessed;}")
     cct.addMethod(ctmod)
     val maked = cct.toClass(clazz)
     val proxy = maked.getConstructor().newInstance().asInstanceOf[EntityProxy]
     logger.debug(s"generate $classFullName using $watch")
-    // cct.debugWriteFile("/tmp/model/")
+    //cct.debugWriteFile("/tmp/model/")
     proxies.put(classFullName, proxy.getClass)
     proxy
   }
@@ -165,7 +165,7 @@ private[orm] object Proxy extends Logging {
     ctmod.setBody(setParentBody.toString)
 
     cct.addMethod(ctmod)
-    ctmod = javac.compile("public java.util.Set lastAccessed() { return null;}").asInstanceOf[CtMethod]
+    ctmod = javac.compile("public java.util.LinkedHashSet lastAccessed() { return null;}").asInstanceOf[CtMethod]
     ctmod.setBody("{return _parent.lastAccessed();}")
     cct.addMethod(ctmod)
 

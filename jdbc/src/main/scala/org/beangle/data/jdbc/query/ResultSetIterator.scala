@@ -21,6 +21,7 @@ package org.beangle.data.jdbc.query
 import java.io.Closeable
 import java.sql.ResultSet
 
+import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.IOs
 
 class ResultSetIterator(rs: ResultSet) extends Iterator[Array[Any]] with Closeable {
@@ -70,5 +71,16 @@ class ResultSetIterator(rs: ResultSet) extends Iterator[Array[Any]] with Closeab
     }
   }
 
+  def listAll(): collection.Seq[Array[Any]] = {
+    val buf = Collections.newBuffer[Array[Any]]
+    try {
+      while (this.hasNext) {
+        buf += this.next()
+      }
+      buf
+    } finally {
+      this.close()
+    }
+  }
 
 }
