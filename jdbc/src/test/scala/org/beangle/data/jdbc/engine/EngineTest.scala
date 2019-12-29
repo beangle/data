@@ -19,7 +19,6 @@
 package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.dialect._
 
 object EngineTest {
 
@@ -41,21 +40,21 @@ object EngineTest {
       "FLOAT", "REAL", "DOUBLE", "DECIMAL", "NUMERIC", "DATE", "TIME", "TIMESTAMP", "VARCHAR", "LONGVARCHAR",
       "BINARY", "VARBINARY", "LONGVARBINARY", "BLOB", "CLOB")
 
-    val dialects = Array(new OracleDialect, new PostgreSQLDialect, new MySQLDialect,
-      new SQLServerDialect, new DB2Dialect, new H2Dialect)
+    val engines = Array(Engines.Oracle, Engines.PostgreSQL, Engines.MySQL,
+      Engines.SQLServer, Engines.DB2, Engines.H2)
 
     printPad("Type/DBEngine")
-    for (dialect <- dialects) {
+    for (dialect <- engines) {
       printPad(Strings.replace(dialect.getClass.getSimpleName, "Dialect", ""))
     }
 
     println()
     for (i <- types.indices) {
       printPad(typeNames(i))
-      for (dialect <- dialects) {
+      for (engine <- engines) {
         val typeName =
           try {
-            dialect.engine.toType(types(i)).name
+            engine.toType(types(i)).name
           } catch {
             case e: Exception => "error"
           }

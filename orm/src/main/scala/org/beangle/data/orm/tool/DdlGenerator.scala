@@ -25,7 +25,7 @@ import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.{IOs, ResourcePatternResolver}
 import org.beangle.commons.lang.{Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.dialect.{Dialect, Dialects}
+import org.beangle.data.jdbc.engine.{Engine, Engines}
 import org.beangle.data.jdbc.meta.{DBScripts, Database, Table}
 import org.beangle.data.orm.Mappings
 
@@ -44,12 +44,12 @@ object DdlGenerator {
     if (args.length > 2) locale = Locales.toLocale(args(2))
     val dialectName = args(0)
 
-    val dialect = Dialects.forName(dialectName)
+    val engine = Engines.forName(dialectName)
     val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
-    val mappings = new Mappings(new Database(dialect.engine), ormLocations)
+    val mappings = new Mappings(new Database(engine), ormLocations)
     mappings.locale = locale
     mappings.autobind()
-    val scripts = new SchemaExporter(mappings, dialect).generate()
+    val scripts = new SchemaExporter(mappings, engine).generate()
 
     //export to files
     writeTo(dir, "0-schemas.sql", scripts.schemas)
@@ -87,7 +87,7 @@ object DdlGenerator {
   }
 }
 
-class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
+class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
   private val schemas = new collection.mutable.ListBuffer[String]
   private val tables = new collection.mutable.ListBuffer[String]
   private val sequences = new collection.mutable.ListBuffer[String]
@@ -110,7 +110,7 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
     scripts.sequences = sequences.sorted.toList
     scripts.constraints = constraints.sorted.toList
     val auxiliaries = Collections.newBuffer[String]
-    val dialectShortName = Strings.replace(dialect.getClass.getSimpleName, "Dialect", "").toLowerCase
+    val dialectShortName = engine.getClass.getSimpleName.toLowerCase
     ResourcePatternResolver.getResources(s"classpath*:META-INF/beangle/ddl/${dialectShortName}/*.sql") foreach { r =>
       auxiliaries += IOs.readString(r.openStream())
     }
@@ -121,23 +121,23 @@ class SchemaExporter(mappings: Mappings, dialect: Dialect) extends Logging {
   private def generateTableSql(table: Table): Unit = {
     if (processed.contains(table)) return
     processed.add(table)
-    comments ++= dialect.commentsOnTable(table)
-    tables += dialect.createTable(table)
+    comments ++= engine.commentsOnTable(table)
+    tables += engine.createTable(table)
 
     table.primaryKey foreach { pk =>
-      constraints += dialect.alterTableAddPrimaryKey(table, pk)
+      constraints += engine.alterTableAddPrimaryKey(table, pk)
     }
 
     table.foreignKeys foreach { fk =>
-      constraints += dialect.alterTableAddForeignKey(fk)
+      constraints += engine.alterTableAddForeignKey(fk)
     }
 
     table.uniqueKeys foreach { uk =>
-      constraints += dialect.alterTableAddUnique(uk)
+      constraints += engine.alterTableAddUnique(uk)
     }
 
     table.indexes foreach { idx =>
-      indexes += dialect.createIndex(idx)
+      indexes += engine.createIndex(idx)
     }
   }
 

@@ -20,7 +20,6 @@ package org.beangle.data.jdbc.meta
 
 import java.sql.Types
 
-import org.beangle.data.jdbc.dialect.PostgreSQLDialect
 import org.beangle.data.jdbc.engine.Engines
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
@@ -55,7 +54,7 @@ class TableTest extends AnyFlatSpec with Matchers {
     table.add(ageCol)
 
     table.attach(Engines.PostgreSQL)
-    assert("create table TEST.\"USER\" (\"NAME\" varchar(30) not null, \"ID\" bigint not null, \"ENABLED\" boolean not null, \"AGE\" integer not null)" == new PostgreSQLDialect().createTable(table))
+    assert("create table TEST.\"USER\" (\"NAME\" varchar(30) not null, \"ID\" bigint not null, \"ENABLED\" boolean not null, \"AGE\" integer not null)" == Engines.PostgreSQL.createTable(table))
   }
 
   "lowercase " should "corrent" in {

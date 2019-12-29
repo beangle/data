@@ -33,7 +33,8 @@ object Engines {
     }
   }
 
-  register(new PostgreSQL, new MySQL, new H2, new HSQL, new Oracle, new DB2, new SQLServer)
+  register(new PostgreSQL("[8.4)"), new MySQL("[5.0,)"), new H2("[1.3,)"), new HSQL("[2.0.0,)"),
+    new Oracle("[10.1)"), new DB2("[8.0]"), new SQLServer("[2005,2012)"), new Derby("10.5.3.0"))
 
   def forDataSource(ds: DataSource): Engine = {
     val connection = ds.getConnection
@@ -84,5 +85,9 @@ object Engines {
 
   def SQLServer: Engine = {
     forName("Microsoft SQL Server")
+  }
+
+  def Derby: Engine = {
+    forName("Derby")
   }
 }

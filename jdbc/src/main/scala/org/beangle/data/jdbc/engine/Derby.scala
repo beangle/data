@@ -16,29 +16,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.dialect
+package org.beangle.data.jdbc.engine
 
-import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.meta.Schema
-import org.junit.runner.RunWith
-import org.scalatest.Matchers
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatestplus.junit.JUnitRunner
+class Derby(v:String) extends DB2(v) {
+  options.comment.supportsCommentOn = false
 
-@RunWith(classOf[JUnitRunner])
-class DialectTestCase extends AnyFlatSpec with Matchers with Logging {
-  protected var dialect: Dialect = _
-  protected var schema: Schema = _
-
-  protected def listTableAndSequences = {
-    val tables = schema.tables
-    for (name <- tables.keySet) {
-      logger.info(s"table $name")
-    }
-
-    val seqs = schema.sequences
-    for (obj <- seqs) {
-      logger.info(s"sequence $obj")
-    }
+  override def name:String={
+    "Derby"
   }
 }

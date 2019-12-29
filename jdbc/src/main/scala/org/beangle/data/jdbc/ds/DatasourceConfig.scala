@@ -18,17 +18,14 @@
  */
 package org.beangle.data.jdbc.ds
 
-import org.beangle.commons.lang.Strings
-import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty, substringBetween}
-import org.beangle.commons.lang.reflect.Reflections
-import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.data.jdbc.engine.Engine
 import org.beangle.data.jdbc.meta.Identifier
-import org.beangle.data.jdbc.vendor.{DriverInfo, Vendors}
+import org.beangle.data.jdbc.vendor.Vendors
 
 /**
  * using serverName/database or url alternative
  */
-class DatasourceConfig(val driver: String, val dialect: Dialect) {
+class DatasourceConfig(val driver: String, val engine: Engine) {
   var name: String = _
 
   var user: String = _
@@ -39,7 +36,7 @@ class DatasourceConfig(val driver: String, val dialect: Dialect) {
   var catalog: Identifier = _
 
   def this(data: collection.Map[String, String]) {
-    this(data("driver"), Vendors.drivers(data("driver")).vendor.dialect)
+    this(data("driver"), Vendors.drivers(data("driver")).vendor.engine)
     data.foreach {
       case (k, v) =>
         k match {

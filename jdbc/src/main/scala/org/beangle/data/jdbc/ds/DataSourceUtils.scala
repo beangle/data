@@ -29,7 +29,7 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty, substringBetween}
 import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.dialect.Dialect
+import org.beangle.data.jdbc.engine.Engine
 import org.beangle.data.jdbc.vendor.{DriverInfo, Vendors}
 
 import scala.language.existentials
@@ -99,24 +99,24 @@ object DataSourceUtils extends Logging {
       case Some(d) => driver = d
       case None => throw new RuntimeException("Not Supported:[" + driverName + "] supports:" + Vendors.driverPrefixes)
     }
-    val dialect =
-      if ((xml \ "@dialect").isEmpty) driver.vendor.dialect
-      else Reflections.newInstance[Dialect]((xml \\ "dialect").text.trim)
+    val engine =
+      if ((xml \ "@engine").isEmpty) driver.vendor.engine
+      else Reflections.newInstance[Engine]((xml \\ "engine").text.trim)
 
-    val dbconf = new DatasourceConfig(driverName, dialect)
+    val dbconf = new DatasourceConfig(driverName, engine)
     if (isNotEmpty(url)) dbconf.props.put("url", url)
 
     if ((xml \ "@name").nonEmpty) dbconf.name = (xml \ "@name").text.trim
     dbconf.user = (xml \\ "user").text.trim
     dbconf.password = (xml \\ "password").text.trim
-    dbconf.catalog = dialect.engine.toIdentifier((xml \\ "catalog").text.trim)
+    dbconf.catalog = engine.toIdentifier((xml \\ "catalog").text.trim)
 
     var schemaName = (xml \\ "schema").text.trim
     if (isEmpty(schemaName)) {
-      schemaName = dialect.engine.defaultSchema
+      schemaName = engine.defaultSchema
       if (schemaName == "$user") schemaName = dbconf.user
     }
-    dbconf.schema = dialect.engine.toIdentifier(schemaName)
+    dbconf.schema = engine.toIdentifier(schemaName)
 
     (xml \\ "props" \\ "prop").foreach { ele =>
       dbconf.props.put((ele \ "@name").text, (ele \ "@value").text)

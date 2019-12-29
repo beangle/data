@@ -22,7 +22,7 @@ import java.sql.Types._
 
 import org.beangle.data.jdbc.meta.SqlType
 
-class PostgreSQL extends AbstractEngine("PostgreSQL", Version("[8.4)")) {
+class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "text",
     BOOLEAN -> "boolean", BIT -> "boolean",
@@ -35,6 +35,34 @@ class PostgreSQL extends AbstractEngine("PostgreSQL", Version("[8.4)")) {
 
   registerTypes2((NUMERIC, 1000, "numeric($p, $s)"),
     (NUMERIC, Int.MaxValue, "numeric(1000, $s)"))
+
+  options.sequence { s =>
+    s.nextValSql = "select nextval ('{name}')"
+    s.selectNextValSql = "nextval ('{name}')"
+  }
+
+  options.comment.supportsCommentOn = true
+  options.limit { l =>
+    l.pattern = "{} limit ?"
+    l.offsetPattern = "{} limit ? offset ?"
+    l.bindInReverseOrder = true
+  }
+
+  options.drop.table.sql = "drop table {name} cascade"
+
+  options.alter { a =>
+    a.table.changeType = "alter {column} type {type}"
+    a.table.setDefault = "alter {column} set default {value}"
+    a.table.dropDefault = "alter {column} drop default"
+    a.table.setNotNull = "alter {column} set not null"
+    a.table.dropNotNull = "alter {column} drop not null"
+    a.table.addColumn = "add {column} {type}"
+    a.table.dropColumn = "drop {column} cascade"
+
+    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.table.dropConstraint = "drop constraint {name} cascade"
+  }
+  options.validate()
 
   override def storeCase: StoreCase.Value = {
     StoreCase.Lower
@@ -51,6 +79,8 @@ class PostgreSQL extends AbstractEngine("PostgreSQL", Version("[8.4)")) {
   override def defaultSchema: String = {
     "public"
   }
+
+  override def name: String = "PostgreSQL"
 
   metadataLoadSql.sequenceSql = "select sequence_name,start_value,increment increment_by,cycle_option cycle_flag" +
     " from information_schema.sequences where sequence_schema=':schema'"

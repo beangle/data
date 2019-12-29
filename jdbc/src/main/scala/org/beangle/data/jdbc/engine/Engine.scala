@@ -22,9 +22,9 @@ import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.meta.{Identifier, MetadataLoadSql, SqlType}
 
 /** RDBMS engine interface
-  * It provides type mapping,default schema definition,key words,version etc.
-  */
-trait Engine {
+ * It provides type mapping,default schema definition,key words,version etc.
+ */
+trait Engine extends Dialect {
 
   def name: String
 

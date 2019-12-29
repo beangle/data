@@ -18,8 +18,7 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.dialect.OracleDialect
-import org.beangle.data.jdbc.engine.{Engines, Oracle}
+import org.beangle.data.jdbc.engine.Engines
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
 import org.scalatest.funspec.AnyFunSpec
@@ -30,7 +29,6 @@ class SchemaTest extends AnyFunSpec with Matchers {
 
   describe("Schema") {
     it("getTable") {
-      val dialect = new OracleDialect
       val database = new Database(Engines.Oracle)
       val db = database.getOrCreateSchema("TEST")
       val table = db.createTable("\"t 1\"")

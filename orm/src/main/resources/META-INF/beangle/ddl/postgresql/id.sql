@@ -45,13 +45,15 @@ CREATE OR REPLACE FUNCTION public.next_id(text)
 RETURNS bigint
     LANGUAGE 'plpgsql'
     COST 100
-    VOLATILE 
+    VOLATILE
 AS $BODY$
 
 declare nextid bigint;
 declare rec record;
 begin
-  select currval+1 into nextid from table_sequences a where  a.table_name=$1;
+
+  update table_sequences a set currval = currval+1 where a.table_name=$1 returning currval into nextid;
+
   if nextid is null then
     for rec in EXECUTE 'select max(id)+1 as maxid  from ' || $1 loop
       nextid = rec.maxid;
@@ -60,12 +62,10 @@ begin
       nextid=1;
     end if;
     insert into table_sequences(table_name,currval) values($1,nextid);
-  else
-    update table_sequences a set currval = currval+1 where a.table_name=$1;
   end if;
+
   return nextid;
 end;
 
 $BODY$;
-
 
