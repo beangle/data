@@ -20,7 +20,7 @@ package org.beangle.data.jdbc.engine
 
 import java.sql.Types._
 
-class Oracle extends AbstractEngine("Oracle",Version("[10.1)")) {
+class Oracle(v: String) extends AbstractEngine(Version(v)) {
   registerKeywords("resource", "level")
 
   registerTypes(
@@ -37,13 +37,30 @@ class Oracle extends AbstractEngine("Oracle",Version("[10.1)")) {
     (VARCHAR, 4000, "varchar2($l)"), (NUMERIC, 38, "number($p,$s)"),
     (NUMERIC, Int.MaxValue, "number(38,$s)"), (VARBINARY, 2000, "raw($l)"))
 
-  override def storeCase: StoreCase.Value = {
-    StoreCase.Upper
+
+  options.sequence { s =>
+    s.createSql = "create sequence {name} increment by {increment} start with {start} cache {cache} {cycle}"
+    s.nextValSql = "select {name}.nextval from dual"
+    s.selectNextValSql = "{name}.nextval"
   }
 
-  override def defaultSchema: String = {
-    "$user"
+  options.alter { a =>
+    a.table.addColumn = "add {column} {type}"
+    a.table.changeType = "modify {column} {type}"
+    a.table.setDefault = "modify {column} default {value}"
+    a.table.dropDefault = "modify {column} default null"
+    a.table.setNotNull = "modify {column} not null"
+    a.table.dropNotNull = "modify {column} null"
+    a.table.dropColumn = "drop column {column}"
+
+    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.table.dropConstraint = "drop constraint {name}"
   }
+
+  options.comment.supportsCommentOn = true
+
+  options.validate()
+
 
   metadataLoadSql.sequenceSql = "select sequence_name,last_number as next_value,increment_by,cache_size,cycle_flag " +
     "from all_sequences where sequence_owner=':schema'"
@@ -76,4 +93,39 @@ class Oracle extends AbstractEngine("Oracle",Version("[10.1)")) {
       " from user_indexes idx,user_ind_columns col where col.index_name=idx.index_name" +
       " and idx.table_owner=':schema'" +
       " order by idx.table_name,col.column_position"
+
+
+  /** limit offset
+   * FIXME distinguish sql with order by or not
+   * @see http://blog.csdn.net/czp11210/article/details/23958065
+   */
+  override def limit(querySql: String, offset: Int, limit: Int): (String, List[Int]) = {
+    var sql = querySql.trim()
+    var isForUpdate = false
+    if (sql.toLowerCase().endsWith(" for update")) {
+      sql = sql.substring(0, sql.length - 11)
+      isForUpdate = true
+    }
+    val pagingSelect = new StringBuilder(sql.length + 100)
+    val hasOffset = offset > 0
+    if (hasOffset) pagingSelect.append("select * from ( select row_.*, rownum _rownum_ from ( ")
+    else pagingSelect.append("select * from ( ")
+
+    pagingSelect.append(sql)
+    if (hasOffset) pagingSelect.append(" ) row_ where rownum <= ?) where _rownum_ > ?")
+    else pagingSelect.append(" ) where rownum <= ?")
+
+    if (isForUpdate) pagingSelect.append(" for update")
+    (pagingSelect.toString, if (hasOffset) List(limit + offset, offset) else List(limit))
+  }
+
+  override def storeCase: StoreCase.Value = {
+    StoreCase.Upper
+  }
+
+  override def defaultSchema: String = {
+    "$user"
+  }
+
+  override def name: String = "Oracle"
 }

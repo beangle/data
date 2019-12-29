@@ -18,7 +18,6 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.dialect.{OracleDialect, PostgreSQLDialect}
 import org.beangle.data.jdbc.engine.Engines
 import org.junit.runner.RunWith
 import org.scalatest.Matchers
@@ -31,13 +30,13 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
   "fk alter sql" should "corret" in {
     val tableA = buildTable()
     val fk = tableA.foreignKeys.head
-    new OracleDialect().alterTableAddForeignKey(fk)
+    Engines.Oracle.alterTableAddForeignKey(fk)
   }
 
   "drop table " should "corret" in {
     val tableA = buildTable()
-    val pgdialect = new PostgreSQLDialect()
-    tableA.attach(pgdialect.engine)
+    val pgdialect = Engines.PostgreSQL
+    tableA.attach(pgdialect)
     tableA.schema.name = Identifier("lowercase_a")
     println(pgdialect.dropTable(tableA.qualifiedName))
     val fk = tableA.foreignKeys.head
@@ -48,7 +47,7 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
     val database = new Database(Engines.PostgreSQL)
     val schema = database.getOrCreateSchema("public")
     val tableA = buildTable.clone(schema)
-    val pgdialect = new PostgreSQLDialect()
+    val pgdialect = Engines.PostgreSQL
     tableA.toCase(true)
     assert(tableA.foreignKeys.size == 1)
     val head = tableA.foreignKeys.head
@@ -60,7 +59,7 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
     assert(head.referencedTable.name.value == "sys_table")
 
     head.referencedTable.name = Identifier(head.referencedTable.name.value, true)
-    tableA.attach(pgdialect.engine)
+    tableA.attach(pgdialect)
 
     assert(head.name.value == "fkxyz")
     assert(head.columns.size == 1)
@@ -69,7 +68,6 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
   }
 
   def buildTable(): Table = {
-    val dialect = new OracleDialect()
     val database = new Database(Engines.Oracle)
     val schema = database.getOrCreateSchema("public")
     val table = new Table(schema, Identifier("SYS_TABLE"))

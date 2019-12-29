@@ -53,7 +53,12 @@ class ResultSetIterator(rs: ResultSet) extends Iterator[Array[Any]] with Closeab
 
   private def getTypes(rs: ResultSet): Array[Int] = {
     val meta = rs.getMetaData
-    val cols = meta.getColumnCount
+    val cols =
+      if (meta.getColumnName(meta.getColumnCount) == "_rownum_") {
+        meta.getColumnCount - 1
+      } else {
+        meta.getColumnCount
+      }
     val typ = Array.ofDim[Int](cols)
     (0 until cols) foreach { i =>
       typ(i) = meta.getColumnType(i + 1)

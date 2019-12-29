@@ -16,9 +16,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.dialect
+package org.beangle.data.jdbc.engine
 
-import org.beangle.data.jdbc.engine.Engine
 import org.beangle.data.jdbc.meta._
 
 
@@ -26,8 +25,6 @@ import org.beangle.data.jdbc.meta._
   * Focus on ddl and dml sql generation.
   */
 trait Dialect {
-
-  def engine: Engine
 
   def createTable(table: Table): String
 

@@ -1,40 +1,22 @@
-/*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-package org.beangle.data.jdbc.dialect
+package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.engine.Engine
 import org.beangle.data.jdbc.meta._
 
-class AbstractDialect(val engine: Engine) extends Dialect {
+trait AbstractDialect extends Dialect {
+  self: Engine =>
 
   protected var options = new Options
 
   /** Table creation sql
-    */
+   */
   def createTable(table: Table): String = {
     val buf = new StringBuilder("create table").append(' ').append(table.qualifiedName).append(" (")
     val iter: Iterator[Column] = table.columns.iterator
     while (iter.hasNext) {
       val col: Column = iter.next()
-      buf.append(col.name.toLiteral(engine)).append(' ')
+      buf.append(col.name.toLiteral(this)).append(' ')
       buf.append(col.sqlType.name)
 
       col.defaultValue foreach { dv =>
@@ -68,7 +50,7 @@ class AbstractDialect(val engine: Engine) extends Dialect {
   }
 
   /** Table removal sql
-    */
+   */
   override def dropTable(table: String): String = {
     Strings.replace(options.drop.table.sql, "{name}", table)
   }
@@ -109,7 +91,6 @@ class AbstractDialect(val engine: Engine) extends Dialect {
 
   override def alterTableAddColumn(table: Table, col: Column): List[String] = {
     val buf = Collections.newBuffer[String]
-    options.alter.table.addColumn
     var sql = s"alter table ${table.qualifiedName} add column ${col.name} ${col.sqlType.name}"
     col.defaultValue foreach { v =>
       if (col.sqlType.isStringType) {
@@ -297,4 +278,5 @@ class AbstractDialect(val engine: Engine) extends Dialect {
   private def nameList(seq: Iterable[Identifier], engine: Engine): String = {
     seq.map(_.toLiteral(engine)).mkString(",")
   }
+
 }

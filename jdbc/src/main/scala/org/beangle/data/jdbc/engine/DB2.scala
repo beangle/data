@@ -20,7 +20,7 @@ package org.beangle.data.jdbc.engine
 
 import java.sql.Types._
 
-class DB2 extends AbstractEngine("DB2", Version("[8.0]")) {
+class DB2(v: String) extends AbstractEngine(Version(v)) {
   metadataLoadSql.sequenceSql = "select name as sequence_name,start-1 as current_value,increment,cache from sysibm.syssequences where schema=':schema'"
 
   registerTypes(
@@ -35,5 +35,42 @@ class DB2 extends AbstractEngine("DB2", Version("[8.0]")) {
     LONGVARBINARY -> "long varchar for bit data",
     BLOB -> "blob($l)", CLOB -> "clob($l)")
 
+  options.sequence { s =>
+    s.nextValSql = "values nextval for {name}"
+    s.dropSql = "drop sequence {name} restrict"
+    s.selectNextValSql = "nextval for {name}"
+  }
+  options.comment.supportsCommentOn = true
+
+  // 和 postgresql 比较接近
+  options.alter { a =>
+    a.table.addColumn = "add {column} {type}"
+    a.table.changeType = "alter column {column} set data type {type}"
+    a.table.setDefault = "alter column {column} set default {value}"
+    a.table.dropDefault = "alter column {column} drop default"
+    a.table.setNotNull = "alter column {column} set not null"
+    a.table.dropNotNull = "alter column {column} drop not null"
+    a.table.dropColumn = "drop column {column}"
+
+    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.table.dropConstraint = "drop constraint {name}"
+  }
+  options.validate()
+
+  override def limit(sql: String, offset: Int, limit: Int): (String, List[Int]) = {
+    if (offset == 0) {
+      (sql + " fetch first " + limit + " rows only", List.empty)
+    } else {
+      //nest the main query in an outer select
+      ("select * from ( select inner2_.*, rownumber() over(order by order of inner2_) as _rownum_ from ( "
+        + sql + " fetch first " + limit + " rows only ) as inner2_ ) as inner1_ where _rownum_ > "
+        + offset + " order by _rownum_", List.empty)
+    }
+  }
+
   override def defaultSchema: String = null
+
+  override def name: String = {
+    "DB2"
+  }
 }

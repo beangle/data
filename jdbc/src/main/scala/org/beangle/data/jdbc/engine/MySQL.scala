@@ -20,7 +20,10 @@ package org.beangle.data.jdbc.engine
 
 import java.sql.Types._
 
-class MySQL extends AbstractEngine("MySQL",Version("[5.0,)")) {
+import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.meta.{PrimaryKey, Table}
+
+class MySQL(v: String) extends AbstractEngine(Version(v)) {
   override def quoteChars: (Char, Char) = {
     ('`', '`')
   }
@@ -46,8 +49,43 @@ class MySQL extends AbstractEngine("MySQL",Version("[5.0,)")) {
     (VARBINARY, 16777215, "mediumblob"),
     (LONGVARBINARY, 16777215, "mediumblob"))
 
+
+  options.sequence.supports = false
+  options.alter { a =>
+    a.table.addColumn = "add {column} {type}"
+    a.table.changeType = "modify column {column} {type}"
+    a.table.setDefault = "alter {column} set default {value}"
+    a.table.dropDefault = "alter {column} drop default"
+    a.table.setNotNull = "modify {column} {type} not null"
+    a.table.dropNotNull = "modify {column} {type}"
+    a.table.dropColumn = "drop column {column}"
+
+    a.table.addPrimaryKey = "add primary key ({column-list})"
+    a.table.dropConstraint = "drop constraint {name}"
+  }
+
+  options.limit.pattern = "{} limit ?"
+  options.limit.offsetPattern = "{} limit ? offset ?"
+  options.limit.bindInReverseOrder = true
+
+  options.comment.supportsCommentOn = false
+
+  override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
+                             referencedTable: String, primaryKey: Iterable[String]): String = {
+    val cols = Strings.join(foreignKey, ", ")
+    new StringBuffer(30).append(" add index ").append(constraintName).append(" (").append(cols)
+      .append("), add constraInt ").append(constraintName).append(" foreign key (").append(cols)
+      .append(") references ").append(referencedTable).append(" (")
+      .append(Strings.join(primaryKey, ", ")).append(')').toString
+  }
+
+  override def alterTableDropPrimaryKey(table: Table, pk: PrimaryKey): String = {
+    s"alter table ${table.qualifiedName}  drop primary key"
+  }
+
   override def defaultSchema: String = {
     "PUBLIC"
   }
 
+  override def name: String = "MySQL"
 }

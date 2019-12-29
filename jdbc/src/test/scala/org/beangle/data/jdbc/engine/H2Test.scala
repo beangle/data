@@ -16,19 +16,34 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.dialect
+package org.beangle.data.jdbc.engine
 
 import javax.sql.DataSource
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
+import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.ds.DataSourceUtils
-import org.beangle.data.jdbc.engine.Engines
-import org.beangle.data.jdbc.meta.{Database, Identifier, MetadataLoader}
+import org.beangle.data.jdbc.meta.{Database, Identifier, MetadataLoader, Schema}
 import org.junit.runner.RunWith
+import org.scalatest.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class H2DialectTest extends DialectTestCase {
+class H2Test extends AnyFlatSpec with Matchers with Logging {
+  protected var schema: Schema = _
+
+  protected def listTableAndSequences = {
+    val tables = schema.tables
+    for (name <- tables.keySet) {
+      logger.info(s"table $name")
+    }
+
+    val seqs = schema.sequences
+    for (obj <- seqs) {
+      logger.info(s"sequence $obj")
+    }
+  }
 
   val properties = ClassLoaders.getResource("db.properties") match {
     case Some(r) => IOs.readJavaProperties(r)

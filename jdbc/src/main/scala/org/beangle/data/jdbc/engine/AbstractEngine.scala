@@ -20,10 +20,10 @@ package org.beangle.data.jdbc.engine
 
 import org.beangle.data.jdbc.meta.{MetadataLoadSql, SqlType}
 
-abstract class AbstractEngine(val name: String,val version: Version) extends Engine {
+abstract class AbstractEngine(val version: Version) extends Engine with AbstractDialect {
   protected[engine] var typeNames: TypeNames = _
 
-  private var typeMappingBuilder = new TypeNames.Builder()
+  private val typeMappingBuilder = new TypeNames.Builder()
 
   var metadataLoadSql = new MetadataLoadSql
 
@@ -45,9 +45,8 @@ abstract class AbstractEngine(val name: String,val version: Version) extends Eng
   }
 
   /** 按照该类型的容量进行登记
-    *
-    * @param tuples 类型映射
-    */
+   * @param tuples 类型映射
+   */
   protected def registerTypes2(tuples: (Int, Int, String)*): Unit = {
     tuples foreach { tuple =>
       typeMappingBuilder.put(tuple._1, tuple._2, tuple._3)
