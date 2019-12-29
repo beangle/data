@@ -22,6 +22,7 @@ import scala.xml.Node
 
 object NodeOps {
 
+  import scala.language.implicitConversions
   @inline implicit def node2Ops(n: Node): NodeOps = {
     new NodeOps(n)
   }

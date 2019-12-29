@@ -31,13 +31,11 @@
       <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
       <version>${javassist.version}</version>
-      <optional>true</optional>
     </dependency>
    <dependency>
       <groupId>javax.persistence</groupId>
       <artifactId>javax.persistence-api</artifactId>
       <version>${jpa.version}</version>
-      <scope>test</scope>
    </dependency>
   </dependencies>
 </project>

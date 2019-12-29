@@ -25,6 +25,8 @@ import org.beangle.data.jdbc.engine.Engines
 import org.beangle.data.jdbc.internal.NodeOps._
 import org.beangle.data.jdbc.internal.XmlNode
 
+import scala.language.implicitConversions
+
 object Serializer {
 
   def fromXml(content: String): Database = {
@@ -44,7 +46,7 @@ object Serializer {
           colElem.get("comment").foreach(n => col.comment = Some(n))
         }
         (tableElem \ "primary-key") foreach { pkElem =>
-          table.createPrimaryKey(pkElem.name, split(pkElem.attr("columns")): _*)
+          table.createPrimaryKey(pkElem.name, split(pkElem.attr("columns")).toSeq: _*)
         }
         (tableElem \ "foreign-keys" \ "foreign-key") foreach { fkElem =>
           val name = fkElem.name
@@ -56,13 +58,13 @@ object Serializer {
           fkElem.get("cascadeDelete").foreach(n => fk.cascadeDelete = n.toBoolean)
         }
         (tableElem \ "unique-keys" \ "unique-key") foreach { ukElem =>
-          val uk = table.createUniqueKey( ukElem.name, split(ukElem.attr("columns")): _*)
+          val uk = table.createUniqueKey(ukElem.name, split(ukElem.attr("columns")).toSeq: _*)
           ukElem.get("enabled").foreach(n => uk.enabled = n.toBoolean)
         }
         (tableElem \ "indexes" \ "index") foreach { idxElem =>
           var unique = false
           idxElem.get("unique").foreach(n => unique = n.toBoolean)
-          table.createIndex(idxElem.name, unique, split(idxElem.attr("columns")): _*)
+          table.createIndex(idxElem.name, unique, split(idxElem.attr("columns")).toSeq: _*)
         }
       }
     }

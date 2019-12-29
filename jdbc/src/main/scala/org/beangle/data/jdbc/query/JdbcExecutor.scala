@@ -22,6 +22,7 @@ import java.sql.Types.{BLOB, CLOB, DATE, TIMESTAMP}
 import java.sql.{BatchUpdateException, Connection, PreparedStatement, ResultSet, SQLException}
 
 import javax.sql.DataSource
+import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.DefaultSqlTypeMapping
@@ -112,8 +113,26 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     if (showSql) println("JdbcExecutor:" + sql)
     val conn = openConnection()
     val stmt = conn.prepareStatement(sql)
-    stmt.setFetchSize(fetchSize)
     setter(stmt)
+    new ResultSetIterator(stmt.executeQuery()).listAll()
+  }
+
+  def fetch(sql: String, limit: PageLimit, params: Any*): collection.Seq[Array[Any]] = {
+    fetch(sql, limit, TypeParamSetter(sqlTypeMapping, params))
+  }
+
+  def fetch(sql: String, limit: PageLimit, setter: PreparedStatement => Unit): collection.Seq[Array[Any]] = {
+    val rs = engine.limit(sql, limit.pageSize * (limit.pageIndex - 1), limit.pageSize)
+    if (showSql) println("JdbcExecutor:" + rs._1)
+
+    val conn = openConnection()
+    val stmt = conn.prepareStatement(rs._1)
+    setter(stmt)
+    var start = stmt.getParameterMetaData.getParameterCount - rs._2.size
+    rs._2 foreach { i =>
+      stmt.setInt(start + 1, i)
+      start += 1
+    }
     new ResultSetIterator(stmt.executeQuery()).listAll()
   }
 
