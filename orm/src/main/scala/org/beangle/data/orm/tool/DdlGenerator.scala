@@ -23,10 +23,10 @@ import java.util.Locale
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.{IOs, ResourcePatternResolver}
-import org.beangle.commons.lang.{Locales, Strings, SystemInfo}
+import org.beangle.commons.lang.{Locales, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
-import org.beangle.data.jdbc.meta.{DBScripts, Database, Table}
+import org.beangle.data.jdbc.meta.{DBScripts, Database, Identifier, Table}
 import org.beangle.data.orm.Mappings
 
 /**
@@ -121,10 +121,12 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
   private def generateTableSql(table: Table): Unit = {
     if (processed.contains(table)) return
     processed.add(table)
+    checkNameLength(table.name)
     comments ++= engine.commentsOnTable(table)
     tables += engine.createTable(table)
 
     table.primaryKey foreach { pk =>
+      checkNameLength(pk.name)
       constraints += engine.alterTableAddPrimaryKey(table, pk)
     }
 
@@ -133,12 +135,19 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     }
 
     table.uniqueKeys foreach { uk =>
+      checkNameLength(uk.name)
       constraints += engine.alterTableAddUnique(uk)
     }
 
     table.indexes foreach { idx =>
+      checkNameLength(idx.name)
       indexes += engine.createIndex(idx)
     }
   }
 
+  def checkNameLength(i: Identifier): Unit = {
+    if (i.value.length > 30) {
+      println(s"WARNNING: ${i.value} 's length is ${i.value.length},longer than 30.")
+    }
+  }
 }
