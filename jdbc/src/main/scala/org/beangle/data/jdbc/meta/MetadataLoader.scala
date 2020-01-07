@@ -115,13 +115,14 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     else logger.info(s"Load $cols columns and evict empty ${origTabCount - tables.size} tables in $sw.")
 
     if (extras) {
-      if (engine.metadataLoadSql.supportsTableExtra)
+      if (engine.metadataLoadSql.supportsTableExtra) {
         batchLoadExtra(schema, engine.metadataLoadSql)
-    } else {
-      logger.info("Loading primary key,foreign key and index.")
-      val tableNames = new ConcurrentLinkedQueue[String]
-      tableNames.addAll(asJava(tables.keySet.toList.sortWith(_ < _)))
-      ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
+      } else {
+        logger.info("Loading primary key,foreign key and index.")
+        val tableNames = new ConcurrentLinkedQueue[String]
+        tableNames.addAll(asJava(tables.keySet.toList.sortWith(_ < _)))
+        ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
+      }
     }
   }
 

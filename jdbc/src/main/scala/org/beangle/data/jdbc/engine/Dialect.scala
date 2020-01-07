@@ -75,4 +75,6 @@ trait Dialect {
   def createIndex(i: Index): String
 
   def dropIndex(i: Index): String
+
+  def supportSequence:Boolean
 }

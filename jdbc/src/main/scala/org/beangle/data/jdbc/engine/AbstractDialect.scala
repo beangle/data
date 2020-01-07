@@ -297,4 +297,7 @@ trait AbstractDialect extends Dialect {
     seq.map(_.toLiteral(engine)).mkString(",")
   }
 
+  override def supportSequence: Boolean = {
+    null != options.sequence
+  }
 }
