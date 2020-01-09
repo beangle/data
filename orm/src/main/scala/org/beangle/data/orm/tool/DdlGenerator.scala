@@ -54,11 +54,12 @@ object DdlGenerator {
     //export to files
     writeTo(dir, "0-schemas.sql", scripts.schemas)
     writeTo(dir, "1-tables.sql", scripts.tables)
-    writeTo(dir, "2-constraints.sql", scripts.constraints)
+    writeTo(dir, "2-keys.sql", scripts.keys)
     writeTo(dir, "3-indices.sql", scripts.indices)
-    writeTo(dir, "4-sequences.sql", scripts.sequences)
-    writeTo(dir, "5-comments.sql", scripts.comments)
-    writeLinesTo(dir, "6-auxiliaries.sql", scripts.auxiliaries)
+    writeTo(dir, "4-constraints.sql", scripts.constraints)
+    writeTo(dir, "5-sequences.sql", scripts.sequences)
+    writeTo(dir, "6-comments.sql", scripts.comments)
+    writeLinesTo(dir, "7-auxiliaries.sql", scripts.auxiliaries)
   }
 
   private def writeLinesTo(dir: String, file: String, contents: List[String]): Unit = {
@@ -91,6 +92,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
   private val schemas = new collection.mutable.ListBuffer[String]
   private val tables = new collection.mutable.ListBuffer[String]
   private val sequences = new collection.mutable.ListBuffer[String]
+  private val keys = new collection.mutable.ListBuffer[String]
   private val comments = new collection.mutable.ListBuffer[String]
   private val constraints = new collection.mutable.ListBuffer[String]
   private val indexes = new collection.mutable.ListBuffer[String]
@@ -106,6 +108,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     scripts.schemas = schemas.sorted.toList
     scripts.comments = comments.toSet.toList.sorted
     scripts.tables = tables.sorted.toList
+    scripts.keys = keys.sorted.toList
     scripts.indices = indexes.sorted.toList
     scripts.sequences = sequences.sorted.toList
     scripts.constraints = constraints.sorted.toList
@@ -127,22 +130,23 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
 
     table.primaryKey foreach { pk =>
       checkNameLength(pk.name)
-      constraints += engine.alterTableAddPrimaryKey(table, pk)
-    }
-
-    table.foreignKeys foreach { fk =>
-      constraints += engine.alterTableAddForeignKey(fk)
+      keys += engine.alterTableAddPrimaryKey(table, pk)
     }
 
     table.uniqueKeys foreach { uk =>
       checkNameLength(uk.name)
-      constraints += engine.alterTableAddUnique(uk)
+      keys += engine.alterTableAddUnique(uk)
     }
 
     table.indexes foreach { idx =>
       checkNameLength(idx.name)
       indexes += engine.createIndex(idx)
     }
+
+    table.foreignKeys foreach { fk =>
+      constraints += engine.alterTableAddForeignKey(fk)
+    }
+
   }
 
   def checkNameLength(i: Identifier): Unit = {
