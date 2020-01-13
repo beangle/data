@@ -18,8 +18,12 @@
  */
 package org.beangle.data.orm.tool
 
+import java.io.File
+
+import org.beangle.commons.io.Files
+import org.beangle.commons.lang.SystemInfo
 import org.junit.runner.RunWith
-import org.scalatest. Matchers
+import org.scalatest.Matchers
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.junit.JUnitRunner
 
@@ -28,7 +32,10 @@ class DdlGeneratorTest extends AnyFunSpec with Matchers {
 
   describe("DdlGenerator") {
     it("generate") {
-      DdlGenerator.main(Array("postgresql","/tmp","zh_CN"))
+      val dir=SystemInfo.tmpDir + Files./ + "ddl"
+      new File(dir).mkdir()
+      DdlGenerator.main(Array("postgresql", SystemInfo.tmpDir + Files./ + "ddl", "zh_CN"))
+      println(dir)
     }
   }
 
