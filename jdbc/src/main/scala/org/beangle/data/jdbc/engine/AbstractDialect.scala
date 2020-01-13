@@ -29,7 +29,7 @@ trait AbstractDialect extends Dialect {
 
   /** Table creation sql
    */
-  def createTable(table: Table): String = {
+  override def createTable(table: Table): String = {
     val buf = new StringBuilder("create table").append(' ').append(table.qualifiedName).append(" (")
     val iter: Iterator[Column] = table.columns.iterator
     while (iter.hasNext) {
@@ -259,7 +259,7 @@ trait AbstractDialect extends Dialect {
   }
 
 
-  def insert(table: Table): String = {
+  override def insert(table: Table): String = {
     val sb = new StringBuilder("insert into ")
     sb ++= table.qualifiedName
     sb += '('
@@ -271,7 +271,7 @@ trait AbstractDialect extends Dialect {
   }
 
 
-  def query(table: Table): String = {
+  override def query(table: Table): String = {
     val sb: StringBuilder = new StringBuilder()
     sb.append("select ")
     for (columnName <- table.quotedColumnNames) {
@@ -297,4 +297,7 @@ trait AbstractDialect extends Dialect {
     seq.map(_.toLiteral(engine)).mkString(",")
   }
 
+  override def supportSequence: Boolean = {
+    null != options.sequence
+  }
 }

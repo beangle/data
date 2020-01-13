@@ -22,6 +22,7 @@ class DBScripts {
   var schemas: List[String] = _
   var tables: List[String] = _
   var sequences: List[String] = _
+  var keys:List[String]=_
   var constraints: List[String] = _
   var indices: List[String] = _
   var comments: List[String] = _

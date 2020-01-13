@@ -90,7 +90,7 @@ object Constraint {
 
   def autoname(uk: Constraint): String = {
     uk match {
-      case _: PrimaryKey => uk.table.name + "_pkey"
+      case _: PrimaryKey =>  s"${uk.table.name}_pkey"
       case uk: UniqueKey =>
         val sb = new StringBuilder()
           .append("table`").append(uk.table.name).append("`")

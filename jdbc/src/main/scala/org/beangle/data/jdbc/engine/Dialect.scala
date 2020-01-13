@@ -30,6 +30,10 @@ trait Dialect {
 
   def dropTable(table: String): String
 
+  def query(table: Table): String
+
+  def insert(table: Table): String
+
   def alterTableAddColumn(table: Table, col: Column): List[String]
 
   def alterTableDropColumn(table: Table, col: Column): String
@@ -71,4 +75,6 @@ trait Dialect {
   def createIndex(i: Index): String
 
   def dropIndex(i: Index): String
+
+  def supportSequence:Boolean
 }
