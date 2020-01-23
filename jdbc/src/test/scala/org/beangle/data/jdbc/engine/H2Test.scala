@@ -25,7 +25,7 @@ import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.ds.DataSourceUtils
 import org.beangle.data.jdbc.meta.{Database, Identifier, MetadataLoader, Schema}
 import org.junit.runner.RunWith
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatestplus.junit.JUnitRunner
 

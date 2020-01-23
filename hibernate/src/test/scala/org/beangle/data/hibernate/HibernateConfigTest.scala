@@ -24,7 +24,7 @@ import org.beangle.data.hibernate.spring.{LocalSessionFactoryBean, SessionUtils}
 import org.beangle.data.model.meta.SingularProperty
 import org.beangle.data.model.util.ConvertPopulator
 import org.junit.runner.RunWith
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.junit.JUnitRunner
 import org.springframework.core.io.UrlResource

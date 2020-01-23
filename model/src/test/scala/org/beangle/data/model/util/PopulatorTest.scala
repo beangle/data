@@ -21,7 +21,7 @@ package org.beangle.data.model.util
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
 import org.beangle.data.model.meta.{BasicType, Domain}
 import org.junit.runner.RunWith
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.junit.JUnitRunner
 

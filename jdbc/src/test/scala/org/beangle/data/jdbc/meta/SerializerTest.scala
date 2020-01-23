@@ -23,7 +23,7 @@ import java.io.File
 import org.beangle.commons.io.Files
 import org.beangle.data.jdbc.engine.{Engines, PostgreSQL}
 import org.junit.runner.RunWith
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.junit.JUnitRunner
 
