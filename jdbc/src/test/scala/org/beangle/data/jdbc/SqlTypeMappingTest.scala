@@ -23,7 +23,7 @@ import java.sql.Types
 import org.beangle.commons.lang.annotation.value
 import org.beangle.data.jdbc.engine.Engines
 import org.junit.runner.RunWith
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.junit.JUnitRunner
 

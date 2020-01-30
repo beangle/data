@@ -18,7 +18,7 @@
  */
 package org.beangle.data.jdbc.engine
 
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SQLServerTest extends AnyFlatSpec with Matchers {

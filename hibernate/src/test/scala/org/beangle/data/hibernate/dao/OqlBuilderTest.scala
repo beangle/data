@@ -20,7 +20,7 @@ package org.beangle.data.hibernate.dao
 
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 import org.beangle.data.hibernate.naming.NationBean
 import org.beangle.data.dao.OqlBuilder
