@@ -87,8 +87,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     classMappings.put(cls, mapping)
     if (!cls.isInterface && !Modifier.isAbstract(cls.getModifiers)) {
       //replace super entity with same entityName
-      //It's very strange,hibnerate ClassMetadata with has same entityName and mappedClass in type overriding,
-      //So, we leave  hibernate a  clean world.
+      //It's very strange,hibnerate ClassMetadata has same entityName and mappedClass in type overriding,
+      //So, we leave hibernate a clean world.
       entityMappings.get(mapping.entityName) match {
         case Some(o) => if (o.clazz.isAssignableFrom(mapping.clazz)) entityMappings.put(mapping.entityName, mapping)
         case None => entityMappings.put(mapping.entityName, mapping)
@@ -225,8 +225,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /**
-    * @param key 表示是否是一个外键
-    */
+   * @param key 表示是否是一个外键
+   */
   def columnName(clazz: Class[_], propertyName: String, key: Boolean = false): String = {
     val lastDot = propertyName.lastIndexOf(".")
     var colName = if (lastDot == -1) propertyName else propertyName.substring(lastDot + 1)
@@ -236,7 +236,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 查找实体主键
-    * */
+   * */
   private def firstPass(etm: EntityTypeMapping): Unit = {
     val clazz = etm.typ.clazz
     if (null == etm.idGenerator) {
@@ -254,8 +254,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 处理外键及其关联表格,以及集合的缓存设置
-    * 这些需要被引用方(各个表的主键)生成之后才能进行
-    */
+   * 这些需要被引用方(各个表的主键)生成之后才能进行
+   */
   private def secondPass(etm: EntityTypeMapping): Unit = {
     processPropertyMappings(etm.typ.clazz, etm.table, etm)
     processCache(etm, etm)
@@ -312,14 +312,37 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                 processPropertyMappings(property.clazz, table, etm)
             }
           case ppm: PluralPropertyMapping[_] =>
-            if (ppm.many2many) {
+            if (ppm.one2many) {
+              ppm.property match {
+                case pp: PluralProperty =>
+                  pp.element match {
+                    case et: EntityType =>
+                      val etm = refMapping(et.clazz, et.entityName)
+                      //check mapped by
+                      ppm.mappedBy foreach { mappedBy =>
+                        if (!etm.properties.contains(mappedBy)) {
+                          throw new RuntimeException(s"Cannot find mappedBy property $mappedBy in ${etm.entityName}")
+                        }
+                      }
+                      //generate implicit index
+                      val defined = etm.table.indexes exists (_.columns.head == ppm.ownerColumn.name)
+                      if (!defined) {
+                        etm.table.createIndex("", false, ppm.ownerColumn.name.value)
+                      }
+                    case _ =>
+                  }
+                case _ =>
+              }
+            } else if (ppm.many2many) {
               if (ppm.table.isEmpty) ppm.table = Some(table.name.toString + "_" + Strings.unCamel(p, '_'))
               val collectTable = table.schema.createTable(ppm.table.get)
               collectTable.comment = Some(getComment(clazz, property.name))
               ppm.ownerColumn.comment = Some(getComment(clazz, clazz.getSimpleName) + "ID")
               collectTable.add(ppm.ownerColumn)
-              val indexName = "i_" + collectTable.name.value
-              collectTable.createIndex(indexName, false, ppm.ownerColumn.name.value)
+              ppm.index foreach { idxColumn =>
+                collectTable.add(idxColumn)
+              }
+              collectTable.createIndex(null, false, ppm.ownerColumn.name.value)
               createForeignKey(collectTable, List(ppm.ownerColumn), table)
               ppm.element match {
                 case btm: BasicTypeMapping =>
@@ -365,8 +388,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** Support features inheritence
-    * <li> buildin primary type will be not null
-    */
+   * <li> buildin primary type will be not null
+   */
   private def merge(entity: EntityTypeMapping): Unit = {
     val cls = entity.clazz
     // search parent and interfaces
@@ -470,8 +493,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val typeSignature = typeNameOf(tye, name)
     val kvtype = Strings.substringBetween(typeSignature, "[", "]")
 
-    var mapKeyType = Strings.substringBefore(kvtype, ",").trim
-    var mapEleType = Strings.substringAfter(kvtype, ",").trim
+    val mapKeyType = Strings.substringBefore(kvtype, ",").trim
+    val mapEleType = Strings.substringAfter(kvtype, ",").trim
 
     var keyMeta: Type = null
     var keyMapping: TypeMapping = null
