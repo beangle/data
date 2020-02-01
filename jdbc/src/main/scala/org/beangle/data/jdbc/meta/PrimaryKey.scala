@@ -18,7 +18,7 @@
  */
 package org.beangle.data.jdbc.meta
 
-class PrimaryKey(table: Table, name: Identifier, column: Identifier) extends Constraint(table, name) {
+class PrimaryKey(table: Table, n: Identifier, column: Identifier) extends Constraint(table, n) {
 
   def this(table: Table, name: String, column: String) {
     this(table, Identifier(name), Identifier(column))

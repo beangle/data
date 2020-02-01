@@ -23,10 +23,9 @@ import org.beangle.data.jdbc.engine.Engine
 import scala.collection.mutable.ListBuffer
 
 /**
-  * Table Constraint Metadata
-  *
-  * @author chaostone
-  */
+ * Table Constraint Metadata
+ * @author chaostone
+ */
 class Constraint(var table: Table, var name: Identifier) extends Ordered[Constraint] with Cloneable {
 
   var columns = new ListBuffer[Identifier]
@@ -90,7 +89,7 @@ object Constraint {
 
   def autoname(uk: Constraint): String = {
     uk match {
-      case _: PrimaryKey =>  s"${uk.table.name}_pkey"
+      case _: PrimaryKey => "pk_" + hashedName(uk.table.name.value)
       case uk: UniqueKey =>
         val sb = new StringBuilder()
           .append("table`").append(uk.table.name).append("`")
@@ -111,13 +110,16 @@ object Constraint {
     "idx_" + hashedName(sb.toString)
   }
 
+  /** hash string to full alphanumeric,length less than 30
+   * @param s
+   * @return
+   */
   def hashedName(s: String): String = {
     val md = MessageDigest.getInstance("MD5")
     md.reset()
     md.update(s.getBytes)
-    val digest = md.digest()
-    // By converting to base 35 (full alphanumeric), It will always be smaller than the 30
-    // Required by oracles.
-    new BigInteger(1, digest).toString(35)
+    val digest = md.digest() // 16bytes,128bits
+    val radix=35 // 0~9 a~y 6bits,128/5=25,result length isn't greate than 25
+    new BigInteger(1, digest).toString(radix)
   }
 }

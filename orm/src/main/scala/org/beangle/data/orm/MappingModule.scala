@@ -21,10 +21,11 @@ package org.beangle.data.orm
 import java.sql.{Blob, Clob, Types}
 
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.meta.{Column, Identifier, Index, UniqueKey}
+import org.beangle.data.jdbc.meta.{Column, Constraint, Identifier, Index, UniqueKey}
 import org.beangle.data.model.meta.Domain.{CollectionPropertyImpl, MapPropertyImpl, SingularPropertyImpl}
 import org.beangle.data.model.meta.Property
 
@@ -60,6 +61,9 @@ object MappingModule {
           }
           ch.columns.foreach(e => uk.addColumn(e.name))
         }
+        if(Strings.isBlank(name)){
+          uk.name=Identifier(Constraint.autoname(uk))
+        }
         holder.mapping.table.uniqueKeys += uk
       } else {
         val idx = new Index(holder.mapping.table, Identifier(name))
@@ -67,6 +71,9 @@ object MappingModule {
         pms.foreach { pm =>
           val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
           ch.columns.foreach(e => idx.addColumn(e.name))
+        }
+        if(Strings.isBlank(name)){
+          idx.name=Identifier(Constraint.autoname(idx))
         }
         holder.mapping.table.indexes += idx
       }
@@ -185,10 +192,10 @@ object MappingModule {
     }
   }
 
-  private def refColumn(holder: EntityHolder[_], property: Option[String]): Column = {
+  private def genOwnerColumn(holder: EntityHolder[_], mappedBy: Option[String]): Column = {
     val mappings = holder.mappings
     val idType = BeanInfos.get(holder.mapping.clazz).getPropertyType("id").get
-    val colName = property match {
+    val colName = mappedBy match {
       case Some(p) => holder.mappings.columnName(holder.mapping.clazz, p, key = true)
       case None => holder.mappings.columnName(holder.mapping.clazz, holder.mapping.entityName, key = true)
     }
@@ -198,8 +205,10 @@ object MappingModule {
   class One2Many(targetEntity: Option[Class[_]], mappedBy: String, private var cascade: Option[String] = None) extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val colpm = cast[PluralPropertyMapping[_]](pm, holder, "one2many should used on seq")
-      colpm.ownerColumn = refColumn(holder, Some(mappedBy))
+      colpm.ownerColumn = genOwnerColumn(holder, Some(mappedBy))
+      colpm.mappedBy=Some(mappedBy)
       targetEntity foreach { clazz =>
+        //重新指定集合中的元素属性
         colpm.property match {
           case cp: CollectionPropertyImpl => cp.element = holder.mappings.refEntity(clazz, clazz.getName)
           case mp: MapPropertyImpl => mp.element = holder.mappings.refEntity(clazz, clazz.getName)

@@ -18,11 +18,8 @@
  */
 package org.beangle.data.orm
 
-import scala.collection.mutable.Buffer
-
-import org.beangle.commons.collection.Collections
 import org.beangle.data.jdbc.meta.Column
-import org.beangle.data.model.meta.{ CollectionProperty, MapProperty, PluralProperty, Property, SingularProperty }
+import org.beangle.data.model.meta._
 
 trait Fetchable {
   var fetch: Option[String] = None
@@ -43,7 +40,7 @@ abstract class PropertyMapping[T <: Property](val property: T) {
 }
 
 final class SingularPropertyMapping(property: SingularProperty, var mapping: TypeMapping)
-    extends PropertyMapping(property) with Fetchable with ColumnHolder with Cloneable {
+  extends PropertyMapping(property) with Fetchable with ColumnHolder with Cloneable {
   def copy: this.type = {
     val cloned = super.clone().asInstanceOf[this.type]
     cloned.mapping = this.mapping.copy()
@@ -53,14 +50,15 @@ final class SingularPropertyMapping(property: SingularProperty, var mapping: Typ
   def columns: Iterable[Column] = {
     mapping match {
       case s: BasicTypeMapping => s.columns
-      case _                   => throw new RuntimeException("Columns on apply on BasicTypeMapping")
+      case _ => throw new RuntimeException("Columns on apply on BasicTypeMapping")
     }
   }
 }
 
 abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var element: TypeMapping)
-    extends PropertyMapping(property) with Fetchable with Cloneable {
+  extends PropertyMapping(property) with Fetchable with Cloneable {
   var ownerColumn: Column = _
+  var mappedBy: Option[String] = None
   var inverse: Boolean = false
   var where: Option[String] = None
   var batchSize: Option[Int] = None
@@ -70,6 +68,7 @@ abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var eleme
   var sort: Option[String] = None
 
   var one2many = false
+
   def many2many: Boolean = !one2many
 
   def copy: this.type = {
@@ -82,7 +81,7 @@ abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var eleme
 class CollectionPropertyMapping(property: CollectionProperty, element: TypeMapping) extends PluralPropertyMapping(property, element)
 
 final class MapPropertyMapping(property: MapProperty, var key: TypeMapping, element: TypeMapping)
-    extends PluralPropertyMapping(property, element) {
+  extends PluralPropertyMapping(property, element) {
 
   override def copy(): this.type = {
     val cloned = super.clone().asInstanceOf[this.type]

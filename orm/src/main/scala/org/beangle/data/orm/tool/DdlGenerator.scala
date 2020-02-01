@@ -151,7 +151,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
 
   def checkNameLength(i: Identifier): Unit = {
     if (i.value.length > 30) {
-      println(s"WARNNING: ${i.value} 's length is ${i.value.length},longer than 30.")
+      println(s"WARNNING: ${i.value}'s length is ${i.value.length},greate than 30.")
     }
   }
 }

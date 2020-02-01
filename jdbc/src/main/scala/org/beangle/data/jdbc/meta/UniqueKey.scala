@@ -23,7 +23,7 @@ package org.beangle.data.jdbc.meta
   *
   * @author chaostone
   */
-class UniqueKey(table: Table, name: Identifier) extends Constraint(table, name) {
+class UniqueKey(table: Table, n: Identifier) extends Constraint(table, n) {
 
   override def clone(): this.type = {
     super.clone()
