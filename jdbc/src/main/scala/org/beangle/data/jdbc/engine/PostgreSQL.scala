@@ -33,7 +33,10 @@ class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
     BINARY -> "bytea", VARBINARY -> "bytea", LONGVARBINARY -> "bytea",
     CLOB -> "text", BLOB -> "bytea")
 
-  registerTypes2((NUMERIC, 1000, "numeric($p, $s)"),
+  registerTypes2(
+    (VARCHAR, 50000, "varchar($l)"),
+    (VARCHAR, Int.MaxValue, "text"),
+    (NUMERIC, 1000, "numeric($p, $s)"),
     (NUMERIC, Int.MaxValue, "numeric(1000, $s)"))
 
   options.sequence { s =>
