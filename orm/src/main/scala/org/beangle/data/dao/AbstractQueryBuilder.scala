@@ -28,11 +28,12 @@ object AbstractQueryBuilder {
   val OuterJoin = " outer join "
   val RightOuterJoin = " right outer join "
 }
+
 /**
- * Abstract AbstractQueryBuilder class.
- *
- * @author chaostone
- */
+  * Abstract AbstractQueryBuilder class.
+  *
+  * @author chaostone
+  */
 abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
 
   protected var statement: String = _
@@ -54,6 +55,8 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
   protected var groups: List[String] = Nil
 
   protected var having: String = _
+
+  protected var tailOrder: Option[Order] = None
 
   protected var cacheable = false
 
@@ -142,6 +145,11 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
 
   def where(content: String, params: Any*): this.type = where(new Condition(content, params: _*))
 
+  def tailOrder(order: String): this.type = {
+    this.tailOrder = Order.parse(order).headOption
+    this
+  }
+
   def orderBy(order: String): this.type = {
     orderBy(Order.parse(order))
     this
@@ -206,8 +214,37 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
       buf.deleteCharAt(buf.length() - 1)
     }
     if (null != having) buf.append(" having ").append(having)
-    if (hasOrder && orders.nonEmpty) buf.append(' ').append(Order.toSortString(orders))
+    // distingrish order padding in group by.
+    if (hasOrder && (orders.nonEmpty || tailOrder.nonEmpty)) {
+      if (hasGroupBy) {
+        if (orders.nonEmpty) {
+          buf.append(' ').append(Order.toSortString(orders))
+        }
+      } else {
+        tailOrder match {
+          case None =>
+            buf.append(' ').append(Order.toSortString(orders))
+          case Some(o) =>
+            if (orders.isEmpty) {
+              buf.append(' ').append(Order.toSortString(tailOrder.toList))
+            } else {
+              val originOrderBy = Order.toSortString(orders)
+              buf.append(' ').append(originOrderBy)
+              if (!originOrderBy.contains(o.property)) {
+                buf.append(',').append(o.toString())
+              }
+            }
+        }
+      }
+    }
     buf.mkString
   }
 
+  def hasGroupBy: Boolean = {
+    groups.nonEmpty
+  }
+
+  def hasOrderBy: Boolean = {
+    orders.nonEmpty
+  }
 }
