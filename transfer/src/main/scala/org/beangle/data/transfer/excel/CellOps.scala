@@ -36,8 +36,8 @@ final class CellOps(private val cell: Cell) extends AnyVal {
 
   /** 将值填入单元格中
     *
-    * @param value
-    * @param registry
+    * @param value 值
+    * @param registry 样式注册表
     */
   def fillin(value: Any)(implicit registry: ExcelStyleRegistry): Unit = {
     val v =
@@ -82,10 +82,9 @@ final class CellOps(private val cell: Cell) extends AnyVal {
 
   /** 取cell单元格中的数据
     *
-    * @param dataType 期望的数据类型
     * @return
     */
-  def getValue(): Any = {
+  def getValue: Any = {
     cell.getCellType match {
       case CellType.BLANK => null
       case CellType.STRING => Strings.trim(cell.getRichStringCellValue.getString)
@@ -112,7 +111,7 @@ final class CellOps(private val cell: Cell) extends AnyVal {
     * @return
     */
   def getValue(dataType: DataType.Value): Any = {
-    getValue() match {
+    getValue match {
       case null => null
       case s: String => convert(s, dataType)
       case d: java.lang.Double => convert(d, dataType)
@@ -169,70 +168,59 @@ final class CellOps(private val cell: Cell) extends AnyVal {
   private def fill(d: java.sql.Date, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(d)
     cell.setCellStyle(registry.get(DataType.Date))
-    cell.setCellType(CellType.NUMERIC)
   }
 
   private def fill(d: java.util.Date, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(d)
     cell.setCellStyle(registry.get(DataType.DateTime))
-    cell.setCellType(CellType.NUMERIC)
   }
 
   private def fill(d: YearMonth, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(java.sql.Date.valueOf(d.atDay(1)))
     cell.setCellStyle(registry.get(DataType.YearMonth))
-    cell.setCellType(CellType.NUMERIC)
   }
 
 
   private def fill(d: Year, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(d.getValue)
     cell.setCellStyle(registry.get(DataType.YearMonth))
-    cell.setCellType(CellType.NUMERIC)
   }
 
 
   private def fill(d: MonthDay, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(java.sql.Date.valueOf(d.atYear(2000)))
     cell.setCellStyle(registry.get(DataType.MonthDay))
-    cell.setCellType(CellType.NUMERIC)
   }
 
   private def fill(d: java.sql.Time, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(d)
-    cell.setCellType(CellType.NUMERIC)
     cell.setCellStyle(registry.get(DataType.Time))
   }
 
   private def fill(d: Float, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(d)
-    cell.setCellType(CellType.NUMERIC)
     cell.setCellStyle(registry.get(DataType.Float))
   }
 
   private def fill(d: Double, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(d)
-    cell.setCellType(CellType.NUMERIC)
     cell.setCellStyle(registry.get(DataType.Double))
   }
 
   private def fill(d: Int, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(d)
-    cell.setCellType(CellType.NUMERIC)
     cell.setCellStyle(registry.get(DataType.Integer))
   }
 
   private def fill(s: String, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(new XSSFRichTextString(s))
-    cell.setCellType(CellType.STRING)
   }
 
   private def fill(b: Boolean, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(if (b) "Y" else "N")
-    cell.setCellType(CellType.BOOLEAN)
   }
 
   private def fillBlank(): Unit = {
-    cell.setCellType(CellType.BLANK)
+    cell.setBlank()
   }
 }

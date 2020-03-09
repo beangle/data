@@ -23,6 +23,7 @@ import org.beangle.commons.collection.page._
 /** 基于查询的分页
   * 当使用或导出大批量数据时，使用者仍以List的方式进行迭代。<br>
   * 该实现则是内部采用分页方式。
+  *
   * @author chaostone
   */
 abstract class AbstractQueryPage[T](val query: LimitQuery[T]) extends Page[T] {
@@ -36,6 +37,7 @@ abstract class AbstractQueryPage[T](val query: LimitQuery[T]) extends Page[T] {
   if (null == query.limit) query.limit(PageLimit(Page.DefaultPageNo, Page.DefaultPageSize))
 
   /** 按照单个分页数据设置.
+    *
     * @param page a { @link org.beangle.commons.collection.page.SinglePage} object.
     */
   protected def updatePage(page: SinglePage[T]): Unit = {
@@ -70,7 +72,7 @@ class PageIterator[T](val queryPage: AbstractQueryPage[T]) extends Iterator[T] {
 
   private var dataIndex: Int = 0
 
-  private var innerIter: Iterator[T] = _
+  private var innerIter = queryPage.page.iterator
 
   override def hasNext: Boolean = (dataIndex < queryPage.page.items.size) || queryPage.hasNext
 
