@@ -18,19 +18,21 @@
  */
 package org.beangle.data.dao
 
-import scala.collection.immutable.Seq
-
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.Domain
 
+import scala.collection.immutable.Seq
+
 /**
   * dao 查询辅助类
+  *
   * @author chaostone
   */
 trait EntityDao {
   /**
     * 查询指定id的对象
+    *
     * @param clazz 类型
     * @param id    唯一标识
     */
@@ -100,6 +102,7 @@ trait EntityDao {
   def execute(opts: Operation*): Unit
 
   /** 执行一个操作构建者提供的一系列操作
+    *
     * @param builder 操作构建者
     */
   def execute(builder: Operation.Builder): Unit
@@ -111,7 +114,9 @@ trait EntityDao {
   def executeUpdateRepeatly(queryString: String, arguments: Iterable[Iterable[_]]): List[Int]
 
   // 容器相关
-  def evict(entity: AnyRef): Unit
+  def evict(entity: Entity[_]): Unit
+
+  def evict[A <: Entity[_]](clazz: Class[A]): Unit
 
   /**
     * Initialize entity whenever session close or open
