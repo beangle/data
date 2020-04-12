@@ -412,8 +412,12 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     new SinglePage[T](limit.pageIndex, limit.pageSize, countQuery.uniqueResult().asInstanceOf[Number].intValue, asScala(targetList))
   }
 
-  override def evict(entity: AnyRef): Unit = {
-    currentSession.evict(entity)
+  override def evict(entity: Entity[_]): Unit = {
+    sessionFactory.getCache.evict(entity.getClass, entity.id)
+  }
+
+  override def evict[A <: Entity[_]](clazz: Class[A]): Unit = {
+    sessionFactory.getCache.evict(clazz)
   }
 
   override def refresh[T](entity: T): T = {
