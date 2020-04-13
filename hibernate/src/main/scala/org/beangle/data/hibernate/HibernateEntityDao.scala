@@ -413,7 +413,11 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   override def evict(entity: Entity[_]): Unit = {
-    sessionFactory.getCache.evict(entity.getClass, entity.id)
+    val clazz = entity match {
+      case hp: HibernateProxy => hp.getHibernateLazyInitializer.getPersistentClass
+      case _ => entity.getClass
+    }
+    sessionFactory.getCache.evict(clazz, entity.id)
   }
 
   override def evict[A <: Entity[_]](clazz: Class[A]): Unit = {
