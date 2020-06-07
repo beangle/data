@@ -69,8 +69,6 @@ abstract class AbstractImporter extends Importer with Logging {
           // 如果导入过程中没有错误，将成功记录数增一
           if (tr.errors == errors) this.success += 1
           else this.fail += 1
-
-          logger.debug(s"importer item:$tranferIndex take time: " + (System.currentTimeMillis() - transferItemStart))
         }
       }
     }

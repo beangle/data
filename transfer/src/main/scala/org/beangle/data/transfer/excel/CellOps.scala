@@ -18,6 +18,7 @@
  */
 package org.beangle.data.transfer.excel
 
+import java.text.NumberFormat
 import java.time._
 import java.time.temporal.Temporal
 
@@ -27,9 +28,13 @@ import org.beangle.commons.conversion.converter.String2BooleanConverter
 import org.beangle.commons.lang.{Dates, Numbers, Strings}
 import org.beangle.data.transfer.io.DataType
 
-
 object CellOps {
+  import  scala.language.implicitConversions
   @inline implicit def toCell(x: Cell): CellOps = new CellOps(x)
+
+  private val NumFormat = NumberFormat.getNumberInstance
+  NumFormat.setMinimumFractionDigits(0)
+  NumFormat.setGroupingUsed(false)
 }
 
 final class CellOps(private val cell: Cell) extends AnyVal {
@@ -139,10 +144,9 @@ final class CellOps(private val cell: Cell) extends AnyVal {
     }
   }
 
-
   private def convert(d: Double, dataType: DataType.Value): Any = {
     dataType match {
-      case DataType.String => d.toString
+      case DataType.String => CellOps.NumFormat.format(d)
       case DataType.Short => d.shortValue
       case DataType.Integer => d.intValue
       case DataType.Long => d.longValue
