@@ -25,7 +25,7 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.meta.{Column, Constraint, Identifier, Index, UniqueKey}
+import org.beangle.data.jdbc.meta._
 import org.beangle.data.model.meta.Domain.{CollectionPropertyImpl, MapPropertyImpl, SingularPropertyImpl}
 import org.beangle.data.model.meta.Property
 
@@ -43,11 +43,12 @@ object MappingModule {
   }
 
   /** 创建索引
-   *
-   * 针对唯一索引，目前不支持空列
-   * @param name
-   * @param unique
-   */
+    *
+    * 针对唯一索引，目前不支持空列
+    *
+    * @param name
+    * @param unique
+    */
   class IndexDeclaration(name: String, unique: Boolean) {
     def apply(holder: EntityHolder[_], pms: Iterable[PropertyMapping[_]]): Unit = {
       // hibernate的index注解里没有支持unique，而是通过unique key支持的，为了保持一直，这里也类似处理
@@ -61,8 +62,8 @@ object MappingModule {
           }
           ch.columns.foreach(e => uk.addColumn(e.name))
         }
-        if(Strings.isBlank(name)){
-          uk.name=Identifier(Constraint.autoname(uk))
+        if (Strings.isBlank(name)) {
+          uk.name = Identifier(Constraint.autoname(uk))
         }
         holder.mapping.table.uniqueKeys += uk
       } else {
@@ -72,8 +73,8 @@ object MappingModule {
           val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
           ch.columns.foreach(e => idx.addColumn(e.name))
         }
-        if(Strings.isBlank(name)){
-          idx.name=Identifier(Constraint.autoname(idx))
+        if (Strings.isBlank(name)) {
+          idx.name = Identifier(Constraint.autoname(idx))
         }
         holder.mapping.table.indexes += idx
       }
@@ -206,7 +207,7 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
       val colpm = cast[PluralPropertyMapping[_]](pm, holder, "one2many should used on seq")
       colpm.ownerColumn = genOwnerColumn(holder, Some(mappedBy))
-      colpm.mappedBy=Some(mappedBy)
+      colpm.mappedBy = Some(mappedBy)
       targetEntity foreach { clazz =>
         //重新指定集合中的元素属性
         colpm.property match {
@@ -411,9 +412,12 @@ abstract class MappingModule extends Logging {
   import MappingModule._
 
   private var currentHolder: EntityHolder[_] = _
-  private var defaultIdGenerator: Option[String] = None
+  private val defaultIdGenerators = Collections.newMap[Class[_], String]
   private val cacheConfig = new CacheConfig()
   private val entityMappings = Collections.newMap[String, EntityTypeMapping]
+  private var mappings: Mappings = _
+
+  init()
 
   import scala.language.implicitConversions
 
@@ -421,12 +425,17 @@ abstract class MappingModule extends Logging {
     new Expression(currentHolder)
   }
 
-  private var mappings: Mappings = _
-
   def binding(): Unit
 
+  protected def init(): Unit = {
+    defaultIdGenerator(classOf[Int], IdGenerator.AutoIncrement)
+    defaultIdGenerator(classOf[Long], IdGenerator.DateTime)
+    defaultIdGenerator(classOf[String], IdGenerator.Uuid)
+  }
+
   protected def autoIncrement(): Unit = {
-    defaultIdGenerator(IdGenerator.AutoIncrement)
+    defaultIdGenerator(classOf[Int], IdGenerator.AutoIncrement)
+    defaultIdGenerator(classOf[Long], IdGenerator.AutoIncrement)
   }
 
   protected def notnull = new NotNull
@@ -529,12 +538,15 @@ abstract class MappingModule extends Logging {
       superCls = superCls.getSuperclass
     }
 
+    //find id genertor by id type
     if (null == mapping.idGenerator) {
-      val unsaved = BeanInfos.get(cls, null).getPropertyType("id") match {
-        case Some(idtype) => if (idtype.isPrimitive) "0" else "null"
-        case None => "null"
+      BeanInfos.get(cls, null).getPropertyType("id") foreach { idtype =>
+        val unsaved = if (idtype.isPrimitive) "0" else "null"
+        mapping.idGenerator = defaultIdGenerators.get(idtype) match {
+          case Some(ig) => new IdGenerator(ig).unsaved(unsaved)
+          case None => new IdGenerator(IdGenerator.Assigned).unsaved(unsaved)
+        }
       }
-      this.defaultIdGenerator foreach { a => mapping.idGenerator = new IdGenerator(a).unsaved(unsaved) }
     }
     val holder = new EntityHolder(mapping, mappings, cls, this)
     currentHolder = holder
@@ -542,8 +554,8 @@ abstract class MappingModule extends Logging {
     holder
   }
 
-  protected final def defaultIdGenerator(strategy: String): Unit = {
-    defaultIdGenerator = Some(strategy)
+  protected final def defaultIdGenerator(clazz: Class[_], strategy: String): Unit = {
+    defaultIdGenerators.put(clazz, strategy)
   }
 
   protected final def cache(region: String, usage: String): CacheHolder = {

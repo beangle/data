@@ -18,6 +18,8 @@
  */
 package org.beangle.data.orm
 
+import org.beangle.data.model.pojo.Named
+
 class TestModule extends MappingModule {
 
   override def binding(): Unit = {
@@ -41,6 +43,10 @@ class TestModule extends MappingModule {
       c.url is(notnull, length(40))
       c.parent is target[UrlMenu]
       index("idx_menu_name", true, c.name)
+    }
+
+    bind[Named].declare{c=>
+     c.name is length(13)
     }
     all.cacheAll()
   }

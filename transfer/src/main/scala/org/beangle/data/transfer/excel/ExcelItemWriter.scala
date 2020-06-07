@@ -33,7 +33,6 @@ import org.beangle.data.transfer.io.ItemWriter
   * ExcelItemWriter class.
   *
   * @author chaostone
-  * @version $Id: $
   */
 class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
 

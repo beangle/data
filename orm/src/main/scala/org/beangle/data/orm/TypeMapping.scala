@@ -169,7 +169,12 @@ object IdGenerator {
   val AutoIncrement = "auto_increment"
   val SeqPerTable = "seq_per_table"
   val Code = "code"
+
   val Assigned = "assigned"
+  val Uuid = "uuid"
+  val Sequence = "sequence"
+  val Identity = "identity"
+  val Native = "native"
 }
 
 final class IdGenerator(var name: String) {

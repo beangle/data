@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.beangle.data</groupId>
     <artifactId>beangle-data-parent_2.13</artifactId>
-    <version>5.3.6</version>
+    <version>5.3.7</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>beangle-data-hibernate_2.13</artifactId>
@@ -32,14 +32,20 @@
       <artifactId>beangle-data-orm_2.13</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.hibernate</groupId>
-      <artifactId>hibernate-core</artifactId>
+      <groupId>org.beangle.hibernate</groupId>
+      <artifactId>beangle-hibernate-core</artifactId>
       <version>${hibernate.version}</version>
     </dependency>
     <dependency>
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-ehcache</artifactId>
       <version>${hibernate.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hibernate</groupId>
+          <artifactId>hibernate-core</artifactId>
+        </exclusion>
+      </exclusions>
       <scope>test</scope>
     </dependency>
     <dependency>
