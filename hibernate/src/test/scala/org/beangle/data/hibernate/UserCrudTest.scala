@@ -98,6 +98,10 @@ object UserCrudTest {
     session.flush()
     session.clear()
 
+    val query8 = OqlBuilder.from(classOf[Role], "r").where("r.parent = :parent", role1)
+    query8.where("key(r.properties)=1")
+    val list8 = entityDao.search(query8)
+
     val saved = entityDao.get(classOf[User], user.id)
     assert(saved.properties.size == 1)
     assert(saved.roleSet.size == 2)

@@ -24,7 +24,6 @@ import org.beangle.data.orm.MappingModule
 object TestMapping2 extends MappingModule {
 
   def binding(): Unit = {
-    defaultIdGenerator("seq_per_table")
     defaultCache("test_cache_region", "read-write")
 
     bind[Role].declare { r =>
