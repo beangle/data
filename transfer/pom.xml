@@ -42,7 +42,7 @@
     <dependency>
       <groupId>org.jxls</groupId>
       <artifactId>jxls-poi</artifactId>
-      <version>${jxls-poi.version}</version>
+      <version>${jxls.version}</version>
     </dependency>
   </dependencies>
 </project>
