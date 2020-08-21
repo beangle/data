@@ -43,18 +43,18 @@ object Engines {
     forName(name)
   }
 
-  def forName(databaseName: String): Engine = {
-    var name = Strings.capitalize(databaseName)
+  def forName(dbname: String): Engine = {
+    var name = Strings.capitalize(dbname)
     name = name.replace("sql", "SQL")
     name2Engines.get(name) match {
       case Some(engine) => engine
       case None =>
-        if (databaseName.startsWith("DB2")) {
+        if (dbname.toUpperCase.startsWith("DB2")) {
           name2Engines("DB2")
-        } else if (databaseName.startsWith("Microsoft SQL Server")) {
+        } else if (dbname.toUpperCase.startsWith("SQLSERVER") || dbname.startsWith("Microsoft SQL Server")) {
           name2Engines("Microsoft SQL Server")
         } else {
-          throw new RuntimeException(s"Cannot find engine for database $databaseName")
+          throw new RuntimeException(s"Cannot find engine for database $dbname")
         }
     }
   }

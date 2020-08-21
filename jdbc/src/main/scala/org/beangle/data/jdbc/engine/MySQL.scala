@@ -28,7 +28,7 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
     ('`', '`')
   }
 
-  registerKeywords("index", "explain")
+  registerReserved("mysql.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "longtext", LONGVARCHAR -> "longtext",
@@ -48,7 +48,6 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
     (VARBINARY, 65535, "blob"),
     (VARBINARY, 16777215, "mediumblob"),
     (LONGVARBINARY, 16777215, "mediumblob"))
-
 
   options.sequence.supports = false
   options.alter { a =>

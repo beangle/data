@@ -21,6 +21,8 @@ package org.beangle.data.jdbc.engine
 import java.sql.Types._
 
 class H2(v: String) extends AbstractEngine(Version(v)) {
+  registerReserved("h2.txt")
+
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "longvarchar",
     BOOLEAN -> "boolean", BIT -> "bit",

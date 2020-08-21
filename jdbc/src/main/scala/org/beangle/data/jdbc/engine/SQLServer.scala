@@ -23,9 +23,8 @@ import java.sql.Types._
 import org.beangle.data.jdbc.meta.Index
 
 class SQLServer(v:String) extends AbstractEngine(Version(v)) {
-  override def quoteChars: (Char, Char) = {
-    ('[', ']')
-  }
+
+  this.registerReserved("t-sql.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar(MAX)", NVARCHAR -> "nvarchar(MAX)",

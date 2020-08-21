@@ -23,7 +23,7 @@ import java.util.Locale
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.{IOs, ResourcePatternResolver}
-import org.beangle.commons.lang.{Locales, SystemInfo}
+import org.beangle.commons.lang.{Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
 import org.beangle.data.jdbc.meta.{DBScripts, Database, Identifier, Table}
@@ -109,7 +109,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     scripts.comments = comments.toSet.toList.sorted
     scripts.tables = tables.sorted.toList
     scripts.keys = keys.sorted.toList
-    scripts.indices = indexes.sorted.toList
+    scripts.indices = indexes.sorted.map(x => Strings.substringAfter(x, "--")).toList
     scripts.sequences = sequences.sorted.toList
     scripts.constraints = constraints.sorted.toList
     val auxiliaries = Collections.newBuffer[String]
@@ -140,7 +140,8 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
 
     table.indexes foreach { idx =>
       checkNameLength(idx.name)
-      indexes += engine.createIndex(idx)
+      //for order by table
+      indexes += table.qualifiedName + "--" + engine.createIndex(idx)
     }
 
     table.foreignKeys foreach { fk =>

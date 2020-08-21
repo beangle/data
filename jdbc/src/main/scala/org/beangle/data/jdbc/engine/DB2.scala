@@ -23,6 +23,8 @@ import java.sql.Types._
 class DB2(v: String) extends AbstractEngine(Version(v)) {
   metadataLoadSql.sequenceSql = "select name as sequence_name,start-1 as current_value,increment,cache from sysibm.syssequences where schema=':schema'"
 
+  registerReserved("db2.txt")
+
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar($l)",
     BOOLEAN -> "smallint", BIT -> "smallint",

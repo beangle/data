@@ -21,6 +21,8 @@ package org.beangle.data.jdbc.engine
 class Derby(v:String) extends DB2(v) {
   options.comment.supportsCommentOn = false
 
+  registerReserved("db2.txt")
+
   override def name:String={
     "Derby"
   }

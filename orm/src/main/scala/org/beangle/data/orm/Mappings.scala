@@ -523,7 +523,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     } else {
       val e = new BasicType(mapEleClazz)
       eleMeta = e
-      eleMapping = new BasicTypeMapping(e, newColumn("value", mapEleClazz, false))
+      eleMapping = new BasicTypeMapping(e, newColumn("value_", mapEleClazz, false))
     }
 
     val meta = new MapPropertyImpl(name, propertyType, keyMeta, eleMeta)
@@ -574,7 +574,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     } else {
       val e = new BasicType(entityClazz)
       elemType = e
-      elemMapping = new BasicTypeMapping(e, newColumn("value", entityClazz, false))
+      elemMapping = new BasicTypeMapping(e, newColumn("value_", entityClazz, false))
     }
     Tuple2(elemType, elemMapping)
   }
