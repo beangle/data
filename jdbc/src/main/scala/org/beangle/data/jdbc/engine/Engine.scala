@@ -18,8 +18,25 @@
  */
 package org.beangle.data.jdbc.engine
 
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.collection.Collections
+import org.beangle.commons.io.IOs
+import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.data.jdbc.meta.{Identifier, MetadataLoadSql, SqlType}
+
+object Engine {
+  val keywords = loadKeywords()
+
+  def loadKeywords(): Set[String] = {
+    val lines = IOs.readLines(ClassLoaders.getResourceAsStream("org/beangle/data/jdbc/engine/keywords.txt").get)
+    val keys = Collections.newSet[String]
+    lines foreach { line =>
+      Strings.split(line) foreach { k =>
+        keys += k
+      }
+    }
+    keys.toSet
+  }
+}
 
 /** RDBMS engine interface
  * It provides type mapping,default schema definition,key words,version etc.
@@ -47,7 +64,8 @@ trait Engine extends Dialect {
   def toType(sqlCode: Int, precision: Int, scale: Int): SqlType
 
   def needQuote(name: String): Boolean = {
-    val rs = (name.indexOf(' ') > -1) || keywords.contains(name.toLowerCase)
+    val lowcaseName = name.toLowerCase
+    val rs = (lowcaseName.indexOf(' ') > -1) || Engine.keywords.contains(lowcaseName) || keywords.contains(lowcaseName)
     if (rs) return true
     storeCase match {
       case StoreCase.Lower => name.exists { c => Character.isUpperCase(c) }

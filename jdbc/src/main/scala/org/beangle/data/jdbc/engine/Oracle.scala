@@ -21,7 +21,12 @@ package org.beangle.data.jdbc.engine
 import java.sql.Types._
 
 class Oracle(v: String) extends AbstractEngine(Version(v)) {
-  registerKeywords("resource", "level")
+  registerKeywords("access", "audit", "cluster", "column_value", "compress",
+    "exclusive", "file", "identified", "increment", "initial", "lock",
+    "maxextents", "minus", "mlslabel", "mode", "modify", "nested_table_id",
+    "noaudit", "nocompress", "nowait", "number", "offline", "online",
+    "pctfree", "raw", "resource", "rowid", "rownum", "share",
+    "successful", "synonym", "sysdate", "uid", "validate", "varchar2")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar2($l)", LONGVARCHAR -> "long",
@@ -93,7 +98,6 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
       " from user_indexes idx,user_ind_columns col where col.index_name=idx.index_name" +
       " and idx.table_owner=':schema'" +
       " order by idx.table_name,col.column_position"
-
 
   /** limit offset
    * FIXME distinguish sql with order by or not
