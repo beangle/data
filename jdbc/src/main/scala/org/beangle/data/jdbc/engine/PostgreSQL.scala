@@ -69,6 +69,10 @@ class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
   }
   options.validate()
 
+  override def maxIdentifierLength: Int = {
+    63
+  }
+
   override def storeCase: StoreCase.Value = {
     StoreCase.Lower
   }

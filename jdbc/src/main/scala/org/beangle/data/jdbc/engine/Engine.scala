@@ -46,6 +46,8 @@ trait Engine extends Dialect {
 
   def name: String
 
+  def maxIdentifierLength: Int
+
   def version: Version
 
   def defaultSchema: String

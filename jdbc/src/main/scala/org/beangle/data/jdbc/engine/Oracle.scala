@@ -61,6 +61,9 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
 
   options.validate()
 
+  override def maxIdentifierLength: Int = {
+    30
+  }
 
   metadataLoadSql.sequenceSql = "select sequence_name,last_number as next_value,increment_by,cache_size,cycle_flag " +
     "from all_sequences where sequence_owner=':schema'"

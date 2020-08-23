@@ -80,12 +80,16 @@ object Serializer {
       val dbNode = XmlNode("db", ("engine", db.engine.name))
       if (db.schemas.nonEmpty) {
         val schemasNode = dbNode.createChild("schemas")
-        db.schemas foreach { case (name, schema) =>
-          val schemaNode = schemasNode.createChild("schema", ("name", name))
-          if (schema.tables.nonEmpty) {
-            val tablesNode = schemaNode.createChild("tables")
-            schema.tables.values.toBuffer.sorted foreach { table =>
-              appendXml(table, tablesNode)
+        val schemaNames = db.schemas.keys.toBuffer.sorted
+        schemaNames foreach { schemaName =>
+          val schema = db.schemas(schemaName)
+          if (schema.tables.nonEmpty || schema.sequences.nonEmpty) {
+            val schemaNode = schemasNode.createChild("schema", ("name", schemaName))
+            if (schema.tables.nonEmpty) {
+              val tablesNode = schemaNode.createChild("tables")
+              schema.tables.values.toBuffer.sorted foreach { table =>
+                appendXml(table, tablesNode)
+              }
             }
           }
         }

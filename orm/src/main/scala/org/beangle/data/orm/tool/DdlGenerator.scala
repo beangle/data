@@ -18,15 +18,16 @@
  */
 package org.beangle.data.orm.tool
 
-import java.io.FileWriter
+import java.io.{File, FileWriter}
 import java.util.Locale
 
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.io.{IOs, ResourcePatternResolver}
+import org.beangle.commons.io.Files./
+import org.beangle.commons.io.{Dirs, Files, IOs, ResourcePatternResolver}
 import org.beangle.commons.lang.{Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
-import org.beangle.data.jdbc.meta.{DBScripts, Database, Identifier, Table}
+import org.beangle.data.jdbc.meta.{DBScripts, Database, Identifier, Serializer, Table}
 import org.beangle.data.orm.Mappings
 
 /**
@@ -42,11 +43,23 @@ object DdlGenerator {
     if (args.length > 1) dir = args(1)
     var locale = Locale.getDefault
     if (args.length > 2) locale = Locales.toLocale(args(2))
-    val dialectName = args(0)
 
-    val engine = Engines.forName(dialectName)
+    val dialectName = args(0)
+    val warnings = new collection.mutable.ListBuffer[String]
+    Strings.split(dialectName) foreach { d =>
+      warnings ++= gen(d, dir + / + d.toLowerCase, locale)
+    }
+    val w = warnings.toSet.toBuffer.sorted
+    writeTo(dir, "warnings.txt", w)
+  }
+
+  private def gen(dialect: String, dir: String, locale: Locale): List[String] = {
+    Dirs.delete(new File(dir))
+    new File(dir).mkdirs()
+    val engine = Engines.forName(dialect)
     val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
-    val mappings = new Mappings(new Database(engine), ormLocations)
+    val database= new Database(engine)
+    val mappings = new Mappings(database, ormLocations)
     mappings.locale = locale
     mappings.autobind()
     val scripts = new SchemaExporter(mappings, engine).generate()
@@ -60,6 +73,8 @@ object DdlGenerator {
     writeTo(dir, "5-sequences.sql", scripts.sequences)
     writeTo(dir, "6-comments.sql", scripts.comments)
     writeLinesTo(dir, "7-auxiliaries.sql", scripts.auxiliaries)
+    writeLinesTo(dir,"database.xml",List(Serializer.toXml(database)))
+    scripts.warnings
   }
 
   private def writeLinesTo(dir: String, file: String, contents: List[String]): Unit = {
@@ -75,7 +90,7 @@ object DdlGenerator {
     }
   }
 
-  private def writeTo(dir: String, file: String, contents: List[String]): Unit = {
+  private def writeTo(dir: String, file: String, contents: collection.Seq[String]): Unit = {
     if (null != contents && contents.nonEmpty) {
       val writer = new FileWriter(dir + "/" + file, false)
       contents foreach { c =>
@@ -96,6 +111,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
   private val comments = new collection.mutable.ListBuffer[String]
   private val constraints = new collection.mutable.ListBuffer[String]
   private val indexes = new collection.mutable.ListBuffer[String]
+  private val warnings = new collection.mutable.ListBuffer[String]
   private val processed = new collection.mutable.HashSet[Table]
 
   def generate(): DBScripts = {
@@ -114,32 +130,37 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     scripts.constraints = constraints.sorted.toList
     val auxiliaries = Collections.newBuffer[String]
     val dialectShortName = engine.getClass.getSimpleName.toLowerCase
-    ResourcePatternResolver.getResources(s"classpath*:META-INF/beangle/ddl/${dialectShortName}/*.sql") foreach { r =>
+    ResourcePatternResolver.getResources(s"classpath*:META-INF/beangle/ddl/$dialectShortName/*.sql") foreach { r =>
       auxiliaries += IOs.readString(r.openStream())
     }
     scripts.auxiliaries = auxiliaries.toList
+    scripts.warnings = warnings.toList
     scripts
   }
 
   private def generateTableSql(table: Table): Unit = {
     if (processed.contains(table)) return
     processed.add(table)
-    checkNameLength(table.name)
+    checkNameLength(table.schema.name.value, table.name)
     comments ++= engine.commentsOnTable(table)
+    val uncommentLines = comments.count(_.contains("?"))
+    if (uncommentLines > 0) {
+      warnings += s"comments:find ${uncommentLines} uncomment lines"
+    }
     tables += engine.createTable(table)
 
     table.primaryKey foreach { pk =>
-      checkNameLength(pk.name)
+      checkNameLength(table.qualifiedName, pk.name)
       keys += engine.alterTableAddPrimaryKey(table, pk)
     }
 
     table.uniqueKeys foreach { uk =>
-      checkNameLength(uk.name)
+      checkNameLength(table.qualifiedName, uk.name)
       keys += engine.alterTableAddUnique(uk)
     }
 
     table.indexes foreach { idx =>
-      checkNameLength(idx.name)
+      checkNameLength(idx.literalName, idx.name)
       //for order by table
       indexes += table.qualifiedName + "--" + engine.createIndex(idx)
     }
@@ -150,9 +171,9 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
 
   }
 
-  def checkNameLength(i: Identifier): Unit = {
-    if (i.value.length > 30) {
-      println(s"WARNNING: ${i.value}'s length is ${i.value.length},greate than 30.")
+  def checkNameLength(owner: String, i: Identifier): Unit = {
+    if (i.value.length > engine.maxIdentifierLength) {
+      warnings += s"${engine.name}:${owner}.${i.value}'s length is ${i.value.length},greate than ${engine.maxIdentifierLength}"
     }
   }
 }

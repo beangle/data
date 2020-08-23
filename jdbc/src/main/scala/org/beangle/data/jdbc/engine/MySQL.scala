@@ -73,6 +73,10 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
 
   options.comment.supportsCommentOn = false
 
+  override def maxIdentifierLength: Int = {
+    64
+  }
+
   override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
                              referencedTable: String, primaryKey: Iterable[String]): String = {
     val cols = Strings.join(foreignKey, ", ")

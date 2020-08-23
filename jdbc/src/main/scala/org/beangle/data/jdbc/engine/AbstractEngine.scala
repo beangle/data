@@ -37,6 +37,10 @@ abstract class AbstractEngine(val version: Version) extends Engine with Abstract
     ('\"', '\"')
   }
 
+  override def maxIdentifierLength: Int = {
+    128
+  }
+
   protected def registerTypes(tuples: (Int, String)*): Unit = {
     tuples foreach { tuple =>
       typeMappingBuilder.put(tuple._1, tuple._2)
