@@ -41,9 +41,13 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
     BLOB -> "longblob", CLOB -> "longtext", NCLOB -> "longtext")
 
   registerTypes2(
-    (VARCHAR, 65535, "varchar($l)"),
+    (VARCHAR, 500, "varchar($l)"),
+    (VARCHAR, 65535, "text"),
+    (VARCHAR, 16777215, "mediumtext"),
+
     (NUMERIC, 65, "decimal($p, $s)"),
     (NUMERIC, Int.MaxValue, "decimal(65, $s)"),
+
     (VARBINARY, 255, "tinyblob"),
     (VARBINARY, 65535, "blob"),
     (VARBINARY, 16777215, "mediumblob"),
@@ -73,7 +77,7 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
                              referencedTable: String, primaryKey: Iterable[String]): String = {
     val cols = Strings.join(foreignKey, ", ")
     new StringBuffer(30).append(" add index ").append(constraintName).append(" (").append(cols)
-      .append("), add constraInt ").append(constraintName).append(" foreign key (").append(cols)
+      .append("), add constraint ").append(constraintName).append(" foreign key (").append(cols)
       .append(") references ").append(referencedTable).append(" (")
       .append(Strings.join(primaryKey, ", ")).append(')').toString
   }
