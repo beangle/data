@@ -18,19 +18,45 @@
  */
 package org.beangle.data.jdbc.meta
 
+import java.io.File
+
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.io.Files
 import org.beangle.data.jdbc.engine.Engine
 
 import scala.collection.mutable
 
 object Diff {
 
+  def main(args: Array[String]): Unit = {
+    if (args.length < 3) {
+      println("Usage:Diff database1.xml database2.xml /path/to/diff.sql")
+      return
+    }
+    val dbFile1 = new File(args(0))
+    val dbFile2 = new File(args(1))
+    if (!dbFile1.exists()) {
+      println("Cannot load " + dbFile1.getAbsolutePath)
+      return
+    }
+    if (!dbFile2.exists()) {
+      println("Cannot load " + dbFile2.getAbsolutePath)
+      return
+    }
+
+    val db1 = Serializer.fromXml(Files.readString(dbFile1))
+    val db2 = Serializer.fromXml(Files.readString(dbFile2))
+    val diff = Diff.diff(db1, db2)
+    val sqls = Diff.sql(diff)
+    Files.writeString(new File(args(2)), sqls.toBuffer.sorted.append("").mkString(";\n"))
+  }
+
   def diff(older: Database, newer: Database): DatabaseDiff = {
     if (newer.engine != older.engine) {
       throw new RuntimeException(s"Cannot diff different engines(${newer.engine.name} and ${older.engine.name}).")
     }
-    val newSchemaSet = newer.schemas.keySet.map(_.value)
-    val oldSchemaSet = older.schemas.keySet.map(_.value)
+    val newSchemaSet = newer.schemas.keySet.map(_.value).toSet
+    val oldSchemaSet = older.schemas.keySet.map(_.value).toSet
 
     val newSchemas = newSchemaSet.diff(oldSchemaSet)
     val removedSchemas = oldSchemaSet.diff(newSchemaSet)
@@ -38,11 +64,11 @@ object Diff {
 
     val schemaDiffs = Collections.newMap[String, SchemaDiff]
     updateSchemas foreach { s =>
-      val newSchema = newer.getOrCreateSchema(s)
       val oldSchema = older.getOrCreateSchema(s)
+      val newSchema = newer.getOrCreateSchema(s)
 
-      val newTableSet = newSchema.tables.keySet.map(_.value)
-      val oldTableSet = oldSchema.tables.keySet.map(_.value)
+      val oldTableSet = oldSchema.tables.keySet.map(_.value).toSet
+      val newTableSet = newSchema.tables.keySet.map(_.value).toSet
       val newTables = newTableSet.diff(oldTableSet)
       val removedTables = oldTableSet.diff(newTableSet)
       val updateTables = newTableSet.intersect(oldTableSet)
@@ -58,13 +84,13 @@ object Diff {
       if (!(newTables.isEmpty && removedTables.isEmpty && tableDiffs.isEmpty)) {
         val schemaDiff = new SchemaDiff(oldSchema, newSchema)
         schemaDiff.tableDiffs = tableDiffs.toMap
-        schemaDiff.tables = NameDiff(newTables, removedTables, Set.empty, tableDiffs.keySet)
+        schemaDiff.tables = NameDiff(newTables, removedTables, Set.empty, tableDiffs.keySet.toSet)
         schemaDiffs.put(s, schemaDiff)
       }
     }
     val dbDiff = new DatabaseDiff(older, newer)
     if (!(newSchemas.isEmpty && removedSchemas.isEmpty && schemaDiffs.isEmpty)) {
-      dbDiff.schemas = NameDiff(newSchemas, removedSchemas, Set.empty, schemaDiffs.keySet)
+      dbDiff.schemas = NameDiff(newSchemas, removedSchemas, Set.empty, schemaDiffs.keySet.toSet)
       dbDiff.schemaDiffs = schemaDiffs.toMap
     }
     dbDiff
@@ -256,8 +282,8 @@ class SchemaDiff(val older: Schema, val newer: Schema) {
   var tableDiffs: Map[String, TableDiff] = _
 }
 
-case class NameDiff(newer: collection.Set[String], removed: collection.Set[String], renamed: Set[(String, String)],
-                    updated: collection.Set[String]) {
+case class NameDiff(newer: Set[String], removed: Set[String], renamed: Set[(String, String)],
+                    updated: Set[String]) {
   def isEmpty: Boolean = {
     newer.isEmpty && removed.isEmpty && updated.isEmpty && renamed.isEmpty
   }
