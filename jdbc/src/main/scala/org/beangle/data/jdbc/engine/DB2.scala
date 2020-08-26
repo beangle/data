@@ -23,6 +23,8 @@ import java.sql.Types._
 class DB2(v: String) extends AbstractEngine(Version(v)) {
   metadataLoadSql.sequenceSql = "select name as sequence_name,start-1 as current_value,increment,cache from sysibm.syssequences where schema=':schema'"
 
+  registerReserved("db2.txt")
+
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar($l)",
     BOOLEAN -> "smallint", BIT -> "smallint",
@@ -51,6 +53,7 @@ class DB2(v: String) extends AbstractEngine(Version(v)) {
     a.table.setNotNull = "alter column {column} set not null"
     a.table.dropNotNull = "alter column {column} drop not null"
     a.table.dropColumn = "drop column {column}"
+    a.table.renameColumn = "rename column {oldcolumn} to {newcolumn}"
 
     a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name}"

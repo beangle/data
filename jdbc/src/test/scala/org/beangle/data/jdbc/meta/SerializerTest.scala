@@ -41,7 +41,7 @@ class SerializerTest extends AnyFunSpec with Matchers {
       category.createPrimaryKey("","id")
       security.addTable(category)
 
-      val user = Table(security, "user")
+      val user = Table(security, "users")
       val column = user.createColumn("name", "varchar(30)")
       column.comment = Some("login  name")
       column.nullable = false

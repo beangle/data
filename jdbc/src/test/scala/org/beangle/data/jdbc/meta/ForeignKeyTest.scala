@@ -40,7 +40,6 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
     tableA.schema.name = Identifier("lowercase_a")
     println(pgdialect.dropTable(tableA.qualifiedName))
     val fk = tableA.foreignKeys.head
-    //assert(fk.alterSql == "alter table lowercase_a.\"SYS_TABLEA\" add constraInt \"FKXYZ\" foreign key (\"FKID\") references \"PUBLIC\".\"SYS_TABLE\" (\"ID\")")
   }
 
   "toLowerCase " should "correct" in {

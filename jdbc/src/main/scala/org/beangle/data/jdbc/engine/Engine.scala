@@ -24,14 +24,15 @@ import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.data.jdbc.meta.{Identifier, MetadataLoadSql, SqlType}
 
 object Engine {
-  val keywords = loadKeywords()
+  val reservedWords = loadKeywords("sql-reserved.txt")
 
-  def loadKeywords(): Set[String] = {
-    val lines = IOs.readLines(ClassLoaders.getResourceAsStream("org/beangle/data/jdbc/engine/keywords.txt").get)
+  def loadKeywords(resourceName: String): Set[String] = {
+    val uri = "org/beangle/data/jdbc/engine/" + resourceName
+    val lines = IOs.readLines(ClassLoaders.getResourceAsStream(uri).get)
     val keys = Collections.newSet[String]
     lines foreach { line =>
       Strings.split(line) foreach { k =>
-        keys += k
+        keys += k.toLowerCase
       }
     }
     keys.toSet
@@ -44,6 +45,8 @@ object Engine {
 trait Engine extends Dialect {
 
   def name: String
+
+  def maxIdentifierLength: Int
 
   def version: Version
 
@@ -65,7 +68,7 @@ trait Engine extends Dialect {
 
   def needQuote(name: String): Boolean = {
     val lowcaseName = name.toLowerCase
-    val rs = (lowcaseName.indexOf(' ') > -1) || Engine.keywords.contains(lowcaseName) || keywords.contains(lowcaseName)
+    val rs = (lowcaseName.indexOf(' ') > -1) || Engine.reservedWords.contains(lowcaseName) || keywords.contains(lowcaseName)
     if (rs) return true
     storeCase match {
       case StoreCase.Lower => name.exists { c => Character.isUpperCase(c) }
@@ -93,10 +96,16 @@ trait Engine extends Dialect {
         case StoreCase.Mixed => Identifier(content)
       }
     } else {
-      storeCase match {
-        case StoreCase.Lower => Identifier(literal.toLowerCase())
-        case StoreCase.Upper => Identifier(literal.toUpperCase())
-        case StoreCase.Mixed => Identifier(literal)
+      val lowcaseName = literal.toLowerCase
+      val rs = (lowcaseName.indexOf(' ') > -1) || Engine.reservedWords.contains(lowcaseName) || keywords.contains(lowcaseName)
+      if (rs) {
+        Identifier(literal, true)
+      } else {
+        storeCase match {
+          case StoreCase.Lower => Identifier(literal.toLowerCase())
+          case StoreCase.Upper => Identifier(literal.toUpperCase())
+          case StoreCase.Mixed => Identifier(literal)
+        }
       }
     }
   }

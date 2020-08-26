@@ -27,4 +27,5 @@ class DBScripts {
   var indices: List[String] = _
   var comments: List[String] = _
   var auxiliaries: List[String] = _
+  var warnings:List[String]=_
 }

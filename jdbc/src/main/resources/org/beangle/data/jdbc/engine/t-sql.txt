@@ -1,0 +1,11 @@
+ada,admin,after,aggregate,alias,backup,before,breadth,break,browse,bulk,checkpoint,class,clustered,
+completion,compute,constructor,containstable,data,database,dbcc,deny,depth,destroy,destructor,
+dictionary,disk,distributed,dump,errlvl,exit,file,fillfactor,fortran,freetext,freetexttable,
+fulltexttable,general,holdlock,host,identity_insert,identitycol,if,ignore,include,initialize,
+iterate,kill,less,lineno,load,locator,map,modify,nocheck,nonclustered,object,off,offsets,
+opendatasource,openquery,openrowset,openxml,operation,ordinality,parameters,pascal,path,
+pivot,plan,postfix,prefix,preorder,print,proc,raiserror,readtext,reconfigure,replication,
+restore,revert,role,routine,rowcount,rowguidcol,rule,save,securityaudit,semantickeyphrasetable,
+semanticsimilaritydetailstable,semanticsimilaritytable,sequence,sets,setuser,shutdown,sqlca,
+sqlstate,state,statement,statistics,structure,terminate,textsize,than,top,tran,try_convert,
+tsequal,under,unpivot,updatetext,use,variable,waitfor,while,writetext

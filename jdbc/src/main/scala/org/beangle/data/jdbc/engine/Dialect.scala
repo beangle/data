@@ -38,6 +38,8 @@ trait Dialect {
 
   def alterTableDropColumn(table: Table, col: Column): String
 
+  def alterTableRenameColumn(table: Table, col: Column,newName:String): String
+
   def alterTableModifyColumnType(table: Table, col: Column, sqlType: SqlType): String
 
   def alterTableModifyColumnSetNotNull(table: Table, col: Column): String

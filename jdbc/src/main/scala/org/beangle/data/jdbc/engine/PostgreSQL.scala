@@ -23,7 +23,7 @@ import java.sql.Types._
 import org.beangle.data.jdbc.meta.SqlType
 
 class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
-  registerKeywords("analyse", "analyze", "concurrently", "do", "freeze", "ilike", "isnull", "notnull", "placing", "returning", "variadic", "verbose")
+  registerReserved("postgresql.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "text",
@@ -63,11 +63,16 @@ class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
     a.table.dropNotNull = "alter {column} drop not null"
     a.table.addColumn = "add {column} {type}"
     a.table.dropColumn = "drop {column} cascade"
+    a.table.renameColumn = "rename column {oldcolumn} to {newcolumn}"
 
     a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name} cascade"
   }
   options.validate()
+
+  override def maxIdentifierLength: Int = {
+    63
+  }
 
   override def storeCase: StoreCase.Value = {
     StoreCase.Lower

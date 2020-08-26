@@ -42,6 +42,7 @@ object Options {
     var dropConstraint: String = _
     var addColumn:String=_
     var dropColumn: String = _
+    var renameColumn:String=_
   }
 
   class CreateTableOption {

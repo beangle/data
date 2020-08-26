@@ -58,6 +58,7 @@ class XmlNode(val name: String) {
 
   def toXml: String = {
     val buf = new StringBuilder("""<?xml version="1.0"?>""")
+    buf.append("\n")
     appendXml(this, buf)
     buf.toString
   }
@@ -68,11 +69,11 @@ class XmlNode(val name: String) {
       buf ++= s""" $k="$v""""
     }
     if (node.children.isEmpty) {
-      buf ++= "/>"
+      buf ++= "/>\n"
     } else {
-      buf ++= ">"
+      buf ++= ">\n"
       node.children foreach (appendXml(_, buf))
-      buf ++= s"</${node.name}>"
+      buf ++= s"</${node.name}>\n"
     }
   }
 }

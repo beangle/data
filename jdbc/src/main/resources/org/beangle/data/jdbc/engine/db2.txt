@@ -1,0 +1,13 @@
+after,allow,alterand,array1,array_exists1,associate,asutime,audit,aux,auxiliary,before,bufferpool,
+capture,ccsid,clone,cluster,collection,collid,concat,content,current_lc_ctype,currval,data,
+database,days,dbinfo,disable,disallow,do,document,dssize,editproc,elseif,encoding,encryption,
+end-exec2,ending,erase,exit,explain,fenced,fieldproc,final,generated,handler,hours,if,inclusive,
+inherit,isobid,iterate,jar,keep,label,lc_ctype,leave,locale,locator,locators,lock,lockmax,
+locksize,long,loop,maintained,materialized,microsecond,microseconds,minuteminutes,months,
+nextval,nulls,numparts,obid,optimization,optimize,organization,package,padded,part,partitioned,
+partitioning,path,piecesize,plan,prevval,priqty,program,psid,query,queryno,refresh,repeat,
+resignal,result_set_locator,role,rollup1,round_ceiling,round_down,round_floor,round_half_down,
+round_half_even,round_half_up,round_up,rowset,run,scratchpad,seconds,secqty,security,sequence,
+signal,simple,source,standard,statement,stay,stogroup,stores,style,summary,synonym,sysdate,
+systimestamp,tablespace,type,undo,until,validproc,variable,variant,vcat,versioning1,volatile,
+volumes,while,wlm,years
