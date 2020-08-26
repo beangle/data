@@ -1,0 +1,12 @@
+accessible,analyze,before,change,database,databases,day_hour,day_microsecond,day_minute,
+day_second,delayed,distinctrow,div,dual,elseif,empty,enclosed,escaped,exit,explain,float4,
+float8,force,fulltext,generated,high_priority,hour_microsecond,hour_minute,hour_second,if,
+ignore,infile,int1,int2,int3,int4,int8,io_after_gtids,io_before_gtids,iterate,json_table,
+keys,kill,leave,linear,lines,load,lock,long,longblob,longtext,loop,low_priority,master_bind,
+master_ssl_verify_server_cert,maxvalue,mediumblob,mediumint,mediumtext,middleint,
+minute_microsecond,minute_second,no_write_to_binlog,optimize,optimizer_costs,optionally,
+outfile,purge,read_write,regexp,repeat,replace,require,resignal,rlike,schemas,
+second_microsecond,separator,show,signal,spatial,sql_big_result,sql_calc_found_rows,
+sql_small_result,sqlstate,ssl,starting,stored,straight_join,terminated,tinyblob,tinyint,
+tinytext,undo,unlock,unsigned,use,utc_date,utc_time,utc_timestamp,varcharacter,virtual,
+while,xor,year_month,zerofill

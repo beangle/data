@@ -18,8 +18,26 @@
  */
 package org.beangle.data.jdbc.engine
 
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.collection.Collections
+import org.beangle.commons.io.IOs
+import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.data.jdbc.meta.{Identifier, MetadataLoadSql, SqlType}
+
+object Engine {
+  val reservedWords = loadKeywords("sql-reserved.txt")
+
+  def loadKeywords(resourceName: String): Set[String] = {
+    val uri = "org/beangle/data/jdbc/engine/" + resourceName
+    val lines = IOs.readLines(ClassLoaders.getResourceAsStream(uri).get)
+    val keys = Collections.newSet[String]
+    lines foreach { line =>
+      Strings.split(line) foreach { k =>
+        keys += k.toLowerCase
+      }
+    }
+    keys.toSet
+  }
+}
 
 /** RDBMS engine interface
  * It provides type mapping,default schema definition,key words,version etc.
@@ -27,6 +45,8 @@ import org.beangle.data.jdbc.meta.{Identifier, MetadataLoadSql, SqlType}
 trait Engine extends Dialect {
 
   def name: String
+
+  def maxIdentifierLength: Int
 
   def version: Version
 
@@ -47,7 +67,8 @@ trait Engine extends Dialect {
   def toType(sqlCode: Int, precision: Int, scale: Int): SqlType
 
   def needQuote(name: String): Boolean = {
-    val rs = (name.indexOf(' ') > -1) || keywords.contains(name.toLowerCase)
+    val lowcaseName = name.toLowerCase
+    val rs = (lowcaseName.indexOf(' ') > -1) || Engine.reservedWords.contains(lowcaseName) || keywords.contains(lowcaseName)
     if (rs) return true
     storeCase match {
       case StoreCase.Lower => name.exists { c => Character.isUpperCase(c) }
@@ -75,10 +96,16 @@ trait Engine extends Dialect {
         case StoreCase.Mixed => Identifier(content)
       }
     } else {
-      storeCase match {
-        case StoreCase.Lower => Identifier(literal.toLowerCase())
-        case StoreCase.Upper => Identifier(literal.toUpperCase())
-        case StoreCase.Mixed => Identifier(literal)
+      val lowcaseName = literal.toLowerCase
+      val rs = (lowcaseName.indexOf(' ') > -1) || Engine.reservedWords.contains(lowcaseName) || keywords.contains(lowcaseName)
+      if (rs) {
+        Identifier(literal, true)
+      } else {
+        storeCase match {
+          case StoreCase.Lower => Identifier(literal.toLowerCase())
+          case StoreCase.Upper => Identifier(literal.toUpperCase())
+          case StoreCase.Mixed => Identifier(literal)
+        }
       }
     }
   }

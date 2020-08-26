@@ -21,7 +21,7 @@ package org.beangle.data.jdbc.engine
 import java.sql.Types._
 
 class Oracle(v: String) extends AbstractEngine(Version(v)) {
-  registerKeywords("resource", "level")
+  registerReserved("oracle.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar2($l)", LONGVARCHAR -> "long",
@@ -52,6 +52,7 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
     a.table.setNotNull = "modify {column} not null"
     a.table.dropNotNull = "modify {column} null"
     a.table.dropColumn = "drop column {column}"
+    a.table.renameColumn = "rename column {oldcolumn} to {newcolumn}"
 
     a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name}"
@@ -61,6 +62,9 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
 
   options.validate()
 
+  override def maxIdentifierLength: Int = {
+    30
+  }
 
   metadataLoadSql.sequenceSql = "select sequence_name,last_number as next_value,increment_by,cache_size,cycle_flag " +
     "from all_sequences where sequence_owner=':schema'"
@@ -93,7 +97,6 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
       " from user_indexes idx,user_ind_columns col where col.index_name=idx.index_name" +
       " and idx.table_owner=':schema'" +
       " order by idx.table_name,col.column_position"
-
 
   /** limit offset
    * FIXME distinguish sql with order by or not

@@ -29,12 +29,16 @@ abstract class AbstractEngine(val version: Version) extends Engine with Abstract
 
   var keywords: Set[String] = Set.empty[String]
 
-  def registerKeywords(words: String*): Unit = {
-    keywords ++= words.toList
+  def registerReserved(resourceName:String): Unit = {
+    keywords ++= Engine.loadKeywords(resourceName)
   }
 
   override def quoteChars: (Char, Char) = {
     ('\"', '\"')
+  }
+
+  override def maxIdentifierLength: Int = {
+    128
   }
 
   protected def registerTypes(tuples: (Int, String)*): Unit = {

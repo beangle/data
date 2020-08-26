@@ -28,7 +28,7 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
     ('`', '`')
   }
 
-  registerKeywords("index", "explain")
+  registerReserved("mysql.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "longtext", LONGVARCHAR -> "longtext",
@@ -41,14 +41,17 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
     BLOB -> "longblob", CLOB -> "longtext", NCLOB -> "longtext")
 
   registerTypes2(
-    (VARCHAR, 65535, "varchar($l)"),
+    (VARCHAR, 500, "varchar($l)"),
+    (VARCHAR, 65535, "text"),
+    (VARCHAR, 16777215, "mediumtext"),
+
     (NUMERIC, 65, "decimal($p, $s)"),
     (NUMERIC, Int.MaxValue, "decimal(65, $s)"),
+
     (VARBINARY, 255, "tinyblob"),
     (VARBINARY, 65535, "blob"),
     (VARBINARY, 16777215, "mediumblob"),
     (LONGVARBINARY, 16777215, "mediumblob"))
-
 
   options.sequence.supports = false
   options.alter { a =>
@@ -59,6 +62,7 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
     a.table.setNotNull = "modify {column} {type} not null"
     a.table.dropNotNull = "modify {column} {type}"
     a.table.dropColumn = "drop column {column}"
+    a.table.renameColumn = "change column {oldcolumn} {newcolumn} {type}"
 
     a.table.addPrimaryKey = "add primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name}"
@@ -70,11 +74,15 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
 
   options.comment.supportsCommentOn = false
 
+  override def maxIdentifierLength: Int = {
+    64
+  }
+
   override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
                              referencedTable: String, primaryKey: Iterable[String]): String = {
     val cols = Strings.join(foreignKey, ", ")
     new StringBuffer(30).append(" add index ").append(constraintName).append(" (").append(cols)
-      .append("), add constraInt ").append(constraintName).append(" foreign key (").append(cols)
+      .append("), add constraint ").append(constraintName).append(" foreign key (").append(cols)
       .append(") references ").append(referencedTable).append(" (")
       .append(Strings.join(primaryKey, ", ")).append(')').toString
   }

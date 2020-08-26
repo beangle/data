@@ -42,7 +42,9 @@ class Profiles(resources: Resources) extends Logging {
   namings.put("rails", new RailsNamingPolicy(this))
 
   for (url <- resources.paths) addConfig(url)
-  if (profiles.nonEmpty) logger.info(s"Table name pattern: -> \n${this.toString}")
+  if (logger.isDebugEnabled) {
+    if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
+  }
 
   def addConfig(url: URL): Unit = {
     try {
@@ -125,8 +127,8 @@ class Profiles(resources: Resources) extends Logging {
   }
 
   /**
-    * adjust parent relation by package name
-    */
+   * adjust parent relation by package name
+   */
   private def autoWire(): Unit = {
     if (profiles.size > 1) {
       profiles.foreach {

@@ -43,12 +43,11 @@ object MappingModule {
   }
 
   /** 创建索引
-    *
-    * 针对唯一索引，目前不支持空列
-    *
-    * @param name
-    * @param unique
-    */
+   *
+   * 针对唯一索引，目前不支持空列
+   * @param name
+   * @param unique
+   */
   class IndexDeclaration(name: String, unique: Boolean) {
     def apply(holder: EntityHolder[_], pms: Iterable[PropertyMapping[_]]): Unit = {
       // hibernate的index注解里没有支持unique，而是通过unique key支持的，为了保持一直，这里也类似处理
@@ -584,7 +583,9 @@ abstract class MappingModule extends Logging {
   }
 
   final def configure(mappings: Mappings): Unit = {
-    logger.info(s"Process ${getClass.getName}")
+    if (logger.isDebugEnabled) {
+      logger.debug(s"Process ${getClass.getName}")
+    }
     this.mappings = mappings
     this.binding()
     entityMappings.clear()

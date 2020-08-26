@@ -20,12 +20,12 @@ package org.beangle.data.jdbc.engine
 
 import java.sql.Types._
 
-import org.beangle.data.jdbc.meta.Index
+import org.beangle.commons.lang.Strings
+import org.beangle.data.jdbc.meta.{Column, Index, Table}
 
-class SQLServer(v:String) extends AbstractEngine(Version(v)) {
-  override def quoteChars: (Char, Char) = {
-    ('[', ']')
-  }
+class SQLServer(v: String) extends AbstractEngine(Version(v)) {
+
+  this.registerReserved("t-sql.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar(MAX)", NVARCHAR -> "nvarchar(MAX)",
@@ -54,6 +54,8 @@ class SQLServer(v:String) extends AbstractEngine(Version(v)) {
     a.table.dropNotNull = "alter column {column} {type}"
     a.table.addColumn = "add {column} {type}"
     a.table.dropColumn = "drop column {column}"
+    a.table.renameColumn = "EXEC sp_rename '{table}.{oldcolumn}', '{newcolumn}', 'COLUMN'"
+
     a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name}"
   }
@@ -81,6 +83,14 @@ class SQLServer(v:String) extends AbstractEngine(Version(v)) {
     sb.append("where _rownum_ between ? and ?")
 
     (sb.toString(), List(offset + 1, offset + limit))
+  }
+
+  override def alterTableRenameColumn(table: Table, col: Column, newName: String): String = {
+    var renameClause = options.alter.table.renameColumn
+    renameClause = Strings.replace(renameClause, "{oldcolumn}", col.name.toLiteral(table.engine))
+    renameClause = Strings.replace(renameClause, "{newcolumn}", newName)
+    renameClause = Strings.replace(renameClause, "{table}", table.qualifiedName)
+    renameClause
   }
 
   protected def replaceDistinctWithGroupBy(sql: StringBuilder): Unit = {

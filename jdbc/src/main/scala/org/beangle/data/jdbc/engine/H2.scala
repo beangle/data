@@ -21,6 +21,8 @@ package org.beangle.data.jdbc.engine
 import java.sql.Types._
 
 class H2(v: String) extends AbstractEngine(Version(v)) {
+  registerReserved("h2.txt")
+
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "longvarchar",
     BOOLEAN -> "boolean", BIT -> "bit",
@@ -53,6 +55,7 @@ class H2(v: String) extends AbstractEngine(Version(v)) {
     a.table.dropNotNull = "alter {column} set null"
     a.table.addColumn = "add {column} {type}"
     a.table.dropColumn = "drop column {column}"
+    a.table.renameColumn = "alter column {oldcolumn} rename to {newcolumn}"
 
     a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name}"
