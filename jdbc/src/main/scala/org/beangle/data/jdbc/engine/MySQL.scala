@@ -62,6 +62,7 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
     a.table.setNotNull = "modify {column} {type} not null"
     a.table.dropNotNull = "modify {column} {type}"
     a.table.dropColumn = "drop column {column}"
+    a.table.renameColumn = "change column {oldcolumn} {newcolumn} {type}"
 
     a.table.addPrimaryKey = "add primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name}"

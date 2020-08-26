@@ -18,31 +18,23 @@
  */
 package org.beangle.data.jdbc.meta
 
-class PrimaryKey(table: Table, n: Identifier, column: Identifier) extends Constraint(table, n) {
+import java.io.File
 
-  def this(table: Table, name: String, column: String) {
-    this(table, Identifier(name), Identifier(column))
-  }
+import org.beangle.commons.io.Files
+import org.beangle.data.jdbc.meta.Serializer
 
-  override def clone(): this.type = {
-    super.clone()
-  }
+object Migrator {
 
-  addColumn(column)
-
-  def addColumn(column: Column): Unit = {
-    if (column != null) {
-      addColumn(column.name)
-      if (column.nullable) enabled = false
+  def main(args: Array[String]): Unit = {
+    if (args.length < 3) {
+      println("Usage:Migrator database1.xml database2.xml /path/to/diff.sql")
+      return
     }
-  }
-
-  override def equals(other: Any): Boolean = {
-    other match {
-      case c: PrimaryKey =>
-        this.name == c.name && this.enabled == c.enabled && this.columns == c.columns
-      case _ => false
-    }
+    val db1 = Serializer.fromXml(Files.readString(new File(args(0))))
+    val db2 = Serializer.fromXml(Files.readString(new File(args(1))))
+    val diff = Diff.diff(db1, db2)
+    val sqls = Diff.sql(diff)
+    Files.writeString(new File(args(2)), sqls.toBuffer.sorted.append("").mkString(";\n"))
   }
 
 }

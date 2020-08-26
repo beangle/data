@@ -129,6 +129,14 @@ trait AbstractDialect extends Dialect {
     buf.toList
   }
 
+  override def alterTableRenameColumn(table: Table, col: Column,newName:String): String={
+    var renameClause = options.alter.table.renameColumn
+    renameClause = Strings.replace(renameClause, "{oldcolumn}", col.name.toLiteral(table.engine))
+    renameClause = Strings.replace(renameClause, "{newcolumn}", newName)
+    renameClause = Strings.replace(renameClause, "{type}", col.sqlType.name)
+    s"alter table ${table.qualifiedName} $renameClause"
+  }
+
   override def alterTableDropColumn(table: Table, col: Column): String = {
     var alterClause = options.alter.table.dropColumn
     alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))

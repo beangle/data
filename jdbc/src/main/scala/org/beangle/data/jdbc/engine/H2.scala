@@ -55,6 +55,7 @@ class H2(v: String) extends AbstractEngine(Version(v)) {
     a.table.dropNotNull = "alter {column} set null"
     a.table.addColumn = "add {column} {type}"
     a.table.dropColumn = "drop column {column}"
+    a.table.renameColumn = "alter column {oldcolumn} rename to {newcolumn}"
 
     a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name}"

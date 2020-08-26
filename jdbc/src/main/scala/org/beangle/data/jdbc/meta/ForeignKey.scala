@@ -80,7 +80,7 @@ class ForeignKey(t: Table, n: Identifier, column: Identifier = null) extends Con
     other match {
       case c: ForeignKey =>
         this.name == c.name && this.enabled == c.enabled && this.columns == c.columns &&
-          this.cascadeDelete == c.cascadeDelete && this.referencedColumns == c.columns &&
+          this.cascadeDelete == c.cascadeDelete && this.referencedColumns == c.referencedColumns &&
           this.referencedTable.qualifiedName == c.referencedTable.qualifiedName
       case _ => false
     }

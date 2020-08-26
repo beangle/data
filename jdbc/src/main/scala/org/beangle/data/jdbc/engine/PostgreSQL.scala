@@ -63,6 +63,7 @@ class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
     a.table.dropNotNull = "alter {column} drop not null"
     a.table.addColumn = "add {column} {type}"
     a.table.dropColumn = "drop {column} cascade"
+    a.table.renameColumn = "rename column {oldcolumn} to {newcolumn}"
 
     a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name} cascade"

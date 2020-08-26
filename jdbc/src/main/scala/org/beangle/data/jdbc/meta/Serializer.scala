@@ -101,7 +101,7 @@ object Serializer {
       val tableNode = tablesNode.createChild("table", "name" -> table.name)
       tableNode.attr("comment", table.comment)
       val columnsNode = tableNode.createChild("columns")
-      val columns= table.columns.sortWith((c1,c2)=> if(c1.name.value=="id") true else if (c2.name.value=="id") false else c1.name.value.compareTo(c2.name.value) < 0)
+      val columns = table.columns.sortWith((c1,c2)=> if(c1.name.value=="id") true else if (c2.name.value=="id") false else c1.name.value.compareTo(c2.name.value) < 0)
       columns foreach { col =>
         val colNode = columnsNode.createChild("column")
         colNode.attr("name", col.name)

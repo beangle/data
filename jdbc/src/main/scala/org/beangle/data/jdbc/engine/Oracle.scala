@@ -52,6 +52,7 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
     a.table.setNotNull = "modify {column} not null"
     a.table.dropNotNull = "modify {column} null"
     a.table.dropColumn = "drop column {column}"
+    a.table.renameColumn = "rename column {oldcolumn} to {newcolumn}"
 
     a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
     a.table.dropConstraint = "drop constraint {name}"
