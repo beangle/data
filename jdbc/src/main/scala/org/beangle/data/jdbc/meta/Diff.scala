@@ -151,10 +151,10 @@ object Diff {
     val sb = Collections.newBuffer[String]
     val engine = diff.newer.engine
     diff.schemas.newer foreach { n =>
-      sb += s"""create schema $n;"""
+      sb += s"""create schema $n"""
     }
     diff.schemas.removed foreach { n =>
-      sb += s"DROP schema $n cascade;"
+      sb += s"DROP schema $n cascade"
     }
     diff.schemaDiffs foreach { case (schema, sdf) =>
       sdf.tables.removed foreach { t =>

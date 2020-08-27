@@ -23,7 +23,7 @@ import java.util.Locale
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.Files./
-import org.beangle.commons.io.{Dirs, Files, IOs, ResourcePatternResolver}
+import org.beangle.commons.io.{Dirs, IOs, ResourcePatternResolver}
 import org.beangle.commons.lang.{Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
@@ -99,6 +99,8 @@ object DdlGenerator {
       }
       writer.flush()
       writer.close()
+    } else {
+      new File(dir + "/" + file).delete()
     }
   }
 }
@@ -122,7 +124,10 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     val scripts = new DBScripts()
     val uncommentLines = comments.count(_.contains("?"))
     if (uncommentLines > 0) {
-      warnings += s"comments:find ${uncommentLines} uncomment lines"
+      warnings += s"${engine.name}:find ${uncommentLines} uncomment lines"
+    }
+    if (database.hasQuotedIdentifier) {
+      warnings += s"${engine.name}:find quoted identifiers"
     }
     schemas ++= database.schemas.keys.filter(i => i.value.length > 0).map(s => s"create schema $s")
     scripts.schemas = schemas.sorted.toList
@@ -168,7 +173,6 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     table.foreignKeys foreach { fk =>
       constraints += engine.alterTableAddForeignKey(fk)
     }
-
   }
 
   def checkNameLength(owner: String, i: Identifier): Unit = {
