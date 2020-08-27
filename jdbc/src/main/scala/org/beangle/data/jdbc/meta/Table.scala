@@ -53,6 +53,17 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     schema.database.engine
   }
 
+  /** has quoted identifier
+   * @return
+   */
+  def hasQuotedIdentifier: Boolean = {
+    name.quoted ||
+      columns.exists(_.name.quoted) ||
+      indexes.exists(_.name.quoted) ||
+      uniqueKeys.exists(_.name.quoted) ||
+      foreignKeys.exists(_.name.quoted)
+  }
+
   def quotedColumnNames: List[String] = {
     val e = engine
     columns.result.map(_.name.toLiteral(e))

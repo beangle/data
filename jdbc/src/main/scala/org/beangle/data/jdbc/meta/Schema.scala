@@ -32,6 +32,10 @@ class Schema(var database: Database, var name: Identifier) {
 
   val sequences = new mutable.HashSet[Sequence]
 
+  def hasQuotedIdentifier: Boolean = {
+    tables.exists(_._2.hasQuotedIdentifier)
+  }
+
   def cleanEmptyTables(): Unit = {
     tables.filterInPlace((_, table) => table.columns.nonEmpty)
   }
@@ -53,8 +57,8 @@ class Schema(var database: Database, var name: Identifier) {
   }
 
   /**
-    * Using table literal (with or without schema) search table
-    */
+   * Using table literal (with or without schema) search table
+   */
   def getTable(tbname: String): Option[Table] = {
     val engine = database.engine
     if (tbname.contains(".")) {

@@ -23,7 +23,7 @@ import java.util.Locale
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.Files./
-import org.beangle.commons.io.{Dirs, Files, IOs, ResourcePatternResolver}
+import org.beangle.commons.io.{Dirs, IOs, ResourcePatternResolver}
 import org.beangle.commons.lang.{Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
@@ -58,7 +58,7 @@ object DdlGenerator {
     new File(dir).mkdirs()
     val engine = Engines.forName(dialect)
     val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
-    val database= new Database(engine)
+    val database = new Database(engine)
     val mappings = new Mappings(database, ormLocations)
     mappings.locale = locale
     mappings.autobind()
@@ -73,7 +73,7 @@ object DdlGenerator {
     writeTo(dir, "5-sequences.sql", scripts.sequences)
     writeTo(dir, "6-comments.sql", scripts.comments)
     writeLinesTo(dir, "7-auxiliaries.sql", scripts.auxiliaries)
-    writeLinesTo(dir,"database.xml",List(Serializer.toXml(database)))
+    writeLinesTo(dir, "database.xml", List(Serializer.toXml(database)))
     scripts.warnings
   }
 
@@ -99,6 +99,8 @@ object DdlGenerator {
       }
       writer.flush()
       writer.close()
+    } else {
+      new File(dir + "/" + file).delete()
     }
   }
 }
@@ -120,6 +122,13 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
       schema => schema.tables.values foreach generateTableSql
     }
     val scripts = new DBScripts()
+    val uncommentLines = comments.count(_.contains("?"))
+    if (uncommentLines > 0) {
+      warnings += s"${engine.name}:find ${uncommentLines} uncomment lines"
+    }
+    if (database.hasQuotedIdentifier) {
+      warnings += s"${engine.name}:find quoted identifiers"
+    }
     schemas ++= database.schemas.keys.filter(i => i.value.length > 0).map(s => s"create schema $s")
     scripts.schemas = schemas.sorted.toList
     scripts.comments = comments.toSet.toList.sorted
@@ -143,10 +152,6 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     processed.add(table)
     checkNameLength(table.schema.name.value, table.name)
     comments ++= engine.commentsOnTable(table)
-    val uncommentLines = comments.count(_.contains("?"))
-    if (uncommentLines > 0) {
-      warnings += s"comments:find ${uncommentLines} uncomment lines"
-    }
     tables += engine.createTable(table)
 
     table.primaryKey foreach { pk =>
@@ -168,7 +173,6 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     table.foreignKeys foreach { fk =>
       constraints += engine.alterTableAddForeignKey(fk)
     }
-
   }
 
   def checkNameLength(owner: String, i: Identifier): Unit = {

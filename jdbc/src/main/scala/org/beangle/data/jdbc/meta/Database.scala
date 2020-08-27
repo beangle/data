@@ -45,8 +45,11 @@ class Database(val engine: Engine) {
     table
   }
 
+  def hasQuotedIdentifier: Boolean = {
+    schemas.exists(_._2.hasQuotedIdentifier)
+  }
 
-  def refTable(tableQualifier:String):TableRef={
+  def refTable(tableQualifier: String): TableRef = {
     var referSchemaName = ""
     var referTableName = tableQualifier
     if (tableQualifier.contains(".")) {
