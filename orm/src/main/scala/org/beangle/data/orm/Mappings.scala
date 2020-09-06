@@ -171,7 +171,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             } else if (isComponent(propType)) {
               bindComponent(mh, name, propType, typ)
             } else {
-              bindScalar(mh, name, propType, scalarTypeName(name, propType), optional)
+              bindScalar(mh, name, propType, optional)
             }
           mapping.properties += (name -> p)
         }
@@ -220,13 +220,13 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
   }
 
-  def refToOneMapping(entityClazz: Class[_], entityName: String): BasicTypeMapping = {
-    new BasicTypeMapping(new BasicType(idTypeOf(entityClazz)), newRefColumn(entityClazz, entityName))
+  def refToOneMapping(clazz: Class[_], entityName: String): BasicTypeMapping = {
+    new BasicTypeMapping(new BasicType(idTypeOf(clazz)), newRefColumn(clazz, entityName))
   }
 
   /**
-   * @param key 表示是否是一个外键
-   */
+    * @param key 表示是否是一个外键
+    */
   def columnName(clazz: Class[_], propertyName: String, key: Boolean = false): String = {
     val lastDot = propertyName.lastIndexOf(".")
     var colName = if (lastDot == -1) propertyName else propertyName.substring(lastDot + 1)
@@ -236,7 +236,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 查找实体主键
-   * */
+    * */
   private def firstPass(etm: EntityTypeMapping): Unit = {
     val clazz = etm.typ.clazz
     if (null == etm.idGenerator) {
@@ -254,8 +254,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 处理外键及其关联表格,以及集合的缓存设置
-   * 这些需要被引用方(各个表的主键)生成之后才能进行
-   */
+    * 这些需要被引用方(各个表的主键)生成之后才能进行
+    */
   private def secondPass(etm: EntityTypeMapping): Unit = {
     processPropertyMappings(etm.typ.clazz, etm.table, etm)
     processCache(etm, etm)
@@ -298,16 +298,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
           case spm: SingularPropertyMapping =>
             spm.mapping match {
               case btm: BasicTypeMapping =>
-                val column = btm.columns.head
-                spm.property.propertyType match {
-                  case et: EntityType =>
-                    createForeignKey(table, spm.columns, entityMappings(et.entityName).table)
-                    var fkcomment = getComment(clazz, property.name, null)
-                    if (null == fkcomment) fkcomment = getComment(et.clazz, et.clazz.getSimpleName)
-                    column.comment = Some(fkcomment + "ID")
-                  case _ =>
-                    if (column.comment.isEmpty) column.comment = Some(getComment(clazz, property.name))
-                }
+                addBasicTypeMapping(clazz, property.name, spm.property.propertyType, btm, table)
               case etm: EmbeddableTypeMapping =>
                 processPropertyMappings(property.clazz, table, etm)
             }
@@ -346,18 +337,19 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
               createForeignKey(collectTable, List(ppm.ownerColumn), table)
               ppm.element match {
                 case btm: BasicTypeMapping =>
-                  val elec = btm.columns.head
-                  ppm.property.asInstanceOf[PluralProperty].element match {
-                    case et: EntityType =>
-                      createForeignKey(collectTable, btm.columns, entityMappings(et.entityName).table)
-                      var fkcomment = getComment(clazz, property.name + ".element", null)
-                      if (null == fkcomment) fkcomment = getComment(et.clazz, et.clazz.getSimpleName)
-                      elec.comment = Some(fkcomment + "ID")
-                    case _ =>
-                      if (elec.comment.isEmpty) elec.comment = Some(elec.name.toString)
+                  addBasicTypeMapping(clazz, property.name, ppm.property.asInstanceOf[PluralProperty].element, btm, collectTable)
+                case etm: EmbeddableTypeMapping =>
+                  etm.properties foreach { case (p, pm) =>
+                    pm match {
+                      case spm: SingularPropertyMapping =>
+                        spm.mapping match {
+                          case btm: BasicTypeMapping => addBasicTypeMapping(etm.typ.clazz, p, spm.mapping.typ, btm, collectTable)
+                          case _ => throw new RuntimeException(s"Cannot support ${spm.mapping.getClass.getName} in collection")
+                        }
+                      case _ => throw new RuntimeException(s"Cannot support ${pm.getClass.getName} in collection")
+                    }
                   }
-                  collectTable.add(elec)
-                case _ =>
+                case _ => throw new RuntimeException(s"Cannot support ${ppm.element.getClass.getName} in collection")
               }
               ppm match {
                 case mm: MapPropertyMapping =>
@@ -373,6 +365,22 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
   }
 
+  private def addBasicTypeMapping(clazz: Class[_], propertyName: String, typ: Type, btm: BasicTypeMapping, table: Table): Unit = {
+    detectValueType(typ.clazz)
+    val elec = btm.columns.head
+    typ match {
+      case et: EntityType =>
+        createForeignKey(table, btm.columns, entityMappings(et.entityName).table)
+        var fkcomment = getComment(et.clazz, propertyName, null)
+        if (null == fkcomment) fkcomment = getComment(et.clazz, et.clazz.getSimpleName)
+        elec.comment = Some(fkcomment + "ID")
+      case _ =>
+        if (elec.comment.isEmpty) elec.comment = Some(getComment(clazz, propertyName))
+    }
+    if (!table.columnExits(elec.name)) {
+      table.add(elec)
+    }
+  }
 
   private def createForeignKey(table: Table, columns: Iterable[Column], refTable: Table): Unit = {
     table.createForeignKey(null, columns.head.name.toLiteral(table.engine), refTable)
@@ -388,8 +396,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** Support features inheritence
-   * <li> buildin primary type will be not null
-   */
+    * <li> buildin primary type will be not null
+    */
   private def merge(entity: EntityTypeMapping): Unit = {
     val cls = entity.clazz
     // search parent and interfaces
@@ -432,7 +440,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
         if (!prop.isTransient && prop.readable && prop.writable) {
           val optional = prop.typeinfo.optional
           val propType = prop.typeinfo.clazz
-          val cmh = new Mappings.Holder(mh.mapping, ct)
+          val cmh = Mappings.Holder(mh.mapping, ct)
           val p =
             if (isEntity(propType)) {
               if (propType == mh.mapping.clazz) {
@@ -450,7 +458,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             } else if (isComponent(propType)) {
               bindComponent(cmh, name, propType, ctpe)
             } else {
-              bindScalar(cmh, name, propType, scalarTypeName(name, propType), optional)
+              bindScalar(cmh, name, propType, optional)
             }
           if (null != p) cem.properties += (name -> p)
         }
@@ -458,19 +466,15 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     cpm
   }
 
-  private def scalarTypeName(name: String, clazz: Class[_]): String = {
+  private def detectValueType(clazz: Class[_]): Unit = {
     if (clazz == classOf[Object]) {
       throw new RuntimeException("Cannot find scalar type for object")
     }
     if (clazz.isAnnotationPresent(classOf[value])) {
       valueTypes += clazz
-      clazz.getName
     } else if (classOf[Enumeration#Value].isAssignableFrom(clazz)) {
       val typeName = clazz.getName
       enumTypes.put(typeName, Strings.substringBeforeLast(typeName, "$"))
-      typeName
-    } else {
-      clazz.getName
     }
   }
 
@@ -514,18 +518,9 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
       keyMapping = new BasicTypeMapping(k, newColumn("name", mapKeyClazz, false))
     }
 
-    val mapEleClazz = ClassLoaders.load(mapEleType)
-    if (isEntity(mapEleClazz)) {
-      val e = refEntity(mapEleClazz, mapEleType)
-      eleMeta = e
-      val idType = idTypeOf(mapEleClazz)
-      eleMapping = new BasicTypeMapping(new BasicType(idType), newRefColumn(mapEleClazz, mapEleType))
-    } else {
-      val e = new BasicType(mapEleClazz)
-      eleMeta = e
-      eleMapping = new BasicTypeMapping(e, newColumn("value_", mapEleClazz, false))
-    }
-
+    val elem = buildElement(ClassLoaders.load(mapEleType),mapEleType)
+    eleMeta=elem._1
+    eleMapping=elem._2
     val meta = new MapPropertyImpl(name, propertyType, keyMeta, eleMeta)
     mh.meta.addProperty(meta)
     val p = new MapPropertyMapping(meta, keyMapping, eleMapping)
@@ -534,7 +529,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   private def typeNameOf(tye: ru.Type, name: String): String = {
-    tye.member(ru.TermName(name)).typeSignatureIn(tye).toString()
+    tye.member(ru.TermName(name)).typeSignatureIn(tye).toString
   }
 
   private def bindSeq(mh: Mappings.Holder, name: String, propertyType: Class[_], tye: ru.Type): CollectionPropertyMapping = {
@@ -565,16 +560,38 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     p
   }
 
-  private def buildElement(entityClazz: Class[_], entityName: String): Tuple2[Type, TypeMapping] = {
+  private def buildElement(clazz: Class[_], entityName: String): Tuple2[Type, TypeMapping] = {
     var elemType: Type = null
     var elemMapping: TypeMapping = null
-    if (isEntity(entityClazz)) {
-      elemType = refEntity(entityClazz, entityName)
-      elemMapping = refToOneMapping(entityClazz, entityName)
-    } else {
-      val e = new BasicType(entityClazz)
+    if (isEntity(clazz)) {
+      elemType = refEntity(clazz, entityName)
+      elemMapping = refToOneMapping(clazz, entityName)
+    } else if (isComponent(clazz)) {
+      val e = new EmbeddableTypeImpl(clazz)
+      val etm = new EmbeddableTypeMapping(e)
+      val manifest = BeanInfos.get(clazz, null)
+      manifest.readables foreach {
+        case (name, prop) =>
+          if (!prop.isTransient && prop.readable && prop.writable) {
+            val optional = prop.typeinfo.optional
+            val propType = prop.typeinfo.clazz
+
+            val typ = new BasicType(propType)
+            val meta = new SingularPropertyImpl(name, propType, typ)
+            meta.optional = optional
+            e.addProperty(meta)
+            val column = newColumn(columnName(propType, name, false), propType, optional)
+            val elemMapping = new BasicTypeMapping(typ, column)
+            val p = new SingularPropertyMapping(meta, elemMapping)
+            etm.properties.put(name, p)
+          }
+      }
       elemType = e
-      elemMapping = new BasicTypeMapping(e, newColumn("value_", entityClazz, false))
+      elemMapping = etm
+    } else {
+      val e = new BasicType(clazz)
+      elemType = e
+      elemMapping = new BasicTypeMapping(e, newColumn("value_", clazz, false))
     }
     Tuple2(elemType, elemMapping)
   }
@@ -595,7 +612,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     p
   }
 
-  private def bindScalar(mh: Mappings.Holder, name: String, propertyType: Class[_], typeName: String, optional: Boolean): SingularPropertyMapping = {
+  private def bindScalar(mh: Mappings.Holder, name: String, propertyType: Class[_], optional: Boolean): SingularPropertyMapping = {
+    detectValueType(propertyType)
     val typ = new BasicType(propertyType)
     val meta = new SingularPropertyImpl(name, propertyType, typ)
     meta.optional = optional
@@ -605,8 +623,6 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     column.nullable = meta.optional
     val elemMapping = new BasicTypeMapping(typ, column)
     val p = new SingularPropertyMapping(meta, elemMapping)
-    //FIXME
-    //    if (None == p.typeName) p.typeName = Some(typeName)
     mh.mapping.table.add(column)
     p
   }

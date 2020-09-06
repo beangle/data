@@ -80,8 +80,8 @@ abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var eleme
 
 class CollectionPropertyMapping(property: CollectionProperty, element: TypeMapping) extends PluralPropertyMapping(property, element)
 
-final class MapPropertyMapping(property: MapProperty, var key: TypeMapping, element: TypeMapping)
-  extends PluralPropertyMapping(property, element) {
+final class MapPropertyMapping(property: MapProperty, var key: TypeMapping, elem: TypeMapping)
+  extends PluralPropertyMapping(property, elem) {
 
   override def copy(): this.type = {
     val cloned = super.clone().asInstanceOf[this.type]

@@ -205,8 +205,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
                 }
               case etm: EmbeddableTypeMapping =>
                 val subpath = qualify(em.entityName, propertyName)
-                value = new HComponent(context, entity)
-                bindComponent(value.asInstanceOf[HComponent], etm, subpath, false)
+                value = bindComponent(new HComponent(context, entity), etm, subpath, false)
             }
           case colp: PluralPropertyMapping[_] =>
             val hcol = createCollection(colp, entity)
@@ -337,8 +336,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
         mapp.property.key match {
           case bt: BasicType =>
             map.setIndex(bindSimpleValue(new SimpleValue(context, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, sk, bt.clazz.getName))
-          case et: EntityType =>
-            val kt = mapp.property.key.asInstanceOf[EntityType]
+          case kt: EntityType =>
             map.setIndex(bindManyToOne(
               new HManyToOne(context, map.getCollectionTable),
               DEFAULT_INDEX_COLUMN_NAME, kt.entityName, sk.columns))
@@ -467,7 +465,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  def qualify(first: String, second: String): String = {
+  private def qualify(first: String, second: String): String = {
     s"$first.$second"
   }
 
@@ -525,8 +523,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
                     value = bindSimpleValue(new SimpleValue(context, component.getTable), relativePath, sm, sm.property.propertyType.clazz.getName)
                 }
               case etm: EmbeddableTypeMapping =>
-                value = new HComponent(context, component)
-                bindComponent(value.asInstanceOf[HComponent], etm, subpath, isEmbedded)
+                value =  bindComponent(new HComponent(context, component), etm, subpath, isEmbedded)
             }
         }
         if (value != null) {
@@ -556,7 +553,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
 
     setPluralTypeName(cp, coll)
     initOuterJoinFetchSetting(coll, cp)
-    if (Some("subselect") == cp.fetch) {
+    if (cp.fetch.contains("subselect")) {
       coll.setSubselectLoadable(true)
       coll.getOwner.setSubselectLoadableCollections(true)
     }
@@ -601,7 +598,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
       case _ =>
     }
 
-    value.createForeignKey
+    value.createForeignKey()
     val prop = new HProperty
     prop.setValue(value)
     bindProperty(propertyName, pm, prop)
@@ -610,7 +607,6 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
 
   def bindProperty(propertyName: String, pm: PropertyMapping[_], property: HProperty): Unit = {
     property.setName(propertyName)
-    //property.setPropertyAccessorName(pm.access.getOrElse(context.getMappingDefaults.getImplicitPropertyAccessorName))
     property.setPropertyAccessorName("scala")
     property.setCascade(pm.cascade.getOrElse(context.getMappingDefaults.getImplicitCascadeStyleName))
     property.setUpdateable(pm.updateable)

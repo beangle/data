@@ -23,8 +23,8 @@ import java.io.File
 import org.beangle.commons.io.Files
 import org.beangle.commons.lang.SystemInfo
 import org.junit.runner.RunWith
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
@@ -32,10 +32,13 @@ class DdlGeneratorTest extends AnyFunSpec with Matchers {
 
   describe("DdlGenerator") {
     it("generate") {
-      val dir=SystemInfo.tmpDir + Files./ + "ddl"
-      new File(dir).mkdir()
-      DdlGenerator.main(Array("postgresql", SystemInfo.tmpDir + Files./ + "ddl", "zh_CN"))
-      println(dir)
+      var target = SystemInfo.tmpDir
+      if (target.endsWith(Files./)) {
+        target = target.substring(0, target.length - 1)
+      }
+      target += Files./ + "ddl"
+      DdlGenerator.main(Array("postgresql", target, "zh_CN"))
+      println(target)
     }
   }
 

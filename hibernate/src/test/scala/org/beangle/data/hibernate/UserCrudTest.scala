@@ -18,9 +18,9 @@
  */
 package org.beangle.data.hibernate
 
-import java.time.YearMonth
+import java.time.{LocalDate, YearMonth}
 
-import org.beangle.commons.lang.time.WeekState
+import org.beangle.commons.lang.time.{HourMinute, WeekState, WeekTime}
 import org.beangle.data.dao.OqlBuilder
 import org.beangle.data.hibernate.model._
 import org.hibernate.SessionFactory
@@ -39,6 +39,12 @@ object UserCrudTest {
     user.name.first = "Bill"
     user.name.last = "Smith"
     user.createdOn = new java.sql.Date(System.currentTimeMillis())
+    val wt = new WeekTime()
+    wt.startOn = LocalDate.now()
+    wt.beginAt = HourMinute.Zero
+    wt.endAt = HourMinute.Zero
+    wt.weekstate = WeekState.apply("0110")
+    user.times.put(1,wt)
     val role1 = new ExtendRole(1)
     val role2 = new ExtendRole(2)
     val role3 = new ExtendRole(3)

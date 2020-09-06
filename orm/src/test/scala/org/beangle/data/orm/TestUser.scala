@@ -18,12 +18,13 @@
  */
 package org.beangle.data.orm
 
-import org.beangle.data.model.{ Component, LongId }
+import org.beangle.commons.lang.time.WeekTime
 import org.beangle.data.model.pojo.Updated
+import org.beangle.data.model.{Component, LongId}
 
 /**
- * @author chaostone
- */
+  * @author chaostone
+  */
 class TestUser extends LongId with Updated {
 
   var member: NamedMember = _
@@ -35,6 +36,8 @@ class TestUser extends LongId with Updated {
   var properties: collection.mutable.HashSet[UserProperty] = _
 
   var tags: collection.mutable.Map[String, String] = _
+
+  var times: collection.mutable.Map[Int, WeekTime] = _
 }
 
 class NamedMember extends Component {
