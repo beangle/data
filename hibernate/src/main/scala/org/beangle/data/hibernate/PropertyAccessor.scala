@@ -90,7 +90,7 @@ object PropertyAccessor {
       val result = target match {
         case None    => null
         case Some(t) => method.invoke(t)
-        case _       =>  method.invoke(target)
+        case _       => method.invoke(target)
       }
       if (optional) {
         result match {
