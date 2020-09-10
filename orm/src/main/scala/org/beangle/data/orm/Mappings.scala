@@ -117,6 +117,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     profiles.modules foreach { m =>
       m.configure(this)
     }
+    classTypes.subtractAll(classTypes.filter(x=> x._2.properties.isEmpty).keys)
     //superclass first,merge bingdings
     classTypes.keys.toList.sortWith { (a, b) => a.isAssignableFrom(b) } foreach (cls => merge(classTypes(cls)))
 
