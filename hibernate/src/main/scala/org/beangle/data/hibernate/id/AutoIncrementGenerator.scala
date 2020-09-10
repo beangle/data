@@ -38,7 +38,7 @@ class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
 
   override def configure(t: Type, params: ju.Properties, serviceRegistry: ServiceRegistry): Unit = {
     this.identifierType = t
-    val em = serviceRegistry.getService(classOf[MappingService]).mappings.entityMappings(params.getProperty(IdentifierGenerator.ENTITY_NAME))
+    val em = serviceRegistry.getService(classOf[MappingService]).mappings.entityTypes(params.getProperty(IdentifierGenerator.ENTITY_NAME))
     val ownerSchema = em.table.schema.name.toString
     val schema = if (Strings.isEmpty(ownerSchema)) params.getProperty(SCHEMA) else ownerSchema
     tableName = Table.qualify(schema, params.getProperty(TABLE)).toLowerCase()

@@ -31,36 +31,49 @@ trait ColumnHolder {
 
 class SimpleColumn(column: Column) extends ColumnHolder {
   require(null != column)
-  val columns: mutable.Buffer[Column] = mutable.Buffer.empty[Column]
-  columns += column
+
+  def columns: Iterable[Column] = List(column)
 }
 
-trait TypeMapping extends Cloneable {
-  def typ: Type
-
-  def copy(): TypeMapping
+trait OrmType extends Cloneable with Type {
+  def copy(): OrmType
 }
 
-trait StructTypeMapping extends TypeMapping {
-  var properties: mutable.Map[String, PropertyMapping[_]] = Collections.newMap[String, PropertyMapping[_]]
+trait OrmStructType extends OrmType with StructType {
+  var properties: mutable.Map[String, OrmProperty] = Collections.newMap[String, OrmProperty]
 
   /** 获取属性对应的属性映射，支持嵌入式属性
     *
-    * @param property
+    * @param name property name
     * @return
     */
-  def getPropertyMapping(property: String): PropertyMapping[_] = {
-    val idx = property.indexOf(".")
+  override def property(name: String): OrmProperty = {
+    val idx = name.indexOf(".")
     if (idx == -1) {
-      properties(property)
+      properties(name)
     } else {
-      val sp = properties(property.substring(0, idx)).asInstanceOf[SingularPropertyMapping]
-      sp.mapping.asInstanceOf[StructTypeMapping].getPropertyMapping(property.substring(idx + 1))
+      val sp = properties(name.substring(0, idx)).asInstanceOf[OrmSingularProperty]
+      sp.propertyType.asInstanceOf[OrmStructType].property(name.substring(idx + 1))
     }
   }
+
+  override def getProperty(name: String): Option[OrmProperty] = {
+    val idx = name.indexOf(".")
+    if (idx == -1) {
+      properties.get(name)
+    } else {
+      val sp = properties(name.substring(0, idx)).asInstanceOf[OrmSingularProperty]
+      sp.propertyType.asInstanceOf[OrmStructType].getProperty(name.substring(idx + 1))
+    }
+  }
+
+  def addProperty(property: OrmProperty): Unit = {
+    properties.put(property.name, property)
+  }
+
 }
 
-final class EntityTypeMapping(var typ: EntityType, var table: Table) extends StructTypeMapping {
+final class OrmEntityType(val entityName: String, var clazz: Class[_], var table: Table) extends OrmStructType with EntityType {
   var cacheUsage: String = _
   var cacheRegion: String = _
   var cacheAll: Boolean = _
@@ -79,65 +92,57 @@ final class EntityTypeMapping(var typ: EntityType, var table: Table) extends Str
     this
   }
 
-  def clazz: Class[_] = {
-    typ.clazz
-  }
-
-  def entityName: String = {
-    typ.entityName
+  override def id: OrmProperty = {
+    properties("id")
   }
 
   def copy(): this.type = {
     this
   }
 
-  def addProperties(added: collection.Map[String, PropertyMapping[_]]): Unit = {
+  def addProperties(added: collection.Map[String, OrmProperty]): Unit = {
     if (added.nonEmpty) {
       properties ++= added
       inheriteColumns(this.table, added)
     }
   }
 
-  private def inheriteColumns(table: Table, inheris: collection.Map[String, PropertyMapping[_]]): Unit = {
+  private def inheriteColumns(table: Table, inheris: collection.Map[String, OrmProperty]): Unit = {
     inheris.values foreach {
-      case spm: SingularPropertyMapping =>
-        spm.mapping match {
-          case btm: BasicTypeMapping => btm.columns foreach (table.add(_))
-          case etm: EmbeddableTypeMapping => inheriteColumns(table, etm.properties)
-          case _ =>
+      case spm: OrmSingularProperty =>
+        spm.propertyType match {
+          case etm: OrmEmbeddableType => inheriteColumns(table, etm.properties)
+          case _ => spm.columns foreach table.add
         }
       case _ =>
     }
   }
 }
 
-final class BasicTypeMapping(val typ: BasicType, column: Column)
-  extends TypeMapping with Cloneable with ColumnHolder {
+final class OrmBasicType(clazz: Class[_], var column: Column) extends BasicType(clazz)
+  with OrmType with Cloneable with ColumnHolder {
 
-  var columns: mutable.Buffer[Column] = mutable.Buffer.empty[Column]
-
-  if (null != column) columns += column
-
-  def copy(): BasicTypeMapping = {
-    val cloned = super.clone().asInstanceOf[BasicTypeMapping]
-    val cc = mutable.Buffer.empty[Column]
-    columns foreach { c =>
-      cc += c.clone()
-    }
-    cloned.columns = cc
+  def copy(): OrmBasicType = {
+    val cloned = super.clone().asInstanceOf[OrmBasicType]
+    cloned.column = column.clone()
     cloned
   }
 
+  override def columns: Iterable[Column] = {
+    List(column)
+  }
 }
 
-final class EmbeddableTypeMapping(val typ: EmbeddableType) extends StructTypeMapping {
+final class OrmEmbeddableType(var clazz: Class[_]) extends EmbeddableType with OrmStructType {
 
-  def copy(): EmbeddableTypeMapping = {
-    val cloned = super.clone().asInstanceOf[EmbeddableTypeMapping]
-    val cp = Collections.newMap[String, PropertyMapping[_]]
+  var parentName: Option[String] = None
+
+  def copy(): OrmEmbeddableType = {
+    val cloned = super.clone().asInstanceOf[OrmEmbeddableType]
+    val cp = Collections.newMap[String, OrmProperty]
     properties foreach {
       case (name, p) =>
-        cp += (name -> p.copy().asInstanceOf[PropertyMapping[Property]])
+        cp += (name -> p.copy())
     }
     cloned.properties = cp
     cloned

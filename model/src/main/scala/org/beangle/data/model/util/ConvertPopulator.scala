@@ -79,7 +79,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
           propertyType = t
         case None =>
           if (nested.contains("[") && null != property) {
-            propertyType = new Domain.SingularPropertyImpl(nested, property.getClass, new BasicType(property.getClass))
+            propertyType = new Domain.SimpleProperty(nested, property.getClass, true)
           } else {
             logError(propObj, nested)
           }

@@ -16,39 +16,30 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.orm
+package org.beangle.data.model.util
 
-object NamingPolicy {
-  /**
-   * 表名最大长度
-   */
-  val DefaultMaxLength = 30
+import org.beangle.commons.collection.Collections
+import org.beangle.data.model.meta.{EntityType, Property}
+
+final class SimpleEntityType(val clazz: Class[_]) extends EntityType {
+
+  var entityName: String = clazz.getName
+
+  var properties: collection.mutable.Map[String, Property] = Collections.newMap
+
+  def id: Property = {
+    properties("id")
+  }
+
+  def property(name: String): Property = {
+    properties(name)
+  }
+
+  def getProperty(property: String): Option[Property] = {
+    properties.get(property)
+  }
+
+  def addProperty(property: Property): Unit = {
+    properties.put(property.name, property)
+  }
 }
-/**
- * Entity table and Collection Table Naming Strategy.
- *
- * @author chaostone
- */
-trait NamingPolicy {
-  /**
-   * Convert class to table name
-   *
-   * @param clazz
-   * @param entityName
-   */
-  def classToTableName(clazz: Class[_], entityName: String): Name
-
-  /**
-   * Convert collection to table name
-   *
-   * @param clazz
-   * @param entityName
-   * @param tableName
-   * @param collectionName
-   */
-  def collectionToTableName(clazz: Class[_], entityName: String, tableName: String, collectionName: String): Name
-
-  def propertyToColumnName(clazz: Class[_], property: String): String
-}
-
-case class Name(schema: Option[String], text: String)
