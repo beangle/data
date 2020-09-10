@@ -221,7 +221,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
    * 这些需要被引用方(各个表的主键)生成之后才能进行
    */
   private def secondPass(etm: OrmEntityType): Unit = {
-    processProperties(etm, etm)
+    processProperties(etm, etm, etm.table)
     processCache(etm, etm)
   }
 
@@ -249,8 +249,12 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
   }
 
-  private def processProperties(oet: OrmEntityType, ost: OrmStructType): Unit = {
-    val table = oet.table
+  /** process table
+   * @param oet   orm entity type
+   * @param ost   entity or component
+   * @param table entity table or collectionTable
+   */
+  private def processProperties(oet: OrmEntityType, ost: OrmStructType, table: Table): Unit = {
     ost.properties foreach {
       case (p, property) =>
         property match {
@@ -261,7 +265,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
               case btm: OrmEntityType =>
                 addBasicTypeMapping(ost.clazz, property.name, btm, spm.joinColumn.get, table)
               case etm: OrmEmbeddableType =>
-                processProperties(oet, etm)
+                processProperties(oet, etm, table)
             }
           case ppm: OrmPluralProperty =>
             if (ppm.one2many) {
@@ -307,8 +311,14 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                     pm match {
                       case spm: OrmSingularProperty =>
                         spm.propertyType match {
-                          case btm: OrmBasicType => addBasicTypeMapping(etm.clazz, p, spm.propertyType, btm.column, collectTable)
-                          case _ => throw new RuntimeException(s"Cannot support ${spm.propertyType.getClass.getName} in collection")
+                          case btm: OrmBasicType =>
+                            addBasicTypeMapping(etm.clazz, p, btm, btm.column, collectTable)
+                          case oet: OrmEntityType =>
+                            val idType = idTypeOf(oet.clazz)
+                            val column = newColumn(columnName(spm.clazz, spm.name, true), idType, spm.optional)
+                            addBasicTypeMapping(etm.clazz, property.name, oet, column, collectTable)
+                          case ost: OrmStructType =>
+                            processProperties(oet, ost, collectTable)
                         }
                       case _ => throw new RuntimeException(s"Cannot support ${pm.getClass.getName} in collection")
                     }
@@ -338,7 +348,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
       case et: EntityType =>
         createForeignKey(table, List(elec), entityTypes(et.entityName).table)
         if (elec.comment.isEmpty) {
-          var fkcomment = getComment(clazz, propertyName, null)
+          val fkcomment = getComment(clazz, propertyName, null)
           if (null == fkcomment) {
             addRefComment(elec, et.clazz, et.clazz.getSimpleName)
           } else {
@@ -527,6 +537,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
               val sp = new OrmSingularProperty(name, propType, optional, ormType)
               sp.joinColumn = Some(column)
               property = sp
+            } else if (isComponent(propType)) {
+              property = new OrmSingularProperty(name, propType, optional, buildElement(propType, null))
             } else {
               val column = newColumn(columnName(propType, name), propType, optional)
               val ormType = new OrmBasicType(propType, column)
