@@ -117,7 +117,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     profiles.modules foreach { m =>
       m.configure(this)
     }
-    classTypes.subtractAll(classTypes.filter(x=> x._2.properties.isEmpty).keys)
+    classTypes.subtractAll(classTypes.filter(x => x._2.properties.isEmpty).keys)
     //superclass first,merge bingdings
     classTypes.keys.toList.sortWith { (a, b) => a.isAssignableFrom(b) } foreach (cls => merge(classTypes(cls)))
 
@@ -158,7 +158,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
           } else if (isMap(propType)) {
             bindMap(entity, entity, name, propType, typ)
           } else if (isComponent(propType)) {
-            bindComponent(entity, entity, name, propType, typ,optional)
+            bindComponent(entity, entity, name, propType, typ, optional)
           } else {
             bindScalar(entity, entity, name, propType, optional)
           }
@@ -168,8 +168,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   def refEntity(clazz: Class[_], entityName: String): OrmEntityType = {
-    entityTypes.get(entityName) match{
-      case Some(entity)=>
+    entityTypes.get(entityName) match {
+      case Some(entity) =>
         if (entity.clazz != clazz && entity.clazz.isAssignableFrom(clazz)) {
           entity.clazz = clazz
         }
@@ -189,8 +189,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /**
-    * @param key 表示是否是一个外键
-    */
+   * @param key 表示是否是一个外键
+   */
   def columnName(clazz: Class[_], propertyName: String, key: Boolean = false): String = {
     val lastDot = propertyName.lastIndexOf(".")
     var colName = if (lastDot == -1) propertyName else propertyName.substring(lastDot + 1)
@@ -200,7 +200,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 查找实体主键
-    * */
+   **/
   private def firstPass(etm: OrmEntityType): Unit = {
     val clazz = etm.clazz
     if (null == etm.idGenerator) {
@@ -218,10 +218,10 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 处理外键及其关联表格,以及集合的缓存设置
-    * 这些需要被引用方(各个表的主键)生成之后才能进行
-    */
+   * 这些需要被引用方(各个表的主键)生成之后才能进行
+   */
   private def secondPass(etm: OrmEntityType): Unit = {
-    processPropertyMappings(etm.clazz, etm.table, etm)
+    processProperties(etm, etm)
     processCache(etm, etm)
   }
 
@@ -249,18 +249,19 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
   }
 
-  private def processPropertyMappings(clazz: Class[_], table: Table, stm: OrmStructType): Unit = {
-    stm.properties foreach {
+  private def processProperties(oet: OrmEntityType, ost: OrmStructType): Unit = {
+    val table = oet.table
+    ost.properties foreach {
       case (p, property) =>
         property match {
           case spm: OrmSingularProperty =>
             spm.propertyType match {
               case btm: OrmBasicType =>
-                addBasicTypeMapping(clazz, property.name, btm, btm.column, table)
+                addBasicTypeMapping(ost.clazz, property.name, btm, btm.column, table)
               case btm: OrmEntityType =>
-                addBasicTypeMapping(clazz, property.name, btm, spm.joinColumn.get, table)
+                addBasicTypeMapping(ost.clazz, property.name, btm, spm.joinColumn.get, table)
               case etm: OrmEmbeddableType =>
-                processPropertyMappings(property.clazz, table, etm)
+                processProperties(oet, etm)
             }
           case ppm: OrmPluralProperty =>
             if (ppm.one2many) {
@@ -287,10 +288,10 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             } else if (ppm.many2many) {
               if (ppm.table.isEmpty) ppm.table = Some(table.name.toString + "_" + Strings.unCamel(p, '_'))
               val collectTable = table.schema.createTable(ppm.table.get)
-              collectTable.comment = Some(getComment(clazz, property.name))
-              ppm.ownerColumn.comment = Some(getComment(clazz, clazz.getSimpleName) + "ID")
+              collectTable.comment = Some(getComment(ost.clazz, property.name))
+              ppm.ownerColumn.comment = Some(getComment(oet.clazz, oet.clazz.getSimpleName) + "ID")
               collectTable.add(ppm.ownerColumn)
-              ppm.inverseColumn foreach{ c=> collectTable.add(c)}
+              ppm.inverseColumn foreach { c => collectTable.add(c) }
               ppm.index foreach { idxColumn =>
                 collectTable.add(idxColumn)
               }
@@ -298,9 +299,9 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
               createForeignKey(collectTable, List(ppm.ownerColumn), table)
               ppm.element match {
                 case btm: OrmBasicType =>
-                  addBasicTypeMapping(clazz, property.name, ppm.element, btm.column, collectTable)
+                  addBasicTypeMapping(ost.clazz, property.name, ppm.element, btm.column, collectTable)
                 case btm: OrmEntityType =>
-                  addBasicTypeMapping(clazz, property.name, ppm.element, ppm.ownerColumn, collectTable)
+                  addBasicTypeMapping(ost.clazz, property.name, ppm.element, ppm.ownerColumn, collectTable)
                 case etm: OrmEmbeddableType =>
                   etm.properties foreach { case (p, pm) =>
                     pm match {
@@ -327,6 +328,10 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
   }
 
+  private def addRefComment(column: Column, clazz: Class[_], entityName: String): Unit = {
+    column.comment = Some(getComment(clazz, clazz.getSimpleName) + "ID")
+  }
+
   private def addBasicTypeMapping(clazz: Class[_], propertyName: String, typ: Type, elec: Column, table: Table): Unit = {
     detectValueType(typ.clazz)
     typ match {
@@ -334,8 +339,11 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
         createForeignKey(table, List(elec), entityTypes(et.entityName).table)
         if (elec.comment.isEmpty) {
           var fkcomment = getComment(clazz, propertyName, null)
-          if (null == fkcomment) fkcomment = getComment(et.clazz, et.clazz.getSimpleName)
-          elec.comment = Some(fkcomment + "ID")
+          if (null == fkcomment) {
+            addRefComment(elec, et.clazz, et.clazz.getSimpleName)
+          } else {
+            elec.comment = Some(fkcomment + "ID")
+          }
         }
       case _ =>
         if (elec.comment.isEmpty) elec.comment = Some(getComment(clazz, propertyName))
@@ -359,8 +367,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** Support features inheritence
-    * <li> buildin primary type will be not null
-    */
+   * <li> buildin primary type will be not null
+   */
   private def merge(entity: OrmEntityType): Unit = {
     val cls = entity.clazz
     // search parent and interfaces
@@ -471,10 +479,10 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     c.addProperty(property)
     property.keyColumn = keyColumn
     property.ownerColumn = newRefColumn(entity.clazz, entity.entityName)
-    eleMeta match{
-      case oet:OrmEntityType=>
-        property.inverseColumn= Some(newRefColumn(oet.clazz,oet.entityName))
-      case _=>
+    eleMeta match {
+      case oet: OrmEntityType =>
+        property.inverseColumn = Some(newRefColumn(oet.clazz, oet.entityName))
+      case _ =>
     }
   }
 
@@ -491,10 +499,10 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     c.addProperty(property)
     //may be a many2many,so generate owner column.
     property.ownerColumn = newRefColumn(entity.clazz, entity.entityName)
-    typ match{
-      case oet:OrmEntityType=>
-        property.inverseColumn= Some(newRefColumn(entityClazz,entityName))
-      case _=>
+    typ match {
+      case _: OrmEntityType =>
+        property.inverseColumn = Some(newRefColumn(entityClazz, entityName))
+      case _ =>
     }
   }
 
@@ -515,6 +523,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
               val ormType = refEntity(propType, propType.getName)
               val idType = idTypeOf(propType)
               val column = newColumn(columnName(propType, name, true), idType, optional)
+              addRefComment(column, ormType.clazz, ormType.entityName)
               val sp = new OrmSingularProperty(name, propType, optional, ormType)
               sp.joinColumn = Some(column)
               property = sp
@@ -565,6 +574,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
   def newRefColumn(clazz: Class[_], entityName: String): Column = {
     val idType = idTypeOf(clazz)
-    new Column(database.engine.toIdentifier(columnName(clazz, entityName, true)), sqlTypeMapping.sqlType(idType), false)
+    val column = new Column(database.engine.toIdentifier(columnName(clazz, entityName, true)), sqlTypeMapping.sqlType(idType), false)
+    addRefComment(column, clazz, entityName)
+    column
   }
 }

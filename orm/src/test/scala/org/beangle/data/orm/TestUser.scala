@@ -23,8 +23,8 @@ import org.beangle.data.model.pojo.Updated
 import org.beangle.data.model.{Component, LongId}
 
 /**
-  * @author chaostone
-  */
+ * @author chaostone
+ */
 class TestUser extends LongId with Updated {
 
   var member: NamedMember = _
@@ -49,3 +49,4 @@ class Name2 extends Component {
   var firstName: String = _
   var lastName: String = _
 }
+
