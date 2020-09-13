@@ -62,6 +62,10 @@ class Constraint(var table: Table, var name: Identifier) extends Ordered[Constra
     if (null == name) 0 else name.compare(o.name)
   }
 
+  protected def sameNameColumns(columns1: Iterable[Identifier],columns2: Iterable[Identifier]):Boolean={
+    columns1.toSet == columns2.toSet
+  }
+
   override def clone(): this.type = {
     val cloned = super.clone().asInstanceOf[this.type]
     var newColumns = new ListBuffer[Identifier]

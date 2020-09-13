@@ -200,7 +200,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** 查找实体主键
-   **/
+   * */
   private def firstPass(etm: OrmEntityType): Unit = {
     val clazz = etm.clazz
     if (null == etm.idGenerator) {
@@ -305,7 +305,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                 case btm: OrmBasicType =>
                   addBasicTypeMapping(ost.clazz, property.name, ppm.element, btm.column, collectTable)
                 case btm: OrmEntityType =>
-                  addBasicTypeMapping(ost.clazz, property.name, ppm.element, ppm.ownerColumn, collectTable)
+                  addBasicTypeMapping(ost.clazz, property.name, ppm.element, ppm.inverseColumn.get, collectTable)
                 case etm: OrmEmbeddableType =>
                   etm.properties foreach { case (p, pm) =>
                     pm match {
@@ -327,7 +327,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
               ppm match {
                 case mm: OrmMapProperty =>
                   mm.key match {
-                    case pspm: OrmBasicType => collectTable.add(pspm.column)
+                    case obt: OrmBasicType => collectTable.add(obt.column)
+                    case oet: OrmEntityType => collectTable.add(mm.keyColumn)
                     case _ =>
                   }
                 case _ =>
@@ -481,6 +482,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
       keyColumn = newRefColumn(mapKeyClazz, mapKeyType)
     } else {
       keyColumn = newColumn("name", mapKeyClazz, false)
+      keyColumn.comment = Some("name")
       keyMeta = new OrmBasicType(mapKeyClazz, keyColumn)
     }
 

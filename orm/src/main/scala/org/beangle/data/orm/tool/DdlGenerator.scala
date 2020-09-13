@@ -155,7 +155,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     if (processed.contains(table)) return
     processed.add(table)
     checkNameLength(table.schema.name.value, table.name)
-    comments ++= engine.commentsOnTable(table)
+    comments ++= engine.commentsOnTable(table,true)
     tables += engine.createTable(table)
 
     table.primaryKey foreach { pk =>

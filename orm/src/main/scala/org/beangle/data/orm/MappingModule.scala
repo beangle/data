@@ -253,6 +253,7 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val collp = cast[OrmCollectionProperty](pm, holder, "order column should used on many2many seq")
       val idxCol = new Column(Identifier(if (null == orderColumn) MappingModule.OrderColumnName else orderColumn), holder.mappings.sqlTypeMapping.sqlType(classOf[Int]), false)
+      idxCol.comment=Some("index no")
       collp.index = Some(idxCol)
     }
   }

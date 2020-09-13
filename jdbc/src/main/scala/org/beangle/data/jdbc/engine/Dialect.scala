@@ -68,11 +68,11 @@ trait Dialect {
     */
   def limit(query: String, offset: Int, limit: Int): (String, List[Int])
 
-  def commentsOnColumn(table: Table, column: Column, comment: Option[String]): Option[String]
+  def commentOnColumn(table: Table, column: Column, comment: Option[String]): Option[String]
 
-  def commentsOnTable(table: Table): List[String]
+  def commentsOnTable(table: Table,includeMissing:Boolean): List[String]
 
-  def commentsOnTable(table: String, comment: Option[String]): Option[String]
+  def commentOnTable(table: String, comment: Option[String]): Option[String]
 
   def createIndex(i: Index): String
 

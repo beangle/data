@@ -73,7 +73,7 @@ trait AbstractDialect extends Dialect {
     Strings.replace(options.drop.table.sql, "{name}", table)
   }
 
-  override def commentsOnColumn(table: Table, column: Column, comment: Option[String]): Option[String] = {
+  override def commentOnColumn(table: Table, column: Column, comment: Option[String]): Option[String] = {
     if (options.comment.supportsCommentOn) {
       Some("comment on column " + table.qualifiedName + '.' + column.name.toLiteral(table.engine) + " is '" + comment.getOrElse("") + "'")
     } else {
@@ -81,7 +81,7 @@ trait AbstractDialect extends Dialect {
     }
   }
 
-  override def commentsOnTable(table: String, comment: Option[String]): Option[String] = {
+  override def commentOnTable(table: String, comment: Option[String]): Option[String] = {
     if (options.comment.supportsCommentOn) {
       Some("comment on table " + table + " is '" + comment.getOrElse("") + "'")
     } else {
@@ -89,16 +89,23 @@ trait AbstractDialect extends Dialect {
     }
   }
 
-  override def commentsOnTable(table: Table): List[String] = {
+  override def commentsOnTable(table: Table, includeMissing: Boolean): List[String] = {
     if (options.comment.supportsCommentOn) {
       val comments = Collections.newBuffer[String]
       val tableName = table.qualifiedName
-      table.comment foreach { c =>
-        comments += ("comment on table " + tableName + " is '" + c + "'")
-      }
-      table.columns foreach { c =>
-        c.comment foreach { cc =>
-          comments += ("comment on column " + tableName + '.' + c.name + " is '" + cc + "'")
+      if (includeMissing) {
+        comments += ("comment on table " + tableName + " is '" + table.comment.getOrElse(s"${tableName}?") + "'")
+        table.columns foreach { c =>
+          comments += ("comment on column " + tableName + '.' + c.name + " is '" + c.comment.getOrElse(s"${c.name}?") + "'")
+        }
+      } else {
+        table.comment foreach { c =>
+          comments += ("comment on table " + tableName + " is '" + c + "'")
+        }
+        table.columns foreach { c =>
+          c.comment foreach { cc =>
+            comments += ("comment on column " + tableName + '.' + c.name + " is '" + cc + "'")
+          }
         }
       }
       comments.toList
@@ -129,7 +136,7 @@ trait AbstractDialect extends Dialect {
     buf.toList
   }
 
-  override def alterTableRenameColumn(table: Table, col: Column,newName:String): String={
+  override def alterTableRenameColumn(table: Table, col: Column, newName: String): String = {
     var renameClause = options.alter.table.renameColumn
     renameClause = Strings.replace(renameClause, "{oldcolumn}", col.name.toLiteral(table.engine))
     renameClause = Strings.replace(renameClause, "{newcolumn}", newName)
