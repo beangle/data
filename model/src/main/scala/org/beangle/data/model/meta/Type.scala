@@ -31,7 +31,9 @@ trait Type {
 class BasicType(val clazz: Class[_]) extends Type
 
 trait StructType extends Type {
-  def getProperty(property: String): Option[Property]
+  def getProperty(name: String): Option[Property]
+
+  def property(name: String): Property
 }
 
 trait EmbeddableType extends StructType {

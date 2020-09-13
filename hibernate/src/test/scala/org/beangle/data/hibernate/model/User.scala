@@ -19,7 +19,7 @@
 package org.beangle.data.hibernate.model
 
 import org.beangle.commons.lang.time.WeekDay.{Sun, WeekDay}
-import org.beangle.commons.lang.time.WeekState
+import org.beangle.commons.lang.time.{WeekState, WeekTime}
 import org.beangle.data.model.{Component, Entity, LongId, StringId}
 import org.beangle.data.model.pojo.{Hierarchical, Named, Remark}
 
@@ -40,6 +40,7 @@ class User(var id: Long) extends Entity[Long] {
   var skills: collection.mutable.Map[SkillType, Skill] = _
 
   var profiles: collection.mutable.Set[Profile] = new collection.mutable.HashSet[Profile]
+  var times: collection.mutable.Map[Int,WeekTime] = new collection.mutable.HashMap[Int,WeekTime]
 }
 
 class SkillType extends LongId {

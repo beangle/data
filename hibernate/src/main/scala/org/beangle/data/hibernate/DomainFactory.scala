@@ -39,7 +39,7 @@ object DomainFactory {
     factories foreach { f =>
       val ms = f.getSessionFactoryOptions.getServiceRegistry.getService(classOf[MappingService])
       if (null != ms) {
-        entities ++= ms.mappings.entities.values
+        entities ++= ms.mappings.entityTypes.values
       }
     }
     ImmutableDomain(entities)

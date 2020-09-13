@@ -19,10 +19,10 @@
 package org.beangle.data.model.util
 
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
-import org.beangle.data.model.meta.{BasicType, Domain}
+import org.beangle.data.model.meta.Domain
 import org.junit.runner.RunWith
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
@@ -34,8 +34,8 @@ class PopulatorTest extends AnyFunSpec with Matchers {
       val menuBeanInfo = getBeanInfo(classOf[Menu])
       val populator = new ConvertPopulator()
       val menu = new Menu
-      val menuET = new Domain.EntityTypeImpl(classOf[Menu])
-      menuET.properties += ("id" -> new Domain.SingularPropertyImpl("id", classOf[Int], new BasicType(classOf[Int])))
+      val menuET = new SimpleEntityType(classOf[Menu])
+      menuET.properties += ("id" -> new Domain.SimpleProperty("id", classOf[Int], true))
       populator.populate(menu, menuET, "aa", "xx") should be(false)
       populator.populate(menu, menuET, "id", "3") should be(true)
       val id = menu.id

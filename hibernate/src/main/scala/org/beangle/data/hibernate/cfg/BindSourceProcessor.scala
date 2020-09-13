@@ -28,7 +28,7 @@ import org.beangle.data.hibernate.ScalaPropertyAccessStrategy
 import org.beangle.data.hibernate.id._
 import org.beangle.data.hibernate.udt._
 import org.beangle.data.jdbc.meta.Column
-import org.beangle.data.model.meta.{BasicType, EntityType, PluralProperty, Property}
+import org.beangle.data.model.meta.{BasicType, EntityType}
 import org.beangle.data.orm._
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.model.TypeDefinition
@@ -130,7 +130,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
   }
 
   override def processEntityHierarchies(processedEntityNames: java.util.Set[String]): Unit = {
-    for ((_, definition) <- mappings.entityMappings) {
+    for ((_, definition) <- mappings.entityTypes) {
       val rc = bindClass(definition)
 
       if (null != definition.cacheUsage) {
@@ -143,7 +143,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
 
     for (definition <- mappings.collections if (null != definition.cacheUsage)) {
-      val role = mappings.getMapping(definition.clazz).entityName + "." + definition.property
+      val role = mappings.getEntity(definition.clazz).entityName + "." + definition.property
       val region = if (null == definition.cacheRegion) role else definition.cacheRegion
       val cb = metadata.getCollectionBinding(role)
       cb.setCacheConcurrencyStrategy(definition.cacheUsage)
@@ -151,7 +151,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: CollectionPropertyMapping)
+  class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: OrmCollectionProperty)
     extends CollectionSecondPass(context, collection, new java.util.HashMap[String, String]) {
 
     def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
@@ -160,7 +160,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  class MapSecondPass(context: MetadataBuildingContext, map: HMap, mapp: MapPropertyMapping)
+  class MapSecondPass(context: MetadataBuildingContext, map: HMap, mapp: OrmMapProperty)
     extends CollectionSecondPass(context, map, new java.util.HashMap[String, String]) {
     override def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
       bindMapSecondPass(mapp, map, entities.asInstanceOf[java.util.Map[String, PersistentClass]])
@@ -168,7 +168,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  def bindClass(em: EntityTypeMapping): RootClass = {
+  def bindClass(em: OrmEntityType): RootClass = {
     val entity = new RootClass(context)
     entity.setEntityName(em.entityName)
     entity.setJpaEntityName(em.entityName)
@@ -189,26 +189,22 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
       case (propertyName, p) =>
         var value: Value = null
         p match {
-          case spm: SingularPropertyMapping =>
-            spm.mapping match {
-              case btm: BasicTypeMapping =>
-                spm.property.propertyType match {
-                  case et: EntityType =>
-                    value = bindManyToOne(new HManyToOne(context, table), propertyName, et.entityName, btm.columns, spm)
-                  case _ =>
-                    if (spm.property.name == "id") {
-                      bindSimpleId(em, entity, propertyName, spm)
-                      entity.createPrimaryKey
-                    } else {
-                      value = bindSimpleValue(new SimpleValue(context, table), propertyName, spm, btm.typ.clazz.getName)
-                    }
+          case spm: OrmSingularProperty =>
+            spm.propertyType match {
+              case et: EntityType =>
+                value = bindManyToOne(new HManyToOne(context, table), propertyName, et.entityName, spm.joinColumn.get, spm)
+              case btm: OrmBasicType =>
+                if (spm.name == "id") {
+                  bindSimpleId(em, entity, propertyName, spm)
+                  entity.createPrimaryKey()
+                } else {
+                  value = bindSimpleValue(new SimpleValue(context, table), propertyName, spm, btm.clazz.getName)
                 }
-              case etm: EmbeddableTypeMapping =>
+              case etm: OrmEmbeddableType =>
                 val subpath = qualify(em.entityName, propertyName)
-                value = new HComponent(context, entity)
-                bindComponent(value.asInstanceOf[HComponent], etm, subpath, false)
+                value = bindComponent(new HComponent(context, entity), etm, subpath, false)
             }
-          case colp: PluralPropertyMapping[_] =>
+          case colp: OrmPluralProperty =>
             val hcol = createCollection(colp, entity)
             metadata.addCollectionBinding(bindCollection(entity, em.entityName + "." + propertyName, colp, hcol))
             value = hcol
@@ -250,7 +246,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     entity
   }
 
-  private def bindSimpleId(em: EntityTypeMapping, entity: RootClass, idName: String, idp: SingularPropertyMapping): Unit = {
+  private def bindSimpleId(em: OrmEntityType, entity: RootClass, idName: String, idp: OrmSingularProperty): Unit = {
     val id = new SimpleValue(context, entity.getTable)
     entity.setIdentifier(id)
     bindColumns(idp.columns, id, idName)
@@ -263,10 +259,9 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     makeIdentifier(em, id)
   }
 
-  def bindCollectionSecondPass(colp: PluralPropertyMapping[_], collection: HCollection,
+  def bindCollectionSecondPass(colp: OrmPluralProperty, collection: HCollection,
                                entities: java.util.Map[String, PersistentClass]): Unit = {
-    val pp = colp.property.asInstanceOf[PluralProperty]
-    pp.element match {
+    colp.element match {
       case et: EntityType =>
         if (colp.one2many) {
           val oneToMany = collection.getElement.asInstanceOf[HOneToMany]
@@ -278,20 +273,20 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
           collection.setInverse(true)
         } else {
           val element = bindManyToOne(new HManyToOne(context, collection.getCollectionTable), DEFAULT_ELEMENT_COLUMN_NAME,
-            et.entityName, colp.element.asInstanceOf[BasicTypeMapping].columns)
+            et.entityName, colp.inverseColumn.get)
           collection.setElement(element)
           //        bindManyToManySubelements( collection, subnode )
         }
       case _ =>
         colp.element match {
-          case compositeElem: EmbeddableTypeMapping =>
+          case compositeElem: OrmEmbeddableType =>
             val element = new HComponent(context, collection)
             collection.setElement(element)
             bindComponent(element, compositeElem, collection.getRole + ".element", false)
-          case e: BasicTypeMapping =>
+          case e: OrmBasicType =>
             val elt = new SimpleValue(context, collection.getCollectionTable)
             collection.setElement(elt)
-            bindSimpleValue(elt, DEFAULT_ELEMENT_COLUMN_NAME, e, e.typ.clazz.getName)
+            bindSimpleValue(elt, DEFAULT_ELEMENT_COLUMN_NAME, e, e.clazz.getName)
         }
     }
 
@@ -319,7 +314,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
       val entityName = collection.getElement.asInstanceOf[HOneToMany].getReferencedEntityName
       val referenced = metadata.getEntityBinding(entityName)
       val prop = new Backref
-      prop.setName("_" + collection.getOwnerEntityName + "." + colp.property.asInstanceOf[Property].name + "Backref")
+      prop.setName("_" + collection.getOwnerEntityName + "." + colp.name + "Backref")
       prop.setUpdateable(false)
       prop.setSelectable(false)
       prop.setCollectionRole(collection.getRole)
@@ -329,21 +324,18 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  def bindMapSecondPass(mapp: MapPropertyMapping, map: HMap, entities: java.util.Map[String, PersistentClass]): Unit = {
+  def bindMapSecondPass(mapp: OrmMapProperty, map: HMap, entities: java.util.Map[String, PersistentClass]): Unit = {
     bindCollectionSecondPass(mapp, map, entities)
 
     mapp.key match {
-      case sk: BasicTypeMapping =>
-        mapp.property.key match {
-          case bt: BasicType =>
-            map.setIndex(bindSimpleValue(new SimpleValue(context, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, sk, bt.clazz.getName))
-          case et: EntityType =>
-            val kt = mapp.property.key.asInstanceOf[EntityType]
-            map.setIndex(bindManyToOne(
-              new HManyToOne(context, map.getCollectionTable),
-              DEFAULT_INDEX_COLUMN_NAME, kt.entityName, sk.columns))
-        }
-      case ck: EmbeddableTypeMapping =>
+      case bt: BasicType =>
+        map.setIndex(bindSimpleValue(new SimpleValue(context, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME,
+          new SimpleColumn(mapp.keyColumn), bt.clazz.getName))
+      case kt: EntityType =>
+        map.setIndex(bindManyToOne(
+          new HManyToOne(context, map.getCollectionTable),
+          DEFAULT_INDEX_COLUMN_NAME, kt.entityName, mapp.keyColumn))
+      case ck: OrmEmbeddableType =>
         map.setIndex(bindComponent(new HComponent(context, map), ck, map.getRole + ".index", map.isOneToMany))
     }
 
@@ -351,7 +343,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
       val entityName = map.getElement.asInstanceOf[HOneToMany].getReferencedEntityName
       val referenced = metadata.getEntityBinding(entityName)
       val ib = new IndexBackref
-      ib.setName("_" + map.getOwnerEntityName + "." + mapp.property.name + "IndexBackref")
+      ib.setName("_" + map.getOwnerEntityName + "." + mapp.name + "IndexBackref")
       ib.setUpdateable(false)
       ib.setSelectable(false)
       ib.setCollectionRole(map.getRole)
@@ -420,13 +412,13 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     cm.defaultValue foreach (v => column.setDefaultValue(v))
   }
 
-  def bindManyToOne(manyToOne: HManyToOne, name: String, entityName: String, cols: Iterable[Column], fetchable: Fetchable = null): HManyToOne = {
-    bindColumns(cols, manyToOne, name)
+  def bindManyToOne(manyToOne: HManyToOne, name: String, entityName: String, col: Column, fetchable: Fetchable = null): HManyToOne = {
+    bindColumns(List(col), manyToOne, name)
     if (null != fetchable) initOuterJoinFetchSetting(manyToOne, fetchable)
     manyToOne.setReferencedEntityName(entityName)
     manyToOne.setReferenceToPrimaryKey(true)
     manyToOne.setLazy(true)
-    mappings.entities.get(entityName).foreach { et =>
+    mappings.entityTypes.get(entityName).foreach { et =>
       manyToOne.setTypeName(et.id.clazz.getName)
     }
     manyToOne
@@ -440,7 +432,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     col.setLazy(true)
   }
 
-  def makeIdentifier(em: EntityTypeMapping, sv: SimpleValue): Unit = {
+  def makeIdentifier(em: OrmEntityType, sv: SimpleValue): Unit = {
     if (null == globalIdGenerator && em.idGenerator == null) throw new RuntimeException("Cannot find id generator for entity " + em.entityName)
     val idgenerator = if (null != globalIdGenerator) globalIdGenerator else em.idGenerator
     sv.setIdentifierGeneratorStrategy(idgenerator.name)
@@ -467,7 +459,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  def qualify(first: String, second: String): String = {
+  private def qualify(first: String, second: String): String = {
     s"$first.$second"
   }
 
@@ -479,11 +471,11 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  def createCollection(colp: PluralPropertyMapping[_], owner: PersistentClass): HCollection = {
+  def createCollection(colp: OrmPluralProperty, owner: PersistentClass): HCollection = {
     colp match {
-      case mapp: MapPropertyMapping => new HMap(context, owner)
-      case cp: CollectionPropertyMapping =>
-        if (Jpas.isSeq(cp.property.clazz)) {
+      case _: OrmMapProperty => new HMap(context, owner)
+      case cp: OrmCollectionProperty =>
+        if (Jpas.isSeq(cp.clazz)) {
           if (cp.index.isEmpty) new HBag(context, owner) else new HList(context, owner)
         } else {
           new HSet(context, owner)
@@ -491,16 +483,16 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  def bindComponent(component: HComponent, comp: EmbeddableTypeMapping, path: String, isEmbedded: Boolean): HComponent = {
+  def bindComponent(component: HComponent, comp: OrmEmbeddableType, path: String, isEmbedded: Boolean): HComponent = {
     component.setEmbedded(isEmbedded)
     component.setRoleName(path)
 
-    component.setComponentClassName(comp.typ.clazz.getName)
+    component.setComponentClassName(comp.clazz.getName)
     if (isEmbedded) {
       if (component.getOwner.hasPojoRepresentation) component.setComponentClassName(component.getOwner.getClassName)
       else component.setDynamic(true)
     }
-    comp.typ.parentName foreach (pp => component.setParentProperty(pp))
+    comp.parentName foreach (pp => component.setParentProperty(pp))
 
     comp.properties foreach {
       case (propertyName, p) =>
@@ -511,22 +503,18 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
           else subpath.substring(component.getOwner.getEntityName.length + 1)
 
         p match {
-          case colp: PluralPropertyMapping[_] =>
+          case colp: OrmPluralProperty =>
             val hcol = createCollection(colp, component.getOwner)
             metadata.addCollectionBinding(bindCollection(component.getOwner, subpath, colp, hcol))
             value = hcol
-          case sm: SingularPropertyMapping =>
-            sm.mapping match {
-              case btm: BasicTypeMapping =>
-                sm.property.propertyType match {
-                  case et: EntityType =>
-                    value = bindManyToOne(new HManyToOne(context, component.getTable), propertyName, et.entityName, sm.columns, sm)
-                  case _ =>
-                    value = bindSimpleValue(new SimpleValue(context, component.getTable), relativePath, sm, sm.property.propertyType.clazz.getName)
-                }
-              case etm: EmbeddableTypeMapping =>
-                value = new HComponent(context, component)
-                bindComponent(value.asInstanceOf[HComponent], etm, subpath, isEmbedded)
+          case sm: OrmSingularProperty =>
+            sm.propertyType match {
+              case btm: OrmBasicType =>
+                value = bindSimpleValue(new SimpleValue(context, component.getTable), relativePath, sm, btm.clazz.getName)
+              case et: EntityType =>
+                value = bindManyToOne(new HManyToOne(context, component.getTable), propertyName, et.entityName, sm.joinColumn.get, sm)
+              case etm: OrmEmbeddableType =>
+                value = bindComponent(new HComponent(context, component), etm, subpath, isEmbedded)
             }
         }
         if (value != null) {
@@ -537,8 +525,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     component
   }
 
-  private def setPluralTypeName(pm: PluralPropertyMapping[_], coll: HCollection): Unit = {
-    val p = pm.property.asInstanceOf[PluralProperty]
+  private def setPluralTypeName(p: OrmPluralProperty, coll: HCollection): Unit = {
     if (classOf[collection.Set[_]].isAssignableFrom(p.clazz)) {
       coll.setTypeName(classOf[SetType].getName)
     } else if (classOf[collection.Seq[_]].isAssignableFrom(p.clazz)) {
@@ -548,7 +535,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  def bindCollection(entity: PersistentClass, role: String, cp: PluralPropertyMapping[_], coll: HCollection): HCollection = {
+  def bindCollection(entity: PersistentClass, role: String, cp: OrmPluralProperty, coll: HCollection): HCollection = {
     coll.setRole(role)
     coll.setInverse(cp.inverse)
     cp.where foreach (v => coll.setWhere(v))
@@ -556,12 +543,12 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
 
     setPluralTypeName(cp, coll)
     initOuterJoinFetchSetting(coll, cp)
-    if (Some("subselect") == cp.fetch) {
+    if (cp.fetch.contains("subselect")) {
       coll.setSubselectLoadable(true)
       coll.getOwner.setSubselectLoadableCollections(true)
     }
     coll.setLazy(true)
-    cp.property.asInstanceOf[PluralProperty].element match {
+    cp.element match {
       case et: EntityType if cp.one2many =>
         val oneToMany = new HOneToMany(context, coll.getOwner)
         coll.setElement(oneToMany)
@@ -578,10 +565,10 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
 
     cp match {
-      case cp: CollectionPropertyMapping =>
-        cp.property.orderBy foreach (v => coll.setOrderBy(v))
+      case cp: OrmCollectionProperty =>
+        cp.orderBy foreach (v => coll.setOrderBy(v))
         metadata.addSecondPass(new CollSecondPass(context, coll, cp))
-      case mapp: MapPropertyMapping =>
+      case mapp: OrmMapProperty =>
         metadata.addSecondPass(new MapSecondPass(context, coll.asInstanceOf[HMap], mapp))
     }
 
@@ -589,7 +576,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     coll
   }
 
-  def createProperty(value: Value, propertyName: String, clazz: Class[_], pm: PropertyMapping[_]): HProperty = {
+  def createProperty(value: Value, propertyName: String, clazz: Class[_], pm: OrmProperty): HProperty = {
     setTypeUsingReflection(value, clazz, propertyName)
     value match {
       case toOne: ToOne =>
@@ -601,16 +588,15 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
       case _ =>
     }
 
-    value.createForeignKey
+    value.createForeignKey()
     val prop = new HProperty
     prop.setValue(value)
     bindProperty(propertyName, pm, prop)
     prop
   }
 
-  def bindProperty(propertyName: String, pm: PropertyMapping[_], property: HProperty): Unit = {
+  def bindProperty(propertyName: String, pm: OrmProperty, property: HProperty): Unit = {
     property.setName(propertyName)
-    //property.setPropertyAccessorName(pm.access.getOrElse(context.getMappingDefaults.getImplicitPropertyAccessorName))
     property.setPropertyAccessorName("scala")
     property.setCascade(pm.cascade.getOrElse(context.getMappingDefaults.getImplicitCascadeStyleName))
     property.setUpdateable(pm.updateable)

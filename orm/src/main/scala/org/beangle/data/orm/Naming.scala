@@ -30,8 +30,6 @@ object NamingPolicy {
  * @author chaostone
  */
 trait NamingPolicy {
-
-  import NamingPolicy._
   /**
    * Convert class to table name
    *

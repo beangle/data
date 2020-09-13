@@ -54,8 +54,12 @@ object DdlGenerator {
   }
 
   private def gen(dialect: String, dir: String, locale: Locale): List[String] = {
-    Dirs.delete(new File(dir))
-    new File(dir).mkdirs()
+    val target= new File(dir)
+    target.mkdirs()
+    if(!target.exists()){
+      println("Cannot makdir "+ target.getAbsolutePath)
+      return List.empty
+    }
     val engine = Engines.forName(dialect)
     val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
     val database = new Database(engine)
@@ -151,7 +155,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     if (processed.contains(table)) return
     processed.add(table)
     checkNameLength(table.schema.name.value, table.name)
-    comments ++= engine.commentsOnTable(table)
+    comments ++= engine.commentsOnTable(table,true)
     tables += engine.createTable(table)
 
     table.primaryKey foreach { pk =>

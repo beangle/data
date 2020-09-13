@@ -22,63 +22,12 @@ import org.beangle.commons.bean.Properties
 import org.beangle.commons.collection.Collections
 import org.beangle.data.model.Entity
 
+
 object Domain {
 
-  trait MutableStructType extends StructType {
-    def properties: collection.mutable.Map[String, Property]
-
-    def getSimpleProperty(property: String): Option[Property] = {
-      properties.get(property)
-    }
-
-    def getProperty(property: String): Option[Property] = {
-      val idx = property.indexOf(".")
-      if (idx == -1) getSimpleProperty(property)
-      else getSimpleProperty(property.substring(0, idx)).asInstanceOf[MutableStructType].getProperty(property.substring(idx + 1))
-    }
-
-    def addProperty(property: Property): Unit = {
-      properties.put(property.name, property)
-    }
+  final class SimpleProperty(val name: String, val clazz: Class[_], val optional: Boolean) extends SingularProperty {
+    val propertyType = new BasicType(clazz)
   }
-
-  class EntityTypeImpl(val entityName: String, var clazz: Class[_]) extends MutableStructType with EntityType {
-    val properties: collection.mutable.Map[String, Property] = Collections.newMap[String, Property]
-    var idName: String = "id"
-
-    def this(c: Class[_]) {
-      this(c.getName, c)
-    }
-
-    def id: Property = {
-      properties(idName)
-    }
-
-    override def toString: String = {
-      s"$entityName[${clazz.getName}]"
-    }
-  }
-
-  final class EmbeddableTypeImpl(val clazz: Class[_]) extends MutableStructType with EmbeddableType {
-    val properties: collection.mutable.Map[String, Property] = Collections.newMap[String, Property]
-    var parentName: Option[String] = None
-  }
-
-  abstract class PropertyImpl(val name: String, val clazz: Class[_]) extends Property {
-    var optional: Boolean = false
-  }
-
-  final class SingularPropertyImpl(name: String, clazz: Class[_], var propertyType: Type)
-    extends PropertyImpl(name, clazz) with SingularProperty
-
-  final class CollectionPropertyImpl(name: String, clazz: Class[_], var element: Type)
-    extends PropertyImpl(name, clazz) with CollectionProperty {
-    var orderBy: Option[String] = None
-  }
-
-  final class MapPropertyImpl(name: String, clazz: Class[_], val key: Type, var element: Type)
-    extends PropertyImpl(name, clazz) with MapProperty
-
 }
 
 trait Domain {

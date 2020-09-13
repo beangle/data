@@ -104,7 +104,7 @@ object PropertyAccessor {
     }
 
     def getForInsert(target: Object, mergeMap: ju.Map[_, _], session: SharedSessionContractImplementor): Object = {
-      return get(target)
+      get(target)
     }
 
     def getReturnType(): Class[_] = returnType

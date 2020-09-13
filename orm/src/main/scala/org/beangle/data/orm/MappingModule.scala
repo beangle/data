@@ -26,8 +26,6 @@ import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.meta._
-import org.beangle.data.model.meta.Domain.{CollectionPropertyImpl, MapPropertyImpl, SingularPropertyImpl}
-import org.beangle.data.model.meta.Property
 
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asScala
@@ -39,17 +37,18 @@ object MappingModule {
   val OrderColumnName = "idx"
 
   trait PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit
   }
 
   /** 创建索引
-   *
-   * 针对唯一索引，目前不支持空列
-   * @param name
-   * @param unique
-   */
+    *
+    * 针对唯一索引，目前不支持空列
+    *
+    * @param name   indexname
+    * @param unique unique index
+    */
   class IndexDeclaration(name: String, unique: Boolean) {
-    def apply(holder: EntityHolder[_], pms: Iterable[PropertyMapping[_]]): Unit = {
+    def apply(holder: EntityHolder[_], pms: Iterable[OrmProperty]): Unit = {
       // hibernate的index注解里没有支持unique，而是通过unique key支持的，为了保持一直，这里也类似处理
       // 这样和hibernate的sql输出思路类似
       if (unique) {
@@ -81,7 +80,7 @@ object MappingModule {
   }
 
   class NotNull extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
       ch.columns foreach (c => c.nullable = false)
     }
@@ -89,7 +88,7 @@ object MappingModule {
 
   /** 不可更新，不可插入 */
   class ReadOnly extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       pm.updateable = false
       pm.insertable = false
     }
@@ -97,16 +96,16 @@ object MappingModule {
 
   /** 不可更新，但可插入 */
   class Immutable extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       pm.updateable = false
       pm.insertable = true
     }
   }
 
   class Lob extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
-      val c = pm.property.asInstanceOf[Property].clazz
+      val c = pm.clazz
       var isBlob = false
       var isClob = false
       if (c.isArray) {
@@ -124,8 +123,7 @@ object MappingModule {
         }
       }
       if (!isClob && !isBlob) {
-        val p = pm.property.asInstanceOf[Property]
-        throw new RuntimeException(s"Cannot mapping ${holder.clazz.getName}.${p.name}(${c.getName}) to lob!")
+        throw new RuntimeException(s"Cannot mapping ${holder.clazz.getName}.${pm.name}(${c.getName}) to lob!")
       } else {
         val engine = holder.mappings.database.engine
         if (isBlob) {
@@ -138,47 +136,53 @@ object MappingModule {
   }
 
   class Unique extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
       ch.columns foreach (c => c.unique = true)
     }
   }
 
   class KeyColumn(name: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val mp = cast[MapPropertyMapping](pm, holder, "key column should used on MapProperty")
-      val ch = mp.key.asInstanceOf[ColumnHolder]
-      ch.columns foreach (x => x.name = Identifier(name))
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val mp = cast[OrmMapProperty](pm, holder, "key column should used on MapProperty")
+      mp.keyColumn.name = Identifier(name)
     }
   }
 
   class KeyLength(len: Int) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val mp = cast[MapPropertyMapping](pm, holder, "key length should used on MapProperty")
-      val ch = mp.key.asInstanceOf[ColumnHolder]
-      ch.columns foreach (x => x.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len))
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val mp = cast[OrmMapProperty](pm, holder, "key length should used on MapProperty")
+      val x = mp.keyColumn
+      mp.keyColumn.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len)
     }
   }
 
   class ElementColumn(name: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val mp = cast[PluralPropertyMapping[_]](pm, holder, "element column should used on PluralProperty")
-      val ch = mp.element.asInstanceOf[ColumnHolder]
-      ch.columns foreach (x => x.name = Identifier(name))
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val mp = cast[OrmPluralProperty](pm, holder, "element column should used on PluralProperty")
+
+      mp.element match {
+        case ch: OrmBasicType => ch.columns foreach (x => x.name = Identifier(name))
+        case _: OrmEntityType => mp.inverseColumn foreach (x => x.name = Identifier(name))
+        case _ =>
+      }
     }
   }
 
   class ElementLength(len: Int) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val mp = cast[PluralPropertyMapping[_]](pm, holder, "element length should used on PluralProperty")
-      val ch = mp.element.asInstanceOf[ColumnHolder]
-      ch.columns foreach (x => x.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len))
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val mp = cast[OrmPluralProperty](pm, holder, "element length should used on PluralProperty")
+      mp.element match {
+        case ch: OrmBasicType => ch.columns foreach (x => x.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len))
+        case _: OrmEntityType => mp.inverseColumn foreach (x => x.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len))
+        case _ =>
+      }
     }
   }
 
   class JoinColumn(name: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val mp = cast[PluralPropertyMapping[_]](pm, holder, "element column should used on PluralProperty")
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val mp = cast[OrmPluralProperty](pm, holder, "element column should used on PluralProperty")
       if (null != mp.ownerColumn) {
         mp.ownerColumn.name = Identifier(name)
       }
@@ -186,9 +190,8 @@ object MappingModule {
   }
 
   class Cache(val cacheholder: CacheHolder) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val p = pm.property.asInstanceOf[Property]
-      cacheholder.add(List(new Collection(holder.clazz, p.name)))
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      cacheholder.add(List(new Collection(holder.clazz, pm.name)))
     }
   }
 
@@ -203,17 +206,13 @@ object MappingModule {
   }
 
   class One2Many(targetEntity: Option[Class[_]], mappedBy: String, private var cascade: Option[String] = None) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val colpm = cast[PluralPropertyMapping[_]](pm, holder, "one2many should used on seq")
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val colpm = cast[OrmCollectionProperty](pm, holder, "one2many should used on seq")
       colpm.ownerColumn = genOwnerColumn(holder, Some(mappedBy))
       colpm.mappedBy = Some(mappedBy)
       targetEntity foreach { clazz =>
-        //重新指定集合中的元素属性
-        colpm.property match {
-          case cp: CollectionPropertyImpl => cp.element = holder.mappings.refEntity(clazz, clazz.getName)
-          case mp: MapPropertyImpl => mp.element = holder.mappings.refEntity(clazz, clazz.getName)
-        }
-        colpm.element = holder.mappings.refToOneMapping(clazz, clazz.getName)
+        colpm.element = holder.mappings.refEntity(clazz, clazz.getName)
+        colpm.inverseColumn = Some(holder.mappings.newRefColumn(clazz, clazz.getName))
       }
       colpm.one2many = true
       cascade foreach (c => colpm.cascade = Some(c))
@@ -231,35 +230,36 @@ object MappingModule {
   }
 
   class OrderBy(orderBy: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val cm = cast[CollectionPropertyMapping](pm, holder, "order by should used on seq")
-      cm.property.asInstanceOf[CollectionPropertyImpl].orderBy = Some(orderBy)
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val cm = cast[OrmCollectionProperty](pm, holder, "order by should used on seq")
+      cm.asInstanceOf[OrmCollectionProperty].orderBy = Some(orderBy)
     }
   }
 
   class Table(table: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      cast[PluralPropertyMapping[_]](pm, holder, "table should used on seq").table = Some(table)
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      cast[OrmPluralProperty](pm, holder, "table should used on seq").table = Some(table)
     }
   }
 
   class ColumnName(name: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
       if (ch.columns.size == 1) ch.columns.head.name = Identifier(name)
     }
   }
 
   class OrderColumn(orderColumn: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val collp = cast[CollectionPropertyMapping](pm, holder, "order column should used on many2many seq")
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val collp = cast[OrmCollectionProperty](pm, holder, "order column should used on many2many seq")
       val idxCol = new Column(Identifier(if (null == orderColumn) MappingModule.OrderColumnName else orderColumn), holder.mappings.sqlTypeMapping.sqlType(classOf[Int]), false)
+      idxCol.comment=Some("index no")
       collp.index = Some(idxCol)
     }
   }
 
   class Length(len: Int) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
       val engine = holder.mappings.database.engine
       ch.columns foreach (c => c.sqlType = engine.toType(c.sqlType.code, len, c.sqlType.scale.getOrElse(0)))
@@ -267,8 +267,8 @@ object MappingModule {
   }
 
   class Target(clazz: Class[_]) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], pm: PropertyMapping[_]): Unit = {
-      val sp = pm.property.asInstanceOf[SingularPropertyImpl]
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val sp = pm.asInstanceOf[OrmSingularProperty]
       sp.propertyType = holder.mappings.refEntity(clazz, clazz.getName)
     }
   }
@@ -280,8 +280,8 @@ object MappingModule {
       if (declarations.nonEmpty && lasts.isEmpty) {
         throw new RuntimeException("Cannot find access properties for " + holder.mapping.entityName + " with declarations:" + declarations)
       }
-      lasts foreach { property =>
-        val pm = holder.mapping.getPropertyMapping(property)
+      lasts foreach { name =>
+        val pm = holder.mapping.property(name)
         declarations foreach (d => d(holder, pm))
         pm.mergeable = false
       }
@@ -310,7 +310,7 @@ object MappingModule {
     }
   }
 
-  final class EntityHolder[T](val mapping: EntityTypeMapping, val mappings: Mappings, val clazz: Class[T], module: MappingModule) {
+  final class EntityHolder[T](val mapping: OrmEntityType, val mappings: Mappings, val clazz: Class[T], module: MappingModule) {
 
     var proxy: Proxy.EntityProxy = _
 
@@ -360,15 +360,15 @@ object MappingModule {
     }
 
     def add(first: Class[_ <: org.beangle.data.model.Entity[_]], classes: Class[_ <: org.beangle.data.model.Entity[_]]*): this.type = {
-      mappings.getMapping(first).cache(cacheRegion, cacheUsage)
+      mappings.getEntity(first).cache(cacheRegion, cacheUsage)
       for (clazz <- classes)
-        mappings.getMapping(clazz).cache(cacheRegion, cacheUsage)
+        mappings.getEntity(clazz).cache(cacheRegion, cacheUsage)
       this
     }
   }
 
   final class Entities(val mappings: Mappings,
-                       val entityMappings: mutable.Map[String, EntityTypeMapping],
+                       val entityMappings: mutable.Map[String, OrmEntityType],
                        cacheConfig: CacheConfig) {
     def except(clazzes: Class[_]*): this.type = {
       clazzes foreach { c => entityMappings -= c.getName }
@@ -394,12 +394,11 @@ object MappingModule {
     }
   }
 
-  private def mismatch(msg: String, e: EntityTypeMapping, pm: PropertyMapping[_]): Unit = {
-    val p = pm.property.asInstanceOf[Property]
-    throw new RuntimeException(msg + s",Not for ${e.entityName}.${p.name}(${pm.getClass.getSimpleName}/${p.clazz.getName})")
+  private def mismatch(msg: String, e: OrmEntityType, pm: OrmProperty): Unit = {
+    throw new RuntimeException(msg + s",Not for ${e.entityName}.${pm.name}(${pm.getClass.getSimpleName}/${pm.clazz.getName})")
   }
 
-  private def cast[T](pm: PropertyMapping[_], holder: EntityHolder[_], msg: String)(implicit manifest: Manifest[T]): T = {
+  private def cast[T](pm: OrmProperty, holder: EntityHolder[_], msg: String)(implicit manifest: Manifest[T]): T = {
     if (!manifest.runtimeClass.isAssignableFrom(pm.getClass)) mismatch(msg, holder.mapping, pm)
     pm.asInstanceOf[T]
   }
@@ -413,7 +412,7 @@ abstract class MappingModule extends Logging {
   private var currentHolder: EntityHolder[_] = _
   private val defaultIdGenerators = Collections.newMap[Class[_], String]
   private val cacheConfig = new CacheConfig()
-  private val entityMappings = Collections.newMap[String, EntityTypeMapping]
+  private val entityMappings = Collections.newMap[String, OrmEntityType]
   private var mappings: Mappings = _
 
   init()
@@ -566,7 +565,7 @@ abstract class MappingModule extends Logging {
   }
 
   protected final def all: Entities = {
-    val newEntities = Collections.newMap[String, EntityTypeMapping]
+    val newEntities = Collections.newMap[String, OrmEntityType]
     new Entities(mappings, newEntities ++ entityMappings, cacheConfig)
   }
 
@@ -597,11 +596,11 @@ abstract class MappingModule extends Logging {
       throw new RuntimeException("Cannot find access properties for " + currentHolder.mapping.entityName + " with index declarations")
     }
     val mapping = currentHolder.mapping
-    val pms = Collections.newBuffer[PropertyMapping[_]]
+    val pms = Collections.newBuffer[OrmProperty]
     //Don't wrap java.util.LinkedHashSet to scala set,It will lost order.
     val i = lasts.iterator()
     while (i.hasNext) {
-      pms += mapping.getPropertyMapping(i.next())
+      pms += mapping.property(i.next())
     }
     new IndexDeclaration(name, unique).apply(currentHolder, pms)
     lasts.clear()

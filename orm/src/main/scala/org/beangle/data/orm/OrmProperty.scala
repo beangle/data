@@ -25,7 +25,7 @@ trait Fetchable {
   var fetch: Option[String] = None
 }
 
-abstract class PropertyMapping[T <: Property](val property: T) {
+abstract class OrmProperty(val name: String, val clazz: Class[_], var optional: Boolean) extends Property {
   var cascade: Option[String] = None
   var mergeable: Boolean = true
 
@@ -39,25 +39,32 @@ abstract class PropertyMapping[T <: Property](val property: T) {
   def copy(): this.type
 }
 
-final class SingularPropertyMapping(property: SingularProperty, var mapping: TypeMapping)
-  extends PropertyMapping(property) with Fetchable with ColumnHolder with Cloneable {
-  def copy: this.type = {
+final class OrmSingularProperty(name: String, clazz: Class[_], optional: Boolean, var propertyType: OrmType)
+  extends OrmProperty(name, clazz, optional) with Fetchable with ColumnHolder with Cloneable with SingularProperty {
+
+  var joinColumn: Option[Column] = None
+
+  def copy(): this.type = {
     val cloned = super.clone().asInstanceOf[this.type]
-    cloned.mapping = this.mapping.copy()
+    cloned.propertyType = this.propertyType.copy()
+    cloned.joinColumn = joinColumn.map(_.clone())
     cloned
   }
 
   def columns: Iterable[Column] = {
-    mapping match {
-      case s: BasicTypeMapping => s.columns
-      case _ => throw new RuntimeException("Columns on apply on BasicTypeMapping")
+    propertyType match {
+      case b: OrmBasicType => List(b.column)
+      case e: OrmEntityType => joinColumn
+      case _ => throw new RuntimeException("Cannot support iterable column over Embedded")
     }
   }
+
 }
 
-abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var element: TypeMapping)
-  extends PropertyMapping(property) with Fetchable with Cloneable {
+abstract class OrmPluralProperty(name: String, clazz: Class[_], var element: OrmType)
+  extends OrmProperty(name, clazz, true) with PluralProperty with Fetchable with Cloneable {
   var ownerColumn: Column = _
+  var inverseColumn: Option[Column] = None
   var mappedBy: Option[String] = None
   var inverse: Boolean = false
   var where: Option[String] = None
@@ -71,22 +78,26 @@ abstract class PluralPropertyMapping[T <: PluralProperty](property: T, var eleme
 
   def many2many: Boolean = !one2many
 
-  def copy: this.type = {
+  def copy(): this.type = {
     val cloned = super.clone().asInstanceOf[this.type]
     cloned.element = this.element.copy()
     cloned
   }
 }
 
-class CollectionPropertyMapping(property: CollectionProperty, element: TypeMapping) extends PluralPropertyMapping(property, element)
+class OrmCollectionProperty(name: String, clazz: Class[_], element: OrmType)
+  extends OrmPluralProperty(name, clazz, element) with CollectionProperty {
+  var orderBy: Option[String] = None
+}
 
-final class MapPropertyMapping(property: MapProperty, var key: TypeMapping, element: TypeMapping)
-  extends PluralPropertyMapping(property, element) {
+final class OrmMapProperty(name: String, clazz: Class[_], var key: OrmType, elem: OrmType)
+  extends OrmPluralProperty(name, clazz, elem) with MapProperty {
+
+  var keyColumn: Column = _
 
   override def copy(): this.type = {
     val cloned = super.clone().asInstanceOf[this.type]
     cloned.element = this.element.copy()
-    cloned.key = this.key.copy()
     cloned
   }
 }

@@ -54,8 +54,9 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   }
 
   /** has quoted identifier
-   * @return
-   */
+    *
+    * @return
+    */
   def hasQuotedIdentifier: Boolean = {
     name.quoted ||
       columns.exists(_.name.quoted) ||
@@ -141,6 +142,10 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
 
   def getColumn(columnName: String): Option[Column] = {
     columns.find(f => f.name.toLiteral(engine) == columnName)
+  }
+
+  def columnExits(columnName: Identifier): Boolean = {
+    columns.exists(f => f.name == columnName)
   }
 
   def getForeignKey(keyName: String): Option[ForeignKey] = {

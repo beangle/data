@@ -48,7 +48,7 @@ object Diff {
     val db2 = Serializer.fromXml(Files.readString(dbFile2))
     val diff = Diff.diff(db1, db2)
     val sqls = Diff.sql(diff)
-    Files.writeString(new File(args(2)), sqls.toBuffer.sorted.append("").mkString(";\n"))
+    Files.writeString(new File(args(2)), sqls.toBuffer.append("").mkString(";\n"))
   }
 
   def diff(older: Database, newer: Database): DatabaseDiff = {
@@ -161,11 +161,28 @@ object Diff {
         sb += engine.dropTable(diff.older.getTable(schema, t).get.qualifiedName)
       }
       sdf.tables.newer foreach { t =>
-        sb += engine.createTable(diff.newer.getTable(schema, t).get)
+        val tb = diff.newer.getTable(schema, t).get
+        sb += engine.createTable(tb)
+        sb ++= engine.commentsOnTable(tb,false)
+        tb.primaryKey foreach { pk =>
+          sb += engine.alterTableAddPrimaryKey(tb, pk)
+        }
+
+        tb.uniqueKeys foreach { uk =>
+          sb += engine.alterTableAddUnique(uk)
+        }
+
+        tb.indexes foreach { idx =>
+          sb += engine.createIndex(idx)
+        }
+
+        tb.foreignKeys foreach { fk =>
+          sb += engine.alterTableAddForeignKey(fk)
+        }
       }
       sdf.tableDiffs foreach { case (_, tdf) =>
         if (tdf.hasComment) {
-          sb ++= engine.commentsOnTable(tdf.older.qualifiedName, tdf.newer.comment)
+          sb ++= engine.commentOnTable(tdf.older.qualifiedName, tdf.newer.comment)
         }
         tdf.columns.removed foreach { c =>
           sb += engine.alterTableDropColumn(tdf.older, tdf.older.column(c))
@@ -209,7 +226,7 @@ object Diff {
             }
           }
           if (nCol.comment != oCol.comment) {
-            sb ++= engine.commentsOnColumn(tdf.older, oCol, nCol.comment)
+            sb ++= engine.commentOnColumn(tdf.older, oCol, nCol.comment)
           }
           // ignore check and unique,using constrants
         }

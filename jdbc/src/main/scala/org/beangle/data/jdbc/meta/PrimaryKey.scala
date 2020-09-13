@@ -40,7 +40,7 @@ class PrimaryKey(table: Table, n: Identifier, column: Identifier) extends Constr
   override def equals(other: Any): Boolean = {
     other match {
       case c: PrimaryKey =>
-        this.name == c.name && this.enabled == c.enabled && this.columns == c.columns
+        this.name == c.name && this.enabled == c.enabled && sameNameColumns(this.columns, c.columns)
       case _ => false
     }
   }

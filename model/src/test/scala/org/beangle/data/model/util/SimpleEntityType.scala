@@ -16,12 +16,30 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.hibernate
+package org.beangle.data.model.util
 
-import java.io.Serializable;
-import org.hibernate.EmptyInterceptor
-class TestInterceptor extends EmptyInterceptor {
-  override def onPrepareStatement(sql: String): String = {
-    sql
+import org.beangle.commons.collection.Collections
+import org.beangle.data.model.meta.{EntityType, Property}
+
+final class SimpleEntityType(val clazz: Class[_]) extends EntityType {
+
+  var entityName: String = clazz.getName
+
+  var properties: collection.mutable.Map[String, Property] = Collections.newMap
+
+  def id: Property = {
+    properties("id")
+  }
+
+  def property(name: String): Property = {
+    properties(name)
+  }
+
+  def getProperty(property: String): Option[Property] = {
+    properties.get(property)
+  }
+
+  def addProperty(property: Property): Unit = {
+    properties.put(property.name, property)
   }
 }

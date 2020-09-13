@@ -42,8 +42,8 @@ class MapType extends UserCollectionType {
     new PersistentMap(session, collection.asInstanceOf[MMap])
   }
 
-  def getElementsIterator(collection: Object): ju.Iterator[ju.Map.Entry[Object, Object]] = {
-    asJava(collection.asInstanceOf[MMap]).entrySet().iterator()
+  def getElementsIterator(collection: Object): ju.Iterator[Object] = {
+    asJava(collection.asInstanceOf[MMap]).values().iterator()
   }
 
   def contains(collection: Object, entity: Object): Boolean = {
