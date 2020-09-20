@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.beangle.data</groupId>
     <artifactId>beangle-data-parent_2.13</artifactId>
-    <version>5.3.10</version>
+    <version>5.3.11</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>beangle-data-hibernate_2.13</artifactId>
@@ -90,9 +90,8 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <optional>true</optional>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
   </dependencies>
 </project>

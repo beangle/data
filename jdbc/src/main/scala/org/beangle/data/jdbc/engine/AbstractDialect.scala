@@ -258,7 +258,7 @@ trait AbstractDialect extends Dialect {
       .append(" (")
     val iter = i.columns.iterator
     while (iter.hasNext) {
-      buf.append(iter.next)
+      buf.append(iter.next())
       if (iter.hasNext) buf.append(", ")
     }
     buf.append(")")

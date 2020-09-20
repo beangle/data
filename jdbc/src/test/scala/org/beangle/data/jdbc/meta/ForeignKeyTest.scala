@@ -45,7 +45,7 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
   "toLowerCase " should "correct" in {
     val database = new Database(Engines.PostgreSQL)
     val schema = database.getOrCreateSchema("public")
-    val tableA = buildTable.clone(schema)
+    val tableA = buildTable().clone(schema)
     val pgdialect = Engines.PostgreSQL
     tableA.toCase(true)
     assert(tableA.foreignKeys.size == 1)

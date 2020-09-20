@@ -18,20 +18,17 @@
  */
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.engine.Engine
-
 /**
-  * JDBC column metadata
-  *
-  * @author chaostone
-  */
+ * JDBC column metadata
+ * @author chaostone
+ */
 class Column(var name: Identifier, var sqlType: SqlType, var nullable: Boolean = true) extends Cloneable with Comment {
 
   var unique: Boolean = false
   var defaultValue: Option[String] = None
   var check: Option[String] = None
 
-  def this(name: String, sqlType: SqlType) {
+  def this(name: String, sqlType: SqlType) = {
     this(Identifier(name), sqlType)
   }
 

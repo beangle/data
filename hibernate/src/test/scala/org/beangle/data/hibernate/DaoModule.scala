@@ -31,7 +31,7 @@ object DaoModule extends BindModule {
   protected override def binding(): Unit = {
     bind("DataSource.default", classOf[DriverManagerDataSource]).property("driverClassName", "org.h2.Driver")
       .property("url", "jdbc:h2:./target/beangle;AUTO_SERVER=TRUE").property("username", "sa")
-      .property("password", "").primary
+      .property("password", "").primary()
 
     bind("HibernateConfig.default", classOf[PropertiesFactoryBean]).property(
       "properties",
@@ -51,16 +51,16 @@ object DaoModule extends BindModule {
     bind("SessionFactory.default", classOf[LocalSessionFactoryBean])
       .property("properties", ref("HibernateConfig.default"))
       .property("configLocations", "classpath*:META-INF/hibernate.cfg.xml")
-      .property("ormLocations", "classpath*:META-INF/beangle/orm.xml").primary
+      .property("ormLocations", "classpath*:META-INF/beangle/orm.xml").primary()
 
-    bind("HibernateTransactionManager.default", classOf[HibernateTransactionManager]).primary
+    bind("HibernateTransactionManager.default", classOf[HibernateTransactionManager]).primary()
 
     bind("TransactionProxy.template", classOf[TransactionProxyFactoryBean]).setAbstract().property(
       "transactionAttributes",
       props("save*=PROPAGATION_REQUIRED", "update*=PROPAGATION_REQUIRED", "delete*=PROPAGATION_REQUIRED",
         "batch*=PROPAGATION_REQUIRED", "execute*=PROPAGATION_REQUIRED", "remove*=PROPAGATION_REQUIRED",
         "create*=PROPAGATION_REQUIRED", "init*=PROPAGATION_REQUIRED", "authorize*=PROPAGATION_REQUIRED",
-        "*=PROPAGATION_REQUIRED,readOnly")).primary
+        "*=PROPAGATION_REQUIRED,readOnly")).primary()
 
     bind("EntityDao.hibernate", classOf[TransactionProxyFactoryBean]).proxy("target", classOf[HibernateEntityDao])
       .parent("TransactionProxy.template").primary().description("基于Hibernate提供的通用DAO")

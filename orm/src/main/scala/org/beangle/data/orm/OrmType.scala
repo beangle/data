@@ -156,7 +156,7 @@ final class Collection(val clazz: Class[_], val property: String) {
   var cacheRegion: String = _
   var cacheUsage: String = _
 
-  def this(clazz: Class[_], property: String, region: String, usage: String) {
+  def this(clazz: Class[_], property: String, region: String, usage: String) = {
     this(clazz, property)
     cache(region, usage)
   }
