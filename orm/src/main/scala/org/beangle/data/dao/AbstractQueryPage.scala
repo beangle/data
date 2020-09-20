@@ -79,12 +79,12 @@ class PageIterator[T](val queryPage: AbstractQueryPage[T]) extends Iterator[T] {
   override def next(): T = {
     if (dataIndex < queryPage.page.size) {
       dataIndex += 1
-      innerIter.next
+      innerIter.next()
     } else {
       queryPage.next()
       dataIndex = 1
       innerIter = queryPage.page.iterator
-      innerIter.next
+      innerIter.next()
     }
   }
 

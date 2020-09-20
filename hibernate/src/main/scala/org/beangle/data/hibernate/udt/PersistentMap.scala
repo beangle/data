@@ -41,7 +41,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
 
   private var map: mutable.Map[Object, Object] = null
 
-  def this(session: SharedSessionContractImplementor, map: mutable.Map[Object, Object]) {
+  def this(session: SharedSessionContractImplementor, map: mutable.Map[Object, Object]) = {
     this(session)
     this.map = map
     if (null != map) {
@@ -140,7 +140,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
   }
 
   override def readFrom(rs: ResultSet, persister: CollectionPersister, descriptor: CollectionAliases,
-    owner: Object): Object = {
+                        owner: Object): Object = {
     val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases, getSession)
     if (null != element) {
       val index = persister.readIndex(rs, descriptor.getSuffixedIndexAliases, getSession)
@@ -242,22 +242,35 @@ class PersistentMap(session: SharedSessionContractImplementor)
   }
 
   final class Put(val value: (Object, Object)) extends DelayedOperation {
-    override def operate(): Unit = { map += value }
+    override def operate(): Unit = {
+      map += value
+    }
+
     override def getAddedInstance(): Object = value
+
     override def getOrphan(): Object = null
   }
 
   final class Remove(index: Object, old: Object) extends DelayedOperation {
-    override def operate(): Unit = { map.remove(index) }
+    override def operate(): Unit = {
+      map.remove(index)
+    }
+
     override def getAddedInstance(): Object = null
+
     override def getOrphan(): Object = old
   }
 
   final class Clear extends DelayedOperation {
-    override def operate(): Unit = { map.clear() }
+    override def operate(): Unit = {
+      map.clear()
+    }
+
     override def getAddedInstance(): Object = null
+
     override def getOrphan(): Object = {
       throw new UnsupportedOperationException("queued clear cannot be used with orphan delete")
     }
   }
+
 }

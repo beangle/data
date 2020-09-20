@@ -35,7 +35,7 @@ class DatasourceConfig(val driver: String, val engine: Engine) {
   var schema: Identifier = _
   var catalog: Identifier = _
 
-  def this(data: collection.Map[String, String]) {
+  def this(data: collection.Map[String, String]) = {
     this(data("driver"), Vendors.drivers(data("driver")).vendor.engine)
     data.foreach {
       case (k, v) =>

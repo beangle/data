@@ -67,7 +67,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
 
   def quotedColumnNames: List[String] = {
     val e = engine
-    columns.result.map(_.name.toLiteral(e))
+    columns.result().map(_.name.toLiteral(e))
   }
 
   def qualifiedName: String = {

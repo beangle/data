@@ -22,31 +22,32 @@ import org.beangle.data.model.pojo.Named
 
 class TestModule extends MappingModule {
 
+
   override def binding(): Unit = {
     autoIncrement()
 
     bind[TestUser].declare { e =>
-      e.properties is(depends("user"), readOnly)
+      e.properties.is(depends("user"), readOnly)
       e.friends is eleColumn("friend_user_id")
-      e.tags is(table("users_tags"), keyLength(30), eleColumn("value2"), eleLength(200))
+      e.tags.is(table("users_tags"), keyLength(30), eleColumn("value2"), eleLength(200))
     }
 
     bind[TestRole].declare { e =>
       e.name is unique
-      e.vocations is(joinColumn("role_id"), eleColumn("exclude_on"))
+      e.vocations.is(joinColumn("role_id"), eleColumn("exclude_on"))
       e.properties is keyColumn("type_id")
     }
 
     bind[UserProperty]
 
     bind[UrlMenu].declare { c =>
-      c.url is(notnull, length(40))
+      c.url.is(notnull, length(40))
       c.parent is target[UrlMenu]
       index("idx_menu_name", true, c.name)
     }
 
-    bind[Named].declare{c=>
-     c.name is length(13)
+    bind[Named].declare { c =>
+      c.name is length(13)
     }
     all.cacheAll()
   }

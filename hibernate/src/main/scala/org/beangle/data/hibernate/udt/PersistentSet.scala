@@ -23,8 +23,7 @@ import java.sql.ResultSet
 import java.{util => ju}
 
 import scala.jdk.javaapi.CollectionConverters.asJava
-import scala.collection.mutable.{Buffer, HashMap => MHashMap, HashSet => MHashSet, ListBuffer, Set => MSet}
-
+import scala.collection.mutable.{ListBuffer, HashMap => MHashMap, HashSet => MHashSet, Set => MSet}
 import org.hibernate.`type`.Type
 import org.hibernate.collection.internal.AbstractPersistentCollection
 import org.hibernate.collection.internal.AbstractPersistentCollection.DelayedOperation
@@ -32,14 +31,16 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.loader.CollectionAliases
 import org.hibernate.persister.collection.CollectionPersister
 
+import scala.collection.mutable
+
 class PersistentSet(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection(session) with MSet[Object] {
 
-  protected var tempList: Buffer[Object] = _
+  protected var tempList: mutable.Buffer[Object] = _
 
   protected var set: MSet[Object] = _
 
-  def this(session: SharedSessionContractImplementor, set: MSet[Object]) {
+  def this(session: SharedSessionContractImplementor, set: MSet[Object]) = {
     this(session)
     this.set = set
     if (null != set) {
