@@ -41,7 +41,7 @@ import scala.reflect.runtime.{universe => ru}
 
 final class Mappings(val database: Database, val profiles: Profiles) extends Logging {
 
-  def this(database: Database, ormLocations: List[URL]) {
+  def this(database: Database, ormLocations: List[URL]) = {
     this(database, new Profiles(new Resources(None, ormLocations, None)))
   }
 

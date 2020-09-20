@@ -39,8 +39,8 @@
 
   <properties>
     <commons.version>5.2.0</commons.version>
-    <cdi.version>0.2.2</cdi.version>
-    <spring.version>5.2.6.RELEASE</spring.version>
+    <cdi.version>0.2.3</cdi.version>
+    <spring.version>5.2.9.RELEASE</spring.version>
     <HikariCP.version>3.4.5</HikariCP.version>
 
     <jpa.version>2.2</jpa.version>

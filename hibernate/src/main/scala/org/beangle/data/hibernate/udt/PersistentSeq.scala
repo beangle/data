@@ -37,7 +37,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
 
   protected var list: mutable.Buffer[Object] = _
 
-  def this(session: SharedSessionContractImplementor, list: mutable.Buffer[Object]) {
+  def this(session: SharedSessionContractImplementor, list: mutable.Buffer[Object]) = {
     this(session)
     this.list = list
     if (null != list) {
@@ -79,7 +79,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     if (readSize()) getCachedSize else list.size
   }
 
-  override def isEmpty(): Boolean = {
+  override def isEmpty: Boolean = {
     if (readSize()) getCachedSize == 0 else list.isEmpty
   }
 
