@@ -18,12 +18,11 @@
  */
 package org.beangle.data.hibernate.spring.web
 
+import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
 import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.web.intercept.OncePerRequestInterceptor
 import org.beangle.data.hibernate.spring.SessionUtils
 import org.hibernate.SessionFactory
-
-import jakarta.servlet.http.{ HttpServletRequest, HttpServletResponse }
 
 @description("打开Hibernate Session拦截器")
 class OpenSessionInViewInterceptor(factories: List[SessionFactory]) extends OncePerRequestInterceptor {

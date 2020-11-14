@@ -22,7 +22,7 @@ import java.time.{LocalDate, YearMonth}
 
 import org.beangle.commons.lang.time.{HourMinute, WeekState, WeekTime}
 import org.beangle.data.dao.OqlBuilder
-import org.beangle.data.hibernate.model._
+import org.beangle.data.hibernate.model.{LongIdResource, _}
 import org.hibernate.SessionFactory
 
 import scala.collection.mutable.ListBuffer
@@ -33,7 +33,6 @@ object UserCrudTest {
     val entityDao = new HibernateEntityDao(sf)
     val session = sf.getCurrentSession
     val transaction = session.beginTransaction()
-    val roles = entityDao.getAll(classOf[User])
     val user = new User(1)
     user.name = new Name
     user.name.first = "Bill"
@@ -44,7 +43,7 @@ object UserCrudTest {
     wt.beginAt = HourMinute.Zero
     wt.endAt = HourMinute.Zero
     wt.weekstate = WeekState.apply("0110")
-    user.times.put(1,wt)
+    user.times.put(1, wt)
     val role1 = new ExtendRole(1)
     val role2 = new ExtendRole(2)
     val role3 = new ExtendRole(3)
@@ -74,8 +73,9 @@ object UserCrudTest {
     user.properties.put("address", "some street")
     user.occupy = new WeekState(2)
     role2.parent = Some(role1)
-    entityDao.saveOrUpdate(role1, role2, role3, role4, role41, user)
-
+    entityDao.saveOrUpdate(role1, role2, role3, role4, role41)
+    entityDao.saveOrUpdate(user)
+    session.flush();
     val query = OqlBuilder.from(classOf[Role], "r").where("r.parent = :parent", role1)
     val list = entityDao.search(query)
     assert(list.size == 1)

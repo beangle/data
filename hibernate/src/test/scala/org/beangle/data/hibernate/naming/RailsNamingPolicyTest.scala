@@ -35,13 +35,13 @@ class RailsNamingPolicyTest extends AnyFunSpec with Matchers {
       System.setProperty("jpa_prefix", "public")
       val profiles = new Profiles(new Resources(None, ClassLoaders.getResources("META-INF/beangle/orm.xml"), None))
       val module = profiles.getProfile(classOf[NationBean])
-      assert(module.schema == Some("public_naming"))
+      assert(module.schema.contains("public_naming"))
       assert(profiles.getPrefix(classOf[NationBean]) == "gb_")
 
       val daoModule = profiles.getProfile(classOf[SchoolBean])
       assert(daoModule.parent.packageName == "org.beangle.data.hibernate")
 
-      assert(profiles.getSchema(classOf[IdType]) == Some("school"))
+      assert(profiles.getSchema(classOf[IdType]).contains("school"))
     }
   }
 }
