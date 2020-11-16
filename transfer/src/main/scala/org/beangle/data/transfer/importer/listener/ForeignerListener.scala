@@ -22,19 +22,20 @@ import org.beangle.commons.bean.Properties
 import org.beangle.commons.lang.Strings
 import org.beangle.data.dao.EntityDao
 import org.beangle.data.model.Entity
-import org.beangle.data.transfer.importer.{AbstractImporter, ImportListener, ImportResult, MultiEntityImporter}
+import org.beangle.data.transfer.importer.{AbstractImporter, DefaultEntityImporter, ImportListener, ImportResult, MultiEntityImporter}
 
 object ForeignerListener {
   val CACHE_SIZE = 500
 }
 
 /** 导入数据外键监听器
-  * 这里尽量使用entityDao，因为在使用entityService加载其他代码时，jpa会保存还未修改外的"半成对象"<br>
-  * 从而造成有些外键是空对象的错误<br>
-  * 如果外键不存在，则目标中的外键会置成null；<br>
-  * 如果外键是空的，那么目标的外键取决于transfer.isIgnoreNull取值
-  * @author chaostone
-  */
+ * 这里尽量使用entityDao，因为在使用entityService加载其他代码时，jpa会保存还未修改外的"半成对象"<br>
+ * 从而造成有些外键是空对象的错误<br>
+ * 如果外键不存在，则目标中的外键会置成null；<br>
+ * 如果外键是空的，那么目标的外键取决于transfer.isIgnoreNull取值
+ *
+ * @author chaostone
+ */
 class ForeignerListener(entityDao: EntityDao) extends ImportListener {
 
   import ForeignerListener._
@@ -46,8 +47,15 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
 
   private var multiEntity = false
 
+  private var aliases: Set[String] = Set.empty
+
   override def onStart(tr: ImportResult): Unit = {
-    multiEntity = transfer.getClass == classOf[MultiEntityImporter]
+    transfer match {
+      case mei: MultiEntityImporter =>
+        multiEntity = true
+        aliases = mei.aliases.toSet
+      case _ => multiEntity = false
+    }
   }
 
   override def onItemFinish(tr: ImportResult): Unit = {
@@ -59,7 +67,13 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
       var foreigerKeyIndex = -1
       val isforeiger = foreigerKeys exists { fk =>
         foreigerKeyIndex += 1
-        attri.endsWith("." + fk) && Strings.count(attri, '.') >= 2
+        val endWithKey = attri.endsWith("." + fk) && Strings.count(attri, '.') >= 2
+        if (endWithKey) {
+          val shortName = Strings.substringBefore(attri, ".")
+          aliases.contains(shortName)
+        } else {
+          false
+        }
       }
       if (isforeiger) {
         val codeValue = transfer.curData(attri).asInstanceOf[String]
@@ -110,13 +124,13 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
   }
 
   /**
-    * 结束转换
-    */
+   * 结束转换
+   */
   override def onFinish(tr: ImportResult): Unit = {}
 
   /**
-    * 开始转换单个项目
-    */
+   * 开始转换单个项目
+   */
   override def onItemStart(tr: ImportResult): Unit = {}
 
 }
