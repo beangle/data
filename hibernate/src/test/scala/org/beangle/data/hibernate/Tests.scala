@@ -18,15 +18,14 @@
  */
 package org.beangle.data.hibernate
 
-import java.{ util => ju }
+import java.{util => ju}
 
+import javax.sql.DataSource
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.jdbc.ds.DataSourceUtils
 import org.hibernate.cfg.AvailableSettings
 import org.hibernate.dialect.H2Dialect
-
-import javax.sql.DataSource
 
 object Tests {
 
@@ -40,8 +39,13 @@ object Tests {
     properties
   }
 
-  def buildDs(): DataSource = {
+  def buildTestH2(): DataSource = {
     val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass).get)
     DataSourceUtils.build("h2", properties("h2.username"), properties("h2.password"), Map("url" -> properties("h2.url")))
+  }
+
+  def buildTestPg(): DataSource = {
+    val properties = IOs.readJavaProperties(ClassLoaders.getResource("db.properties", getClass).get)
+    DataSourceUtils.build("h2", properties("pg.username"), properties("pg.password"), Map("url" -> properties("pg.url")))
   }
 }

@@ -26,9 +26,10 @@ import org.beangle.data.model.util.Populator
 import org.beangle.data.transfer.IllegalFormatException
 
 /**
-  * EntityImporter interface.
-  * @author chaostone
-  */
+ * EntityImporter interface.
+ *
+ * @author chaostone
+ */
 trait EntityImporter extends Importer {
 
   var populator: Populator = _
@@ -38,9 +39,10 @@ trait EntityImporter extends Importer {
 }
 
 /**
-  * MultiEntityImporter class.
-  * @author chaostone
-  */
+ * MultiEntityImporter class.
+ *
+ * @author chaostone
+ */
 class MultiEntityImporter extends AbstractImporter with EntityImporter with Logging {
 
   protected var currents = new collection.mutable.HashMap[String, AnyRef]
@@ -48,9 +50,11 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
   // [alias,entityType]
   protected val entityTypes = new collection.mutable.HashMap[String, EntityType]
 
+  def aliases: Iterable[String] = entityTypes.keys
+
   /**
-    * 摘取指定前缀的参数
-    */
+   * 摘取指定前缀的参数
+   */
   private def sub(data: collection.Map[String, Any], alias: String): collection.mutable.Map[String, Any] = {
     val prefix = alias + "."
     val newParams = new collection.mutable.HashMap[String, Any]
@@ -63,8 +67,8 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
   }
 
   /**
-    * transferItem.
-    */
+   * transferItem.
+   */
   override def transferItem(): Unit = {
     entityTypes foreach {
       case (name, etype) =>
@@ -89,8 +93,8 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
   }
 
   /**
-    * Populate single attribute
-    */
+   * Populate single attribute
+   */
   protected def populateValue(entity: Entity[_], etype: EntityType, attr: String, value: Any): Unit = {
     // 当有深层次属性,这里和传统的Populate不一样，导入面向的使用户，属性可能出现foreigner.name之类的，在正常的form表单中不会出现
     if (Strings.contains(attr, '.')) {

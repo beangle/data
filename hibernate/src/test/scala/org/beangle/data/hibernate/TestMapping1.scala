@@ -19,7 +19,7 @@
 package org.beangle.data.hibernate
 
 import org.beangle.data.hibernate.model._
-import org.beangle.data.orm.MappingModule
+import org.beangle.data.orm.{IdGenerator, MappingModule}
 
 object TestMapping1 extends MappingModule {
 
@@ -41,7 +41,7 @@ object TestMapping1 extends MappingModule {
       e.roleList is(ordered, table("users_roles_list"))
       e.profiles is depends("user")
       e.properties is(table("users_props"), eleColumn("value2"), eleLength(200))
-    }.generator("native")
+    }.generator(IdGenerator.Native)
 
     bind[SkillType]
     bind[Skill].table("skill_list")

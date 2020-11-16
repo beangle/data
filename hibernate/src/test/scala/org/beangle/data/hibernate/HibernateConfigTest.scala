@@ -34,7 +34,7 @@ class HibernateConfigTest extends AnyFunSpec with Matchers {
 
   val ormLocations = ClassLoaders.getResource("META-INF/beangle/orm.xml").toList
   val resouces = ormLocations map (url => new UrlResource(url.toURI))
-  val ds = Tests.buildDs()
+  val ds = Tests.buildTestH2()
   val builder = new LocalSessionFactoryBean(ds)
   builder.ormLocations = resouces.toArray
   builder.properties.put("hibernate.show_sql", "true")
@@ -56,13 +56,13 @@ class HibernateConfigTest extends AnyFunSpec with Matchers {
   val userMetaOption = domain.getEntity(classOf[User])
 
   it("Should support option and collection") {
-    UserCrudTest.testCrud(sf)
+      UserCrudTest.testCrud(sf)
   }
 
   it("Role's parent is entityType") {
-    assert(None != roleMetaOption)
+    assert(roleMetaOption.isDefined)
     val parentMeta = roleMetaOption.get.getProperty("parent")
-    assert(None != parentMeta)
+    assert(parentMeta.isDefined)
     assert(parentMeta.get.isInstanceOf[SingularProperty])
     assert(parentMeta.get.asInstanceOf[SingularProperty].propertyType.clazz == classOf[ExtendRole])
   }
@@ -74,31 +74,31 @@ class HibernateConfigTest extends AnyFunSpec with Matchers {
 
     populator.populate(role, roleMeta, "parent.id", "1");
     assert(role.parent != null)
-    assert(role.parent != None)
+    assert(role.parent.isDefined)
     assert(role.parent.get.id == 1)
 
     role.parent = Some(new ExtendRole(1))
     val oldParent = role.parent.get
     populator.populate(role, roleMeta, "parent.id", "2");
     assert(role.parent != null)
-    assert(role.parent != None)
+    assert(role.parent.isDefined)
     assert(role.parent.get.id == 2)
     assert(oldParent.id == 1)
 
     populator.populate(role, roleMeta, "parent.id", "");
     assert(role.parent != null)
-    assert(role.parent == None)
+    assert(role.parent.isEmpty)
 
     val u = new User
     val userMeta = userMetaOption.get
     role.creator = Some(u)
     populator.populate(u, userMeta, "age", "2");
-    assert(u.age == Some(2))
+    assert(u.age.contains(2))
     populator.populate(u, userMeta, "age", "");
-    assert(u.age == None)
+    assert(u.age.isEmpty)
 
     populator.populate(role, roleMeta, "creator.age", "2");
-    assert(u.age == Some(2))
+    assert(u.age.contains(2))
   }
 
   it("get java.sql.Date on Role.expiredOn") {

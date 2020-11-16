@@ -24,7 +24,7 @@ import java.util.Locale
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.Files./
 import org.beangle.commons.io.{Dirs, IOs, ResourcePatternResolver}
-import org.beangle.commons.lang.{Locales, Strings, SystemInfo}
+import org.beangle.commons.lang.{Charsets, Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
 import org.beangle.data.jdbc.meta.{DBScripts, Database, Identifier, Serializer, Table}
@@ -54,10 +54,10 @@ object DdlGenerator {
   }
 
   private def gen(dialect: String, dir: String, locale: Locale): List[String] = {
-    val target= new File(dir)
+    val target = new File(dir)
     target.mkdirs()
-    if(!target.exists()){
-      println("Cannot makdir "+ target.getAbsolutePath)
+    if (!target.exists()) {
+      println("Cannot makdir " + target.getAbsolutePath)
       return List.empty
     }
     val engine = Engines.forName(dialect)
@@ -83,7 +83,7 @@ object DdlGenerator {
 
   private def writeLinesTo(dir: String, file: String, contents: List[String]): Unit = {
     if (contents.nonEmpty) {
-      val writer = new FileWriter(dir + "/" + file, false)
+      val writer = new FileWriter(dir + "/" + file, Charsets.UTF_8, false)
       contents foreach { c =>
         if (null != c && c.nonEmpty) {
           writer.write(c)
@@ -96,7 +96,7 @@ object DdlGenerator {
 
   private def writeTo(dir: String, file: String, contents: collection.Seq[String]): Unit = {
     if (null != contents && contents.nonEmpty) {
-      val writer = new FileWriter(dir + "/" + file, false)
+      val writer = new FileWriter(dir + "/" + file, Charsets.UTF_8, false)
       contents foreach { c =>
         writer.write(c)
         writer.write(";\n")
@@ -155,7 +155,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     if (processed.contains(table)) return
     processed.add(table)
     checkNameLength(table.schema.name.value, table.name)
-    comments ++= engine.commentsOnTable(table,true)
+    comments ++= engine.commentsOnTable(table, true)
     tables += engine.createTable(table)
 
     table.primaryKey foreach { pk =>
