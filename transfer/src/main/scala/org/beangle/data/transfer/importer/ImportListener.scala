@@ -20,7 +20,6 @@ package org.beangle.data.transfer.importer
 
 /**
  * 转换监听器
- *
  * @author chaostone
  */
 trait ImportListener {
@@ -28,22 +27,22 @@ trait ImportListener {
   /**
    * 开始转换
    */
-  def onStart(tr: ImportResult): Unit
+  def onStart(tr: ImportResult): Unit = {}
 
   /**
    * 结束转换
    */
-  def onFinish(tr: ImportResult): Unit
+  def onFinish(tr: ImportResult): Unit = {}
 
   /**
    * 开始转换单个项目
    */
-  def onItemStart(tr: ImportResult): Unit
+  def onItemStart(tr: ImportResult): Unit = {}
 
   /**
    * 结束转换单个项目
    */
-  def onItemFinish(tr: ImportResult): Unit
+  def onItemFinish(tr: ImportResult): Unit = {}
 
   /**
    * 设置转换器

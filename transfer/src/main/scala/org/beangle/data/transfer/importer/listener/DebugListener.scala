@@ -18,12 +18,12 @@
  */
 package org.beangle.data.transfer.importer.listener
 
-import org.beangle.data.transfer.importer.{AbstractImportListener, ImportResult}
+import org.beangle.data.transfer.importer.{ImportListener, ImportResult}
 
 /** 转换调试监听器
-  * @author chaostone
-  */
-class DebugListener extends AbstractImportListener {
+ * @author chaostone
+ */
+class DebugListener extends ImportListener {
 
   override def onStart(tr: ImportResult): Unit = {
     tr.addMessage("start", transfer.dataName)

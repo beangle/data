@@ -55,7 +55,7 @@ begin
   update table_sequences a set currval = currval+1 where a.table_name=$1 returning currval into nextid;
 
   if nextid is null then
-    for rec in EXECUTE 'select max(id)+1 as maxid  from ' || $1 loop
+    for rec in EXECUTE 'select (max(id)+1)::bigint as maxid  from ' || $1 loop
       nextid = rec.maxid;
     end loop;
     if nextid is null then
