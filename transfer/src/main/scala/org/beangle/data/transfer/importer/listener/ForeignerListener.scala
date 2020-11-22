@@ -22,7 +22,7 @@ import org.beangle.commons.bean.Properties
 import org.beangle.commons.lang.Strings
 import org.beangle.data.dao.EntityDao
 import org.beangle.data.model.Entity
-import org.beangle.data.transfer.importer.{AbstractImporter, DefaultEntityImporter, ImportListener, ImportResult, MultiEntityImporter}
+import org.beangle.data.transfer.importer.{AbstractImporter, ImportListener, ImportResult, MultiEntityImporter}
 
 object ForeignerListener {
   val CACHE_SIZE = 500
@@ -40,10 +40,10 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
 
   import ForeignerListener._
 
-  protected val foreigersMap = new collection.mutable.HashMap[String, collection.mutable.HashMap[String, Object]]
+  protected val foreignersMap = new collection.mutable.HashMap[String, collection.mutable.HashMap[String, Object]]
 
-  private val foreigerKeys = new collection.mutable.ListBuffer[String]
-  foreigerKeys += "code"
+  private val foreignerKeys = new collection.mutable.ListBuffer[String]
+  foreignerKeys += "code"
 
   private var multiEntity = false
 
@@ -59,14 +59,14 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
   }
 
   override def onItemFinish(tr: ImportResult): Unit = {
-    val itermTranfer = transfer.asInstanceOf[AbstractImporter]
+    val itermTransfer = transfer.asInstanceOf[AbstractImporter]
     // 过滤所有外键
-    val iter = itermTranfer.attrs.iterator
+    val iter = itermTransfer.attrs.iterator
     while (iter.hasNext) {
       val attri = iter.next().name
-      var foreigerKeyIndex = -1
-      val isforeiger = foreigerKeys exists { fk =>
-        foreigerKeyIndex += 1
+      var foreignerKeyIndex = -1
+      val isForeigner = foreignerKeys exists { fk =>
+        foreignerKeyIndex += 1
         val endWithKey = attri.endsWith("." + fk) && Strings.count(attri, '.') >= 2
         if (endWithKey) {
           val shortName = Strings.substringBefore(attri, ".")
@@ -75,11 +75,17 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
           false
         }
       }
-      if (isforeiger) {
-        val codeValue = transfer.curData(attri).asInstanceOf[String]
-        var foreiger: Object = null
+      if (isForeigner) {
+        val codeStr = transfer.curData(attri).asInstanceOf[String]
+        var foreigner: Object = null
         // 外键的代码是空的
-        if (Strings.isNotEmpty(codeValue)) {
+        if (Strings.isNotEmpty(codeStr)) {
+          val codeValue =
+            if (codeStr.contains(" ")) {
+              Strings.substringBefore(codeStr, " ")
+            } else {
+              codeStr
+            }
           var entity: Object = null
           if (multiEntity) {
             val shortName = Strings.substringBefore(attri, ".")
@@ -94,17 +100,17 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
             nestedForeigner = nestedForeigner.asInstanceOf[Option[AnyRef]].orNull
           }
           nestedForeigner match {
-            case nestf: Entity[_] =>
+            case _: Entity[_] =>
               val className = nestedForeigner.getClass.getName
-              val foreignerMap = foreigersMap.getOrElseUpdate(className, new collection.mutable.HashMap[String, Object])
+              val foreignerMap = foreignersMap.getOrElseUpdate(className, new collection.mutable.HashMap[String, Object])
               if (foreignerMap.size > CACHE_SIZE) foreignerMap.clear()
-              foreiger = foreignerMap.get(codeValue).orNull
-              if (foreiger == null) {
+              foreigner = foreignerMap.get(codeValue).orNull
+              if (foreigner == null) {
                 val clazz = nestedForeigner.getClass.asInstanceOf[Class[Entity[_]]]
-                val foreigners = entityDao.findBy(clazz, foreigerKeys(foreigerKeyIndex), List(codeValue))
+                val foreigners = entityDao.findBy(clazz, foreignerKeys(foreignerKeyIndex), List(codeValue))
                 if (foreigners.nonEmpty) {
-                  foreiger = foreigners.head
-                  foreignerMap.put(codeValue, foreiger)
+                  foreigner = foreigners.head
+                  foreignerMap.put(codeValue, foreigner)
                 } else {
                   tr.addFailure("代码不存在", codeValue)
                 }
@@ -113,24 +119,14 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
           }
           val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf("."))
           val entityImporter = transfer.asInstanceOf[MultiEntityImporter]
-          entityImporter.populator.populate(entity.asInstanceOf[Entity[_]], entityImporter.domain.getEntity(entity.getClass).get, parentAttr, foreiger)
+          entityImporter.populator.populate(entity.asInstanceOf[Entity[_]], entityImporter.domain.getEntity(entity.getClass).get, parentAttr, foreigner)
         }
       }
     }
   }
 
   def addForeigerKey(key: String): Unit = {
-    this.foreigerKeys += key
+    this.foreignerKeys += key
   }
-
-  /**
-   * 结束转换
-   */
-  override def onFinish(tr: ImportResult): Unit = {}
-
-  /**
-   * 开始转换单个项目
-   */
-  override def onItemStart(tr: ImportResult): Unit = {}
 
 }
