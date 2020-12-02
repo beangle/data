@@ -27,6 +27,8 @@ import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.logging.Logging
 import org.beangle.data.orm.{MappingModule, NamingPolicy}
 
+import scala.collection.mutable
+
 class Profiles(resources: Resources) extends Logging {
 
   private val defaultProfile = new MappingProfile
@@ -37,7 +39,7 @@ class Profiles(resources: Resources) extends Logging {
 
   private val namings = new collection.mutable.HashMap[String, NamingPolicy]
 
-  val modules = new collection.mutable.HashSet[MappingModule]
+  var modules: List[MappingModule] = _
 
   init()
 
@@ -47,13 +49,16 @@ class Profiles(resources: Resources) extends Logging {
     globalSchema foreach { s =>
       defaultProfile._schema = s
     }
-    for (url <- resources.paths) addConfig(url)
+    val ms = new mutable.ArrayBuffer[MappingModule]
+    for (url <- resources.paths) addConfig(url, ms)
     if (logger.isDebugEnabled) {
       if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
     }
+    //module排序,使其处理过程稳定化
+    modules = ms.sortBy(_.getClass.getName).toList
   }
 
-  def addConfig(url: URL): Unit = {
+  private def addConfig(url: URL, ms: mutable.ArrayBuffer[MappingModule]): Unit = {
     try {
       logger.debug(s"loading $url")
       val is = url.openStream()
@@ -61,7 +66,7 @@ class Profiles(resources: Resources) extends Logging {
         val xml = scala.xml.XML.load(is)
         (xml \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
         (xml \ "mapping") foreach { ele =>
-          modules += Reflections.getInstance[MappingModule]((ele \ "@class").text)
+          ms += Reflections.getInstance[MappingModule]((ele \ "@class").text)
         }
         is.close()
       }
