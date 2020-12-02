@@ -29,9 +29,9 @@ import org.beangle.data.orm.{MappingModule, NamingPolicy}
 
 class Profiles(resources: Resources) extends Logging {
 
-  val defaultProfile = new MappingProfile
+  private val defaultProfile = new MappingProfile
 
-  defaultProfile.naming = new RailsNamingPolicy(this)
+  private val globalSchema = Option(System.getProperty("beangle.data.orm.global_schema"))
 
   private val profiles = new collection.mutable.HashMap[String, MappingProfile]
 
@@ -39,11 +39,18 @@ class Profiles(resources: Resources) extends Logging {
 
   val modules = new collection.mutable.HashSet[MappingModule]
 
-  namings.put("rails", new RailsNamingPolicy(this))
+  init()
 
-  for (url <- resources.paths) addConfig(url)
-  if (logger.isDebugEnabled) {
-    if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
+  private def init() {
+    namings.put("rails", new RailsNamingPolicy(this))
+    defaultProfile.naming = new RailsNamingPolicy(this)
+    globalSchema foreach { s =>
+      defaultProfile._schema = s
+    }
+    for (url <- resources.paths) addConfig(url)
+    if (logger.isDebugEnabled) {
+      if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
+    }
   }
 
   def addConfig(url: URL): Unit = {
@@ -180,11 +187,15 @@ class Profiles(resources: Resources) extends Logging {
   }
 
   private def parseSchema(name: String): String = {
-    if (isEmpty(name) || (-1 == name.indexOf('{'))) return name
-    val newName = replace(name, "$", "")
-    val propertyName = substringBetween(newName, "{", "}")
-    val pv = System.getProperty(propertyName)
-    replace(newName, "{" + propertyName + "}", if (pv == null) "" else pv)
+    globalSchema match {
+      case None =>
+        if (isEmpty(name) || (-1 == name.indexOf('{'))) return name
+        val newName = replace(name, "$", "")
+        val propertyName = substringBetween(newName, "{", "}")
+        val pv = System.getProperty(propertyName)
+        replace(newName, "{" + propertyName + "}", if (pv == null) "" else pv)
+      case Some(n) => n
+    }
   }
 
   override def toString: String = {
