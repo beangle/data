@@ -19,8 +19,13 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+
+object Schema {
+  private val logger = LoggerFactory.getLogger(classOf[Schema])
+}
 
 class Schema(var database: Database, var name: Identifier) {
 
@@ -48,7 +53,21 @@ class Schema(var database: Database, var name: Identifier) {
   def createTable(tbname: String): Table = {
     val tableId = database.engine.toIdentifier(tbname)
     tables.get(tableId) match {
-      case Some(table) => table
+      case Some(table) =>
+        if (table.phantom) {
+          table
+        } else {
+          var i = 1
+          var newTableId = database.engine.toIdentifier(s"$tableId${i}")
+          while (tables.contains(newTableId)) {
+            i += 1
+            newTableId = database.engine.toIdentifier(s"$tableId${i}")
+          }
+          Schema.logger.warn(table.qualifiedName + s" is existed,using ${newTableId} instead.")
+          val ntable = new Table(this, newTableId)
+          tables.put(newTableId, ntable)
+          ntable
+        }
       case None =>
         val ntable = new Table(this, tableId)
         tables.put(tableId, ntable)

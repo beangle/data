@@ -27,26 +27,38 @@ import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.logging.Logging
 import org.beangle.data.orm.{MappingModule, NamingPolicy}
 
+import scala.collection.mutable
+
 class Profiles(resources: Resources) extends Logging {
 
-  val defaultProfile = new MappingProfile
+  private val defaultProfile = new MappingProfile
 
-  defaultProfile.naming = new RailsNamingPolicy(this)
+  private val globalSchema = Option(System.getProperty("beangle.data.orm.global_schema"))
 
   private val profiles = new collection.mutable.HashMap[String, MappingProfile]
 
   private val namings = new collection.mutable.HashMap[String, NamingPolicy]
 
-  val modules = new collection.mutable.HashSet[MappingModule]
+  var modules: List[MappingModule] = _
 
-  namings.put("rails", new RailsNamingPolicy(this))
+  init()
 
-  for (url <- resources.paths) addConfig(url)
-  if (logger.isDebugEnabled) {
-    if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
+  private def init() {
+    namings.put("rails", new RailsNamingPolicy(this))
+    defaultProfile.naming = new RailsNamingPolicy(this)
+    globalSchema foreach { s =>
+      defaultProfile._schema = s
+    }
+    val ms = new mutable.ArrayBuffer[MappingModule]
+    for (url <- resources.paths) addConfig(url, ms)
+    if (logger.isDebugEnabled) {
+      if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
+    }
+    //module排序,使其处理过程稳定化
+    modules = ms.sortBy(_.getClass.getName).toList
   }
 
-  def addConfig(url: URL): Unit = {
+  private def addConfig(url: URL, ms: mutable.ArrayBuffer[MappingModule]): Unit = {
     try {
       logger.debug(s"loading $url")
       val is = url.openStream()
@@ -54,7 +66,7 @@ class Profiles(resources: Resources) extends Logging {
         val xml = scala.xml.XML.load(is)
         (xml \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
         (xml \ "mapping") foreach { ele =>
-          modules += Reflections.getInstance[MappingModule]((ele \ "@class").text)
+          ms += Reflections.getInstance[MappingModule]((ele \ "@class").text)
         }
         is.close()
       }
@@ -180,11 +192,15 @@ class Profiles(resources: Resources) extends Logging {
   }
 
   private def parseSchema(name: String): String = {
-    if (isEmpty(name) || (-1 == name.indexOf('{'))) return name
-    val newName = replace(name, "$", "")
-    val propertyName = substringBetween(newName, "{", "}")
-    val pv = System.getProperty(propertyName)
-    replace(newName, "{" + propertyName + "}", if (pv == null) "" else pv)
+    globalSchema match {
+      case None =>
+        if (isEmpty(name) || (-1 == name.indexOf('{'))) return name
+        val newName = replace(name, "$", "")
+        val propertyName = substringBetween(newName, "{", "}")
+        val pv = System.getProperty(propertyName)
+        replace(newName, "{" + propertyName + "}", if (pv == null) "" else pv)
+      case Some(n) => n
+    }
   }
 
   override def toString: String = {
