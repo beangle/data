@@ -267,12 +267,11 @@ trait AbstractDialect extends Dialect {
 
   override def dropIndex(i: Index): String = {
     if (i.table.schema.name.value.length > 0) {
-      "drop index " + i.table.schema.database.toString + "." + i.literalName
+      "drop index " + i.table.schema.name.toString + "." + i.literalName
     } else {
       "drop index " + i.literalName
     }
   }
-
 
   override def insert(table: Table): String = {
     val sb = new StringBuilder("insert into ")
