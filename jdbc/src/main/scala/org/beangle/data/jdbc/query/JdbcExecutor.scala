@@ -88,7 +88,16 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     }
   }
 
-  def openConnection(): Connection = dataSource.getConnection()
+  def useConnection[T](f: Connection => T): T = {
+    val conn = dataSource.getConnection()
+    try {
+      f(conn)
+    } finally {
+      if (null != conn) {
+        conn.close()
+      }
+    }
+  }
 
   def statement(sql: String): Statement = {
     new Statement(sql, this)
@@ -96,13 +105,14 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
 
   def iterate(sql: String, params: Any*): ResultSetIterator = {
     if (showSql) println("JdbcExecutor:" + sql)
-    val conn = openConnection()
-    conn.setAutoCommit(false)
-    val stmt = conn.prepareStatement(sql)
-    stmt.setFetchSize(fetchSize)
-    TypeParamSetter(sqlTypeMapping, params)(stmt)
-    val rs = stmt.executeQuery()
-    new ResultSetIterator(rs)
+    useConnection { conn =>
+      conn.setAutoCommit(false)
+      val stmt = conn.prepareStatement(sql)
+      stmt.setFetchSize(fetchSize)
+      TypeParamSetter(sqlTypeMapping, params)(stmt)
+      val rs = stmt.executeQuery()
+      new ResultSetIterator(rs)
+    }
   }
 
   def query(sql: String, params: Any*): collection.Seq[Array[Any]] = {
@@ -111,10 +121,11 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
 
   def query(sql: String, setter: PreparedStatement => Unit): collection.Seq[Array[Any]] = {
     if (showSql) println("JdbcExecutor:" + sql)
-    val conn = openConnection()
-    val stmt = conn.prepareStatement(sql)
-    setter(stmt)
-    new ResultSetIterator(stmt.executeQuery()).listAll()
+    useConnection { conn =>
+      val stmt = conn.prepareStatement(sql)
+      setter(stmt)
+      new ResultSetIterator(stmt.executeQuery()).listAll()
+    }
   }
 
   def fetch(sql: String, limit: PageLimit, params: Any*): collection.Seq[Array[Any]] = {
@@ -124,16 +135,16 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
   def fetch(sql: String, limit: PageLimit, setter: PreparedStatement => Unit): collection.Seq[Array[Any]] = {
     val rs = engine.limit(sql, limit.pageSize * (limit.pageIndex - 1), limit.pageSize)
     if (showSql) println("JdbcExecutor:" + rs._1)
-
-    val conn = openConnection()
-    val stmt = conn.prepareStatement(rs._1)
-    setter(stmt)
-    var start = stmt.getParameterMetaData.getParameterCount - rs._2.size
-    rs._2 foreach { i =>
-      stmt.setInt(start + 1, i)
-      start += 1
+    useConnection { conn =>
+      val stmt = conn.prepareStatement(rs._1)
+      setter(stmt)
+      var start = stmt.getParameterMetaData.getParameterCount - rs._2.size
+      rs._2 foreach { i =>
+        stmt.setInt(start + 1, i)
+        start += 1
+      }
+      new ResultSetIterator(stmt.executeQuery()).listAll()
     }
-    new ResultSetIterator(stmt.executeQuery()).listAll()
   }
 
   def update(sql: String, params: Any*): Int = {
@@ -143,7 +154,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
   def update(sql: String, setter: PreparedStatement => Unit): Int = {
     if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
-    val conn = openConnection()
+    val conn = dataSource.getConnection
     if (conn.getAutoCommit) conn.setAutoCommit(false)
     var rows = 0
     try {
@@ -167,7 +178,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
   def batch(sql: String, datas: collection.Seq[Array[_]], types: collection.Seq[Int]): Seq[Int] = {
     if (showSql) println("JdbcExecutor:" + sql)
     var stmt: PreparedStatement = null
-    val conn = openConnection()
+    val conn = dataSource.getConnection
     if (conn.getAutoCommit) conn.setAutoCommit(false)
     val rows = new collection.mutable.ListBuffer[Int]
     var curParam: Seq[_] = null
