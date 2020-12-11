@@ -105,14 +105,13 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
 
   def iterate(sql: String, params: Any*): ResultSetIterator = {
     if (showSql) println("JdbcExecutor:" + sql)
-    useConnection { conn =>
-      conn.setAutoCommit(false)
-      val stmt = conn.prepareStatement(sql)
-      stmt.setFetchSize(fetchSize)
-      TypeParamSetter(sqlTypeMapping, params)(stmt)
-      val rs = stmt.executeQuery()
-      new ResultSetIterator(rs)
-    }
+    val conn = dataSource.getConnection()
+    conn.setAutoCommit(false)
+    val stmt = conn.prepareStatement(sql)
+    stmt.setFetchSize(fetchSize)
+    TypeParamSetter(sqlTypeMapping, params)(stmt)
+    val rs = stmt.executeQuery()
+    new ResultSetIterator(rs)
   }
 
   def query(sql: String, params: Any*): collection.Seq[Array[Any]] = {
