@@ -18,38 +18,48 @@
  */
 package org.beangle.data.hibernate.spring
 
-import org.beangle.commons.lang.annotation.description
-import org.hibernate.{ ConnectionReleaseMode, FlushMode, HibernateException, Session, SessionFactory, Transaction }
-import org.hibernate.engine.spi.SessionImplementor
-import org.springframework.jdbc.datasource.{ ConnectionHolder, DataSourceUtils, JdbcTransactionObjectSupport }
-import org.springframework.transaction.{ CannotCreateTransactionException, IllegalTransactionStateException, InvalidIsolationLevelException, TransactionDefinition, TransactionSystemException }
-import org.springframework.transaction.support.{ AbstractPlatformTransactionManager, DefaultTransactionStatus, ResourceTransactionManager }
-import org.springframework.transaction.support.TransactionSynchronizationManager.{ bindResource, getResource, hasResource, unbindResource }
+import java.util.function.Consumer
+
 import javax.sql.DataSource
-import org.hibernate.SharedSessionContract
+import org.beangle.commons.lang.annotation.description
+import org.hibernate.engine.spi.SessionImplementor
+import org.hibernate._
+import org.springframework.jdbc.datasource.{ConnectionHolder, DataSourceUtils, JdbcTransactionObjectSupport}
+import org.springframework.transaction.support.TransactionSynchronizationManager.{bindResource, getResource, hasResource, unbindResource}
+import org.springframework.transaction.support.{AbstractPlatformTransactionManager, DefaultTransactionStatus, ResourceTransactionManager}
+import org.springframework.transaction._
 
 /**
  * Simplify HibernateTransactionManager in spring-orm bundle.
  * Just add SessionUtils.isEnableThreadBinding() support in doGetTranscation
- *
+ * <ul>
+ *   <li> disable hibernateManagedSession.
+ *   <li> enable connectionPrepared
+ *   <li> disable holdabilityNeeded
+ * </ul>
  * @author chaostone
  */
 @description("Beangle提供的Hibernate事务管理器")
 class HibernateTransactionManager(val sessionFactory: SessionFactory) extends AbstractPlatformTransactionManager with ResourceTransactionManager {
 
   val dataSource: DataSource = SessionUtils.getDataSource(sessionFactory)
+  var entityInterceptor:Option[Interceptor] = None
+  var sessionInitializer:Option[Consumer[Session]] = None
 
-  def getResourceFactory(): AnyRef = sessionFactory
+  def getResourceFactory: AnyRef = sessionFactory
 
   protected override def doGetTransaction(): AnyRef = {
     val txObject = new HibernateTransactionObject()
-    txObject.setSavepointAllowed(isNestedTransactionAllowed())
+    txObject.setSavepointAllowed(isNestedTransactionAllowed)
 
     val sessionHolder = getResource(sessionFactory).asInstanceOf[SessionHolder]
     if (sessionHolder != null) {
       txObject.setSessionHolder(sessionHolder)
     } else {
-      if (SessionUtils.isEnableBinding(sessionFactory)) txObject.setSessionHolder(SessionUtils.openSession(sessionFactory))
+      // beangle add
+      if (SessionUtils.isEnableBinding(sessionFactory)) {
+        txObject.setSessionHolder(SessionUtils.openSession(sessionFactory))
+      }
     }
     txObject.setConnectionHolder(getResource(dataSource).asInstanceOf[ConnectionHolder])
     txObject
@@ -62,28 +72,35 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
   protected override def doBegin(transaction: AnyRef, definition: TransactionDefinition): Unit = {
     val txObject = transaction.asInstanceOf[HibernateTransactionObject]
 
-    if (txObject.hasConnectionHolder && !txObject.getConnectionHolder().isSynchronizedWithTransaction()) {
+    if (txObject.hasConnectionHolder && !txObject.getConnectionHolder.isSynchronizedWithTransaction) {
       throw new IllegalTransactionStateException("Pre-bound JDBC Connection found! HibernateTransactionManager does not support.")
     }
 
-    var session: Session = null
+    var session: SessionImplementor = null
     try {
-      if (txObject.sessionHolder == null || txObject.sessionHolder.isSynchronizedWithTransaction()) {
-        txObject.setSession(sessionFactory.openSession())
+      if (txObject.sessionHolder == null || txObject.sessionHolder.isSynchronizedWithTransaction) {
+        txObject.setSession(SessionUtils.doOpenSession(sessionFactory,entityInterceptor,sessionInitializer))
       }
-      session = txObject.sessionHolder.session
-      if (isSameConnectionForEntireSession(session)) {
-        val con = session.asInstanceOf[SessionImplementor].connection()
-        val previousIsolationLevel = DataSourceUtils.prepareConnectionForTransaction(con, definition)
-        txObject.setPreviousIsolationLevel(previousIsolationLevel)
-      } else {
-        if (definition.getIsolationLevel != TransactionDefinition.ISOLATION_DEFAULT)
-          throw new InvalidIsolationLevelException("HibernateTransactionManager is not allowed to support custom isolation levels.")
+      session = txObject.sessionHolder.session.unwrap(classOf[SessionImplementor])
+      val isolationLevelNeeded = definition.getIsolationLevel != TransactionDefinition.ISOLATION_DEFAULT
+      if (isolationLevelNeeded || definition.isReadOnly) {
+        if (ConnectionReleaseMode.ON_CLOSE.equals(session.getJdbcCoordinator.getLogicalConnection.getConnectionHandlingMode.getReleaseMode)) {
+          val con = session.connection()
+          val previousIsolationLevel = DataSourceUtils.prepareConnectionForTransaction(con, definition)
+          txObject.setPreviousIsolationLevel(previousIsolationLevel)
+          txObject.setReadOnly(definition.isReadOnly)
+        } else {
+          if (isolationLevelNeeded)
+            throw new InvalidIsolationLevelException("HibernateTransactionManager is not allowed to support custom isolation levels.")
+        }
       }
       // Just set to NEVER in case of a new Session for this transaction.
-      if (definition.isReadOnly() && txObject.isNewSession) session.setHibernateFlushMode(FlushMode.MANUAL)
-      if (!definition.isReadOnly() && !txObject.isNewSession) {
-        val flushMode = session.getHibernateFlushMode()
+      if (definition.isReadOnly && txObject.isNewSession) {
+        session.setHibernateFlushMode(FlushMode.MANUAL)
+        session.setDefaultReadOnly(true)
+      }
+      if (!definition.isReadOnly && !txObject.isNewSession) {
+        val flushMode = session.getHibernateFlushMode
         if (session.getHibernateFlushMode == FlushMode.MANUAL) {
           session.setHibernateFlushMode(FlushMode.AUTO)
           txObject.sessionHolder.previousFlushMode = flushMode
@@ -93,7 +110,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
       var hibTx: Transaction = null
       val timeout = determineTimeout(definition)
       if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
-        hibTx = session.asInstanceOf[SharedSessionContract].getTransaction()
+        hibTx = session.asInstanceOf[SharedSessionContract].getTransaction
         hibTx.setTimeout(timeout)
         hibTx.begin()
       } else {
@@ -101,7 +118,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
       }
       txObject.sessionHolder.transaction = hibTx
       // Register the Hibernate Session's JDBC Connection for the DataSource, if set.
-      val con = session.asInstanceOf[SessionImplementor].connection()
+      val con = session.connection()
       val conHolder = new ConnectionHolder(con)
       if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) conHolder.setTimeoutInSeconds(timeout)
 
@@ -110,14 +127,15 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
       if (txObject.isNewSession) bindResource(sessionFactory, txObject.sessionHolder)
       txObject.sessionHolder.setSynchronizedWithTransaction(true)
     } catch {
-      case ex: Exception =>
+      case ex: Throwable =>
         if (txObject.isNewSession) {
           try {
-            if (session.getTransaction.isActive()) session.getTransaction.rollback()
+            if (null!=session && session.getTransaction.isActive) session.getTransaction.rollback()
           } catch {
-            case ex2: Throwable => logger.debug("Could not rollback Session after failed transaction begin", ex)
+            case _: Throwable => logger.debug("Could not rollback Session after failed transaction begin", ex)
           } finally {
             SessionUtils.closeSession(session)
+            txObject.setSessionHolder(null)
           }
         }
         throw new CannotCreateTransactionException("Could not open Hibernate Session for transaction", ex)
@@ -129,8 +147,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
     txObject.setSessionHolder(null)
     val sessionHolder = unbindResource(sessionFactory).asInstanceOf[SessionHolder]
     txObject.setConnectionHolder(null)
-    var connectionHolder: ConnectionHolder = null
-    connectionHolder = unbindResource(dataSource).asInstanceOf[ConnectionHolder]
+    val connectionHolder = unbindResource(dataSource).asInstanceOf[ConnectionHolder]
     new SuspendedResourcesHolder(sessionHolder, connectionHolder)
   }
 
@@ -142,29 +159,30 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
   }
 
   protected override def doCommit(status: DefaultTransactionStatus): Unit = {
-    val txObject = status.getTransaction().asInstanceOf[HibernateTransactionObject]
+    val txObject = status.getTransaction.asInstanceOf[HibernateTransactionObject]
     try {
       txObject.sessionHolder.transaction.commit()
     } catch {
       case ex: org.hibernate.TransactionException => throw new TransactionSystemException("Could not commit transaction", ex)
-      case ex2: HibernateException                => throw ex2
+      case ex2: HibernateException => throw ex2
+      case ex3: Exception => throw new RuntimeException(ex3)
     }
   }
 
   protected override def doRollback(status: DefaultTransactionStatus): Unit = {
-    val txObject = status.getTransaction().asInstanceOf[HibernateTransactionObject]
+    val txObject = status.getTransaction.asInstanceOf[HibernateTransactionObject]
     try {
       txObject.sessionHolder.transaction.rollback()
     } catch {
       case ex: org.hibernate.TransactionException => throw new TransactionSystemException("Could not roll back transaction", ex)
-      case ex2: HibernateException                => throw ex2
+      case ex2: HibernateException => throw ex2
     } finally {
       if (!txObject.isNewSession) txObject.sessionHolder.session.clear()
     }
   }
 
   protected override def doSetRollbackOnly(status: DefaultTransactionStatus): Unit = {
-    status.getTransaction().asInstanceOf[HibernateTransactionObject].setRollbackOnly()
+    status.getTransaction.asInstanceOf[HibernateTransactionObject].setRollbackOnly()
   }
 
   protected override def doCleanupAfterCompletion(transaction: Object): Unit = {
@@ -173,11 +191,11 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
     unbindResource(dataSource)
 
     val holder = txObject.sessionHolder
-    val session = holder.session
-    if (session.isConnected() && isSameConnectionForEntireSession(session)) {
+    val session = holder.session.unwrap(classOf[SessionImplementor])
+    if (session.getJdbcCoordinator.getLogicalConnection.isPhysicallyConnected) {
       try {
-        val con = session.asInstanceOf[SessionImplementor].connection()
-        DataSourceUtils.resetConnectionAfterTransaction(con, txObject.getPreviousIsolationLevel())
+        val con = session.connection()
+        DataSourceUtils.resetConnectionAfterTransaction(con, txObject.getPreviousIsolationLevel, txObject.isReadOnly)
       } catch {
         case ex: HibernateException => logger.debug("Could not access JDBC Connection of Hibernate Session", ex)
       }
@@ -199,6 +217,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
       case _ => true
     }
   }
+
   /**
    * Hibernate transaction object, representing a SessionHolder.
    * Used as transaction object by HibernateTransactionManager.
@@ -218,7 +237,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
     }
 
     def hasTransaction: Boolean = {
-      (this.sessionHolder != null && this.sessionHolder.transaction != null)
+      this.sessionHolder != null && this.sessionHolder.transaction != null
     }
 
     def setRollbackOnly(): Unit = {
@@ -236,4 +255,5 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory) extends Ab
   }
 
   private class SuspendedResourcesHolder(val sessionHolder: SessionHolder, val connectionHolder: ConnectionHolder)
+
 }
