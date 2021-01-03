@@ -22,9 +22,7 @@ import java.io.InputStream
 import java.util.Properties
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
-import javax.script.ScriptEngineManager
 import javax.sql.DataSource
-import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty, substringBetween}
 import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
@@ -131,29 +129,4 @@ object DataSourceUtils extends Logging {
     dbconf
   }
 
-  def parseJson(is: InputStream): DatasourceConfig = {
-    val string = IOs.readString(is)
-    parseJson(string)
-  }
-
-  def parseJson(string: String): DatasourceConfig = {
-    val sem = new ScriptEngineManager()
-    val engine = sem.getEngineByName("javascript")
-    val result = new collection.mutable.HashMap[String, String]
-    val iter = engine.eval("result =" + string).asInstanceOf[java.util.Map[_, AnyRef]].entrySet().iterator()
-    while (iter.hasNext) {
-      val one = iter.next()
-      var value: String = null
-      one.getValue match {
-        case d: java.lang.Double =>
-          if (java.lang.Double.compare(d, d.intValue) > 0) value = d.toString
-          else value = String.valueOf(d.intValue)
-        case _ =>
-          value = one.getValue.toString
-      }
-      val key = if (one.getKey.toString == "maxActive") "maxTotal" else one.getKey.toString
-      result.put(key, value)
-    }
-    new DatasourceConfig(result)
-  }
 }

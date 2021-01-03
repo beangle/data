@@ -1,9 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.beangle</groupId>
     <artifactId>beangle-scala</artifactId>
-    <version>28.0</version>
+    <version>28.1</version>
   </parent>
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent_2.13</artifactId>
@@ -20,7 +21,7 @@
   </modules>
 
   <description>
-  The Beangle Data Framework.
+    The Beangle Data Framework.
   </description>
 
   <url>https://github.com/beangle/data</url>
@@ -38,14 +39,14 @@
   </scm>
 
   <properties>
-    <commons.version>5.2.0</commons.version>
-    <cdi.version>0.2.3</cdi.version>
-    <spring.version>5.2.9.RELEASE</spring.version>
+    <commons.version>5.2.1</commons.version>
+    <cdi.version>0.2.4</cdi.version>
+    <spring.version>5.3.2</spring.version>
     <HikariCP.version>3.4.5</HikariCP.version>
 
     <jpa.version>2.2</jpa.version>
-    <javassist.version>3.25.0-GA</javassist.version>
-    <hibernate.version>5.4.21.Final</hibernate.version>
+    <javassist.version>3.27.0-GA</javassist.version>
+    <hibernate.version>5.4.27.Final</hibernate.version>
     <poi.version>4.1.0</poi.version>
     <jxls.version>2.8.1</jxls.version>
   </properties>
@@ -127,5 +128,5 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
     </dependency>
- </dependencies>
+  </dependencies>
 </project>
