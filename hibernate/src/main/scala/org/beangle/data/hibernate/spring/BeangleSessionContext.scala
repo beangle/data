@@ -18,18 +18,12 @@
  */
 package org.beangle.data.hibernate.spring
 
-import org.hibernate.FlushMode
-import org.hibernate.Session
-import org.hibernate.SessionFactory
+import org.beangle.commons.logging.Logging
+import org.hibernate.{FlushMode, Session}
+import org.hibernate.context.internal.JTASessionContext
 import org.hibernate.context.spi.CurrentSessionContext
 import org.hibernate.engine.spi.SessionFactoryImplementor
-import org.springframework.core.Ordered
-import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager._
-import org.hibernate.context.internal.JTASessionContext
-import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform
-import javax.transaction.TransactionManager
-import org.beangle.commons.logging.Logging
 
 /**
  * @author chaostone
@@ -44,10 +38,8 @@ class BeangleSessionContext(val sessionFactory: SessionFactoryImplementor) exten
 
     val session = sessionHolder.session
     // TODO what time enter into the code?
-    if (isSynchronizationActive()
-      && !sessionHolder.isSynchronizedWithTransaction()) {
-      registerSynchronization(new SessionSynchronization(sessionHolder,
-        this.sessionFactory))
+    if (isSynchronizationActive && !sessionHolder.isSynchronizedWithTransaction) {
+      registerSynchronization(new SessionSynchronization(sessionHolder, this.sessionFactory))
       sessionHolder.setSynchronizedWithTransaction(true)
       // Switch to FlushMode.AUTO, as we have to assume a thread-bound Session
       // with FlushMode.MANUAL, which needs to allow flushing within the transaction.
@@ -64,9 +56,9 @@ class BeangleSessionContext(val sessionFactory: SessionFactoryImplementor) exten
 class BeangleJtaSessionContext(factory: SessionFactoryImplementor) extends JTASessionContext(factory) {
 
   protected override def buildOrObtainSession(): Session = {
-    val session = super.buildOrObtainSession();
-    if (isCurrentTransactionReadOnly()) {
-      session.setHibernateFlushMode(FlushMode.MANUAL);
+    val session = super.buildOrObtainSession()
+    if (isCurrentTransactionReadOnly) {
+      session.setHibernateFlushMode(FlushMode.MANUAL)
     }
     session
   }

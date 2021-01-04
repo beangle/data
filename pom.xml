@@ -9,7 +9,7 @@
   <groupId>org.beangle.data</groupId>
   <artifactId>beangle-data-parent_2.13</artifactId>
   <packaging>pom</packaging>
-  <version>5.3.17-SNAPSHOT</version>
+  <version>5.3.17</version>
   <name>Beangle Data Parent</name>
 
   <modules>

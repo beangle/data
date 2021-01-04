@@ -34,7 +34,7 @@ class SessionSynchronization(val sessionHolder: SessionHolder, val sessionFactor
 
   private def currentSession: Session = this.sessionHolder.session
 
-  def getOrder(): Int = 1000 - 100
+  override def getOrder(): Int = 1000 - 100
 
   override def suspend(): Unit = {
     if (this.holderActive) {
