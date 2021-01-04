@@ -37,7 +37,7 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   var password: String = _
   var driver: String = _
   var name: String = _
-  var props:collection.mutable.Map[String,String] = Collections.newMap
+  var props: collection.mutable.Map[String, String] = Collections.newMap
 
   private var _result: DataSource = _
 
@@ -50,21 +50,23 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   }
 
   override def init(): Unit = {
+    val isXML = url.endsWith(".xml")
     if (null != url) {
-      val isXML = url.endsWith(".xml")
       if (url.startsWith("jdbc:")) {
         if (null == driver) {
           driver = Strings.substringBetween(url, "jdbc:", ":")
           props.put("url", url)
         }
       } else if (url.startsWith("http")) {
+        assert(isXML, "url should ends with xml")
         val text = HttpUtils.getText(url).getOrElse("")
         val is = new ByteArrayInputStream(text.getBytes)
-        merge(readConf(is, isXML))
+        merge(readConf(is))
       } else {
+        assert(isXML, "url should ends with xml")
         val f = new java.io.File(url)
         val urlAddr = if (f.exists) f.toURI.toURL else new URL(url)
-        merge(readConf(urlAddr.openStream(), isXML))
+        merge(readConf(urlAddr.openStream()))
       }
     }
     postInit()
@@ -75,13 +77,9 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
 
   }
 
-  private def readConf(is: InputStream, isXML: Boolean): DatasourceConfig = {
+  private def readConf(is: InputStream): DatasourceConfig = {
     var conf: DatasourceConfig = null
-    if (isXML) {
-      conf=DataSourceUtils.parseXml(is,this.name)
-    } else {
-      conf = DataSourceUtils.parseJson(is)
-    }
+    conf = DataSourceUtils.parseXml(is, this.name)
     conf
   }
 

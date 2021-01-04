@@ -18,25 +18,27 @@
  */
 package org.beangle.data.hibernate.spring
 
-import org.beangle.commons.logging.Logging
-import org.hibernate.{ FlushMode, HibernateException, MultiTenancyStrategy, Session, SessionFactory }
-import org.hibernate.engine.jdbc.connections.spi.{ ConnectionProvider, MultiTenantConnectionProvider }
-import org.hibernate.engine.spi.SessionFactoryImplementor
-import org.springframework.transaction.support.TransactionSynchronizationManager.{ bindResource, getResource, unbindResource }
+import java.util.function.Consumer
+
 import javax.sql.DataSource
+import org.beangle.commons.logging.Logging
+import org.hibernate.engine.jdbc.connections.spi.{ConnectionProvider, MultiTenantConnectionProvider}
+import org.hibernate.engine.spi.SessionFactoryImplementor
+import org.hibernate._
+import org.springframework.transaction.support.TransactionSynchronizationManager.{bindResource, getResource, unbindResource}
+import scala.collection.mutable
 
 /**
  * Open or Close Hibernate Session
- *
  * @author chaostone
  */
 object SessionUtils extends Logging {
 
-  private val threadBinding = new ThreadLocal[collection.mutable.HashMap[SessionFactory, Boolean]]
+  private val threadBinding = new ThreadLocal[mutable.HashMap[SessionFactory, Boolean]]
 
   def getDataSource(factory: SessionFactory): DataSource = {
     val factoryImpl = factory.asInstanceOf[SessionFactoryImplementor]
-    if (MultiTenancyStrategy.NONE == factoryImpl.getSessionFactoryOptions().getMultiTenancyStrategy()) {
+    if (MultiTenancyStrategy.NONE == factoryImpl.getSessionFactoryOptions.getMultiTenancyStrategy) {
       factoryImpl.getServiceRegistry.getService(classOf[ConnectionProvider]).unwrap(classOf[DataSource])
     } else {
       factoryImpl.getServiceRegistry.getService(classOf[MultiTenantConnectionProvider]).unwrap(classOf[DataSource])
@@ -46,7 +48,7 @@ object SessionUtils extends Logging {
   def enableBinding(factory: SessionFactory): Unit = {
     var maps = threadBinding.get()
     if (null == maps) {
-      maps = new collection.mutable.HashMap
+      maps = new mutable.HashMap
       threadBinding.set(maps)
     }
     maps.put(factory, true)
@@ -54,7 +56,7 @@ object SessionUtils extends Logging {
 
   def isEnableBinding(factory: SessionFactory): Boolean = {
     val maps = threadBinding.get()
-    if (null == maps) false else None != maps.get(factory)
+    if (null == maps) false else maps.contains(factory)
   }
 
   def disableBinding(factory: SessionFactory): Unit = {
@@ -62,11 +64,24 @@ object SessionUtils extends Logging {
     if (null != maps) maps.remove(factory)
   }
 
-  def openSession(factory: SessionFactory): SessionHolder = {
+  def doOpenSession(factory: SessionFactory,
+                  interceptor: Option[Interceptor],
+                  initializer: Option[Consumer[Session]]): Session = {
+    val s = interceptor match {
+      case Some(i) => factory.withOptions().interceptor(i).openSession()
+      case None => factory.openSession()
+    }
+    initializer foreach { iz => iz.accept(s) }
+    s
+  }
+
+  def openSession(factory: SessionFactory,
+                  interceptor: Option[Interceptor] = None,
+                  initializer: Option[Consumer[Session]] = None): SessionHolder = {
     var holder = getResource(factory).asInstanceOf[SessionHolder]
     var session: Session = null
     if (null == holder) {
-      session = factory.openSession()
+      session = doOpenSession(factory, interceptor, initializer)
       session.setHibernateFlushMode(FlushMode.MANUAL)
       holder = new SessionHolder(session)
       if (isEnableBinding(factory)) bindResource(factory, holder)
@@ -87,22 +102,22 @@ object SessionUtils extends Logging {
       }
     } catch {
       case ex: HibernateException => logger.debug("Could not close Hibernate Session", ex)
-      case e: Throwable           => logger.debug("Unexpected exception on closing Hibernate Session", e)
+      case e: Throwable => logger.debug("Unexpected exception on closing Hibernate Session", e)
     }
   }
 
   def closeSession(session: Session): Unit = {
     try {
-      val holder = getResource(session.getSessionFactory()).asInstanceOf[SessionHolder]
-      if (null != holder) unbindResource(session.getSessionFactory())
+      val holder = getResource(session.getSessionFactory).asInstanceOf[SessionHolder]
+      if (null != holder) unbindResource(session.getSessionFactory)
       session.close()
     } catch {
       case ex: HibernateException => logger.debug("Could not close Hibernate Session", ex)
-      case e: Throwable           => logger.debug("Unexpected exception on closing Hibernate Session", e)
+      case e: Throwable => logger.debug("Unexpected exception on closing Hibernate Session", e)
     }
   }
 
   def toString(session: Session): String = {
-    return session.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(session))
+    session.getClass.getName + "@" + Integer.toHexString(System.identityHashCode(session))
   }
 }
