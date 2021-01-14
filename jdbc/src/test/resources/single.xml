@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<properties>
+  <url>jdbc:oracle:thin:@//localhost:1521/public</url>
+  <driver>oracle</driver>
+  <user>tigre</user>
+  <password>tigre</password>
+  <schema>tigre</schema>
+  <driverType>thin</driverType>
+</properties>

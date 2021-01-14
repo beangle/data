@@ -43,7 +43,7 @@ class Profiles(resources: Resources) extends Logging {
 
   init()
 
-  private def init() {
+  private def init(): Unit = {
     namings.put("rails", new RailsNamingPolicy(this))
     defaultProfile.naming = new RailsNamingPolicy(this)
     globalSchema foreach { s =>

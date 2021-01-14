@@ -65,10 +65,13 @@ object SessionUtils extends Logging {
   }
 
   def doOpenSession(factory: SessionFactory,
-                  interceptor: Option[Interceptor],
-                  initializer: Option[Consumer[Session]]): Session = {
+                    interceptor: Option[Interceptor],
+                    initializer: Option[Consumer[Session]]): Session = {
     val s = interceptor match {
-      case Some(i) => factory.withOptions().interceptor(i).openSession()
+      case Some(i) =>
+        val builder = factory.withOptions()
+        builder.interceptor(i)
+        builder.openSession()
       case None => factory.openSession()
     }
     initializer foreach { iz => iz.accept(s) }

@@ -32,9 +32,13 @@ import scala.xml.XML
 @RunWith(classOf[JUnitRunner])
 class DatasourceConfigTest extends AnyFlatSpec with Matchers {
   "DatasourceConfig " should "build a correct orace datasource" in {
-    (XML.load(ClassLoaders.getResource("datasources.xml").get) \ "datasource") foreach { ds =>
-      val config = DataSourceUtils.parseXml(ds)
-      if (config.name == "tigre") assert(config.props.contains("driverType"))
-    }
+    val is = ClassLoaders.getResourceAsStream("datasources.xml").get
+    val config = DataSourceUtils.parseXml(is, "tigre")
+    assert(config.props.contains("driverType"))
+  }
+  "DataSourceUtils " should "build single datasource" in {
+    val ds = XML.load(ClassLoaders.getResource("single.xml").get)
+    val config = DataSourceUtils.parseXml(ds)
+    assert(config.props.contains("driverType"))
   }
 }
