@@ -18,14 +18,15 @@
  */
 package org.beangle.data.jdbc.ds
 
-import java.io.{ByteArrayInputStream, InputStream}
-import java.net.URL
-
-import javax.sql.DataSource
 import org.beangle.commons.bean.{Disposable, Factory, Initializing}
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.net.http.HttpUtils
+import org.beangle.data.jdbc.ds.DataSourceUtils.parseXml
+
+import java.io.{ByteArrayInputStream, InputStream}
+import java.net.URL
+import javax.sql.DataSource
 
 /**
  * Build a DataSource from file: or http: config url
@@ -50,27 +51,30 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   }
 
   override def init(): Unit = {
-    val isXML = url.endsWith(".xml")
-    if (null != url) {
-      if (url.startsWith("jdbc:")) {
-        if (null == driver) {
-          driver = Strings.substringBetween(url, "jdbc:", ":")
-          props.put("url", url)
+    try {
+      if (null != url) {
+        if (url.startsWith("jdbc:")) {
+          if (null == driver) {
+            driver = Strings.substringBetween(url, "jdbc:", ":")
+            props.put("url", url)
+          }
+        } else if (url.startsWith("http")) {
+          val text = HttpUtils.getText(url).getOrElse("")
+          val is = new ByteArrayInputStream(text.getBytes)
+          merge(readConf(is))
+        } else {
+          val f = new java.io.File(url)
+          val urlAddr = if (f.exists) f.toURI.toURL else new URL(url)
+          merge(readConf(urlAddr.openStream()))
         }
-      } else if (url.startsWith("http")) {
-        assert(isXML, "url should ends with xml")
-        val text = HttpUtils.getText(url).getOrElse("")
-        val is = new ByteArrayInputStream(text.getBytes)
-        merge(readConf(is))
-      } else {
-        assert(isXML, "url should ends with xml")
-        val f = new java.io.File(url)
-        val urlAddr = if (f.exists) f.toURI.toURL else new URL(url)
-        merge(readConf(urlAddr.openStream()))
       }
+      postInit()
+      println(props)
+      _result = DataSourceUtils.build(driver, user, password, props)
+    } catch {
+      case e: Throwable =>
+        throw new RuntimeException(s"cannot find datasource named ${this.name} in ${this.url}", e)
     }
-    postInit()
-    _result = DataSourceUtils.build(driver, user, password, props)
   }
 
   protected def postInit(): Unit = {
@@ -78,9 +82,24 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   }
 
   private def readConf(is: InputStream): DatasourceConfig = {
-    var conf: DatasourceConfig = null
-    conf = DataSourceUtils.parseXml(is, this.name)
-    conf
+    val root = scala.xml.XML.load(is)
+    val datasources = root \\ "datasource"
+    val dbs = root \\ "db"
+    if (dbs.isEmpty && datasources.isEmpty) {
+      DataSourceUtils.parseXml(root)
+    } else {
+      var conf: DatasourceConfig = null
+      val nodes = if (datasources.isEmpty) dbs else datasources
+      nodes foreach { elem =>
+        val one = parseXml(elem)
+        if (this.name != null) {
+          if (this.name == one.name) conf = one
+        } else {
+          conf = one
+        }
+      }
+      conf
+    }
   }
 
   private def merge(conf: DatasourceConfig): Unit = {

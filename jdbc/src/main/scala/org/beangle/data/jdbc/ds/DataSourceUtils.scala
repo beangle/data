@@ -121,8 +121,7 @@ object DataSourceUtils extends Logging {
     }
 
     val processed = Set("url", "driver", "props", "user", "password", "catalog", "schema")
-    val dbNodeName = if ((xml \\ "datasource").isEmpty) "db" else "datasource"
-    xml \\ dbNodeName \ "_" foreach { n =>
+    xml \ "_" foreach { n =>
       val label = n.label
       if (!processed.contains(label) && Strings.isNotEmpty(n.text)) dbconf.props.put(label, n.text)
     }
