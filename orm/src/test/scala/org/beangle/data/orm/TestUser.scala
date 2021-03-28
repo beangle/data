@@ -22,6 +22,8 @@ import org.beangle.commons.lang.time.WeekTime
 import org.beangle.data.model.pojo.Updated
 import org.beangle.data.model.{Component, LongId}
 
+import scala.collection.mutable
+
 /**
  * @author chaostone
  */
@@ -38,6 +40,8 @@ class TestUser extends LongId with Updated {
   var tags: collection.mutable.Map[String, String] = _
 
   var times: collection.mutable.Map[Int, WeekTime] = _
+
+  var roles: mutable.Buffer[TestRole] = _
 }
 
 class NamedMember extends Component {

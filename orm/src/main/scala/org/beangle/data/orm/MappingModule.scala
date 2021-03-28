@@ -18,8 +18,6 @@
  */
 package org.beangle.data.orm
 
-import java.sql.{Blob, Clob, Types}
-
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
@@ -27,6 +25,7 @@ import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.meta._
 
+import java.sql.{Blob, Clob, Types}
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asScala
 import scala.reflect.ClassTag
@@ -41,12 +40,11 @@ object MappingModule {
   }
 
   /** 创建索引
-    *
-    * 针对唯一索引，目前不支持空列
-    *
-    * @param name   indexname
-    * @param unique unique index
-    */
+   *
+   * 针对唯一索引，目前不支持空列
+   * @param name   indexname
+   * @param unique unique index
+   */
   class IndexDeclaration(name: String, unique: Boolean) {
     def apply(holder: EntityHolder[_], pms: Iterable[OrmProperty]): Unit = {
       // hibernate的index注解里没有支持unique，而是通过unique key支持的，为了保持一直，这里也类似处理
@@ -205,6 +203,17 @@ object MappingModule {
     new Column(mappings.database.engine.toIdentifier(colName), mappings.sqlTypeMapping.sqlType(idType), false)
   }
 
+  class Many2Many(mappedBy: String) extends PropertyDeclaration {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val colpm = cast[OrmCollectionProperty](pm, holder, "many2many should used on seq")
+      colpm.mappedBy = Some(mappedBy)
+      if (!colpm.element.isInstanceOf[OrmEntityType]) {
+        mismatch("many2many with mappedBy should be applied on entity", holder.mapping, pm)
+      }
+      colpm.table = None
+    }
+  }
+
   class One2Many(targetEntity: Option[Class[_]], mappedBy: String, private var cascade: Option[String] = None) extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val colpm = cast[OrmCollectionProperty](pm, holder, "one2many should used on seq")
@@ -253,7 +262,7 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val collp = cast[OrmCollectionProperty](pm, holder, "order column should used on many2many seq")
       val idxCol = new Column(Identifier(if (null == orderColumn) MappingModule.OrderColumnName else orderColumn), holder.mappings.sqlTypeMapping.sqlType(classOf[Int]), false)
-      idxCol.comment=Some("index no")
+      idxCol.comment = Some("index no")
       collp.index = Some(idxCol)
     }
   }
@@ -474,6 +483,10 @@ abstract class MappingModule extends Logging {
 
   protected def one2many(clazz: Class[_], mappedBy: String): One2Many = {
     new One2Many(Some(clazz), mappedBy)
+  }
+
+  protected def many2many(mappedBy: String): Many2Many = {
+    new Many2Many(mappedBy)
   }
 
   protected def orderby(orderby: String): OrderBy = {

@@ -18,14 +18,16 @@
  */
 package org.beangle.data.orm
 
-import java.time.LocalDate
-
 import org.beangle.commons.collection.Collections
 import org.beangle.data.model.LongId
 import org.beangle.data.model.pojo.Named
+
+import java.time.LocalDate
+import scala.collection.mutable
 
 class TestRole extends LongId with Named {
   var rootUser: Boolean = _
   var properties = Collections.newMap[Int, String]
   var vocations = Collections.newSet[LocalDate]
+  var users: mutable.Buffer[TestUser] = _
 }

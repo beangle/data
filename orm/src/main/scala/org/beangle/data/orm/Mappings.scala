@@ -18,10 +18,6 @@
  */
 package org.beangle.data.orm
 
-import java.lang.reflect.Modifier
-import java.net.URL
-import java.util.Locale
-
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.annotation.value
@@ -36,6 +32,9 @@ import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringI
 import org.beangle.data.orm.Jpas._
 import org.beangle.data.orm.cfg.Profiles
 
+import java.lang.reflect.Modifier
+import java.net.URL
+import java.util.Locale
 import scala.collection.mutable
 import scala.reflect.runtime.{universe => ru}
 
@@ -290,50 +289,67 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                 case _ =>
               }
             } else if (ppm.many2many) {
-              if (ppm.table.isEmpty) ppm.table = Some(table.name.toString + "_" + Strings.unCamel(p, '_'))
-              val collectTable = table.schema.createTable(ppm.table.get)
-              collectTable.comment = Some(getComment(ost.clazz, property.name))
-              ppm.ownerColumn.comment = Some(getComment(oet.clazz, oet.clazz.getSimpleName) + "ID")
-              collectTable.add(ppm.ownerColumn)
-              ppm.inverseColumn foreach { c => collectTable.add(c) }
-              ppm.index foreach { idxColumn =>
-                collectTable.add(idxColumn)
-              }
-              collectTable.createIndex(null, false, ppm.ownerColumn.name.value)
-              createForeignKey(collectTable, List(ppm.ownerColumn), table)
-              ppm.element match {
-                case btm: OrmBasicType =>
-                  addBasicTypeMapping(ost.clazz, property.name, ppm.element, btm.column, collectTable)
-                case btm: OrmEntityType =>
-                  addBasicTypeMapping(ost.clazz, property.name, ppm.element, ppm.inverseColumn.get, collectTable)
-                case etm: OrmEmbeddableType =>
-                  etm.properties foreach { case (p, pm) =>
-                    pm match {
-                      case spm: OrmSingularProperty =>
-                        spm.propertyType match {
-                          case btm: OrmBasicType =>
-                            addBasicTypeMapping(etm.clazz, p, btm, btm.column, collectTable)
-                          case oet: OrmEntityType =>
-                            val idType = idTypeOf(oet.clazz)
-                            val column = newColumn(columnName(spm.clazz, spm.name, true), idType, spm.optional)
-                            addBasicTypeMapping(etm.clazz, property.name, oet, column, collectTable)
-                          case ost: OrmStructType =>
-                            processProperties(oet, ost, collectTable)
-                        }
-                      case _ => throw new RuntimeException(s"Cannot support ${pm.getClass.getName} in collection")
-                    }
-                  }
-              }
-              ppm match {
-                case mm: OrmMapProperty =>
-                  mm.key match {
-                    case obt: OrmBasicType => collectTable.add(obt.column)
-                    case oet: OrmEntityType => collectTable.add(mm.keyColumn)
+              ppm.mappedBy match {
+                case Some(mappedBy) =>
+                  ppm.element match {
+                    case oet: OrmEntityType =>
+                      val refTable = refEntity(oet.clazz, oet.entityName).table
+                      val table = refTable.name.toString + "_" + Strings.unCamel(mappedBy, '_')
+                      ppm.table = Some(table)
+                      if (BeanInfos.get(oet.clazz).getPropertyType(mappedBy).isEmpty) {
+                        throw new RuntimeException(s"Cannot find ${mappedBy} in ${oet.clazz.getName}")
+                      }
+                      val collectTable = refTable.schema.getOrCreateTable(table)
+                      collectTable.createIndex(null, false, ppm.ownerColumn.name.value)
                     case _ =>
                   }
-                case _ =>
+                case None =>
+                  if (ppm.table.isEmpty) ppm.table = Some(table.name.toString + "_" + Strings.unCamel(p, '_'))
+                  val collectTable = table.schema.getOrCreateTable(ppm.table.get)
+                  collectTable.comment = Some(getComment(ost.clazz, property.name))
+                  ppm.ownerColumn.comment = Some(getComment(oet.clazz, oet.clazz.getSimpleName) + "ID")
+                  collectTable.add(ppm.ownerColumn)
+                  ppm.inverseColumn foreach { c => collectTable.add(c) }
+                  ppm.index foreach { idxColumn =>
+                    collectTable.add(idxColumn)
+                  }
+                  collectTable.createIndex(null, false, ppm.ownerColumn.name.value)
+                  createForeignKey(collectTable, List(ppm.ownerColumn), table)
+
+                  ppm.element match {
+                    case btm: OrmBasicType =>
+                      addBasicTypeMapping(ost.clazz, property.name, ppm.element, btm.column, collectTable)
+                    case oet: OrmEntityType =>
+                      addBasicTypeMapping(ost.clazz, property.name, ppm.element, ppm.inverseColumn.get, collectTable)
+                    case etm: OrmEmbeddableType =>
+                      etm.properties foreach { case (p, pm) =>
+                        pm match {
+                          case spm: OrmSingularProperty =>
+                            spm.propertyType match {
+                              case btm: OrmBasicType =>
+                                addBasicTypeMapping(etm.clazz, p, btm, btm.column, collectTable)
+                              case oet: OrmEntityType =>
+                                val idType = idTypeOf(oet.clazz)
+                                val column = newColumn(columnName(spm.clazz, spm.name, true), idType, spm.optional)
+                                addBasicTypeMapping(etm.clazz, property.name, oet, column, collectTable)
+                              case ost: OrmStructType =>
+                                processProperties(oet, ost, collectTable)
+                            }
+                          case _ => throw new RuntimeException(s"Cannot support ${pm.getClass.getName} in collection")
+                        }
+                      }
+                  }
+                  ppm match {
+                    case mm: OrmMapProperty =>
+                      mm.key match {
+                        case obt: OrmBasicType => collectTable.add(obt.column)
+                        case oet: OrmEntityType => collectTable.add(mm.keyColumn)
+                        case _ =>
+                      }
+                    case _ =>
+                  }
+                  collectTable.createPrimaryKey(null, collectTable.columns.map(_.name.toLiteral(table.engine)).toList: _*)
               }
-              collectTable.createPrimaryKey(null, collectTable.columns.map(_.name.toLiteral(table.engine)).toList: _*)
             }
         }
     }

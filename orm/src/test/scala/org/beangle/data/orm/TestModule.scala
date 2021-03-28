@@ -36,6 +36,7 @@ class TestModule extends MappingModule {
       e.name is unique
       e.vocations.is(joinColumn("role_id"), eleColumn("exclude_on"))
       e.properties is keyColumn("type_id")
+      e.users is many2many("roles")
     }
 
     bind[UserProperty]
