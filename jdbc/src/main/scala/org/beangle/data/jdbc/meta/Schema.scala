@@ -50,6 +50,17 @@ class Schema(var database: Database, var name: Identifier) {
     this
   }
 
+  def getOrCreateTable(tbname: String): Table = {
+    val tableId = database.engine.toIdentifier(tbname)
+    tables.get(tableId) match {
+      case Some(table) => table
+      case None =>
+        val ntable = new Table(this, tableId)
+        tables.put(tableId, ntable)
+        ntable
+    }
+  }
+
   def createTable(tbname: String): Table = {
     val tableId = database.engine.toIdentifier(tbname)
     tables.get(tableId) match {
@@ -57,16 +68,7 @@ class Schema(var database: Database, var name: Identifier) {
         if (table.phantom) {
           table
         } else {
-          var i = 1
-          var newTableId = database.engine.toIdentifier(s"$tableId${i}")
-          while (tables.contains(newTableId)) {
-            i += 1
-            newTableId = database.engine.toIdentifier(s"$tableId${i}")
-          }
-          Schema.logger.warn(table.qualifiedName + s" is existed,using ${newTableId} instead.")
-          val ntable = new Table(this, newTableId)
-          tables.put(newTableId, ntable)
-          ntable
+          throw new RuntimeException("Table " + table.qualifiedName + s" is existed,creation aborted.")
         }
       case None =>
         val ntable = new Table(this, tableId)

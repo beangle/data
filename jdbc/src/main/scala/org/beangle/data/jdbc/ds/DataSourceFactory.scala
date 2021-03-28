@@ -69,7 +69,6 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
         }
       }
       postInit()
-      println(props)
       _result = DataSourceUtils.build(driver, user, password, props)
     } catch {
       case e: Throwable =>
