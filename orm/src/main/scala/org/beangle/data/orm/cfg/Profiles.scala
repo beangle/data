@@ -18,22 +18,19 @@
  */
 package org.beangle.data.orm.cfg
 
-import java.net.URL
-
 import org.beangle.commons.config.Resources
-import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings._
 import org.beangle.commons.lang.reflect.Reflections
+import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.orm.{MappingModule, NamingPolicy}
 
+import java.net.URL
 import scala.collection.mutable
 
 class Profiles(resources: Resources) extends Logging {
 
   private val defaultProfile = new MappingProfile
-
-  private val globalSchema = Option(System.getProperty("beangle.data.orm.global_schema"))
 
   private val profiles = new collection.mutable.HashMap[String, MappingProfile]
 
@@ -42,6 +39,11 @@ class Profiles(resources: Resources) extends Logging {
   var modules: List[MappingModule] = _
 
   init()
+
+  private def globalSchema: Option[String] = {
+    val s = System.getProperty("beangle.data.orm.global_schema")
+    if (Strings.isBlank(s)) None else Some(s.trim)
+  }
 
   private def init(): Unit = {
     namings.put("rails", new RailsNamingPolicy(this))

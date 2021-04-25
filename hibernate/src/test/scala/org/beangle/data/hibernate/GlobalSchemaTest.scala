@@ -43,6 +43,7 @@ class GlobalSchemaTest extends AnyFunSpec with Matchers {
       assert(daoModule.parent.packageName == "org.beangle.data.hibernate")
 
       assert(profiles.getSchema(classOf[IdType]).contains("test"))
+      System.setProperty("beangle.data.orm.global_schema", "")
     }
   }
 }

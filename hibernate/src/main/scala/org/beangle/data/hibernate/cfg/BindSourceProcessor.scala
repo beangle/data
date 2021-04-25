@@ -21,7 +21,6 @@ package org.beangle.data.hibernate.cfg
 import java.lang.reflect.Modifier
 import java.time.YearMonth
 import java.{util => ju}
-
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.hibernate.ScalaPropertyAccessStrategy
@@ -38,6 +37,7 @@ import org.hibernate.boot.registry.classloading.spi.ClassLoaderService
 import org.hibernate.boot.registry.selector.spi.StrategySelector
 import org.hibernate.boot.spi.{InFlightMetadataCollector, MetadataBuildingContext}
 import org.hibernate.cfg.CollectionSecondPass
+import org.hibernate.engine.OptimisticLockStyle
 import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, IDENTIFIER_NORMALIZER, SCHEMA}
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory
 import org.hibernate.mapping.Collection.{DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_KEY_COLUMN_NAME}
@@ -170,6 +170,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
 
   def bindClass(em: OrmEntityType): RootClass = {
     val entity = new RootClass(context)
+    entity.setOptimisticLockStyle(OptimisticLockStyle.interpretOldCode(em.optimisticLockStyle))
     entity.setEntityName(em.entityName)
     entity.setJpaEntityName(em.entityName)
 

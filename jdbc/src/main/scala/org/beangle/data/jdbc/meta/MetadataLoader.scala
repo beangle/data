@@ -62,12 +62,12 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
   import MetadataColumns._
 
   def loadTables(schema: Schema, extras: Boolean): Unit = {
-    val TYPES: Array[String] = Array("TABLE")
-    val newCatalog = if (schema.catalog.isEmpty) null else schema.catalog.get.toLiteral(engine)
-    val newSchema = schema.name.toLiteral(engine)
+    val TYPES = Array("TABLE")
+    val newCatalog = if (schema.catalog.isEmpty) null else schema.catalog.get.value
+    val schemaName = schema.name.value
 
     val sw = new Stopwatch(true)
-    var rs = meta.getTables(newCatalog, newSchema, null, TYPES)
+    var rs = meta.getTables(newCatalog, schemaName, null, TYPES)
     val tables = new mutable.HashMap[String, Table]
     while (rs.next()) {
       val tableName = rs.getString(TableName)
@@ -82,7 +82,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
 
     // Loading columns
     sw.reset().start()
-    rs = meta.getColumns(newCatalog, newSchema, "%", "%")
+    rs = meta.getColumns(newCatalog, schemaName, "%", "%")
     var cols = 0
     val types = Collections.newMap[String, SqlType]
     import java.util.StringTokenizer

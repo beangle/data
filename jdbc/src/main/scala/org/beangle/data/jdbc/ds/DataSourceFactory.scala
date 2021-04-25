@@ -28,8 +28,21 @@ import java.io.{ByteArrayInputStream, InputStream}
 import java.net.URL
 import javax.sql.DataSource
 
+object DataSourceFactory {
+  def build(driver: String, username: String, password: String, props: collection.Map[String, String]): DataSource = {
+    val factory = new DataSourceFactory
+    factory.driver=driver
+    factory.user = username
+    factory.password = password
+    factory.props ++= props
+    factory.init()
+    factory.result
+  }
+}
+
 /**
  * Build a DataSource from file: or http: config url
+ *
  * @author chaostone
  */
 class DataSourceFactory extends Factory[DataSource] with Initializing with Disposable {
@@ -77,7 +90,14 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   }
 
   protected def postInit(): Unit = {
-
+    if (password != null && password.startsWith("?")) {
+      this.password =
+        if (props.contains("url")) {
+          DatasourceEncryptor.decrypt(user, props("url"), password.substring(1))
+        } else {
+          DatasourceEncryptor.decrypt(user, props("serverName"), password.substring(1))
+        }
+    }
   }
 
   private def readConf(is: InputStream): DatasourceConfig = {
