@@ -30,6 +30,7 @@ import javax.sql.DataSource
 
 /**
  * Build a DataSource from file: or http: config url
+ *
  * @author chaostone
  */
 class DataSourceFactory extends Factory[DataSource] with Initializing with Disposable {
@@ -77,7 +78,14 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
   }
 
   protected def postInit(): Unit = {
-
+    if (password != null && password.startsWith("?")) {
+      this.password =
+        if (props.contains("jdbcUrl")) {
+          DatasourceEncryptor.decrypt(user, props("jdbcUrl"), password.substring(1))
+        } else {
+          DatasourceEncryptor.decrypt(user, props("serverName"), password.substring(1))
+        }
+    }
   }
 
   private def readConf(is: InputStream): DatasourceConfig = {

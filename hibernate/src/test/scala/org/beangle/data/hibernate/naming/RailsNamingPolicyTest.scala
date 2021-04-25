@@ -23,8 +23,8 @@ import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.hibernate.model.IdType
 import org.beangle.data.orm.cfg.Profiles
 import org.junit.runner.RunWith
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
