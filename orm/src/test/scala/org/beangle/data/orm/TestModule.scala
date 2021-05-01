@@ -22,7 +22,6 @@ import org.beangle.data.model.pojo.Named
 
 class TestModule extends MappingModule {
 
-
   override def binding(): Unit = {
     autoIncrement()
 

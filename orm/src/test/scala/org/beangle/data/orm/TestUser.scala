@@ -53,4 +53,3 @@ class Name2 extends Component {
   var firstName: String = _
   var lastName: String = _
 }
-

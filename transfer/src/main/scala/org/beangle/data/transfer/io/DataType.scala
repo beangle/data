@@ -53,5 +53,4 @@ object DataType extends Enumeration(1) {
     }
   }
 
-
 }

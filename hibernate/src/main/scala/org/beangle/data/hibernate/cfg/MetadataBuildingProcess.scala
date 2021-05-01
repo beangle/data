@@ -109,7 +109,6 @@ object MetadataBuildingProcess {
     metadataCollector.buildMetadataInstance(rootContext)
   }
 
-
   def handleTypes(context: BootstrapContext, options: MetadataBuildingOptions): BasicTypeRegistry = {
 
     val classLoaderService = options.getServiceRegistry.getService(classOf[ClassLoaderService])

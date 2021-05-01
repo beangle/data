@@ -22,7 +22,6 @@ import org.beangle.commons.bean.Properties
 import org.beangle.commons.collection.Collections
 import org.beangle.data.model.Entity
 
-
 object Domain {
 
   final class SimpleProperty(val name: String, val clazz: Class[_], val optional: Boolean) extends SingularProperty {

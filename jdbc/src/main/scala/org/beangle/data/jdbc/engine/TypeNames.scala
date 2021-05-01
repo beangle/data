@@ -139,7 +139,6 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
     SqlType(code, typeName, precision, info.scaleValue)
   }
 
-
   protected[engine] def toName(typecode: Int): String = {
     code2names.get(translate(typecode, 0)) match {
       case None => "other"
@@ -166,7 +165,6 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
         }
     }
   }
-
 
   protected[engine] def toCode(typeName: String, precision: Int): Int = {
     name2codes.get(typeName) match {

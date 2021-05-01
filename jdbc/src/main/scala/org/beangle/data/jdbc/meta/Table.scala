@@ -267,7 +267,6 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     index
   }
 
-
   def createColumn(name: String, sqlType: SqlType): Column = {
     val egn = engine
     val col = new Column(egn.toIdentifier(name), sqlType)

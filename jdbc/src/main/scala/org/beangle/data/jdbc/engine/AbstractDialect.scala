@@ -284,7 +284,6 @@ trait AbstractDialect extends Dialect {
     sb.mkString
   }
 
-
   override def query(table: Table): String = {
     val sb: StringBuilder = new StringBuilder()
     sb.append("select ")

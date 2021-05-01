@@ -44,5 +44,4 @@ final class NodeOps(val n: Node) extends AnyVal {
     (n \ s"@$name").map(_.text).headOption
   }
 
-
 }

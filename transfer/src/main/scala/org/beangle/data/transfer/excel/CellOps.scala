@@ -84,7 +84,6 @@ final class CellOps(private val cell: Cell) extends AnyVal {
     }
   }
 
-
   /** 取cell单元格中的数据
     *
     * @return
@@ -124,7 +123,6 @@ final class CellOps(private val cell: Cell) extends AnyVal {
       case d: Any => d
     }
   }
-
 
   private def convert(str: String, dataType: DataType.Value): Any = {
     dataType match {
@@ -168,7 +166,6 @@ final class CellOps(private val cell: Cell) extends AnyVal {
     }
   }
 
-
   private def fill(d: java.sql.Date, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(d)
     cell.setCellStyle(registry.get(DataType.Date))
@@ -184,12 +181,10 @@ final class CellOps(private val cell: Cell) extends AnyVal {
     cell.setCellStyle(registry.get(DataType.YearMonth))
   }
 
-
   private def fill(d: Year, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(d.getValue)
     cell.setCellStyle(registry.get(DataType.YearMonth))
   }
-
 
   private def fill(d: MonthDay, registry: ExcelStyleRegistry): Unit = {
     cell.setCellValue(java.sql.Date.valueOf(d.atYear(2000)))

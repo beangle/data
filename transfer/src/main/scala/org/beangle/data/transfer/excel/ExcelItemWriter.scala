@@ -64,7 +64,6 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     registry = new ExcelStyleRegistry(workbook)
   }
 
-
   def close(): Unit = {
     try {
       workbook.write(outputStream)
@@ -120,7 +119,6 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
       }
     }
   }
-
 
   protected def buildTitleStyle(): XSSFCellStyle = {
     val style = workbook.createCellStyle().asInstanceOf[XSSFCellStyle]
