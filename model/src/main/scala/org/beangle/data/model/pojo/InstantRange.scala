@@ -31,7 +31,6 @@ trait InstantRange {
   /** 结束时间 */
   var endAt: Instant = _
 
-
   def within(time: Instant): Boolean = {
     !(beginAt.isAfter(time) || endAt.isBefore(time))
   }

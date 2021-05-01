@@ -29,7 +29,6 @@ object ExcelStyleRegistry {
     Date -> "YYYY-MM-D", Time -> "HH:MM:SS", DateTime -> "YYYY-MM-DD HH:MM:SS",
     YearMonth -> "YYYY-MM", MonthDay -> "--MM-DD")
 
-
   def defaultFormat(dt: DataType.Value): String = {
     formats(dt)
   }
@@ -55,6 +54,5 @@ class ExcelStyleRegistry(workbook: Workbook) {
   DataType.values foreach { dt =>
     registerFormat(dt, ExcelStyleRegistry.defaultFormat(dt))
   }
-
 
 }

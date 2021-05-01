@@ -29,7 +29,6 @@ import org.beangle.commons.lang.Strings
 
 import scala.collection.mutable
 
-
 object ExcelSchemaWriter {
 
   def generate(schema: ExcelSchema, os: OutputStream): Unit = {
@@ -163,7 +162,6 @@ object ExcelSchemaWriter {
     finded
   }
 
-
   private def writeColumnRemark(sheet: Sheet, content: String, row: Row, columnIdx: Int): Cell = {
     val cell = row.createCell(columnIdx)
     val newLines = Strings.count(content.trim(), "\n")
@@ -255,6 +253,5 @@ object ExcelSchemaWriter {
     style.setFont(font)
     style
   }
-
 
 }

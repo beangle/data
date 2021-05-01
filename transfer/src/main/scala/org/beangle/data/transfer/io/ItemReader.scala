@@ -28,5 +28,3 @@ trait ItemReader extends Reader {
   def readAttributes(): List[Attribute]
 
 }
-
-

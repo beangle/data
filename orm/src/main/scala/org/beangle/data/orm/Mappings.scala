@@ -424,7 +424,6 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     entity.addProperties(inherited)
   }
 
-
   private def bindComponent(entity: OrmEntityType, c: OrmStructType, name: String, propertyType: Class[_], tpe: ru.Type, optional: Boolean): Unit = {
     val oet = new OrmEmbeddableType(propertyType)
     val cpm = new OrmSingularProperty(name, propertyType, optional, oet)

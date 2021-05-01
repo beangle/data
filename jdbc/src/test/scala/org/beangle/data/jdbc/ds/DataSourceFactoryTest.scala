@@ -18,7 +18,6 @@
  */
 package org.beangle.data.jdbc.ds
 
-
 import org.beangle.commons.lang.ClassLoaders
 import org.junit.runner.RunWith
 import org.scalatest.matchers.should.Matchers

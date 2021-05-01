@@ -20,7 +20,6 @@ package org.beangle.data.jdbc.engine
 
 import org.beangle.data.jdbc.meta._
 
-
 /** RDBMS Dialect
   * Focus on ddl and dml sql generation.
   */

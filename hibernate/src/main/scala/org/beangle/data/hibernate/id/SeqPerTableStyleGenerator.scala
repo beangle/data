@@ -45,7 +45,6 @@ class SeqPerTableStyleGenerator extends SequenceStyleGenerator with Logging {
 
   var sequencePrefix = "seq_"
 
-
   protected override def determineSequenceName(params: ju.Properties, dialect: Dialect,
                                                jdbcEnv: JdbcEnvironment, serviceRegistry: ServiceRegistry): QualifiedName = {
     import SequenceStyleGenerator._

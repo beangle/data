@@ -37,7 +37,6 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
     (VARCHAR, 4000, "varchar2($l)"), (NUMERIC, 38, "number($p,$s)"),
     (NUMERIC, Int.MaxValue, "number(38,$s)"), (VARBINARY, 2000, "raw($l)"))
 
-
   options.sequence { s =>
     s.createSql = "create sequence {name} increment by {increment} start with {start} cache {cache} {cycle}"
     s.nextValSql = "select {name}.nextval from dual"
@@ -68,7 +67,6 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
 
   metadataLoadSql.sequenceSql = "select sequence_name,last_number as next_value,increment_by,cache_size,cycle_flag " +
     "from all_sequences where sequence_owner=':schema'"
-
 
   metadataLoadSql.primaryKeySql =
     "select con.constraint_name PK_NAME,con.owner TABLE_SCHEM,con.table_name TABLE_NAME,col.column_name COLUMN_NAME" +

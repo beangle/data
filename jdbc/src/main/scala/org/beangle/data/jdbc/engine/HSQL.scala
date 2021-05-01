@@ -61,7 +61,6 @@ class HSQL(v: String) extends AbstractEngine(Version(v)) {
 
   metadataLoadSql.sequenceSql = "select sequence_name,next_value,increment from information_schema.sequences where sequence_schema=':schema'"
 
-
   override def storeCase: StoreCase.Value = {
     StoreCase.Upper
   }

@@ -34,7 +34,6 @@ trait TemporalOn {
   /** 结束日期 */
   var endOn: Option[LocalDate] = None
 
-
   def within(date: LocalDate): Boolean = {
     !(beginOn.isAfter(date) || endOn.exists(_.isBefore(date)))
   }

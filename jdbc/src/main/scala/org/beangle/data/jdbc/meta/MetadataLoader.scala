@@ -126,7 +126,6 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     }
   }
 
-
   private def batchLoadExtra(schema: Schema, sql: MetadataLoadSql): Unit = {
     val sw = new Stopwatch(true)
     var rs: ResultSet = null
