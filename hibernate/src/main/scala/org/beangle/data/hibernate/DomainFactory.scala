@@ -19,14 +19,11 @@
 package org.beangle.data.hibernate
 
 import org.beangle.commons.bean.Factory
-import org.beangle.cdi.{ Container, ContainerListener }
-import org.beangle.commons.lang.annotation.description
-import org.hibernate.SessionFactory
-import org.beangle.data.model.meta.Domain
-import org.beangle.data.hibernate.cfg.MappingService
 import org.beangle.commons.collection.Collections
-import org.beangle.data.model.meta.ImmutableDomain
-import org.beangle.data.model.meta.EntityType
+import org.beangle.commons.lang.annotation.description
+import org.beangle.data.hibernate.cfg.MappingService
+import org.beangle.data.model.meta.{Domain, EntityType, ImmutableDomain}
+import org.hibernate.SessionFactory
 
 object DomainFactory {
 
@@ -35,7 +32,7 @@ object DomainFactory {
   }
 
   def build(factories: Iterable[SessionFactory]): Domain = {
-    var entities = Collections.newSet[EntityType]
+    val entities = Collections.newSet[EntityType]
     factories foreach { f =>
       val ms = f.getSessionFactoryOptions.getServiceRegistry.getService(classOf[MappingService])
       if (null != ms) {
@@ -45,13 +42,8 @@ object DomainFactory {
     ImmutableDomain(entities)
   }
 }
+
 @description("基于Hibernate提供的元信息工厂")
-class DomainFactory extends ContainerListener with Factory[Domain] {
-
-  var result: Domain = _
-
-  override def onStarted(container: Container): Unit = {
-    result = DomainFactory.build(container.getBeans(classOf[SessionFactory]).values)
-  }
-
+class DomainFactory(factories: Iterable[SessionFactory]) extends Factory[Domain] {
+  val result: Domain = DomainFactory.build(factories)
 }
