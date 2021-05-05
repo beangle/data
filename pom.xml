@@ -40,7 +40,6 @@
 
   <properties>
     <commons.version>5.2.3</commons.version>
-    <cdi.version>0.3.0</cdi.version>
     <spring.version>5.3.6</spring.version>
     <HikariCP.version>4.0.3</HikariCP.version>
 
@@ -72,16 +71,6 @@
         <groupId>org.beangle.commons</groupId>
         <artifactId>beangle-commons-csv_2.13</artifactId>
         <version>${commons.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.beangle.cdi</groupId>
-        <artifactId>beangle-cdi-api_2.13</artifactId>
-        <version>${cdi.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.beangle.cdi</groupId>
-        <artifactId>beangle-cdi-spring_2.13</artifactId>
-        <version>${cdi.version}</version>
       </dependency>
       <dependency>
         <groupId>org.beangle.data</groupId>
