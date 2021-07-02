@@ -49,7 +49,7 @@ class Profiles(resources: Resources) extends Logging {
     namings.put("rails", new RailsNamingPolicy(this))
     defaultProfile.naming = new RailsNamingPolicy(this)
     globalSchema foreach { s =>
-      defaultProfile._schema = s
+      defaultProfile._schema = Some(s)
     }
     val ms = new mutable.ArrayBuffer[MappingModule]
     for (url <- resources.paths) addConfig(url, ms)
@@ -68,7 +68,12 @@ class Profiles(resources: Resources) extends Logging {
         val xml = scala.xml.XML.load(is)
         (xml \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
         (xml \ "mapping") foreach { ele =>
-          ms += Reflections.getInstance[MappingModule]((ele \ "@class").text)
+          val name = (ele \ "@name").text
+          val module = Reflections.getInstance[MappingModule]((ele \ "@class").text)
+          if (Strings.isNotBlank(name)) {
+            module.name = Some(name.trim())
+          }
+          ms += module
         }
         is.close()
       }
@@ -151,7 +156,7 @@ class Profiles(resources: Resources) extends Logging {
           while (isNotEmpty(parentName) && null == profile.parent) {
             if (profiles.contains(parentName) && profile.packageName != parentName) {
               logger.debug(s"set ${profile.packageName}'s parent is $parentName")
-              profile.parent = profiles(parentName)
+              profile.parent = profiles.get(parentName)
             }
             val len = parentName.length
             parentName = substringBeforeLast(parentName, ".")
@@ -179,9 +184,9 @@ class Profiles(resources: Resources) extends Logging {
       if ((anElem \ "@prefix").nonEmpty) annModule.prefix = (anElem \ "@prefix").text
     }
     if ((melem \ "@schema").nonEmpty) {
-      profile._schema = parseSchema((melem \ "@schema").text)
+      profile._schema = Some(parseSchema((melem \ "@schema").text))
     }
-    if ((melem \ "@prefix").nonEmpty) profile._prefix = (melem \ "@prefix").text
+    if ((melem \ "@prefix").nonEmpty) profile._prefix = Some((melem \ "@prefix").text)
     val naming = if ((melem \ "@naming").nonEmpty) (melem \ "@naming").text else "rails"
     if (namings.contains(naming)) {
       profile.naming = namings(naming)
@@ -189,7 +194,7 @@ class Profiles(resources: Resources) extends Logging {
       throw new RuntimeException("Cannot find naming policy :" + naming)
     }
     profiles.put(profile.packageName, profile)
-    profile.parent = parent
+    profile.parent = Option(parent)
     (melem \ "profile") foreach { child => parseProfile(child, profile) }
   }
 

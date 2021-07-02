@@ -93,14 +93,15 @@ trait AbstractDialect extends Dialect {
     if (options.comment.supportsCommentOn) {
       val comments = Collections.newBuffer[String]
       val tableName = table.qualifiedName
+      var tableComment = table.commentAndModule.getOrElse(s"${tableName}?")
       if (includeMissing) {
-        comments += ("comment on table " + tableName + " is '" + table.comment.getOrElse(s"${tableName}?") + "'")
+        comments += ("comment on table " + tableName + " is '" + tableComment + "'")
         table.columns foreach { c =>
           comments += ("comment on column " + tableName + '.' + c.name + " is '" + c.comment.getOrElse(s"${c.name}?") + "'")
         }
       } else {
         table.comment foreach { c =>
-          comments += ("comment on table " + tableName + " is '" + c + "'")
+          comments += ("comment on table " + tableName + " is '" + tableComment + "'")
         }
         table.columns foreach { c =>
           c.comment foreach { cc =>

@@ -49,14 +49,16 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   val foreignKeys = new ListBuffer[ForeignKey]
   val indexes = new ListBuffer[Index]
 
+  var module: Option[String] = None
+
   def engine: Engine = {
     schema.database.engine
   }
 
   /** has quoted identifier
-    *
-    * @return
-    */
+   *
+   * @return
+   */
   def hasQuotedIdentifier: Boolean = {
     name.quoted ||
       columns.exists(_.name.quoted) ||
@@ -103,6 +105,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   override def clone(): Table = {
     val tb: Table = new Table(schema, name)
     tb.comment = comment
+    tb.module = module
     for (col <- columns) tb.add(col.clone())
     primaryKey foreach { pk =>
       val npk = pk.clone()
@@ -292,6 +295,32 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
       if (null != fk.referencedTable) {
         if (fk.referencedTable.schema == oldSchema) fk.referencedTable.schema = newSchema
       }
+    }
+  }
+
+  def updateCommentAndModule(newComment: String): Unit = {
+    if (Strings.isBlank(newComment)) {
+      comment = None
+      module = None
+    } else {
+      if (newComment.contains("@")) {
+        comment = Some(Strings.substringBefore(newComment, "@"))
+        module = Some(Strings.substringAfter(newComment, "@"))
+      } else {
+        comment = Some(newComment)
+        module = None
+      }
+    }
+  }
+
+  def commentAndModule: Option[String] = {
+    comment match {
+      case Some(c) =>
+        module match {
+          case Some(m) => Some(s"$c@$m")
+          case None => comment
+        }
+      case None => comment
     }
   }
 }

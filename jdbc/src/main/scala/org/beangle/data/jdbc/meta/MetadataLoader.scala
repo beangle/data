@@ -73,7 +73,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
       val tableName = rs.getString(TableName)
       if (!tableName.startsWith("BIN$")) {
         val table = schema.database.addTable(rs.getString(TableSchema), rs.getString(TableName))
-        table.comment = Option(rs.getString(Remarks))
+        table.updateCommentAndModule(rs.getString(Remarks))
         tables.put(Table.qualify(table.schema, table.name), table)
       }
     }

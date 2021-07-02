@@ -39,7 +39,8 @@ class RailsNamingPolicyTest extends AnyFunSpec with Matchers {
       assert(profiles.getPrefix(classOf[NationBean]) == "gb_")
 
       val daoModule = profiles.getProfile(classOf[SchoolBean])
-      assert(daoModule.parent.packageName == "org.beangle.data.hibernate")
+      assert(daoModule.parent.nonEmpty)
+      assert(daoModule.parent.get.packageName == "org.beangle.data.hibernate")
 
       assert(profiles.getSchema(classOf[IdType]).contains("school"))
     }

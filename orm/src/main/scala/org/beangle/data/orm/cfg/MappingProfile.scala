@@ -18,38 +18,38 @@
  */
 package org.beangle.data.orm.cfg
 
-import org.beangle.commons.lang.Strings.isNotEmpty
 import org.beangle.data.orm.NamingPolicy
 
 class MappingProfile {
   var packageName: String = _
   var naming: NamingPolicy = _
-  var _schema: String = _
-  var _prefix: String = _
-  var parent: MappingProfile = _
+  var _schema: Option[String] = None
+  var _prefix: Option[String] = None
+  var parent: Option[MappingProfile] = None
 
   def schema: Option[String] = {
-    if (isNotEmpty(_schema)) Some(_schema)
-    else if (null != parent) parent.schema
-    else None
+    if (_schema.nonEmpty) _schema
+    else parent.flatMap(_.schema)
   }
+
   def prefix: String = {
-    if (isNotEmpty(_prefix)) _prefix
-    else if (null != parent) parent.prefix
-    else ""
+    _prefix match {
+      case Some(p) => p
+      case None => parent.map(_.prefix).getOrElse("")
+    }
   }
 
   val _annotations = new collection.mutable.ListBuffer[AnnotationModule]
 
   def annotations: collection.Seq[AnnotationModule] = {
-    if (_annotations.isEmpty && null != parent) parent._annotations
+    if (_annotations.isEmpty && parent.nonEmpty) parent.get._annotations
     else _annotations
   }
 
   override def toString: String = {
     val sb = new StringBuilder()
-    sb.append("[package:").append(packageName).append(", schema:").append(_schema)
-    sb.append(", prefix:").append(_prefix).append(']')
+    sb.append("[package:").append(packageName).append(", schema:").append(_schema.getOrElse(""))
+    sb.append(", prefix:").append(_prefix.getOrElse("")).append(']')
     sb.toString()
   }
 }

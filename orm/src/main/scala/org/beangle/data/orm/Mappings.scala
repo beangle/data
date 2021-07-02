@@ -214,6 +214,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     column.comment = Some(getComment(clazz, idName) + (":" + etm.idGenerator.name))
     etm.table.createPrimaryKey("", column.name.toLiteral(etm.table.engine))
     etm.table.comment = Some(getComment(clazz, clazz.getSimpleName))
+    etm.table.module = etm.module
   }
 
   /** 处理外键及其关联表格,以及集合的缓存设置
@@ -249,6 +250,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   /** process table
+   *
    * @param oet   orm entity type
    * @param ost   entity or component
    * @param table entity table or collectionTable
@@ -300,12 +302,14 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                         throw new RuntimeException(s"Cannot find ${mappedBy} in ${oet.clazz.getName}")
                       }
                       val collectTable = refTable.schema.getOrCreateTable(table)
+                      collectTable.module = oet.module
                       collectTable.createIndex(null, false, ppm.ownerColumn.name.value)
                     case _ =>
                   }
                 case None =>
                   if (ppm.table.isEmpty) ppm.table = Some(table.name.toString + "_" + Strings.unCamel(p, '_'))
                   val collectTable = table.schema.getOrCreateTable(ppm.table.get)
+                  collectTable.module = oet.module
                   collectTable.comment = Some(getComment(ost.clazz, property.name))
                   ppm.ownerColumn.comment = Some(getComment(oet.clazz, oet.clazz.getSimpleName) + "ID")
                   collectTable.add(ppm.ownerColumn)
@@ -365,8 +369,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
       case et: EntityType =>
         createForeignKey(table, List(elec), entityTypes(et.entityName).table)
         if (elec.comment.isEmpty) {
-          val fkcomment = getComment(clazz, propertyName, null)
-          if (null == fkcomment) {
+          val fkcomment = getComment(clazz, propertyName)
+          if (fkcomment == propertyName + "?") { //not found
             addRefComment(elec, et.clazz, et.clazz.getSimpleName)
           } else {
             elec.comment = Some(fkcomment + "ID")
@@ -384,13 +388,10 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     table.createForeignKey(null, columns.head.name.toLiteral(table.engine), refTable)
   }
 
-  private def getComment(clazz: Class[_], key: String): String = {
-    getComment(clazz, key, key + "?")
-  }
 
-  private def getComment(clazz: Class[_], key: String, defaults: String): String = {
+  private def getComment(clazz: Class[_], key: String): String = {
     val comment = messages.get(clazz, key)
-    if (key == comment) defaults else comment
+    if (key == comment) key + "?" else comment
   }
 
   /** Support features inheritence

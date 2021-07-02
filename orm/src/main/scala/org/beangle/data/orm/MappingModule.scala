@@ -42,6 +42,7 @@ object MappingModule {
   /** 创建索引
    *
    * 针对唯一索引，目前不支持空列
+   *
    * @param name   indexname
    * @param unique unique index
    */
@@ -241,7 +242,7 @@ object MappingModule {
   class OrderBy(orderBy: String) extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val cm = cast[OrmCollectionProperty](pm, holder, "order by should used on seq")
-      cm.asInstanceOf[OrmCollectionProperty].orderBy = Some(orderBy)
+      cm.orderBy = Some(orderBy)
     }
   }
 
@@ -414,7 +415,7 @@ object MappingModule {
 }
 
 @beta
-abstract class MappingModule extends Logging {
+abstract class MappingModule(var name: Option[String]) extends Logging {
 
   import MappingModule._
 
@@ -430,6 +431,10 @@ abstract class MappingModule extends Logging {
 
   implicit def any2Expression(i: Any): Expression = {
     new Expression(currentHolder)
+  }
+
+  def this() = {
+    this(None)
   }
 
   def binding(): Unit
@@ -560,6 +565,7 @@ abstract class MappingModule extends Logging {
       }
     }
     val holder = new EntityHolder(mapping, mappings, cls, this)
+    mapping.module = this.name
     currentHolder = holder
     entityMappings.put(mapping.entityName, mapping)
     holder

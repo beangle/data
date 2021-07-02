@@ -37,7 +37,7 @@ object Serializer {
       val schema = database.getOrCreateSchema(schemaElem.name)
       (schemaElem \ "tables" \ "table") foreach { tableElem =>
         val table = schema.createTable(tableElem.name)
-        tableElem.get("comment").foreach(n => table.comment = Some(n))
+        tableElem.get("comment").foreach(n => table.updateCommentAndModule(n))
         (tableElem \ "columns" \ "column") foreach { colElem =>
           val col = table.createColumn(colElem.name, colElem.attr("type"))
           colElem.get("nullable").foreach(n => col.nullable = n.toBoolean)
@@ -99,7 +99,7 @@ object Serializer {
 
     private def appendXml(table: Table, tablesNode: XmlNode): Unit = {
       val tableNode = tablesNode.createChild("table", "name" -> table.name)
-      tableNode.attr("comment", table.comment)
+      tableNode.attr("comment", table.commentAndModule)
       val columnsNode = tableNode.createChild("columns")
       val columns = table.columns.sortWith((c1,c2)=> if(c1.name.value=="id") true else if (c2.name.value=="id") false else c1.name.value.compareTo(c2.name.value) < 0)
       columns foreach { col =>

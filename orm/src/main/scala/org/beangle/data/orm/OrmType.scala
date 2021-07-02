@@ -43,6 +43,7 @@ trait OrmStructType extends OrmType with StructType {
   var properties: mutable.Map[String, OrmProperty] = Collections.newMap[String, OrmProperty]
 
   /** 获取属性对应的属性映射，支持嵌入式属性
+   *
    * @param name property name
    * @return
    */
@@ -81,6 +82,7 @@ final class OrmEntityType(val entityName: String, var clazz: Class[_], var table
   var isAbstract: Boolean = _
   var optimisticLockStyle: Int = -1
   var idGenerator: IdGenerator = _
+  var module: Option[String] = None
 
   def cacheable: Boolean = {
     Strings.isNotBlank(cacheUsage)
