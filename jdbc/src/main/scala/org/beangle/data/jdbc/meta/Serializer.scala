@@ -18,13 +18,12 @@
  */
 package org.beangle.data.jdbc.meta
 
-import java.io.StringReader
-
 import org.beangle.commons.lang.Strings.split
 import org.beangle.data.jdbc.engine.Engines
 import org.beangle.data.jdbc.internal.NodeOps._
 import org.beangle.data.jdbc.internal.XmlNode
 
+import java.io.StringReader
 import scala.language.implicitConversions
 
 object Serializer {
@@ -33,6 +32,7 @@ object Serializer {
     val root = scala.xml.XML.load(new StringReader(content))
     val engine = Engines.forName(root.attr("engine"))
     val database = new Database(engine)
+    database.version = root.attr("version")
     (root \\ "schema") foreach { schemaElem =>
       val schema = database.getOrCreateSchema(schemaElem.name)
       (schemaElem \ "tables" \ "table") foreach { tableElem =>
@@ -77,7 +77,7 @@ object Serializer {
 
   private class Exporter(db: Database) {
     def toXml: String = {
-      val dbNode = XmlNode("db", ("engine", db.engine.name))
+      val dbNode = XmlNode("db", ("engine", db.engine.name), ("version", db.version))
       if (db.schemas.nonEmpty) {
         val schemasNode = dbNode.createChild("schemas")
         val schemaNames = db.schemas.keys.toBuffer.sorted
@@ -101,7 +101,7 @@ object Serializer {
       val tableNode = tablesNode.createChild("table", "name" -> table.name)
       tableNode.attr("comment", table.commentAndModule)
       val columnsNode = tableNode.createChild("columns")
-      val columns = table.columns.sortWith((c1,c2)=> if(c1.name.value=="id") true else if (c2.name.value=="id") false else c1.name.value.compareTo(c2.name.value) < 0)
+      val columns = table.columns.sortWith((c1, c2) => if (c1.name.value == "id") true else if (c2.name.value == "id") false else c1.name.value.compareTo(c2.name.value) < 0)
       columns foreach { col =>
         val colNode = columnsNode.createChild("column")
         colNode.attr("name", col.name)

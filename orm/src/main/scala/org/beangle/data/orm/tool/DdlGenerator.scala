@@ -18,17 +18,17 @@
  */
 package org.beangle.data.orm.tool
 
-import java.io.{File, FileWriter}
-import java.util.Locale
-
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.Files./
-import org.beangle.commons.io.{Dirs, IOs, ResourcePatternResolver}
+import org.beangle.commons.io.{IOs, ResourcePatternResolver}
 import org.beangle.commons.lang.{Charsets, Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
-import org.beangle.data.jdbc.meta.{DBScripts, Database, Identifier, Serializer, Table}
+import org.beangle.data.jdbc.meta._
 import org.beangle.data.orm.Mappings
+
+import java.io.{File, FileWriter}
+import java.util.Locale
 
 /**
  * Generate DDL and Sequences and Comments
@@ -57,12 +57,16 @@ object DdlGenerator {
     val target = new File(dir)
     target.mkdirs()
     if (!target.exists()) {
-      println("Cannot makdir " + target.getAbsolutePath)
+      println("Cannot makedir " + target.getAbsolutePath)
       return List.empty
     }
     val engine = Engines.forName(dialect)
     val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
     val database = new Database(engine)
+    val version = System.getProperty("database.version")
+    if (Strings.isNotBlank(version)) {
+      database.version = version
+    }
     val mappings = new Mappings(database, ormLocations)
     mappings.locale = locale
     mappings.autobind()

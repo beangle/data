@@ -23,6 +23,8 @@ import org.beangle.data.jdbc.engine.Engine
 
 class Database(val engine: Engine) {
 
+  var version: String = "UNDEFINED"
+
   var schemas = new collection.mutable.HashMap[Identifier, Schema]
 
   def getOrCreateSchema(schema: Identifier): Schema = {

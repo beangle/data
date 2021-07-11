@@ -34,7 +34,7 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
     BLOB -> "blob", CLOB -> "clob")
 
   registerTypes2(
-    (VARCHAR, 4000, "varchar2($l)"), (NUMERIC, 38, "number($p,$s)"),
+    (VARCHAR, 4000, "varchar2($l)"), (VARCHAR, 2*1024*1024*1024, "clob"),(NUMERIC, 38, "number($p,$s)"),
     (NUMERIC, Int.MaxValue, "number(38,$s)"), (VARBINARY, 2000, "raw($l)"))
 
   options.sequence { s =>
