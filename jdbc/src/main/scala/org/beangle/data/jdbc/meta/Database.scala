@@ -39,6 +39,10 @@ class Database(val engine: Engine) {
     }
   }
 
+  def getTable(tableRef: TableRef): Option[Table] = {
+    getTable(tableRef.schema.name.toLiteral(engine), tableRef.name.toLiteral(engine))
+  }
+
   def getTable(schema: String, name: String): Option[Table] = {
     getSchema(schema) match {
       case Some(s) => s.getTable(name)
