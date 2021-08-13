@@ -34,7 +34,7 @@ class MappingTest extends AnyFunSpec with Matchers {
       val mappings = new Mappings(new Database(Engines.PostgreSQL), ormLocations)
       mappings.locale = java.util.Locale.SIMPLIFIED_CHINESE
       mappings.autobind()
-      val menuBeanInfo = BeanInfos.load(classOf[UserProperty])
+      val menuBeanInfo = BeanInfos.get(classOf[UserProperty])
       assert(menuBeanInfo.properties("id").typeinfo.clazz == classOf[Long])
     }
   }

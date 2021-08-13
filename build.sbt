@@ -32,7 +32,7 @@ lazy val jdbc = (project in file("jdbc"))
   .settings(
     name := "beangle-data-jdbc",
     commonSettings,
-    libraryDependencies ++= (commonDeps ++ Seq(scalaxml,HikariCP))
+    libraryDependencies ++= (commonDeps ++ Seq(scalaxml,HikariCP,h2))
   )
 
 lazy val model = (project in file("model"))

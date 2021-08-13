@@ -33,14 +33,14 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor
 object PropertyAccessor {
 
   def createSetter(theClass: Class[_], propertyName: String): Setter = {
-    BeanInfos.load(theClass).properties.get(propertyName) match {
+    BeanInfos.get(theClass).properties.get(propertyName) match {
       case Some(p) => new BasicSetter(theClass, p.setter.get, propertyName, p.typeinfo.isOptional)
       case None    => throw new PropertyNotFoundException("Could not find a setter for " + propertyName + " in class " + theClass.getName())
     }
   }
 
   def createGetter(theClass: Class[_], propertyName: String): Getter = {
-    BeanInfos.load(theClass).properties.get(propertyName) match {
+    BeanInfos.get(theClass).properties.get(propertyName) match {
       case Some(p) => new BasicGetter(theClass, p.getter.get, p.clazz, propertyName, p.typeinfo.isOptional)
       case None    => throw new PropertyNotFoundException("Could not find a getter for " + propertyName + " in class " + theClass.getName())
     }

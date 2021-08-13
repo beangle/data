@@ -26,8 +26,7 @@ class PopulatorTest extends AnyFunSpec with Matchers {
 
   describe("Populator") {
     it("populate error attr") {
-
-      val menuBeanInfo = BeanInfos.load(classOf[Menu])
+      val menuBeanInfo = BeanInfos.of(classOf[Menu])
       val populator = new ConvertPopulator()
       val menu = new Menu
       val menuET = new SimpleEntityType(classOf[Menu])

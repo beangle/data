@@ -195,7 +195,7 @@ object MappingModule {
 
   private def genOwnerColumn(holder: EntityHolder[_], mappedBy: Option[String]): Column = {
     val mappings = holder.mappings
-    val idType = BeanInfos.load(holder.mapping.clazz).getPropertyType("id").get
+    val idType = BeanInfos.get(holder.mapping.clazz).getPropertyType("id").get
     val colName = mappedBy match {
       case Some(p) => holder.mappings.columnName(holder.mapping.clazz, p, key = true)
       case None => holder.mappings.columnName(holder.mapping.clazz, holder.mapping.entityName, key = true)

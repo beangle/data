@@ -466,7 +466,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
   def setTypeUsingReflection(value: Value, clazz: Class[_], propertyName: String): Unit = {
     value match {
       case sv: SimpleValue =>
-        if (null == sv.getTypeName) BeanInfos.load(clazz).getPropertyType(propertyName) foreach (clz => sv.setTypeName(clz.getName))
+        if (null == sv.getTypeName) BeanInfos.get(clazz).getPropertyType(propertyName) foreach (clz => sv.setTypeName(clz.getName))
       case _ =>
     }
   }

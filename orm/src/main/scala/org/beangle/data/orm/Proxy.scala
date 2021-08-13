@@ -49,9 +49,17 @@ private[orm] object Proxy extends Logging {
   def generate(clazz: Class[_]): EntityProxy = {
     val proxyClassName = clazz.getSimpleName + "_proxy"
     val classFullName = clazz.getName + "_proxy"
-    val exised = proxies.getOrElse(classFullName, null)
-    if (null != exised) return Reflections.newInstance(exised).asInstanceOf[EntityProxy]
+    var exised = proxies.getOrElse(classFullName, null)
+    if (null == exised) {
+      proxies.synchronized {
+        exised = proxies.getOrElse(classFullName, null)
+        if(null==exised) exised = generateProxyClass(proxyClassName,classFullName,clazz)
+      }
+    }
+    Reflections.newInstance(exised).asInstanceOf[EntityProxy]
+  }
 
+  private def generateProxyClass(proxyClassName:String,classFullName:String,clazz:Class[_]):Class[_]={
     val watch = new Stopwatch(true)
     val cct = pool.makeClass(classFullName)
     if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
@@ -60,7 +68,7 @@ private[orm] object Proxy extends Logging {
     val javac = new Javac(cct)
     cct.addField(javac.compile("public java.util.LinkedHashSet _lastAccessed;").asInstanceOf[CtField])
 
-    val manifest = BeanInfos.load(clazz)
+    val manifest = BeanInfos.get(clazz)
     val componentTypes = Collections.newMap[String, Class[_]]
     manifest.properties foreach {
       case (name, p) =>
@@ -100,11 +108,10 @@ private[orm] object Proxy extends Logging {
     ctmod.setBody("{return _lastAccessed;}")
     cct.addMethod(ctmod)
     val maked = cct.toClass(clazz)
-    val proxy = maked.getConstructor().newInstance().asInstanceOf[EntityProxy]
     logger.debug(s"generate $classFullName using $watch")
     //cct.debugWriteFile("/tmp/model/")
-    proxies.put(classFullName, proxy.getClass)
-    proxy
+    proxies.put(classFullName, maked)
+    maked
   }
 
   private def generateComponent(clazz: Class[_], path: String): Class[_] = {
@@ -122,7 +129,7 @@ private[orm] object Proxy extends Logging {
     cct.addField(javac.compile("public " + classOf[ModelProxy].getName + " _parent;").asInstanceOf[CtField])
     cct.addField(javac.compile("public java.lang.String _path=null;").asInstanceOf[CtField])
 
-    val manifest = BeanInfos.load(clazz)
+    val manifest = BeanInfos.get(clazz)
     val componentTypes = Collections.newMap[String, Class[_]]
     manifest.properties foreach {
       case (name, p) =>
