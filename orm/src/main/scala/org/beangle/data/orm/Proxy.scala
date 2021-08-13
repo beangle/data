@@ -1,27 +1,27 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.orm
 
 import javassist.compiler.Javac
-import javassist._
+import javassist.*
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.reflect.{BeanInfos, PropertyDescriptor, Reflections}
+import org.beangle.commons.lang.reflect.BeanInfo.PropertyInfo
+import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.lang.{ClassLoaders, Primitives}
 import org.beangle.commons.logging.Logging
@@ -60,13 +60,13 @@ private[orm] object Proxy extends Logging {
     val javac = new Javac(cct)
     cct.addField(javac.compile("public java.util.LinkedHashSet _lastAccessed;").asInstanceOf[CtField])
 
-    val manifest = BeanInfos.get(clazz)
+    val manifest = BeanInfos.load(clazz)
     val componentTypes = Collections.newMap[String, Class[_]]
     manifest.properties foreach {
       case (name, p) =>
         if (p.readable) {
           val getter = p.getter.get
-          val value = if (p.typeinfo.optional) "null" else Primitives.defaultLiteral(p.clazz)
+          val value = if (p.typeinfo.isOptional) "null" else Primitives.defaultLiteral(p.clazz)
           val javaTypeName = toJavaType(p)
           val body = s"public $javaTypeName ${getter.getName}() { return $value;}"
           val ctmod = javac.compile(body).asInstanceOf[CtMethod]
@@ -122,13 +122,13 @@ private[orm] object Proxy extends Logging {
     cct.addField(javac.compile("public " + classOf[ModelProxy].getName + " _parent;").asInstanceOf[CtField])
     cct.addField(javac.compile("public java.lang.String _path=null;").asInstanceOf[CtField])
 
-    val manifest = BeanInfos.get(clazz)
+    val manifest = BeanInfos.load(clazz)
     val componentTypes = Collections.newMap[String, Class[_]]
     manifest.properties foreach {
       case (name, p) =>
         if (p.readable) {
           val getter = p.getter.get
-          val value = if (p.typeinfo.optional) "null" else Primitives.defaultLiteral(p.clazz)
+          val value = if (p.typeinfo.isOptional) "null" else Primitives.defaultLiteral(p.clazz)
           val javaTypeName = toJavaType(p)
           val body = s"public $javaTypeName ${getter.getName}() { return $value;}"
           val ctmod = javac.compile(body).asInstanceOf[CtMethod]
@@ -175,8 +175,8 @@ private[orm] object Proxy extends Logging {
     maked
   }
 
-  def toJavaType(p: PropertyDescriptor): String = {
-    if (p.typeinfo.optional) {
+  def toJavaType(p: PropertyInfo): String = {
+    if (p.typeinfo.isOptional) {
       "scala.Option"
     } else {
       if (p.clazz.isArray) {

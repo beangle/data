@@ -1,35 +1,34 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.orm
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfoDigger, BeanInfos}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.meta._
+import org.beangle.data.jdbc.meta.*
 
 import java.sql.{Blob, Clob, Types}
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asScala
+import scala.quoted.{Expr, Quotes, Type}
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => ru}
 
 object MappingModule {
 
@@ -196,7 +195,7 @@ object MappingModule {
 
   private def genOwnerColumn(holder: EntityHolder[_], mappedBy: Option[String]): Column = {
     val mappings = holder.mappings
-    val idType = BeanInfos.get(holder.mapping.clazz).getPropertyType("id").get
+    val idType = BeanInfos.load(holder.mapping.clazz).getPropertyType("id").get
     val colName = mappedBy match {
       case Some(p) => holder.mappings.columnName(holder.mapping.clazz, p, key = true)
       case None => holder.mappings.columnName(holder.mapping.clazz, holder.mapping.entityName, key = true)
@@ -209,7 +208,7 @@ object MappingModule {
       val colpm = cast[OrmCollectionProperty](pm, holder, "many2many should used on seq")
       colpm.mappedBy = Some(mappedBy)
       if (!colpm.element.isInstanceOf[OrmEntityType]) {
-        mismatch("many2many with mappedBy should be applied on entity", holder.mapping, pm)
+        MappingMacro.mismatch("many2many with mappedBy should be applied on entity", holder.mapping, pm)
       }
       colpm.table = None
     }
@@ -339,7 +338,7 @@ object MappingModule {
       this
     }
 
-    def declare(declarations: T => Any)(implicit manifest: Manifest[T]): this.type = {
+    def declare(declarations: T => Any): this.type = {
       if (null == proxy) proxy = Proxy.generate(clazz)
       declarations(proxy.asInstanceOf[T])
       this
@@ -404,14 +403,8 @@ object MappingModule {
     }
   }
 
-  private def mismatch(msg: String, e: OrmEntityType, pm: OrmProperty): Unit = {
-    throw new RuntimeException(msg + s",Not for ${e.entityName}.${pm.name}(${pm.getClass.getSimpleName}/${pm.clazz.getName})")
-  }
-
-  private def cast[T](pm: OrmProperty, holder: EntityHolder[_], msg: String)(implicit manifest: Manifest[T]): T = {
-    if (!manifest.runtimeClass.isAssignableFrom(pm.getClass)) mismatch(msg, holder.mapping, pm)
-    pm.asInstanceOf[T]
-  }
+  inline def cast[T](pm: OrmProperty, holder: EntityHolder[_], msg: String) : T =
+    ${MappingMacro.castImpl[T]('pm,'holder,'msg)}
 }
 
 @beta
@@ -462,88 +455,48 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
 
   protected def length(len: Int) = new Length(len)
 
-  protected def cacheable: Cache = {
-    new Cache(new CacheHolder(mappings, cacheConfig.region, cacheConfig.usage))
-  }
+  protected def cacheable: Cache = new Cache(new CacheHolder(mappings, cacheConfig.region, cacheConfig.usage))
 
-  protected def cacheable(region: String, usage: String): Cache = {
-    new Cache(new CacheHolder(mappings, region, usage))
-  }
+  protected def cacheable(region: String, usage: String): Cache = new Cache(new CacheHolder(mappings, region, usage))
 
-  protected def target[T](implicit manifest: Manifest[T]): Target = {
-    new Target(manifest.runtimeClass)
-  }
+  protected inline def target[T]: Target = ${MappingMacro.target[T]}
 
-  protected def depends(clazz: Class[_], mappedBy: String): One2Many = {
-    new One2Many(Some(clazz), mappedBy).cascaded
-  }
+  protected def depends(clazz: Class[_], mappedBy: String): One2Many = new One2Many(Some(clazz), mappedBy).cascaded
 
-  protected def depends(mappedBy: String): One2Many = {
-    new One2Many(None, mappedBy).cascaded
-  }
+  protected def depends(mappedBy: String): One2Many = new One2Many(None, mappedBy).cascaded
 
-  protected def one2many(mappedBy: String): One2Many = {
-    new One2Many(None, mappedBy)
-  }
+  protected def one2many(mappedBy: String): One2Many = new One2Many(None, mappedBy)
 
-  protected def one2many(clazz: Class[_], mappedBy: String): One2Many = {
-    new One2Many(Some(clazz), mappedBy)
-  }
+  protected def one2many(clazz: Class[_], mappedBy: String): One2Many = new One2Many(Some(clazz), mappedBy)
 
-  protected def many2many(mappedBy: String): Many2Many = {
-    new Many2Many(mappedBy)
-  }
+  protected def many2many(mappedBy: String): Many2Many = new Many2Many(mappedBy)
 
-  protected def orderby(orderby: String): OrderBy = {
-    new OrderBy(orderby)
-  }
+  protected def orderby(orderby: String): OrderBy = new OrderBy(orderby)
 
-  protected def table(t: String): Table = {
-    new Table(t)
-  }
+  protected def table(t: String): Table = new Table(t)
 
-  protected def ordered: OrderColumn = {
-    new OrderColumn(null)
-  }
+  protected def ordered: OrderColumn = new OrderColumn(null)
 
-  protected def ordered(column: String): OrderColumn = {
-    new OrderColumn(column)
-  }
+  protected def ordered(column: String): OrderColumn = new OrderColumn(column)
 
-  protected def column(name: String): ColumnName = {
-    new ColumnName(name)
-  }
+  protected def column(name: String): ColumnName = new ColumnName(name)
 
-  protected def keyColumn(name: String): KeyColumn = {
-    new KeyColumn(name)
-  }
+  protected def keyColumn(name: String): KeyColumn = new KeyColumn(name)
 
-  protected def keyLength(len: Int): KeyLength = {
-    new KeyLength(len)
-  }
+  protected def keyLength(len: Int): KeyLength = new KeyLength(len)
 
-  protected def eleColumn(name: String): ElementColumn = {
-    new ElementColumn(name)
-  }
+  protected def eleColumn(name: String): ElementColumn = new ElementColumn(name)
 
-  protected def eleLength(len: Int): ElementLength = {
-    new ElementLength(len)
-  }
+  protected def eleLength(len: Int): ElementLength = new ElementLength(len)
 
-  protected def joinColumn(name: String): JoinColumn = {
-    new JoinColumn(name)
-  }
+  protected def joinColumn(name: String): JoinColumn = new JoinColumn(name)
 
-  protected final def bind[T: ClassTag](implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): EntityHolder[T] = {
-    bind(manifest.runtimeClass.asInstanceOf[Class[T]], null, ttag)
-  }
+  protected inline def bind[T: ClassTag]: EntityHolder[T] = ${MappingMacro.bind[T]('{""},'this)}
 
-  protected final def bind[T: ClassTag](entityName: String)(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): EntityHolder[T] = {
-    bind(manifest.runtimeClass.asInstanceOf[Class[T]], entityName, ttag)
-  }
+  protected inline def bind[T: ClassTag](entityName: String): EntityHolder[T] = ${MappingMacro.bind[T]('entityName,'this)}
 
-  private def bind[T](cls: Class[T], entityName: String, ttag: ru.TypeTag[T]): EntityHolder[T] = {
-    val mapping = mappings.autobind(cls, entityName, ttag.tpe)
+  def bindImpl[T](cls: Class[T], entityName: String,bi:BeanInfo): EntityHolder[T] = {
+    val mapping = mappings.autobind(cls, entityName, bi)
     //find superclass's id generator
     var superCls: Class[_] = cls.getSuperclass
     while (null != superCls && superCls != classOf[Object]) {
@@ -556,7 +509,7 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
 
     //find id genertor by id type
     if (null == mapping.idGenerator) {
-      BeanInfos.get(cls, null).getPropertyType("id") foreach { idtype =>
+      bi.getPropertyType("id") foreach { idtype =>
         val unsaved = if (idtype.isPrimitive) "0" else "null"
         mapping.idGenerator = defaultIdGenerators.get(idtype) match {
           case Some(ig) => new IdGenerator(ig).unsaved(unsaved)
@@ -588,12 +541,7 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
     new Entities(mappings, newEntities ++ entityMappings, cacheConfig)
   }
 
-  protected final def collection[T](properties: String*)(implicit manifest: Manifest[T]): List[Collection] = {
-    val definitions = new scala.collection.mutable.ListBuffer[Collection]
-    val clazz = manifest.runtimeClass
-    properties foreach (p => definitions += new Collection(clazz, p))
-    definitions.toList
-  }
+  protected final inline def collection[T](inline properties: String*): List[Collection] = ${MappingMacro.collection[T]('properties)}
 
   protected final def defaultCache(region: String, usage: String): Unit = {
     cacheConfig.region = region

@@ -1,42 +1,41 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.orm
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.annotation.value
-import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.commons.lang.reflect.TypeInfo.IterableType
+import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, TypeInfo}
 import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.jdbc.meta.{Column, Database, Table}
 import org.beangle.data.jdbc.{DefaultSqlTypeMapping, SqlTypeMapping}
-import org.beangle.data.model.meta._
+import org.beangle.data.model.meta.*
 import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity}
-import org.beangle.data.orm.Jpas._
+import org.beangle.data.orm.Jpas.*
 import org.beangle.data.orm.cfg.Profiles
 
 import java.lang.reflect.Modifier
 import java.net.URL
 import java.util.Locale
 import scala.collection.mutable
-import scala.reflect.runtime.{universe => ru}
 
 final class Mappings(val database: Database, val profiles: Profiles) extends Logging {
 
@@ -135,33 +134,30 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     entityTypes.values foreach (em => secondPass(em))
   }
 
-  def autobind(cls: Class[_], entityName: String, typ: ru.Type): OrmEntityType = {
+  def autobind(cls: Class[_], entityName: String, manifest: BeanInfo): OrmEntityType = {
     if (cls.isAnnotationPresent(Jpas.JpaEntityAnn)) return null
 
     val fixedEntityName = if (entityName == null) Jpas.findEntityName(cls) else entityName
     val entity = refEntity(cls, fixedEntityName)
-    val manifest = BeanInfos.get(entity.clazz, typ)
-    manifest.readables foreach {
-      case (name, prop) =>
-        if (!prop.isTransient && prop.readable && prop.writable && !entity.properties.contains(name)) {
-          val optional = prop.typeinfo.optional
-          val propType = prop.typeinfo.clazz
-          if (name == "id") {
-            bindId(entity, name, propType, typ)
-          } else if (isEntity(propType)) {
-            bindManyToOne(entity, entity, name, propType, optional)
-          } else if (isSeq(propType)) {
-            bindCollection(entity, entity, name, propType, typ)
-          } else if (isSet(propType)) {
-            bindCollection(entity, entity, name, propType, typ)
-          } else if (isMap(propType)) {
-            bindMap(entity, entity, name, propType, typ)
-          } else if (isComponent(propType)) {
-            bindComponent(entity, entity, name, propType, typ, optional)
-          } else {
-            bindScalar(entity, entity, name, propType, optional)
-          }
+    manifest.readables foreach { prop =>
+      val name = prop.name
+      if (!prop.isTransient && prop.readable && prop.writable && !entity.properties.contains(name)) {
+        val typeinfo = prop.typeinfo
+        val propType = prop.typeinfo.clazz
+        if (name == "id") {
+          bindId(entity, name, typeinfo)
+        } else if (isEntity(propType)) {
+          bindManyToOne(entity, entity, name, typeinfo)
+        } else if (isSeq(propType) || isSet(propType)) {
+          bindCollection(entity, entity, name, typeinfo)
+        } else if (isMap(propType)) {
+          bindMap(entity, entity, name, typeinfo)
+        } else if (isComponent(propType)) {
+          bindComponent(entity, entity, name, typeinfo)
+        } else {
+          bindScalar(entity, entity, name, typeinfo)
         }
+      }
     }
     entity
   }
@@ -270,23 +266,19 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             }
           case ppm: OrmPluralProperty =>
             if (ppm.one2many) {
-              ppm match {
-                case pp: PluralProperty =>
-                  pp.element match {
-                    case et: EntityType =>
-                      val etm = refEntity(et.clazz, et.entityName)
-                      //check mapped by
-                      ppm.mappedBy foreach { mappedBy =>
-                        if (!etm.properties.contains(mappedBy)) {
-                          throw new RuntimeException(s"Cannot find mappedBy property $mappedBy in ${etm.entityName}")
-                        }
-                      }
-                      //generate implicit index
-                      val defined = etm.table.indexes exists (_.columns.head == ppm.ownerColumn.name)
-                      if (!defined) {
-                        etm.table.createIndex("", false, ppm.ownerColumn.name.value)
-                      }
-                    case _ =>
+              ppm.element match {
+                case et: EntityType =>
+                  val etm = refEntity(et.clazz, et.entityName)
+                  //check mapped by
+                  ppm.mappedBy foreach { mappedBy =>
+                    if (!etm.properties.contains(mappedBy)) {
+                      throw new RuntimeException(s"Cannot find mappedBy property $mappedBy in ${etm.entityName}")
+                    }
+                  }
+                  //generate implicit index
+                  val defined = etm.table.indexes exists (_.columns.head == ppm.ownerColumn.name)
+                  if (!defined) {
+                    etm.table.createIndex("", false, ppm.ownerColumn.name.value)
                   }
                 case _ =>
               }
@@ -298,7 +290,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                       val refTable = refEntity(oet.clazz, oet.entityName).table
                       val table = refTable.name.toString + "_" + Strings.unCamel(mappedBy, '_')
                       ppm.table = Some(table)
-                      if (BeanInfos.get(oet.clazz).getPropertyType(mappedBy).isEmpty) {
+                      if (BeanInfos.load(oet.clazz).getPropertyType(mappedBy).isEmpty) {
                         throw new RuntimeException(s"Cannot find ${mappedBy} in ${oet.clazz.getName}")
                       }
                       val collectTable = refTable.schema.getOrCreateTable(table)
@@ -388,7 +380,6 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     table.createForeignKey(null, columns.head.name.toLiteral(table.engine), refTable)
   }
 
-
   private def getComment(clazz: Class[_], key: String): String = {
     val comment = messages.get(clazz, key)
     if (key == comment) key + "?" else comment
@@ -425,35 +416,34 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     entity.addProperties(inherited)
   }
 
-  private def bindComponent(entity: OrmEntityType, c: OrmStructType, name: String, propertyType: Class[_], tpe: ru.Type, optional: Boolean): Unit = {
+  private def bindComponent(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo): Unit = {
+    val propertyType = typeInfo.clazz
+    val optional = typeInfo.isOptional
     val oet = new OrmEmbeddableType(propertyType)
     val cpm = new OrmSingularProperty(name, propertyType, optional, oet)
     c.addProperty(cpm)
-    val ctpe = tpe.member(ru.TermName(name)).asMethod.returnType
-    val manifest = BeanInfos.get(propertyType, ctpe)
-    manifest.readables foreach {
-      case (name, prop) =>
-        if (!prop.isTransient && prop.readable && prop.writable) {
-          val optional = prop.typeinfo.optional
-          val propType = prop.typeinfo.clazz
-          if (isEntity(propType)) {
-            if (propType == entity.clazz) {
-              oet.parentName = Some(name)
-            } else {
-              bindManyToOne(entity, oet, name, propType, optional)
-            }
-          } else if (isSeq(propType)) {
-            bindCollection(entity, oet, name, propType, ctpe)
-          } else if (isSet(propType)) {
-            bindCollection(entity, oet, name, propType, ctpe)
-          } else if (isMap(propType)) {
-            bindMap(entity, oet, name, propType, ctpe)
-          } else if (isComponent(propType)) {
-            bindComponent(entity, oet, name, propType, ctpe, optional)
+    val manifest = BeanInfos.load(propertyType)
+    manifest.readables foreach { prop =>
+      val name = prop.name
+      if (!prop.isTransient && prop.readable && prop.writable) {
+        val typeinfo = prop.typeinfo
+        val propType = prop.typeinfo.clazz
+        if (isEntity(propType)) {
+          if (propType == entity.clazz) {
+            oet.parentName = Some(name)
           } else {
-            bindScalar(entity, oet, name, propType, optional)
+            bindManyToOne(entity, oet, name, typeinfo)
           }
+        } else if (isSeq(propType) || isSet(propType)) {
+          bindCollection(entity, oet, name, typeinfo)
+        } else if (isMap(propType)) {
+          bindMap(entity, oet, name, typeinfo)
+        } else if (isComponent(propType)) {
+          bindComponent(entity, oet, name, typeinfo)
+        } else {
+          bindScalar(entity, oet, name, typeinfo)
         }
+      }
     }
   }
 
@@ -479,31 +469,30 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     } else if (classOf[StringIdEntity].isAssignableFrom(clazz)) {
       classOf[String]
     } else {
-      BeanInfos.get(clazz).getPropertyType("id").get
+      BeanInfos.load(clazz).getPropertyType("id").get
     }
   }
 
-  private def bindMap(entity: OrmEntityType, c: OrmStructType, name: String, clazz: Class[_], tye: ru.Type): Unit = {
-    val typeSignature = typeNameOf(tye, name)
-    val kvtype = Strings.substringBetween(typeSignature, "[", "]")
+  private def bindMap(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo): Unit = {
+    val it = typeInfo.asInstanceOf[IterableType]
+    val kvtype = it.elementType.args
 
-    val mapKeyType = Strings.substringBefore(kvtype, ",").trim
-    val mapEleType = Strings.substringAfter(kvtype, ",").trim
+    val mapKeyClazz = kvtype(0).clazz
+    val mapEleClazz = kvtype(1).clazz
 
     var keyMeta: OrmType = null
-    val mapKeyClazz = ClassLoaders.load(mapKeyType)
     var keyColumn: Column = null
     if (isEntity(mapKeyClazz)) {
-      keyMeta = refEntity(mapKeyClazz, mapKeyType)
-      keyColumn = newRefColumn(mapKeyClazz, mapKeyType)
+      keyMeta = refEntity(mapKeyClazz, mapKeyClazz.getName)
+      keyColumn = newRefColumn(mapKeyClazz, mapKeyClazz.getName)
     } else {
       keyColumn = newColumn("name", mapKeyClazz, false)
       keyColumn.comment = Some("name")
       keyMeta = new OrmBasicType(mapKeyClazz, keyColumn)
     }
 
-    val eleMeta = buildElement(ClassLoaders.load(mapEleType), mapEleType)
-    val property = new OrmMapProperty(name, clazz, keyMeta, eleMeta)
+    val eleMeta = buildElement(mapEleClazz, mapEleClazz.getName)
+    val property = new OrmMapProperty(name, typeInfo.clazz, keyMeta, eleMeta)
     c.addProperty(property)
     property.keyColumn = keyColumn
     property.ownerColumn = newRefColumn(entity.clazz, entity.entityName)
@@ -514,16 +503,11 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
   }
 
-  private def typeNameOf(tye: ru.Type, name: String): String = {
-    tye.member(ru.TermName(name)).typeSignatureIn(tye).toString
-  }
-
-  private def bindCollection(entity: OrmEntityType, c: OrmStructType, name: String, propertyType: Class[_], tye: ru.Type): Unit = {
-    val typeSignature = typeNameOf(tye, name)
-    val entityName = Strings.substringBetween(typeSignature, "[", "]")
+  private def bindCollection(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo): Unit = {
+    val entityName = typeInfo.asInstanceOf[IterableType].elementType.clazz.getName
     val entityClazz = ClassLoaders.load(entityName)
     val typ = buildElement(entityClazz, entityName)
-    val property = new OrmCollectionProperty(name, propertyType, typ)
+    val property = new OrmCollectionProperty(name, typeInfo.clazz, typ)
     c.addProperty(property)
     //may be a many2many,so generate owner column.
     property.ownerColumn = newRefColumn(entity.clazz, entity.entityName)
@@ -539,31 +523,31 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
       refEntity(clazz, entityName)
     } else if (isComponent(clazz)) {
       val e = new OrmEmbeddableType(clazz)
-      val manifest = BeanInfos.get(clazz, null)
-      manifest.readables foreach {
-        case (name, prop) =>
-          if (!prop.isTransient && prop.readable && prop.writable) {
-            val optional = prop.typeinfo.optional
-            val propType = prop.typeinfo.clazz
+      val manifest = BeanInfos.load(clazz)
+      manifest.readables foreach { prop =>
+        val name = prop.name
+        if (!prop.isTransient && prop.readable && prop.writable) {
+          val optional = prop.typeinfo.isOptional
+          val propType = prop.typeinfo.clazz
 
-            var property: OrmProperty = null
-            if (isEntity(propType)) {
-              val ormType = refEntity(propType, propType.getName)
-              val idType = idTypeOf(propType)
-              val column = newColumn(columnName(propType, name, true), idType, optional)
-              addRefComment(column, ormType.clazz, ormType.entityName)
-              val sp = new OrmSingularProperty(name, propType, optional, ormType)
-              sp.joinColumn = Some(column)
-              property = sp
-            } else if (isComponent(propType)) {
-              property = new OrmSingularProperty(name, propType, optional, buildElement(propType, null))
-            } else {
-              val column = newColumn(columnName(propType, name), propType, optional)
-              val ormType = new OrmBasicType(propType, column)
-              property = new OrmSingularProperty(name, propType, optional, ormType)
-            }
-            e.addProperty(property)
+          var property: OrmProperty = null
+          if (isEntity(propType)) {
+            val ormType = refEntity(propType, propType.getName)
+            val idType = idTypeOf(propType)
+            val column = newColumn(columnName(propType, name, true), idType, optional)
+            addRefComment(column, ormType.clazz, ormType.entityName)
+            val sp = new OrmSingularProperty(name, propType, optional, ormType)
+            sp.joinColumn = Some(column)
+            property = sp
+          } else if (isComponent(propType)) {
+            property = new OrmSingularProperty(name, propType, optional, buildElement(propType, null))
+          } else {
+            val column = newColumn(columnName(propType, name), propType, optional)
+            val ormType = new OrmBasicType(propType, column)
+            property = new OrmSingularProperty(name, propType, optional, ormType)
           }
+          e.addProperty(property)
+        }
       }
       e
     } else {
@@ -571,7 +555,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
   }
 
-  private def bindId(entity: OrmEntityType, name: String, clazz: Class[_], tye: ru.Type): Unit = {
+  private def bindId(entity: OrmEntityType, name: String, typeinfo: TypeInfo): Unit = {
+    val clazz = typeinfo.clazz
     val column = newColumn(columnName(entity.clazz, name), clazz, false)
     column.nullable = false
     val property = new OrmSingularProperty(name, clazz, false, new OrmBasicType(clazz, column))
@@ -579,20 +564,22 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     entity.table.add(column)
   }
 
-  private def bindScalar(entity: OrmEntityType, c: OrmStructType, name: String, clazz: Class[_], optional: Boolean): Unit = {
+  private def bindScalar(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo): Unit = {
+    val clazz = typeInfo.clazz
     detectValueType(clazz)
     val column = newColumn(columnName(c.clazz, name), clazz, true)
-    column.nullable = optional
-    val property = new OrmSingularProperty(name, clazz, optional, new OrmBasicType(clazz, column))
+    column.nullable = typeInfo.isOptional
+    val property = new OrmSingularProperty(name, clazz, typeInfo.isOptional, new OrmBasicType(clazz, column))
     entity.table.add(column)
     c.addProperty(property)
   }
 
-  private def bindManyToOne(entity: OrmEntityType, c: OrmStructType, name: String, clazz: Class[_], optional: Boolean): Unit = {
+  private def bindManyToOne(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo): Unit = {
+    val clazz = typeInfo.clazz
     val typ = refEntity(clazz, clazz.getName)
     val idType = idTypeOf(clazz)
-    val column = newColumn(columnName(c.clazz, name, true), idType, optional)
-    val property = new OrmSingularProperty(name, clazz, optional, typ)
+    val column = newColumn(columnName(c.clazz, name, true), idType, typeInfo.isOptional)
+    val property = new OrmSingularProperty(name, clazz, typeInfo.isOptional, typ)
     property.joinColumn = Some(column)
     c.addProperty(property)
     entity.table.add(column) //FIXME merge into addProperty

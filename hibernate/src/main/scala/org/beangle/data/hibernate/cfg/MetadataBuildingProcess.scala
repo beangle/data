@@ -1,25 +1,23 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.hibernate.cfg
 
-import org.hibernate.`type`.descriptor.java.JavaTypeDescriptor
-import org.hibernate.`type`.descriptor.sql.SqlTypeDescriptor
+
 import org.hibernate.`type`.spi.TypeConfiguration
 import org.hibernate.`type`.{BasicType, BasicTypeRegistry}
 import org.hibernate.boot.MetadataSources
@@ -116,34 +114,7 @@ object MetadataBuildingProcess {
     // ultimately this needs to change a little bit to account for HHH-7792
     val basicTypeRegistry = new BasicTypeRegistry()
 
-    val typeContributions = new TypeContributions() {
-
-      override def contributeType(t: BasicType): Unit = {
-        basicTypeRegistry.register(t)
-      }
-
-      override def contributeType(t: BasicType, keys: String*): Unit = {
-        basicTypeRegistry.register(t, keys.toArray)
-      }
-
-      override def contributeType(t: UserType, keys: String*): Unit = {
-        basicTypeRegistry.register(t, keys.toArray)
-      }
-
-      override def contributeType(t: CompositeUserType, keys: String*): Unit = {
-        basicTypeRegistry.register(t, keys.toArray)
-      }
-
-      override def contributeJavaTypeDescriptor(descriptor: JavaTypeDescriptor[_]): Unit = {
-        context.getTypeConfiguration.getJavaTypeDescriptorRegistry.addDescriptor(descriptor)
-      }
-
-      override def contributeSqlTypeDescriptor(descriptor: SqlTypeDescriptor): Unit = {
-        context.getTypeConfiguration.getSqlTypeDescriptorRegistry.addDescriptor(descriptor)
-      }
-
-      override def getTypeConfiguration: TypeConfiguration = context.getTypeConfiguration
-    }
+    val typeContributions = new BasicTypeContributions(basicTypeRegistry,context)
 
     // add Dialect contributed types
     val dialect = options.getServiceRegistry.getService(classOf[JdbcServices]).getDialect

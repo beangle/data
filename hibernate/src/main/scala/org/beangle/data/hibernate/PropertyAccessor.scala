@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.hibernate
 
 import java.lang.reflect.{ Member, Method }
@@ -34,15 +33,15 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor
 object PropertyAccessor {
 
   def createSetter(theClass: Class[_], propertyName: String): Setter = {
-    BeanInfos.get(theClass).properties.get(propertyName) match {
-      case Some(p) => new BasicSetter(theClass, p.setter.get, propertyName, p.typeinfo.optional)
+    BeanInfos.load(theClass).properties.get(propertyName) match {
+      case Some(p) => new BasicSetter(theClass, p.setter.get, propertyName, p.typeinfo.isOptional)
       case None    => throw new PropertyNotFoundException("Could not find a setter for " + propertyName + " in class " + theClass.getName())
     }
   }
 
   def createGetter(theClass: Class[_], propertyName: String): Getter = {
-    BeanInfos.get(theClass).properties.get(propertyName) match {
-      case Some(p) => new BasicGetter(theClass, p.getter.get, p.clazz, propertyName, p.typeinfo.optional)
+    BeanInfos.load(theClass).properties.get(propertyName) match {
+      case Some(p) => new BasicGetter(theClass, p.getter.get, p.clazz, propertyName, p.typeinfo.isOptional)
       case None    => throw new PropertyNotFoundException("Could not find a getter for " + propertyName + " in class " + theClass.getName())
     }
   }
