@@ -236,7 +236,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def disassemble(persister: CollectionPersister): JSerializable = {
-    list.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray
+    list.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
   }
 
   override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {

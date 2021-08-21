@@ -52,7 +52,7 @@ object DataSourceUtils extends Logging {
 
   private def buildProperties(driver: String, username: String, password: String, props: collection.Map[String, String]): Properties = {
     val properties = new Properties
-    val writables = BeanInfos.get(classOf[HikariConfig]).writables.map(_.name).toSet
+    val writables = BeanInfos.get(classOf[HikariConfig]).writables.keySet
 
     props.foreach { e =>
       var key = if (e._1 == "url") "jdbcUrl" else e._1

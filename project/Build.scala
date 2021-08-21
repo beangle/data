@@ -10,7 +10,7 @@ object BuildSettings {
     licenses += ("GNU Lesser General Public License version 3", new URL("http://www.gnu.org/licenses/lgpl-3.0.txt")),
     startYear := Some(2005),
     scalaVersion := buildScalaVersion,
-//    scalacOptions := Seq("-feature","-deprecation","-Xtarget:11"),
+    scalacOptions := Seq("-Xtarget:11","-deprecation","-feature"),
     crossPaths := true,
 
     publishMavenStyle := true,
@@ -26,18 +26,17 @@ object BuildSettings {
     })
 }
 
-
 object Dependencies {
   val logbackVer = "1.2.4"
   val scalatestVer = "3.2.9"
   val scalaxmlVer = "2.0.1"
-  val commonsVer = "5.2.5-SNAPSHOT"
+  val commonsVer = "5.2.5"
   val springVer = "5.3.6"
   val poiVer = "4.1.2"
   val jxlsVer = "2.10.0"
-  val hibernateVer = "5.4.31.Final"
+  val hibernateVer = "5.5.6.Final"
   val javaassitVer = "3.27.0-GA"
-  val jpaVer = "2.2"
+  val jpaVer = "3.0.0"
 
   val scalatest = "org.scalatest" %% "scalatest" % scalatestVer % "test"
   val scalaxml = "org.scala-lang.modules" %% "scala-xml" % scalaxmlVer
@@ -53,10 +52,9 @@ object Dependencies {
   val springJdbc = "org.springframework" % "spring-jdbc" % springVer
 
   val hibernateCore = "org.beangle.hibernate" % "beangle-hibernate-core" % hibernateVer
-  val hibernateEhcache = "org.hibernate" % "hibernate-ehcache" % hibernateVer
 
   val javassist = "org.javassist" % "javassist" % javaassitVer
-  val jpa = "javax.persistence" % "javax.persistence-api" % jpaVer
+  val jpa = "jakarta.persistence" % "jakarta.persistence-api" % jpaVer
 
   val poi = "org.apache.poi" % "poi" % poiVer
   val jxls = "org.jxls" % "jxls" % jxlsVer

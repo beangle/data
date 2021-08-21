@@ -23,6 +23,7 @@ ThisBuild / developers := List(
 
 ThisBuild / description := "The Beangle Data Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
+ThisBuild / resolvers += Resolver.mavenLocal
 
 lazy val root = (project in file("."))
   .settings()
@@ -52,7 +53,7 @@ lazy val hibernate = (project in file("hibernate"))
   .settings(
     name := "beangle-data-hibernate",
     commonSettings,
-    libraryDependencies ++= (commonDeps ++ Seq(hibernateCore,hibernateEhcache,h2,HikariCP,postgresql,springTx,springAop,springJdbc))
+    libraryDependencies ++= (commonDeps ++ Seq(hibernateCore,h2,HikariCP,postgresql,springTx,springAop,springJdbc)),
   ).dependsOn(orm)
 
 lazy val transfer = (project in file("transfer"))
@@ -63,3 +64,4 @@ lazy val transfer = (project in file("transfer"))
   ).dependsOn(orm)
 
 publish / skip := true
+hibernate / Test / parallelExecution := false

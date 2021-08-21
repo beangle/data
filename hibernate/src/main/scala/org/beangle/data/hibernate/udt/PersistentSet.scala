@@ -181,7 +181,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
 
   override def disassemble(persister: CollectionPersister): JSerializable = {
     this.set.map(ele => persister.getElementType.disassemble(ele, getSession, null))
-      .toArray.asInstanceOf[Array[JSerializable]]
+      .toArray[JSerializable]
   }
 
   override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {

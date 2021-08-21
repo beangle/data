@@ -107,7 +107,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     val types = new collection.mutable.HashMap[String, TypeDef]
     types ++= mappings.typeDefs
     mappings.valueTypes foreach (t => types += (t.getName -> new TypeDef(classOf[ValueType].getName, Map("valueClass" -> t.getName))))
-    mappings.enumTypes foreach (t => types += (t._1 -> new TypeDef(classOf[EnumType].getName, Map("enumClass" -> t._2))))
+    mappings.enumTypes foreach (t => types += (t -> new TypeDef(classOf[EnumType].getName, Map("enumClass" -> t))))
 
     types foreach {
       case (m, t) =>

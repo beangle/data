@@ -22,6 +22,7 @@ import java.sql.Types._
 import java.time.Year
 
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.Enums
 import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.time.{HourMinute, WeekState}
 import org.beangle.data.jdbc.engine.Engine
@@ -110,15 +111,9 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
                 i += 1
               }
               concretTypes.getOrElse(find, raiseMappingError(clazz))
-            } else if (clazz.getName.contains("$")) {
-              // convert A$Val to A$
-              val containerClass = Class.forName(Strings.substringBefore(clazz.getName, "$") + "$")
-              if (classOf[Enumeration].isAssignableFrom(containerClass)) {
-                INTEGER
-              } else {
-                raiseMappingError(clazz)
-              }
-            } else {
+            }else if (Enums.isEnum(clazz)) {
+              INTEGER
+            }else {
               raiseMappingError(clazz)
             }
         }

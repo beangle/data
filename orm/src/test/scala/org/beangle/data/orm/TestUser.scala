@@ -18,6 +18,7 @@
 package org.beangle.data.orm
 
 import org.beangle.commons.lang.time.WeekTime
+import org.beangle.commons.lang.time.WeekDay
 import org.beangle.data.model.pojo.Updated
 import org.beangle.data.model.{Component, LongId}
 
@@ -41,6 +42,8 @@ class TestUser extends LongId with Updated {
   var times: collection.mutable.Map[Int, WeekTime] = _
 
   var roles: mutable.Buffer[TestRole] = _
+
+  var birthday:WeekDay=WeekDay.Sun
 }
 
 class NamedMember extends Component {

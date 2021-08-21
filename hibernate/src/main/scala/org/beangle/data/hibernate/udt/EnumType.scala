@@ -56,7 +56,7 @@ class EnumType extends UserType with ParameterizedType {
       if (value == null) {
         statement.setNull(index, Types.INTEGER)
       } else {
-        statement.setInt(index, value.asInstanceOf[Enumeration#Value].id)
+        statement.setInt(index, value.asInstanceOf[_root_.scala.reflect.Enum].ordinal)
       }
     } else {
       if (value == null) {

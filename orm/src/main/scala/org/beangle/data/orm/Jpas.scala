@@ -22,9 +22,9 @@ import org.beangle.data.model.{ Entity, Component }
 import java.lang.annotation.Annotation
 
 object Jpas {
-  val JpaEntityAnn = Class.forName("javax.persistence.Entity").asInstanceOf[Class[Annotation]]
+  val JpaEntityAnn = Class.forName("jakarta.persistence.Entity").asInstanceOf[Class[Annotation]]
 
-  val JpaComponentAnn = Class.forName("javax.persistence.Embeddable").asInstanceOf[Class[Annotation]]
+  val JpaComponentAnn = Class.forName("jakarta.persistence.Embeddable").asInstanceOf[Class[Annotation]]
 
   private[this] val NameMethodOnEntity = JpaEntityAnn.getMethod("name")
 
