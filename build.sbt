@@ -53,7 +53,8 @@ lazy val hibernate = (project in file("hibernate"))
   .settings(
     name := "beangle-data-hibernate",
     commonSettings,
-    libraryDependencies ++= (commonDeps ++ Seq(hibernateCore,h2,HikariCP,postgresql,springTx,springAop,springJdbc)),
+    libraryDependencies ++=  commonDeps,
+    libraryDependencies ++= Seq(hibernateCore,h2,HikariCP,postgresql,springTx,springAop,springJdbc,hibernateJCache,hibernateEhcache),
   ).dependsOn(orm)
 
 lazy val transfer = (project in file("transfer"))
