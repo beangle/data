@@ -37,6 +37,7 @@ object Dependencies {
   val hibernateVer = "5.5.6.Final"
   val javaassitVer = "3.27.0-GA"
   val jpaVer = "3.0.0"
+  val ehcacheVer ="3.9.5"
 
   val scalatest = "org.scalatest" %% "scalatest" % scalatestVer % "test"
   val scalaxml = "org.scala-lang.modules" %% "scala-xml" % scalaxmlVer
@@ -52,8 +53,8 @@ object Dependencies {
   val springJdbc = "org.springframework" % "spring-jdbc" % springVer
 
   val hibernateCore = "org.beangle.hibernate" % "beangle-hibernate-core" % hibernateVer
-  val hibernateJCache = "org.hibernate" % "hibernate-jcache" % hibernateVer  % "test"
-  val hibernateEhcache = "org.hibernate" % "hibernate-ehcache" % hibernateVer % "test"
+  val hibernateJCache = "org.hibernate" % "hibernate-jcache" % hibernateVer  % "test" exclude("org.hibernate","hibernate-core")
+  val ehcache = "org.ehcache" % "ehcache" % ehcacheVer % "test"
 
   val javassist = "org.javassist" % "javassist" % javaassitVer
   val jpa = "jakarta.persistence" % "jakarta.persistence-api" % jpaVer

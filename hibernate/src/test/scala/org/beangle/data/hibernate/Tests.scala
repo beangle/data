@@ -31,7 +31,8 @@ object Tests {
   def buildProperties(): ju.Properties = {
     val properties = new ju.Properties
     properties.put(AvailableSettings.DIALECT, classOf[H2Dialect].getName)
-    properties.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory")
+    properties.put("hibernate.cache.use_second_level_cache","true")
+    properties.put("hibernate.javax.cache.provider","org.ehcache.jsr107.EhcacheCachingProvider")
     properties.put("hibernate.hbm2ddl.auto", "create")
     properties.put("hibernate.show_sql", "true")
     properties.put("hibernate.ejb.metamodel.population", "disabled")
