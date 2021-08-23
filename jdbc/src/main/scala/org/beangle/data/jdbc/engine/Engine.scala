@@ -51,7 +51,7 @@ trait Engine extends Dialect {
 
   def defaultSchema: String
 
-  def storeCase: StoreCase.Value
+  def storeCase: StoreCase
 
   def keywords: Set[String]
 

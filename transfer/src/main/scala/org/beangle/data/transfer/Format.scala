@@ -20,6 +20,6 @@ package org.beangle.data.transfer
 /**
  * TransferFormats interface.
  */
-object Format extends Enumeration(1) {
-  val Csv, Txt, Html, Xls, Xlsx, Pdf, Dbf = Value
+enum Format {
+  case Csv, Txt, Html, Xls, Xlsx, Pdf, Dbf
 }

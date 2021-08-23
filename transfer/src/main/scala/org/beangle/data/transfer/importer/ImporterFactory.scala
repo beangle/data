@@ -32,7 +32,7 @@ import org.beangle.data.transfer.excel.ExcelItemReader
   */
 object ImporterFactory {
 
-  def getEntityImporter(format: Format.Value, is: InputStream, clazz: Class[_],
+  def getEntityImporter(format: Format, is: InputStream, clazz: Class[_],
                         params: Map[String, Any]): EntityImporter = {
     val shortName = Strings.uncapitalize(Strings.substringAfterLast(clazz.getName, "."))
     val importer = new DefaultEntityImporter(clazz, shortName)

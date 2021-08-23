@@ -84,7 +84,7 @@ abstract class AbstractImporter extends Importer with Logging {
     Locale.getDefault()
   }
 
-  def format: Format.Value = {
+  def format: Format = {
     reader.format
   }
 

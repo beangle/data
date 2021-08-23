@@ -20,8 +20,8 @@ package org.beangle.data.jdbc.engine
 /**
  * Store identifiers in which case
  */
-object StoreCase extends Enumeration {
+enum StoreCase {
 
-  val Lower, Upper, Mixed = Value
+  case Lower, Upper, Mixed
 
 }

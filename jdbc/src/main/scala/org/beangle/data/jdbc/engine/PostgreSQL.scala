@@ -73,7 +73,7 @@ class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
     63
   }
 
-  override def storeCase: StoreCase.Value = {
+  override def storeCase: StoreCase = {
     StoreCase.Lower
   }
 

@@ -119,7 +119,7 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
     (pagingSelect.toString, if (hasOffset) List(limit + offset, offset) else List(limit))
   }
 
-  override def storeCase: StoreCase.Value = {
+  override def storeCase: StoreCase = {
     StoreCase.Upper
   }
 

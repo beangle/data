@@ -73,7 +73,7 @@ abstract class AbstractEngine(val version: Version) extends Engine with Abstract
     typeNames.toType(sqlCode, precision, scale)
   }
 
-  def storeCase: StoreCase.Value = {
+  def storeCase: StoreCase = {
     StoreCase.Mixed
   }
 }

@@ -46,7 +46,7 @@ trait Importer {
   /**
    * 转换数据的类型
    */
-  def format: Format.Value
+  def format: Format
 
   /**
    * 转换使用的locale

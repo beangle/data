@@ -96,7 +96,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     sheet.createFreezePane(0, 1)
   }
 
-  def format: Format.Value = {
+  def format: Format = {
     Format.Xlsx
   }
 

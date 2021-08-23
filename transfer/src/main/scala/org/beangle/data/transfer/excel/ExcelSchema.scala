@@ -96,7 +96,7 @@ class ExcelColumn(var name: String) {
   var remark: Option[String] = None
 
   /** 数据类型 */
-  var dataType: DataType.Value = DataType.String
+  var dataType: DataType = DataType.String
   /** 是否日期 */
   var isDate: Boolean = _
   /** 是否整形 */
@@ -236,7 +236,7 @@ class ExcelColumn(var name: String) {
     asType(DataType.toType(clazz))
   }
 
-  def asType(dt: DataType.Value): this.type = {
+  def asType(dt: DataType): this.type = {
     this.dataType = dt
     this.format = Some(ExcelStyleRegistry.defaultFormat(this.dataType))
     dt match {

@@ -33,7 +33,7 @@ import org.beangle.data.transfer.io.{Attribute, DataType, ItemReader}
   *
   * @author chaostone
   */
-class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format.Value = Format.Xlsx) extends ItemReader with Logging {
+class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format = Format.Xlsx) extends ItemReader with Logging {
 
   /** 读取的工作表 */
   private val sheet = buildSheet(is, sheetNum)
@@ -80,7 +80,7 @@ class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format.Val
         var commentStr = comment.getString.getString.trim()
         var dataType = DataType.String
         if (commentStr.indexOf(':') > 0) {
-          dataType = DataType.withName(Strings.substringAfterLast(commentStr, ":"))
+          dataType = DataType.valueOf(Strings.substringAfterLast(commentStr, ":"))
           commentStr = Strings.substringBefore(commentStr, ":")
         }
         attrList += Attribute(i + 1, commentStr.trim(), dataType, cell.getRichStringCellValue.getString)

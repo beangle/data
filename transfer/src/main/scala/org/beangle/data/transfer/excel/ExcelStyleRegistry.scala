@@ -28,7 +28,7 @@ object ExcelStyleRegistry {
     Date -> "YYYY-MM-D", Time -> "HH:MM:SS", DateTime -> "YYYY-MM-DD HH:MM:SS",
     YearMonth -> "YYYY-MM", MonthDay -> "--MM-DD")
 
-  def defaultFormat(dt: DataType.Value): String = {
+  def defaultFormat(dt: DataType): String = {
     formats(dt)
   }
 }
@@ -37,13 +37,13 @@ class ExcelStyleRegistry(workbook: Workbook) {
 
   private val dataFormat = workbook.createDataFormat()
 
-  private val styles = Collections.newMap[DataType.Value, CellStyle]
+  private val styles = Collections.newMap[DataType, CellStyle]
 
-  def get(dt: DataType.Value): CellStyle = {
+  def get(dt: DataType): CellStyle = {
     styles(dt)
   }
 
-  def registerFormat(dt: DataType.Value, pattern: String): CellStyle = {
+  def registerFormat(dt: DataType, pattern: String): CellStyle = {
     val style = workbook.createCellStyle()
     style.setDataFormat(dataFormat.getFormat(pattern))
     styles.put(dt, style)

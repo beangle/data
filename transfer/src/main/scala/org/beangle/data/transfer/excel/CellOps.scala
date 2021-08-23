@@ -113,7 +113,7 @@ final class CellOps(private val cell: Cell) extends AnyVal {
     * @param dataType 期望的数据类型
     * @return
     */
-  def getValue(dataType: DataType.Value): Any = {
+  def getValue(dataType: DataType): Any = {
     getValue match {
       case null => null
       case s: String => convert(s, dataType)
@@ -123,7 +123,7 @@ final class CellOps(private val cell: Cell) extends AnyVal {
     }
   }
 
-  private def convert(str: String, dataType: DataType.Value): Any = {
+  private def convert(str: String, dataType: DataType): Any = {
     dataType match {
       case DataType.String => str
       case DataType.Short => Numbers.convert2Short(str)
@@ -141,7 +141,7 @@ final class CellOps(private val cell: Cell) extends AnyVal {
     }
   }
 
-  private def convert(d: Double, dataType: DataType.Value): Any = {
+  private def convert(d: Double, dataType: DataType): Any = {
     dataType match {
       case DataType.String => CellOps.NumFormat.format(d)
       case DataType.Short => d.shortValue
@@ -153,7 +153,7 @@ final class CellOps(private val cell: Cell) extends AnyVal {
     }
   }
 
-  private def convert(d: java.util.Date, dataType: DataType.Value): Any = {
+  private def convert(d: java.util.Date, dataType: DataType): Any = {
     dataType match {
       case DataType.String => new java.sql.Date(d.getTime).toLocalDate.toString
       case DataType.Date => new java.sql.Date(d.getTime).toLocalDate

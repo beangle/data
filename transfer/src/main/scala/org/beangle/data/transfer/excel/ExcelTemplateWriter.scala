@@ -44,7 +44,7 @@ class ExcelTemplateWriter(val template: URL, val context: ExportContext, val out
     JxlsHelper.getInstance().processTemplate(template.openStream(), outputStream, ctx)
   }
 
-  override def format: Format.Value = {
+  override def format: Format = {
     Format.Xls
   }
 

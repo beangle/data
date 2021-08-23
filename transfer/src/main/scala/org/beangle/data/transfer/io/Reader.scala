@@ -34,7 +34,7 @@ trait Reader {
   /**
    * 返回读取类型的格式
    */
-  def format: Format.Value
+  def format: Format
 
   /**
    * 关闭

@@ -62,7 +62,7 @@ class H2(v: String) extends AbstractEngine(Version(v)) {
 
   options.validate()
 
-  override def storeCase: StoreCase.Value = {
+  override def storeCase: StoreCase = {
     StoreCase.Upper
   }
 

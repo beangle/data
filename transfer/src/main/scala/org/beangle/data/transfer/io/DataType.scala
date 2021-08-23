@@ -19,10 +19,11 @@ package org.beangle.data.transfer.io
 
 import org.beangle.commons.lang.{Numbers, Primitives}
 
-object DataType extends Enumeration(1) {
-  val String, Boolean, Short, Integer, Long, Float, Double, Date, Time, DateTime, YearMonth, MonthDay = Value
-
-  def toType(clazz: Class[_]): Value = {
+enum DataType {
+  case String, Boolean, Short, Integer, Long, Float, Double, Date, Time, DateTime, YearMonth, MonthDay
+}
+object DataType{
+  def toType(clazz: Class[_]): DataType = {
     val clz = Primitives.wrap(clazz)
     if (classOf[java.lang.Boolean].isAssignableFrom(clz)) {
       Boolean

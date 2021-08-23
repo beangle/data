@@ -27,7 +27,7 @@ import org.beangle.data.transfer.Format
  */
 trait Writer {
 
-  def format: Format.Value
+  def format: Format
 
   def close(): Unit
 }

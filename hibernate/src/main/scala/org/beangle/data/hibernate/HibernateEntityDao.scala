@@ -25,7 +25,7 @@ import org.beangle.commons.collection.page.{Page, PageLimit, SinglePage}
 import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.lang.{Assert, Strings}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, OqlBuilder, QueryBuilder, Query => BQuery}
+import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, OqlBuilder, QueryBuilder, Query => BQuery,OperationType}
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.Domain
 import org.hibernate.collection.spi.PersistentCollection
@@ -510,8 +510,8 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   override def execute(opts: Operation*): Unit = {
     for (operation <- opts) {
       operation.typ match {
-        case Operation.SaveUpdate => persistEntity(operation.data, null)
-        case Operation.Remove => remove(operation.data)
+        case OperationType.SaveUpdate => persistEntity(operation.data, null)
+        case OperationType.Remove => remove(operation.data)
       }
     }
   }
@@ -519,8 +519,8 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   override def execute(builder: Operation.Builder): Unit = {
     for (operation <- builder.build()) {
       operation.typ match {
-        case Operation.SaveUpdate => persistEntity(operation.data, null)
-        case Operation.Remove => remove(operation.data)
+        case OperationType.SaveUpdate => persistEntity(operation.data, null)
+        case OperationType.Remove => remove(operation.data)
       }
     }
   }

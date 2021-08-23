@@ -23,13 +23,7 @@ import scala.collection.mutable.ListBuffer
  *
  * @author chaostone
  */
-object Operation extends Enumeration {
-
-  type Type = Value
-
-  val SaveUpdate, Remove = Value
-
-  def apply(typ: Operation.Type, data: Any) = new Operation(typ, data)
+object Operation{
 
   class Builder {
     private val operations = new ListBuffer[Operation]
@@ -38,8 +32,8 @@ object Operation extends Enumeration {
       for (entity <- entities) {
         entity match {
           case null           =>
-          case c: Iterable[_] => c foreach (e => operations += Operation(SaveUpdate, e))
-          case _              => operations += Operation(SaveUpdate, entity)
+          case c: Iterable[_] => c foreach (e => operations += Operation(OperationType.SaveUpdate, e))
+          case _              => operations += Operation(OperationType.SaveUpdate, entity)
         }
       }
       this
@@ -50,8 +44,8 @@ object Operation extends Enumeration {
         if (null != entity) {
           entity match {
             case null           =>
-            case c: Iterable[_] => c foreach (e => operations += Operation(Remove, e))
-            case _              => operations += Operation(Remove, entity)
+            case c: Iterable[_] => c foreach (e => operations += Operation(OperationType.Remove, e))
+            case _              => operations += Operation(OperationType.Remove, entity)
           }
         }
       }
@@ -66,6 +60,10 @@ object Operation extends Enumeration {
   def remove(entities: AnyRef*): Builder = new Builder().remove(entities)
 
 }
-class Operation(val typ: Operation.Type, val data: Any) {
+
+case class Operation(val typ: OperationType, val data: Any)
+
+enum OperationType{
+  case  SaveUpdate, Remove
 
 }

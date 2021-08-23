@@ -23,7 +23,7 @@ import org.beangle.data.transfer.Format
 class ExportContext {
   val datas:collection.mutable.Map[String,Any] = Collections.newMap[String, Any]
 
-  var format: Format.Value = _
+  var format: Format = _
 
   var extractor: PropertyExtractor = new DefaultPropertyExtractor()
 

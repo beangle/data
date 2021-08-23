@@ -72,7 +72,7 @@ class CsvItemReader(reader: LineNumberReader) extends ItemReader with Logging {
     this.headIndex = headIndex
   }
 
-  def format: Format.Value = {
+  def format: Format = {
     Format.Csv
   }
 
