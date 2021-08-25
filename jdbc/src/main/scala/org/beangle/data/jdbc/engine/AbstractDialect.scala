@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.collection.Collections
@@ -93,14 +92,15 @@ trait AbstractDialect extends Dialect {
     if (options.comment.supportsCommentOn) {
       val comments = Collections.newBuffer[String]
       val tableName = table.qualifiedName
+      var tableComment = table.commentAndModule.getOrElse(s"${tableName}?")
       if (includeMissing) {
-        comments += ("comment on table " + tableName + " is '" + table.comment.getOrElse(s"${tableName}?") + "'")
+        comments += ("comment on table " + tableName + " is '" + tableComment + "'")
         table.columns foreach { c =>
           comments += ("comment on column " + tableName + '.' + c.name + " is '" + c.comment.getOrElse(s"${c.name}?") + "'")
         }
       } else {
         table.comment foreach { c =>
-          comments += ("comment on table " + tableName + " is '" + c + "'")
+          comments += ("comment on table " + tableName + " is '" + tableComment + "'")
         }
         table.columns foreach { c =>
           c.comment foreach { cc =>

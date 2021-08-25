@@ -1,34 +1,33 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.orm.tool
 
-import java.io.{File, FileWriter}
-import java.util.Locale
+package org.beangle.data.orm.tool
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.Files./
-import org.beangle.commons.io.{Dirs, IOs, ResourcePatternResolver}
+import org.beangle.commons.io.{IOs, ResourcePatternResolver}
 import org.beangle.commons.lang.{Charsets, Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
-import org.beangle.data.jdbc.meta.{DBScripts, Database, Identifier, Serializer, Table}
+import org.beangle.data.jdbc.meta._
 import org.beangle.data.orm.Mappings
+
+import java.io.{File, FileWriter}
+import java.util.Locale
 
 /**
  * Generate DDL and Sequences and Comments
@@ -57,12 +56,16 @@ object DdlGenerator {
     val target = new File(dir)
     target.mkdirs()
     if (!target.exists()) {
-      println("Cannot makdir " + target.getAbsolutePath)
+      println("Cannot makedir " + target.getAbsolutePath)
       return List.empty
     }
     val engine = Engines.forName(dialect)
     val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
     val database = new Database(engine)
+    val version = System.getProperty("database.version")
+    if (Strings.isNotBlank(version)) {
+      database.version = version
+    }
     val mappings = new Mappings(database, ormLocations)
     mappings.locale = locale
     mappings.autobind()

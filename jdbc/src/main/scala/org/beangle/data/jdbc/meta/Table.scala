@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
@@ -49,14 +48,16 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   val foreignKeys = new ListBuffer[ForeignKey]
   val indexes = new ListBuffer[Index]
 
+  var module: Option[String] = None
+
   def engine: Engine = {
     schema.database.engine
   }
 
   /** has quoted identifier
-    *
-    * @return
-    */
+   *
+   * @return
+   */
   def hasQuotedIdentifier: Boolean = {
     name.quoted ||
       columns.exists(_.name.quoted) ||
@@ -103,6 +104,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
   override def clone(): Table = {
     val tb: Table = new Table(schema, name)
     tb.comment = comment
+    tb.module = module
     for (col <- columns) tb.add(col.clone())
     primaryKey foreach { pk =>
       val npk = pk.clone()
@@ -292,6 +294,32 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
       if (null != fk.referencedTable) {
         if (fk.referencedTable.schema == oldSchema) fk.referencedTable.schema = newSchema
       }
+    }
+  }
+
+  def updateCommentAndModule(newComment: String): Unit = {
+    if (Strings.isBlank(newComment)) {
+      comment = None
+      module = None
+    } else {
+      if (newComment.contains("@")) {
+        comment = Some(Strings.substringBefore(newComment, "@"))
+        module = Some(Strings.substringAfter(newComment, "@"))
+      } else {
+        comment = Some(newComment)
+        module = None
+      }
+    }
+  }
+
+  def commentAndModule: Option[String] = {
+    comment match {
+      case Some(c) =>
+        module match {
+          case Some(m) => Some(s"$c@$m")
+          case None => comment
+        }
+      case None => comment
     }
   }
 }

@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
@@ -23,14 +22,31 @@ import org.beangle.data.jdbc.engine.Engine
 
 class Database(val engine: Engine) {
 
+  var version: String = "UNDEFINED"
+
   var schemas = new collection.mutable.HashMap[Identifier, Schema]
 
   def getOrCreateSchema(schema: Identifier): Schema = {
     schemas.getOrElseUpdate(schema, new Schema(this, schema))
   }
 
+  def getSchema(name: String): Option[Schema] = {
+    if (Strings.isEmpty(name)) {
+      schemas.get(Identifier.empty)
+    } else {
+      schemas.get(engine.toIdentifier(name))
+    }
+  }
+
+  def getTable(tableRef: TableRef): Option[Table] = {
+    getTable(tableRef.schema.name.toLiteral(engine), tableRef.name.toLiteral(engine))
+  }
+
   def getTable(schema: String, name: String): Option[Table] = {
-    getOrCreateSchema(schema).getTable(name)
+    getSchema(schema) match {
+      case Some(s) => s.getTable(name)
+      case None => None
+    }
   }
 
   def addTable(schemaName: String, tableName: String): Table = {

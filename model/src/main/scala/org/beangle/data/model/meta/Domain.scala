@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.model.meta
 
 import org.beangle.commons.bean.Properties
@@ -32,7 +31,13 @@ object Domain {
 trait Domain {
 
   def getEntity(clazz: Class[_]): Option[EntityType] = {
-    getEntity(clazz.getName)
+    val name = clazz.getName
+    val dollaIdx= name.indexOf('$')
+    if(dollaIdx >0){
+      getEntity(name.substring(0,dollaIdx))
+    }else{
+      getEntity(name)
+    }
   }
 
   def getEntity(name: String): Option[EntityType]

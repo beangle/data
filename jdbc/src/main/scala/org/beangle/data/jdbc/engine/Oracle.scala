@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.jdbc.engine
 
 import java.sql.Types._
@@ -34,7 +33,7 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
     BLOB -> "blob", CLOB -> "clob")
 
   registerTypes2(
-    (VARCHAR, 4000, "varchar2($l)"), (NUMERIC, 38, "number($p,$s)"),
+    (VARCHAR, 4000, "varchar2($l)"), (VARCHAR, 2*1024*1024*1024, "clob"),(NUMERIC, 38, "number($p,$s)"),
     (NUMERIC, Int.MaxValue, "number(38,$s)"), (VARBINARY, 2000, "raw($l)"))
 
   options.sequence { s =>
@@ -120,7 +119,7 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
     (pagingSelect.toString, if (hasOffset) List(limit + offset, offset) else List(limit))
   }
 
-  override def storeCase: StoreCase.Value = {
+  override def storeCase: StoreCase = {
     StoreCase.Upper
   }
 

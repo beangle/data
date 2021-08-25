@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.orm
 
 import org.beangle.data.jdbc.meta.Column
@@ -36,7 +35,7 @@ abstract class OrmProperty(val name: String, val clazz: Class[_], var optional: 
   var generator: IdGenerator = _
   var generated: Option[String] = None
 
-  def copy(): this.type
+  def copy(): OrmProperty
 }
 
 final class OrmSingularProperty(name: String, clazz: Class[_], optional: Boolean, var propertyType: OrmType)
@@ -44,8 +43,8 @@ final class OrmSingularProperty(name: String, clazz: Class[_], optional: Boolean
 
   var joinColumn: Option[Column] = None
 
-  def copy(): this.type = {
-    val cloned = super.clone().asInstanceOf[this.type]
+  def copy(): OrmSingularProperty = {
+    val cloned = super.clone().asInstanceOf[OrmSingularProperty]
     cloned.propertyType = this.propertyType.copy()
     cloned.joinColumn = joinColumn.map(_.clone())
     cloned
@@ -78,8 +77,8 @@ abstract class OrmPluralProperty(name: String, clazz: Class[_], var element: Orm
 
   def many2many: Boolean = !one2many
 
-  def copy(): this.type = {
-    val cloned = super.clone().asInstanceOf[this.type]
+  def copy(): OrmPluralProperty = {
+    val cloned = super.clone().asInstanceOf[OrmPluralProperty]
     cloned.element = this.element.copy()
     cloned
   }
@@ -95,8 +94,8 @@ final class OrmMapProperty(name: String, clazz: Class[_], var key: OrmType, elem
 
   var keyColumn: Column = _
 
-  override def copy(): this.type = {
-    val cloned = super.clone().asInstanceOf[this.type]
+  override def copy(): OrmMapProperty = {
+    val cloned = super.clone().asInstanceOf[OrmMapProperty]
     cloned.element = this.element.copy()
     cloned
   }

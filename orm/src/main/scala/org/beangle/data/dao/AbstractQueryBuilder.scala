@@ -1,27 +1,26 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.dao
 
 import org.beangle.commons.collection.Order
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.lang.Assert
-import org.beangle.commons.lang.Strings._
+import org.beangle.commons.lang.Strings.*
 
 object AbstractQueryBuilder {
   val InnerJoin = " left join "
@@ -30,35 +29,35 @@ object AbstractQueryBuilder {
 }
 
 /**
-  * Abstract AbstractQueryBuilder class.
-  *
-  * @author chaostone
-  */
+ * Abstract AbstractQueryBuilder class.
+ *
+ * @author chaostone
+ */
 abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
 
-  protected var statement: String = _
+  protected[dao] var statement: String = _
 
-  protected var limit: PageLimit = _
+  protected[dao] var limit: PageLimit = _
 
-  val params = new collection.mutable.HashMap[String, Any]
+  val params: collection.mutable.HashMap[String, Any] = new collection.mutable.HashMap[String, Any]
 
-  protected var select: String = _
+  protected[dao] var select: String = _
 
-  protected var from: String = _
+  protected[dao] var from: String = _
 
   var alias: String = _
 
   protected var conditions: List[Condition] = Nil
 
-  protected var orders: List[Order] = Nil
+  protected[dao] var orders: List[Order] = Nil
 
-  protected var groups: List[String] = Nil
+  protected[dao] var groups: List[String] = Nil
 
-  protected var having: String = _
+  protected[dao] var having: String = _
 
-  protected var tailOrder: Option[Order] = None
+  protected[dao] var tailOrder: Option[Order] = None
 
-  protected var cacheable = false
+  protected[dao] var cacheable = false
 
   def build(): Query[T] = {
     val queryBean = new QueryBean[T]()

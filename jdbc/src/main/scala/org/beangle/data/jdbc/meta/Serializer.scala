@@ -1,30 +1,28 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.beangle.data.jdbc.meta
 
-import java.io.StringReader
+package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings.split
 import org.beangle.data.jdbc.engine.Engines
 import org.beangle.data.jdbc.internal.NodeOps._
 import org.beangle.data.jdbc.internal.XmlNode
 
+import java.io.StringReader
 import scala.language.implicitConversions
 
 object Serializer {
@@ -33,11 +31,12 @@ object Serializer {
     val root = scala.xml.XML.load(new StringReader(content))
     val engine = Engines.forName(root.attr("engine"))
     val database = new Database(engine)
+    database.version = root.attr("version")
     (root \\ "schema") foreach { schemaElem =>
       val schema = database.getOrCreateSchema(schemaElem.name)
       (schemaElem \ "tables" \ "table") foreach { tableElem =>
         val table = schema.createTable(tableElem.name)
-        tableElem.get("comment").foreach(n => table.comment = Some(n))
+        tableElem.get("comment").foreach(n => table.updateCommentAndModule(n))
         (tableElem \ "columns" \ "column") foreach { colElem =>
           val col = table.createColumn(colElem.name, colElem.attr("type"))
           colElem.get("nullable").foreach(n => col.nullable = n.toBoolean)
@@ -77,7 +76,7 @@ object Serializer {
 
   private class Exporter(db: Database) {
     def toXml: String = {
-      val dbNode = XmlNode("db", ("engine", db.engine.name))
+      val dbNode = XmlNode("db", ("engine", db.engine.name), ("version", db.version))
       if (db.schemas.nonEmpty) {
         val schemasNode = dbNode.createChild("schemas")
         val schemaNames = db.schemas.keys.toBuffer.sorted
@@ -99,9 +98,9 @@ object Serializer {
 
     private def appendXml(table: Table, tablesNode: XmlNode): Unit = {
       val tableNode = tablesNode.createChild("table", "name" -> table.name)
-      tableNode.attr("comment", table.comment)
+      tableNode.attr("comment", table.commentAndModule)
       val columnsNode = tableNode.createChild("columns")
-      val columns = table.columns.sortWith((c1,c2)=> if(c1.name.value=="id") true else if (c2.name.value=="id") false else c1.name.value.compareTo(c2.name.value) < 0)
+      val columns = table.columns.sortWith((c1, c2) => if (c1.name.value == "id") true else if (c2.name.value == "id") false else c1.name.value.compareTo(c2.name.value) < 0)
       columns foreach { col =>
         val colNode = columnsNode.createChild("column")
         colNode.attr("name", col.name)

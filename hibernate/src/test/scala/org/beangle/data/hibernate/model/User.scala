@@ -1,24 +1,23 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.hibernate.model
 
-import org.beangle.commons.lang.time.WeekDay.{Sun, WeekDay}
+import org.beangle.commons.lang.time.WeekDay
 import org.beangle.commons.lang.time.{WeekState, WeekTime}
 import org.beangle.data.model.{Component, Entity, LongId, StringId}
 import org.beangle.data.model.pojo.{Hierarchical, Named, Remark}
@@ -31,7 +30,7 @@ class User(var id: Long) extends Entity[Long] {
   var money: Short = _
   var properties: collection.mutable.Map[String, String] = _
   var occupy: WeekState = new WeekState(0)
-  var weekday: WeekDay = Sun
+  var weekday: WeekDay = WeekDay.Sun
 
   var createdOn = new java.sql.Date(System.currentTimeMillis)
   var role: Option[Role] = _

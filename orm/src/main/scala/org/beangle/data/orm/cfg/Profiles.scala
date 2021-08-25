@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.orm.cfg
 
 import org.beangle.commons.config.Resources
@@ -49,7 +48,7 @@ class Profiles(resources: Resources) extends Logging {
     namings.put("rails", new RailsNamingPolicy(this))
     defaultProfile.naming = new RailsNamingPolicy(this)
     globalSchema foreach { s =>
-      defaultProfile._schema = s
+      defaultProfile._schema = Some(s)
     }
     val ms = new mutable.ArrayBuffer[MappingModule]
     for (url <- resources.paths) addConfig(url, ms)
@@ -68,7 +67,12 @@ class Profiles(resources: Resources) extends Logging {
         val xml = scala.xml.XML.load(is)
         (xml \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
         (xml \ "mapping") foreach { ele =>
-          ms += Reflections.getInstance[MappingModule]((ele \ "@class").text)
+          val name = (ele \ "@name").text
+          val module = Reflections.getInstance[MappingModule]((ele \ "@class").text)
+          if (Strings.isNotBlank(name)) {
+            module.name = Some(name.trim())
+          }
+          ms += module
         }
         is.close()
       }
@@ -151,7 +155,7 @@ class Profiles(resources: Resources) extends Logging {
           while (isNotEmpty(parentName) && null == profile.parent) {
             if (profiles.contains(parentName) && profile.packageName != parentName) {
               logger.debug(s"set ${profile.packageName}'s parent is $parentName")
-              profile.parent = profiles(parentName)
+              profile.parent = profiles.get(parentName)
             }
             val len = parentName.length
             parentName = substringBeforeLast(parentName, ".")
@@ -179,9 +183,9 @@ class Profiles(resources: Resources) extends Logging {
       if ((anElem \ "@prefix").nonEmpty) annModule.prefix = (anElem \ "@prefix").text
     }
     if ((melem \ "@schema").nonEmpty) {
-      profile._schema = parseSchema((melem \ "@schema").text)
+      profile._schema = Some(parseSchema((melem \ "@schema").text))
     }
-    if ((melem \ "@prefix").nonEmpty) profile._prefix = (melem \ "@prefix").text
+    if ((melem \ "@prefix").nonEmpty) profile._prefix = Some((melem \ "@prefix").text)
     val naming = if ((melem \ "@naming").nonEmpty) (melem \ "@naming").text else "rails"
     if (namings.contains(naming)) {
       profile.naming = namings(naming)
@@ -189,7 +193,7 @@ class Profiles(resources: Resources) extends Logging {
       throw new RuntimeException("Cannot find naming policy :" + naming)
     }
     profiles.put(profile.packageName, profile)
-    profile.parent = parent
+    profile.parent = Option(parent)
     (melem \ "profile") foreach { child => parseProfile(child, profile) }
   }
 

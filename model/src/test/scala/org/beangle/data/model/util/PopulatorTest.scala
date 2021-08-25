@@ -1,37 +1,32 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.model.util
 
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
 import org.beangle.data.model.meta.Domain
-import org.junit.runner.RunWith
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class PopulatorTest extends AnyFunSpec with Matchers {
 
   describe("Populator") {
     it("populate error attr") {
-
-      val menuBeanInfo = getBeanInfo(classOf[Menu])
+      val menuBeanInfo = BeanInfos.of(classOf[Menu])
       val populator = new ConvertPopulator()
       val menu = new Menu
       val menuET = new SimpleEntityType(classOf[Menu])
@@ -43,9 +38,4 @@ class PopulatorTest extends AnyFunSpec with Matchers {
     }
   }
 
-  import scala.reflect.runtime.{universe => ru}
-
-  private def getBeanInfo[T](clazz: Class[T])(implicit manifest: Manifest[T], ttag: ru.TypeTag[T]): BeanInfo = {
-    BeanInfos.get(clazz, ttag.tpe)
-  }
 }

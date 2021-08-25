@@ -1,27 +1,27 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.orm
 
 import javassist.compiler.Javac
-import javassist._
+import javassist.*
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.reflect.{BeanInfos, PropertyDescriptor, Reflections}
+import org.beangle.commons.lang.reflect.BeanInfo.PropertyInfo
+import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.lang.{ClassLoaders, Primitives}
 import org.beangle.commons.logging.Logging
@@ -49,9 +49,17 @@ private[orm] object Proxy extends Logging {
   def generate(clazz: Class[_]): EntityProxy = {
     val proxyClassName = clazz.getSimpleName + "_proxy"
     val classFullName = clazz.getName + "_proxy"
-    val exised = proxies.getOrElse(classFullName, null)
-    if (null != exised) return Reflections.newInstance(exised).asInstanceOf[EntityProxy]
+    var exised = proxies.getOrElse(classFullName, null)
+    if (null == exised) {
+      proxies.synchronized {
+        exised = proxies.getOrElse(classFullName, null)
+        if(null==exised) exised = generateProxyClass(proxyClassName,classFullName,clazz)
+      }
+    }
+    Reflections.newInstance(exised).asInstanceOf[EntityProxy]
+  }
 
+  private def generateProxyClass(proxyClassName:String,classFullName:String,clazz:Class[_]):Class[_]={
     val watch = new Stopwatch(true)
     val cct = pool.makeClass(classFullName)
     if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
@@ -66,7 +74,7 @@ private[orm] object Proxy extends Logging {
       case (name, p) =>
         if (p.readable) {
           val getter = p.getter.get
-          val value = if (p.typeinfo.optional) "null" else Primitives.defaultLiteral(p.clazz)
+          val value = if (p.typeinfo.isOptional) "null" else Primitives.defaultLiteral(p.clazz)
           val javaTypeName = toJavaType(p)
           val body = s"public $javaTypeName ${getter.getName}() { return $value;}"
           val ctmod = javac.compile(body).asInstanceOf[CtMethod]
@@ -100,11 +108,10 @@ private[orm] object Proxy extends Logging {
     ctmod.setBody("{return _lastAccessed;}")
     cct.addMethod(ctmod)
     val maked = cct.toClass(clazz)
-    val proxy = maked.getConstructor().newInstance().asInstanceOf[EntityProxy]
     logger.debug(s"generate $classFullName using $watch")
     //cct.debugWriteFile("/tmp/model/")
-    proxies.put(classFullName, proxy.getClass)
-    proxy
+    proxies.put(classFullName, maked)
+    maked
   }
 
   private def generateComponent(clazz: Class[_], path: String): Class[_] = {
@@ -128,7 +135,7 @@ private[orm] object Proxy extends Logging {
       case (name, p) =>
         if (p.readable) {
           val getter = p.getter.get
-          val value = if (p.typeinfo.optional) "null" else Primitives.defaultLiteral(p.clazz)
+          val value = if (p.typeinfo.isOptional) "null" else Primitives.defaultLiteral(p.clazz)
           val javaTypeName = toJavaType(p)
           val body = s"public $javaTypeName ${getter.getName}() { return $value;}"
           val ctmod = javac.compile(body).asInstanceOf[CtMethod]
@@ -175,8 +182,8 @@ private[orm] object Proxy extends Logging {
     maked
   }
 
-  def toJavaType(p: PropertyDescriptor): String = {
-    if (p.typeinfo.optional) {
+  def toJavaType(p: PropertyInfo): String = {
+    if (p.typeinfo.isOptional) {
       "scala.Option"
     } else {
       if (p.clazz.isArray) {

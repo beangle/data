@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.dao
 
 import scala.collection.mutable.ListBuffer
@@ -24,13 +23,7 @@ import scala.collection.mutable.ListBuffer
  *
  * @author chaostone
  */
-object Operation extends Enumeration {
-
-  type Type = Value
-
-  val SaveUpdate, Remove = Value
-
-  def apply(typ: Operation.Type, data: Any) = new Operation(typ, data)
+object Operation{
 
   class Builder {
     private val operations = new ListBuffer[Operation]
@@ -39,8 +32,8 @@ object Operation extends Enumeration {
       for (entity <- entities) {
         entity match {
           case null           =>
-          case c: Iterable[_] => c foreach (e => operations += Operation(SaveUpdate, e))
-          case _              => operations += Operation(SaveUpdate, entity)
+          case c: Iterable[_] => c foreach (e => operations += Operation(OperationType.SaveUpdate, e))
+          case _              => operations += Operation(OperationType.SaveUpdate, entity)
         }
       }
       this
@@ -51,8 +44,8 @@ object Operation extends Enumeration {
         if (null != entity) {
           entity match {
             case null           =>
-            case c: Iterable[_] => c foreach (e => operations += Operation(Remove, e))
-            case _              => operations += Operation(Remove, entity)
+            case c: Iterable[_] => c foreach (e => operations += Operation(OperationType.Remove, e))
+            case _              => operations += Operation(OperationType.Remove, entity)
           }
         }
       }
@@ -67,6 +60,10 @@ object Operation extends Enumeration {
   def remove(entities: AnyRef*): Builder = new Builder().remove(entities)
 
 }
-class Operation(val typ: Operation.Type, val data: Any) {
+
+case class Operation(val typ: OperationType, val data: Any)
+
+enum OperationType{
+  case  SaveUpdate, Remove
 
 }

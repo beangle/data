@@ -1,42 +1,40 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.hibernate.udt
 
-import java.io.{ Serializable => JSerializable }
-import java.sql.{ PreparedStatement, ResultSet, Types }
-import java.{ util => ju }
+import org.beangle.commons.conversion.converter.String2ScalaEnumConverter
+import org.hibernate.engine.spi.{SessionImplementor, SharedSessionContractImplementor}
+import org.hibernate.usertype.{ParameterizedType, UserType}
 
-import org.hibernate.engine.spi.SessionImplementor
-import org.hibernate.usertype.{ ParameterizedType, UserType }
-import org.hibernate.engine.spi.SharedSessionContractImplementor
+import java.io.Serializable as JSerializable
+import java.sql.{PreparedStatement, ResultSet, Types}
+import java.util as ju
 
 class EnumType extends UserType with ParameterizedType {
 
-  var enum: Enumeration = null
+  private var converter: String2ScalaEnumConverter.EnumConverter[Object] = _
+
+  var returnedClass: Class[_] = _
+
   var ordinal: Boolean = true
 
   override def sqlTypes(): Array[Int] = {
     if (ordinal) Array(Types.INTEGER) else Array(Types.VARCHAR)
-  }
-
-  override def returnedClass: Class[_] = {
-    enum.values.head.getClass
   }
 
   override def equals(x: Object, y: Object) = x == y
@@ -46,12 +44,10 @@ class EnumType extends UserType with ParameterizedType {
   override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SharedSessionContractImplementor, owner: Object): Object = {
     if (ordinal) {
       val value = resultSet.getInt(names(0))
-      if (resultSet.wasNull()) null
-      else enum(value)
+      if resultSet.wasNull() then null else converter.apply(value)
     } else {
       val value = resultSet.getString(names(0))
-      if (resultSet.wasNull()) null
-      else enum.withName(value)
+      if resultSet.wasNull() then null else converter.apply(value)
     }
   }
 
@@ -60,7 +56,7 @@ class EnumType extends UserType with ParameterizedType {
       if (value == null) {
         statement.setNull(index, Types.INTEGER)
       } else {
-        statement.setInt(index, value.asInstanceOf[Enumeration#Value].id)
+        statement.setInt(index, value.asInstanceOf[_root_.scala.reflect.Enum].ordinal)
       }
     } else {
       if (value == null) {
@@ -73,8 +69,8 @@ class EnumType extends UserType with ParameterizedType {
 
   override def setParameterValues(parameters: ju.Properties): Unit = {
     var enumClass = parameters.getProperty("enumClass")
-    if (!enumClass.endsWith("$")) enumClass += "$"
-    enum = Class.forName(enumClass).getDeclaredField("MODULE$").get(null).asInstanceOf[Enumeration]
+    returnedClass = Class.forName(enumClass)
+    converter = String2ScalaEnumConverter.newConverter(returnedClass)
   }
 
   override def deepCopy(value: Object): Object = value
@@ -84,6 +80,7 @@ class EnumType extends UserType with ParameterizedType {
   override def disassemble(value: Object): JSerializable = {
     value.asInstanceOf[JSerializable]
   }
+
   override def assemble(cached: JSerializable, owner: Object): Object = {
     cached.asInstanceOf[Object]
   }

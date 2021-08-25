@@ -1,21 +1,20 @@
 /*
- * Beangle, Agile Development Scaffold and Toolkits.
- *
- * Copyright © 2005, The Beangle Software.
+ * Copyright (C) 2005, The Beangle Software.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.beangle.data.hibernate
 
 import java.io.{ByteArrayOutputStream, InputStream, Serializable}
@@ -26,7 +25,7 @@ import org.beangle.commons.collection.page.{Page, PageLimit, SinglePage}
 import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.lang.{Assert, Strings}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, OqlBuilder, QueryBuilder, Query => BQuery}
+import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, OqlBuilder, QueryBuilder, Query => BQuery,OperationType}
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.Domain
 import org.hibernate.collection.spi.PersistentCollection
@@ -511,8 +510,8 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   override def execute(opts: Operation*): Unit = {
     for (operation <- opts) {
       operation.typ match {
-        case Operation.SaveUpdate => persistEntity(operation.data, null)
-        case Operation.Remove => remove(operation.data)
+        case OperationType.SaveUpdate => persistEntity(operation.data, null)
+        case OperationType.Remove => remove(operation.data)
       }
     }
   }
@@ -520,8 +519,8 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   override def execute(builder: Operation.Builder): Unit = {
     for (operation <- builder.build()) {
       operation.typ match {
-        case Operation.SaveUpdate => persistEntity(operation.data, null)
-        case Operation.Remove => remove(operation.data)
+        case OperationType.SaveUpdate => persistEntity(operation.data, null)
+        case OperationType.Remove => remove(operation.data)
       }
     }
   }
