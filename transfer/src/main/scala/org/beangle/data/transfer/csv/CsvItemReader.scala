@@ -17,19 +17,19 @@
 
 package org.beangle.data.transfer.csv
 
-import java.io.LineNumberReader
-
-import org.beangle.commons.io.IOs
+import org.beangle.commons.io.{DataType, IOs}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.{Attribute, DataType, ItemReader}
+import org.beangle.data.transfer.io.{Attribute, ItemReader}
+
+import java.io.LineNumberReader
 
 /**
-  * CsvItemReader class.
-  *
-  * @author chaostone
-  */
+ * CsvItemReader class.
+ *
+ * @author chaostone
+ */
 class CsvItemReader(reader: LineNumberReader) extends ItemReader with Logging {
 
   private var headIndex = 0

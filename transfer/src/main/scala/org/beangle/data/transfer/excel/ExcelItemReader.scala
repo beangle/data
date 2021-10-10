@@ -24,9 +24,10 @@ import org.apache.poi.ss.usermodel._
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
+import org.beangle.commons.io.DataType
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.excel.CellOps._
-import org.beangle.data.transfer.io.{Attribute, DataType, ItemReader}
+import org.beangle.doc.excel.CellOps._
+import org.beangle.data.transfer.io.{Attribute, ItemReader}
 
 /**
   * Excel的每行一条数据的读取器
