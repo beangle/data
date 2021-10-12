@@ -3,7 +3,6 @@ import org.beangle.parent.Settings._
 
 ThisBuild / organization := "org.beangle.data"
 ThisBuild / version := "5.3.25"
-
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/beangle/data"),
