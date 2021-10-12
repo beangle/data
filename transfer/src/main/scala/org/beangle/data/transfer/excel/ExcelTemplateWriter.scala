@@ -17,31 +17,24 @@
 
 package org.beangle.data.transfer.excel
 
-import java.io.OutputStream
-import java.net.URL
-
 import org.beangle.data.transfer.Format
 import org.beangle.data.transfer.exporter.ExportContext
 import org.beangle.data.transfer.io.Writer
-import org.jxls.util.JxlsHelper
-import scala.jdk.javaapi.CollectionConverters.asJava
+import org.beangle.doc.excel.template.TransformHelper
+
+import java.io.OutputStream
+import java.net.URL
+
 class ExcelTemplateWriter(val template: URL, val context: ExportContext, val outputStream: OutputStream)
   extends Writer {
 
+  val transformHelper = new TransformHelper(template.openStream())
+
   /**
-    * write.
-    */
+   * write.
+   */
   def write(): Unit = {
-    val ctx = new org.jxls.common.Context()
-    context.datas foreach {
-      case (k, v) =>
-        val nv = v match {
-          case i: Iterable[_] => asJava(i)
-          case _ => v
-        }
-        ctx.putVar(k, nv)
-    }
-    JxlsHelper.getInstance().processTemplate(template.openStream(), outputStream, ctx)
+    transformHelper.transform(outputStream, context.datas)
   }
 
   override def format: Format = {

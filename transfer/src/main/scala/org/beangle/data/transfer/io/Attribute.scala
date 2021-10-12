@@ -17,6 +17,8 @@
 
 package org.beangle.data.transfer.io
 
+import org.beangle.commons.io.DataType
+
 case class Attribute(idx: Int, name: String, dataType: DataType, description: String) {
 
 }

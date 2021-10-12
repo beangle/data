@@ -19,7 +19,7 @@ package org.beangle.data.transfer.excel
 
 import java.io.{File, FileOutputStream}
 import java.time.YearMonth
-
+import org.beangle.doc.excel.schema.ExcelSchema
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 
