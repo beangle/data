@@ -2,7 +2,7 @@ import org.beangle.parent.Dependencies._
 import org.beangle.parent.Settings._
 
 ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.3.26-SNAPSHOT"
+ThisBuild / version := "5.3.26"
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/beangle/data"),
@@ -22,10 +22,10 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Data Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
 
-val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % "5.2.6"
-val beangle_commons_text = "org.beangle.commons" %% "beangle-commons-text" % "5.2.6"
-val beangle_commons_csv = "org.beangle.commons" %% "beangle-commons-csv" % "5.2.6"
-val beangle_doc_excel = "org.beangle.doc" %% "beangle-doc-excel" % "0.0.8"
+val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % "5.2.9"
+val beangle_commons_text = "org.beangle.commons" %% "beangle-commons-text" % "5.2.9"
+val beangle_commons_csv = "org.beangle.commons" %% "beangle-commons-csv" % "5.2.9"
+val beangle_doc_excel = "org.beangle.doc" %% "beangle-doc-excel" % "0.0.9"
 
 val commonDeps = Seq(beangle_commons_core, logback_classic, logback_core, scalatest)
 
