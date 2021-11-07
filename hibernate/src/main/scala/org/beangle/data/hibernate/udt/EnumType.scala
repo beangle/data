@@ -24,6 +24,7 @@ import org.hibernate.usertype.{ParameterizedType, UserType}
 import java.io.Serializable as JSerializable
 import java.sql.{PreparedStatement, ResultSet, Types}
 import java.util as ju
+import org.beangle.commons.lang.Enums
 
 class EnumType extends UserType with ParameterizedType {
 
@@ -56,7 +57,7 @@ class EnumType extends UserType with ParameterizedType {
       if (value == null) {
         statement.setNull(index, Types.INTEGER)
       } else {
-        statement.setInt(index, value.asInstanceOf[_root_.scala.reflect.Enum].ordinal)
+        statement.setInt(index,Enums.id(value))
       }
     } else {
       if (value == null) {
@@ -68,7 +69,7 @@ class EnumType extends UserType with ParameterizedType {
   }
 
   override def setParameterValues(parameters: ju.Properties): Unit = {
-    var enumClass = parameters.getProperty("enumClass")
+    val enumClass = parameters.getProperty("enumClass")
     returnedClass = Class.forName(enumClass)
     converter = String2ScalaEnumConverter.newConverter(returnedClass)
   }
