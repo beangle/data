@@ -46,9 +46,9 @@ trait EntityDao {
 
   def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T]
 
-  def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[_]): Seq[T]
+  def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, value: Any): Seq[T]
 
-  def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T]
+  def findBy[T <: Entity[_]](entityName: String, keyName: String, value: Any): Seq[T]
 
   /**
     * save or update entities

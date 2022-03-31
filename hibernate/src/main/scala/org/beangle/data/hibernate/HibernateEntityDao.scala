@@ -17,15 +17,12 @@
 
 package org.beangle.data.hibernate
 
-import java.io.{ByteArrayOutputStream, InputStream, Serializable}
-import java.sql.{Blob, Clob}
-
 import org.beangle.commons.collection.Wrappers
 import org.beangle.commons.collection.page.{Page, PageLimit, SinglePage}
 import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.lang.{Assert, Strings}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, OqlBuilder, QueryBuilder, Query => BQuery,OperationType}
+import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, OperationType, OqlBuilder, QueryBuilder, Query as BQuery}
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.Domain
 import org.hibernate.collection.spi.PersistentCollection
@@ -35,7 +32,9 @@ import org.hibernate.proxy.HibernateProxy
 import org.hibernate.query.{NativeQuery, Query}
 import org.hibernate.{Hibernate, Session, SessionFactory}
 
-import scala.collection.immutable.Seq
+import java.io.{ByteArrayOutputStream, InputStream, Serializable}
+import java.sql.{Blob, Clob}
+import scala.collection.immutable.{ArraySeq, Seq}
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.{asJava, asScala}
 
@@ -153,7 +152,7 @@ object QuerySupport {
 class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao with Logging {
   val domain: Domain = DomainFactory.build(sessionFactory)
 
-  import QuerySupport._
+  import QuerySupport.*
 
   protected def currentSession: Session = {
     sessionFactory.getCurrentSession
@@ -202,11 +201,22 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     findBy(entityNameOf(clazz), "id", ids)
   }
 
-  override def findBy[T <: Entity[_]](clazz: Class[T], keyName: String, values: Iterable[_]): Seq[T] = {
-    findBy(entityNameOf(clazz), keyName, values)
+  override def findBy[T <: Entity[_]](clazz: Class[T], keyName: String, value: Any): Seq[T] = {
+    findBy(entityNameOf(clazz), keyName, value)
   }
 
-  override def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T] = {
+  override def findBy[T <: Entity[_]](entityName: String, keyName: String, value: Any): Seq[T] = {
+    import scala.jdk.javaapi.CollectionConverters.asScala
+    value match {
+      case values: Iterable[_] => findByMulti[T](entityName, keyName, values)
+      case values: java.util.Collection[_] => findByMulti[T](entityName, keyName, asScala(values))
+      case values: Array[_] => findByMulti[T](entityName, keyName, values.toSeq)
+      case null => search[T](s"from ${entityName} entity where entity.${keyName} is null")
+      case anyVal => search[T](s"from ${entityName} entity where entity.${keyName} = ?1", value)
+    }
+  }
+
+  private def findByMulti[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T] = {
     if (values.isEmpty) return List.empty
     val hql = new StringBuilder()
     hql.append("select entity from ").append(entityName).append(" as entity where entity.").append(keyName)
@@ -230,6 +240,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
       rs.toList
     }
   }
+
 
   def find[T <: Entity[_]](clazz: Class[T], parameterMap: collection.Map[String, _]): Seq[T] = {
     if (clazz == null || parameterMap == null || parameterMap.isEmpty) {
