@@ -123,6 +123,16 @@ object QuerySupport {
     query
   }
 
+  def isMultiValue(value: Any): Boolean = {
+    value match {
+      case null => false
+      case av: Array[AnyRef] => true
+      case col: java.util.Collection[_] => true
+      case iter: Iterable[_] => true
+      case _ => false
+    }
+  }
+
   /**
     * 针对查询条件绑定查询的值
     */
@@ -193,19 +203,15 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
-  override def find[T <: Entity[ID], ID](clazz: Class[T], id: ID): Option[T] = {
-    find[T, ID](entityNameOf(clazz), id)
-  }
+  override def find[T <: Entity[ID], ID](clazz: Class[T], id: ID): Option[T] =
+    find[T, ID](clazz, id)
 
   override def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T] = {
-    findBy(entityNameOf(clazz), "id", ids)
+    findBy(clazz, "id", ids)
   }
 
   override def findBy[T <: Entity[_]](clazz: Class[T], keyName: String, value: Any): Seq[T] = {
-    findBy(entityNameOf(clazz), keyName, value)
-  }
-
-  override def findBy[T <: Entity[_]](entityName: String, keyName: String, value: Any): Seq[T] = {
+    val entityName = entityNameOf(clazz)
     import scala.jdk.javaapi.CollectionConverters.asScala
     value match {
       case values: Iterable[_] => findByMulti[T](entityName, keyName, values)
@@ -216,24 +222,23 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
+
   private def findByMulti[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T] = {
     if (values.isEmpty) return List.empty
-    val hql = new StringBuilder()
-    hql.append("select entity from ").append(entityName).append(" as entity where entity.").append(keyName)
-      .append(" in (:keyName)")
+    val hql = s"from ${entityName} as entity where entity.${keyName} in (:values)"
     val parameterMap = new mutable.HashMap[String, Any]
     if (values.size < 500) {
-      parameterMap.put("keyName", values)
-      val query = OqlBuilder.oql(hql.toString())
+      parameterMap.put("values", values)
+      val query = OqlBuilder.oql(hql)
       search(query.params(parameterMap).build())
     } else {
-      val query = OqlBuilder.oql(hql.toString())
+      val query = OqlBuilder.oql(hql)
       val rs = new mutable.ListBuffer[T]
       var i = 0
       while (i < values.size) {
         var end = i + 500
         if (end > values.size) end = values.size
-        parameterMap.put("keyName", values.slice(i, end))
+        parameterMap.put("values", values.slice(i, end))
         rs ++= search(query.params(parameterMap).build())
         i += 500
       }
@@ -241,121 +246,76 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
+  override def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T] = {
+    if (clazz == null || params == null || params.isEmpty) return List.empty
+    val entityName = entityNameOf(clazz)
+    val hql = new StringBuilder(s"from ${entityName}  where ")
+    val where = buildWhere(params)
+    hql.append(where._1)
+    search[T](hql.toString(), where._2)
+  }
 
-  def find[T <: Entity[_]](clazz: Class[T], parameterMap: collection.Map[String, _]): Seq[T] = {
-    if (clazz == null || parameterMap == null || parameterMap.isEmpty) {
-      return List.empty
-    }
-    val hql = new StringBuilder()
-    hql.append("select entity from ").append(entityNameOf(clazz)).append(" as entity ").append(" where ")
+  def TopN[T <: Entity[_]](clazz: Class[T], limit: Int, params: collection.Map[String, _], orderBy: String): Seq[T] = {
+    if (clazz == null || params == null || params.isEmpty) return List.empty
+    val entityName = entityNameOf(clazz)
+    val hql = new StringBuilder(s"from ${entityName}  where ")
+    val where = buildWhere(params)
+    hql.append(where._1)
+    if Strings.isNotBlank(orderBy) then hql.append(s" order by ${orderBy}")
+    val query = OqlBuilder.oql[T](hql.toString).params(where._2).limit(1, limit)
+    search(query)
+  }
 
-    val m = new mutable.HashMap[String, Any]
-    // 变量编号
+
+  private def buildWhere(params: collection.Map[String, _], prefix: String = ""): (String, collection.Map[String, Any]) = {
+    val parameterMap = new mutable.HashMap[String, Any]
+    val conditions = new mutable.ArrayBuffer[String]
     var i = 0
-    for ((keyName, keyValue) <- parameterMap; if Strings.isNotEmpty(keyName)) {
+    params foreach { case (k, v) =>
       i += 1
-
-      val tempName = Strings.split(keyName, "\\.")
+      val tempName = Strings.split(k, "\\.")
       val name = tempName(tempName.length - 1) + i
-      m.put(name, keyValue)
-
-      if (keyValue != null && isCollectionType(keyValue.getClass)) {
-        hql.append("entity.").append(keyName).append(" in (:").append(name).append(") and ")
-      } else {
-        hql.append("entity.").append(keyName).append(" = :").append(name).append(" and ")
-      }
+      if QuerySupport.isMultiValue(v) then
+        parameterMap.put(name, k)
+        conditions += s"${prefix}${k} in (:${name})"
+      else if v == null || v == None then
+        conditions += s"${prefix}${k} is null"
+      else
+        conditions += s"${prefix}${k} = :${name}"
+      end if
     }
-    if (i > 0) hql.delete(hql.length() - " and ".length(), hql.length())
-    search(hql.toString, m)
+    (conditions.mkString(" and "), parameterMap)
   }
 
-  def count(entityName: String, keyName: String, value: Any): Long = {
-    val hql = "select count(*) from " + entityName + " where " + keyName + "=:value"
-    val rs = search(hql, Map("value" -> value))
-    if (rs.isEmpty) 0 else rs.head.asInstanceOf[Number].longValue
+  override def count(clazz: Class[_], keyName: String, value: Any): Int = {
+    count(clazz, Map(keyName -> value))
   }
 
-  override def count(entityClass: Class[_], keyName: String, value: Any): Long = {
-    count(entityClass.getName, keyName, value)
+  override def count(clazz: Class[_], params: collection.Map[String, _]): Int = {
+    val entityName = entityNameOf(clazz)
+    val where = buildWhere(params)
+    val hql = s"select count(*) from ${entityName} where " + where._1
+    val rs = search[Number](hql, where._2)
+    if (rs.isEmpty) 0 else rs.head.intValue()
   }
 
-  def count(entityClass: Class[_], attrs: Iterable[String], values: Iterable[_], countAttr: String): Long = {
-    Assert.isTrue(null != attrs && null != values && attrs.size == values.size)
-
-    val entityName = entityClass.getName
-    val hql = new StringBuilder()
-    if (Strings.isNotEmpty(countAttr)) {
-      hql.append("select count(distinct ").append(countAttr).append(") from ")
-    } else {
-      hql.append("select count(*) from ")
-    }
-    hql.append(entityName).append(" as entity where ")
-    val params = new mutable.HashMap[String, Any]
-    val attrIter = attrs.iterator
-    val valueIter = values.iterator
-    for (i <- 0 until attrs.size) {
-      val attr = attrIter.next()
-      if (Strings.isNotEmpty(attr)) {
-        val keyName = Strings.replace(attr, ".", "_")
-        val keyValue = valueIter.next()
-        params += (keyName -> keyValue)
-        if (keyValue != null && isCollectionType(keyValue.getClass)) {
-          hql.append("entity.").append(attr).append(" in (:").append(keyName).append(')')
-        } else {
-          hql.append("entity.").append(attr).append(" = :").append(keyName)
-        }
-        if (i < attrs.size - 1) hql.append(" and ")
-      }
-    }
-    search(hql.toString, params).head.asInstanceOf[Number].longValue
+  override def exists(clazz: Class[_], attr: String, value: Any): Boolean = {
+    count(clazz, attr, value) > 0
   }
 
-  override def exists(entityClass: Class[_], attr: String, value: Any): Boolean = {
-    count(entityClass, attr, value) > 0
+  override def exists(clazz: Class[_], params: collection.Map[String, _]): Boolean = {
+    count(clazz, params) > 0
   }
 
-  override def exists(entityName: String, attr: String, value: Any): Boolean = {
-    count(entityName, attr, value) > 0
-  }
-
-  def exists(entityClass: Class[_], attrs: Iterable[String], values: Iterable[_]): Boolean = {
-    count(entityClass, attrs, values, null) > 0
-  }
-
-  override def duplicate(clazz: Class[_], id: Any, params: collection.Map[String, _]): Boolean = {
-    duplicate(entityNameOf(clazz), id, params)
-  }
-
-  override def duplicate(entityName: String, id: Any, params: collection.Map[String, _]): Boolean = {
-    val b = new StringBuilder("from ")
-    b.append(entityName).append(" where ")
-    val paramsMap = new mutable.HashMap[String, Any]
-    var i = 0
-    for ((key, value) <- params) {
-      b.append(key).append('=').append(":param" + i)
-      paramsMap.put("param" + i, value)
-      i += 1
-      if (i < params.size) b.append(" and ")
-    }
-    val list = search(b.toString, paramsMap).asInstanceOf[Seq[Entity[_]]]
+  override def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, params: collection.Map[String, _]): Boolean = {
+    val entityName = entityNameOf(clazz)
+    val where = buildWhere(params)
+    val hql = s"from ${entityName} where " + where._1
+    val list = search[T](hql, where._2)
     if (list.isEmpty) {
       false
     } else {
-      if (id == null) true else list.exists(e => e.id != id)
-    }
-  }
-
-  /**
-    * 检查持久化对象是否存在e
-    *
-    * @return boolean(是否存在) 如果entityId为空或者有不一样的entity存在则认为存在。
-    */
-  override def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, codeName: String, codeValue: Any): Boolean = {
-    val list = findBy(clazz, codeName, List(codeValue))
-    if (list.isEmpty) {
-      false
-    } else {
-      if (id == null) true else list.exists(e => e.id != id)
+      if id == null then true else list.exists(e => e.id != id)
     }
   }
 
@@ -469,36 +429,15 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   override def remove[T <: Entity[ID], ID](clazz: Class[T], id: ID, ids: ID*): Unit = {
-    removeBy(clazz, "id", id :: ids.toList)
+    val idList: Iterable[_] = id :: ids.toList
+    removeBy(clazz, Map("id" -> idList))
   }
 
-  def removeBy(clazz: Class[_], attr: String, first: Any, values: Any*): Boolean = {
-    removeBy(clazz, attr, first :: values.toList)
-  }
-
-  def removeBy(clazz: Class[_], attr: String, values: Iterable[_]): Boolean = {
-    if (clazz == null || Strings.isEmpty(attr) || values.isEmpty) return false
-    val hql = new StringBuilder()
-    hql.append("delete from ").append(entityNameOf(clazz)).append(" where ").append(attr).append(" in (:ids)")
-    executeUpdate(hql.toString(), Map("ids" -> values)) > 0
-  }
-
-  def remove(clazz: Class[_], keyMap: collection.Map[String, _]): Boolean = {
-    if (clazz == null || keyMap == null || keyMap.isEmpty) return false
-    val hql = new StringBuilder()
-    hql.append("delete from ").append(entityNameOf(clazz)).append(" where ")
-    val params = new mutable.HashMap[String, Any]
-    for ((keyName, keyValue) <- keyMap) {
-      val paramName = keyName.replace('.', '_')
-      params.put(paramName, keyValue)
-      if (isCollectionType(keyValue.getClass)) {
-        hql.append(keyName).append(" in (:").append(paramName).append(") and ")
-      } else {
-        hql.append(keyName).append(" = :").append(paramName).append(" and ")
-      }
-    }
-    hql.append(" (1=1) ")
-    executeUpdate(hql.toString(), params) > 0
+  override def removeBy(clazz: Class[_], params: collection.Map[String, _]): Int = {
+    if (clazz == null || params == null || params.isEmpty) return 0
+    val where = buildWhere(params)
+    val hql = s"delete from ${entityNameOf(clazz)} where " + where._1
+    executeUpdate(hql, where._2)
   }
 
   override def executeUpdate(queryString: String, parameterMap: collection.Map[String, _]): Int = {
@@ -574,17 +513,6 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
         val en = if (null == entityName) entityNameOf(entity.getClass) else entityName
         session.saveOrUpdate(en, entity)
     }
-  }
-
-  def saveOrUpdate[T <: Entity[_]](entityName: String, entities: collection.Seq[T]): Unit = {
-    if (entities.nonEmpty) {
-      for (entity <- entities)
-        persistEntity(entity, entityName)
-    }
-  }
-
-  def saveOrUpdate[T <: Entity[_]](entityName: String, first: T, entities: T*): Unit = {
-    saveOrUpdate(entityName, first :: entities.toList)
   }
 
   // update entityClass set [argumentName=argumentValue,]* where attr in values

@@ -46,9 +46,20 @@ trait EntityDao {
 
   def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T]
 
-  def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, value: Any): Seq[T]
+  def findBy[T <: Entity[_]](clazz: Class[T], keyName: String, value: Any): Seq[T]
 
-  def findBy[T <: Entity[_]](entityName: String, keyName: String, value: Any): Seq[T]
+  def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T]
+
+  /** Get Top N entities
+    *
+    * @param clazz
+    * @param limit
+    * @param params
+    * @param orderBy
+    * @tparam T
+    * @return
+    */
+  def TopN[T <: Entity[_]](clazz: Class[T], limit: Int, params: collection.Map[String, _], orderBy: String): Seq[T]
 
   /**
     * save or update entities
@@ -74,6 +85,14 @@ trait EntityDao {
     * remove entities by id
     */
   def remove[T <: Entity[ID], ID](clazz: Class[T], id: ID, ids: ID*): Unit
+
+  /** Remove entities by params
+    *
+    * @param clazz
+    * @param params
+    * @return
+    */
+  def removeBy(clazz: Class[_], params: collection.Map[String, _]): Int
 
   /**
     * Search by QueryBuilder
@@ -124,17 +143,15 @@ trait EntityDao {
 
   def refresh[T](entity: T): T
 
-  def count(entityClass: Class[_], keyName: String, value: Any): Long
+  def count(clazz: Class[_], keyName: String, value: Any): Int
 
-  def exists(entityClass: Class[_], attr: String, value: Any): Boolean
+  def count(clazz: Class[_], params: collection.Map[String, _]): Int
 
-  def exists(entityName: String, attr: String, value: Any): Boolean
+  def exists(clazz: Class[_], attr: String, value: Any): Boolean
 
-  def duplicate(entityClass: Class[_], id: Any, params: collection.Map[String, _]): Boolean
+  def exists(clazz: Class[_], params: collection.Map[String, _]): Boolean
 
-  def duplicate(entityName: String, id: Any, params: collection.Map[String, _]): Boolean
-
-  def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, codeName: String, codeValue: Any): Boolean
+  def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, params: collection.Map[String, _]): Boolean
 
   def domain: Domain
 }

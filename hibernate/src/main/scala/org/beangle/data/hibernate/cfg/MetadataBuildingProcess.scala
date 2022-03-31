@@ -17,7 +17,6 @@
 
 package org.beangle.data.hibernate.cfg
 
-
 import org.hibernate.`type`.spi.TypeConfiguration
 import org.hibernate.`type`.{BasicType, BasicTypeRegistry}
 import org.hibernate.boot.MetadataSources
