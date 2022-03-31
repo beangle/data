@@ -96,7 +96,7 @@ object QuerySupport {
       var i = 1
       val iter = argument.iterator
       while (iter.hasNext) {
-        query.setParameter(String.valueOf(i), iter.next().asInstanceOf[AnyRef])
+        query.setParameter(i, iter.next().asInstanceOf[AnyRef])
         i += 1
       }
     }
