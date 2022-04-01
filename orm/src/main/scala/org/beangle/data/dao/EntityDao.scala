@@ -46,20 +46,11 @@ trait EntityDao {
 
   def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T]
 
-  def findBy[T <: Entity[_]](clazz: Class[T], keyName: String, value: Any): Seq[T]
+  def findBy[T <: Entity[_]](clazz: Class[T], key: String, value: Any): Seq[T]
+
+  def findBy[T <: Entity[_]](clazz: Class[T], kv: Tuple2[String, Any]*): Seq[T]
 
   def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T]
-
-  /** Get Top N entities
-    *
-    * @param clazz
-    * @param limit
-    * @param params
-    * @param orderBy
-    * @tparam T
-    * @return
-    */
-  def TopN[T <: Entity[_]](clazz: Class[T], limit: Int, params: collection.Map[String, _], orderBy: String): Seq[T]
 
   /**
     * save or update entities
@@ -110,10 +101,31 @@ trait EntityDao {
 
   def search[T](queryString: String, params: collection.Map[String, _], limit: PageLimit, cacheable: Boolean): Seq[T]
 
-  /**
-    * Search Unique Result
+  /** Get Top N entities
+    *
+    * @param builder
+    * @tparam T
+    * @return
     */
-  def uniqueResult[T](builder: QueryBuilder[T]): T
+  def topN[T](limit: Int, builder: QueryBuilder[T]): Seq[T]
+
+  /** Get Top N entities
+    *
+    * @param limit
+    * @param queryString
+    * @param params
+    * @tparam T
+    * @return
+    */
+  def topN[T](limit: Int, queryString: String, params: Any*): Seq[T]
+
+  /** Search Unique Result
+    */
+  def unique[T](builder: QueryBuilder[T]): T
+
+  /** Get first
+    * */
+  def first[T](builder: QueryBuilder[T]): Option[T]
 
   /** 在同一个session保存、删除
     */
@@ -143,11 +155,11 @@ trait EntityDao {
 
   def refresh[T](entity: T): T
 
-  def count(clazz: Class[_], keyName: String, value: Any): Int
+  def count(clazz: Class[_], kvs: Tuple2[String, Any]*): Int
 
   def count(clazz: Class[_], params: collection.Map[String, _]): Int
 
-  def exists(clazz: Class[_], attr: String, value: Any): Boolean
+  def exists(clazz: Class[_], kv: Tuple2[String, Any]*): Boolean
 
   def exists(clazz: Class[_], params: collection.Map[String, _]): Boolean
 

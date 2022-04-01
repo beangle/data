@@ -207,21 +207,25 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     find[T, ID](clazz, id)
 
   override def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T] = {
-    findBy(clazz, "id", ids)
+    findByMulti(entityNameOf(clazz), "id", ids)
   }
 
-  override def findBy[T <: Entity[_]](clazz: Class[T], keyName: String, value: Any): Seq[T] = {
+  override def findBy[T <: Entity[_]](clazz: Class[T], key: String, value: Any): Seq[T] = {
+    findBy(clazz, Map(key -> value))
+  }
+
+  override def findBy[T <: Entity[_]](clazz: Class[T], kvs: Tuple2[String, Any]*): Seq[T] = {
+    findBy(clazz, kvs.toMap)
+  }
+
+  override def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T] = {
+    if (clazz == null || params == null || params.isEmpty) return List.empty
     val entityName = entityNameOf(clazz)
-    import scala.jdk.javaapi.CollectionConverters.asScala
-    value match {
-      case values: Iterable[_] => findByMulti[T](entityName, keyName, values)
-      case values: java.util.Collection[_] => findByMulti[T](entityName, keyName, asScala(values))
-      case values: Array[_] => findByMulti[T](entityName, keyName, values.toSeq)
-      case null => search[T](s"from ${entityName} entity where entity.${keyName} is null")
-      case anyVal => search[T](s"from ${entityName} entity where entity.${keyName} = ?1", value)
-    }
+    val hql = new StringBuilder(s"from ${entityName}  where ")
+    val where = buildWhere(params)
+    hql.append(where._1)
+    search[T](hql.toString(), where._2)
   }
-
 
   private def findByMulti[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T] = {
     if (values.isEmpty) return List.empty
@@ -246,27 +250,6 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
-  override def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T] = {
-    if (clazz == null || params == null || params.isEmpty) return List.empty
-    val entityName = entityNameOf(clazz)
-    val hql = new StringBuilder(s"from ${entityName}  where ")
-    val where = buildWhere(params)
-    hql.append(where._1)
-    search[T](hql.toString(), where._2)
-  }
-
-  def TopN[T <: Entity[_]](clazz: Class[T], limit: Int, params: collection.Map[String, _], orderBy: String): Seq[T] = {
-    if (clazz == null || params == null || params.isEmpty) return List.empty
-    val entityName = entityNameOf(clazz)
-    val hql = new StringBuilder(s"from ${entityName}  where ")
-    val where = buildWhere(params)
-    hql.append(where._1)
-    if Strings.isNotBlank(orderBy) then hql.append(s" order by ${orderBy}")
-    val query = OqlBuilder.oql[T](hql.toString).params(where._2).limit(1, limit)
-    search(query)
-  }
-
-
   private def buildWhere(params: collection.Map[String, _], prefix: String = ""): (String, collection.Map[String, Any]) = {
     val parameterMap = new mutable.HashMap[String, Any]
     val conditions = new mutable.ArrayBuffer[String]
@@ -276,19 +259,20 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
       val tempName = Strings.split(k, "\\.")
       val name = tempName(tempName.length - 1) + i
       if QuerySupport.isMultiValue(v) then
-        parameterMap.put(name, k)
+        parameterMap.put(name, v)
         conditions += s"${prefix}${k} in (:${name})"
       else if v == null || v == None then
         conditions += s"${prefix}${k} is null"
       else
+        parameterMap.put(name, v)
         conditions += s"${prefix}${k} = :${name}"
       end if
     }
     (conditions.mkString(" and "), parameterMap)
   }
 
-  override def count(clazz: Class[_], keyName: String, value: Any): Int = {
-    count(clazz, Map(keyName -> value))
+  override def count(clazz: Class[_], kvs: Tuple2[String, Any]*): Int = {
+    count(clazz, kvs.toMap)
   }
 
   override def count(clazz: Class[_], params: collection.Map[String, _]): Int = {
@@ -299,8 +283,8 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     if (rs.isEmpty) 0 else rs.head.intValue()
   }
 
-  override def exists(clazz: Class[_], attr: String, value: Any): Boolean = {
-    count(clazz, attr, value) > 0
+  override def exists(clazz: Class[_], kvs: Tuple2[String, Any]*): Boolean = {
+    count(clazz, kvs.toMap) > 0
   }
 
   override def exists(clazz: Class[_], params: collection.Map[String, _]): Boolean = {
@@ -340,17 +324,6 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     search[T](builder.build())
   }
 
-  override def uniqueResult[T](builder: QueryBuilder[T]): T = {
-    val list = search(builder.build())
-    if (list.isEmpty) {
-      null.asInstanceOf[T]
-    } else if (list.size == 1) {
-      list.head
-    } else {
-      throw new RuntimeException("not unique query" + builder)
-    }
-  }
-
   override def search[T](query: String, params: Any*): Seq[T] = {
     list[T](setParameters(getNamedOrCreateQuery[T](query), params))
   }
@@ -364,6 +337,32 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     query.setCacheable(cacheable)
     if (null == limit) list(setParameters(query, params))
     else paginateQuery(query, params, limit)
+  }
+
+
+  override def unique[T](builder: QueryBuilder[T]): T = {
+    val list = search(builder.build())
+    if (list.isEmpty) {
+      null.asInstanceOf[T]
+    } else if (list.size == 1) {
+      list.head
+    } else {
+      throw new RuntimeException("not unique query" + builder)
+    }
+  }
+
+  override def first[T](builder: QueryBuilder[T]): Option[T] = {
+    search(builder.build()).headOption
+  }
+
+  override def topN[T](limit: Int, builder: QueryBuilder[T]): Seq[T] = {
+    builder.limit(PageLimit(1, limit))
+    doFind(builder.build(), currentSession)
+  }
+
+  override def topN[T](limit: Int, queryString: String, params: Any*): Seq[T] = {
+    val query = setParameters(getNamedOrCreateQuery[T](queryString), params)
+    list(query.setMaxResults(limit))
   }
 
   private def paginateQuery[T](query: Query[T], params: collection.Map[String, _], limit: PageLimit): Page[T] = {
