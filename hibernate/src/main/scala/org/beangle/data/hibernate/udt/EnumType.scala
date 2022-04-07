@@ -17,7 +17,8 @@
 
 package org.beangle.data.hibernate.udt
 
-import org.beangle.commons.conversion.converter.String2ScalaEnumConverter
+import org.beangle.commons.conversion.Converter
+import org.beangle.commons.conversion.string.EnumConverters
 import org.hibernate.engine.spi.{SessionImplementor, SharedSessionContractImplementor}
 import org.hibernate.usertype.{ParameterizedType, UserType}
 
@@ -28,7 +29,7 @@ import org.beangle.commons.lang.Enums
 
 class EnumType extends UserType with ParameterizedType {
 
-  private var converter: String2ScalaEnumConverter.EnumConverter[Object] = _
+  private var converter: Converter[String,Object] = _
 
   var returnedClass: Class[_] = _
 
@@ -45,7 +46,7 @@ class EnumType extends UserType with ParameterizedType {
   override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SharedSessionContractImplementor, owner: Object): Object = {
     if (ordinal) {
       val value = resultSet.getInt(names(0))
-      if resultSet.wasNull() then null else converter.apply(value)
+      if resultSet.wasNull() then null else converter.apply(value.toString)
     } else {
       val value = resultSet.getString(names(0))
       if resultSet.wasNull() then null else converter.apply(value)
@@ -71,7 +72,7 @@ class EnumType extends UserType with ParameterizedType {
   override def setParameterValues(parameters: ju.Properties): Unit = {
     val enumClass = parameters.getProperty("enumClass")
     returnedClass = Class.forName(enumClass)
-    converter = String2ScalaEnumConverter.newConverter(returnedClass)
+    converter = EnumConverters.getConverter(returnedClass).get
   }
 
   override def deepCopy(value: Object): Object = value

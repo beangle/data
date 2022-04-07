@@ -19,7 +19,7 @@ package org.beangle.data.hibernate.cfg
 
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.internal.MetadataBuilderImpl
-import org.hibernate.boot.spi._
+import org.hibernate.boot.spi.*
 
 /** Register in META-INF/services/org.hibernate.boot.spi.MetadataBuilderFactory
   *
@@ -27,17 +27,15 @@ import org.hibernate.boot.spi._
   *
   */
 class BeangleMetadataBuilderFactory extends MetadataBuilderFactory {
-
   def getMetadataBuilder(sources: MetadataSources, defaultBuilder: MetadataBuilderImplementor): MetadataBuilderImplementor = {
-    new BeangleMetadataBuilderImpl(sources)
+    new BeangleMetadataBuilderFactory.MetadataBuilder(sources)
   }
+}
 
-  class BeangleMetadataBuilderImpl(sources: MetadataSources) extends MetadataBuilderImpl(sources) {
-
+object BeangleMetadataBuilderFactory {
+  class MetadataBuilder(sources: MetadataSources) extends MetadataBuilderImpl(sources) {
     override def build(): MetadataImplementor = {
       MetadataBuildingProcess.build(sources, getBootstrapContext, getMetadataBuildingOptions)
     }
-
   }
-
 }

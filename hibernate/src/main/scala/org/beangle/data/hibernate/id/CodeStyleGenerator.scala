@@ -31,7 +31,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor
 /**
  * Id generator based on function or procedure
  */
-class CodeStyleGenerator extends IdentifierGenerator with Configurable {
+class CodeStyleGenerator extends IdentifierGenerator {
   var identifierType: Type = _
 
   override def configure(t: Type, params: ju.Properties, sr: ServiceRegistry): Unit = {

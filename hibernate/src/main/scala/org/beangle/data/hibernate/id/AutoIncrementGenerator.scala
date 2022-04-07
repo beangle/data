@@ -30,7 +30,7 @@ import org.hibernate.id.{Configurable, IdentifierGenerator}
 import org.hibernate.jdbc.AbstractReturningWork
 import org.hibernate.service.ServiceRegistry
 
-class AutoIncrementGenerator extends IdentifierGenerator with Configurable {
+class AutoIncrementGenerator extends IdentifierGenerator {
   var identifierType: Type = _
   val sql = "{? = call next_id(?)}"
   var tableName: String = _
