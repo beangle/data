@@ -23,16 +23,16 @@ class H2(v: String) extends AbstractEngine(Version(v)) {
   registerReserved("h2.txt")
 
   registerTypes(
-    CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "longvarchar",
+    CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "character varying",
     BOOLEAN -> "boolean", BIT -> "bit",
     TINYINT -> "tinyint", SMALLINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
     FLOAT -> "float", DOUBLE -> "double",
-    DECIMAL -> "decimal", NUMERIC -> "numeric",
+    DECIMAL -> "decimal", NUMERIC -> "numeric($p,$s)",
     DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
-    BINARY -> "binary", VARBINARY -> "varbinary($l)", LONGVARBINARY -> "longvarbinary",
+    BINARY -> "binary($l)", VARBINARY -> "varbinary($l)", LONGVARBINARY -> "longvarbinary",
     BLOB -> "longvarbinary", CLOB -> "longvarchar")
 
-  metadataLoadSql.sequenceSql = "select sequence_name,current_value,increment,cache from information_schema.sequences where sequence_schema=':schema'"
+  metadataLoadSql.sequenceSql = "select sequence_name,base_value,increment,cache from information_schema.sequences where sequence_schema=':schema'"
 
   options.sequence { s =>
     s.nextValSql = "call next value for {name}"

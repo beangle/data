@@ -22,5 +22,5 @@ import org.beangle.data.model.pojo.Named
 
 class UserProperty extends LongId with Named {
   var user: TestUser = _
-  var value: String = _
+  var _value: String = _
 }

@@ -1,1 +1,2 @@
-_rowid_,if,ilike,intersects,minus,qualify,regexp,rownum,sysdate,systime,systimestamp,today,top
+_rowid_,if,ilike,intersects,minus,qualify,regexp,rownum,sysdate,systime,systimestamp,today,top,
+value,year

@@ -139,7 +139,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
     val fixedEntityName = if (entityName == null) Jpas.findEntityName(cls) else entityName
     val entity = refEntity(cls, fixedEntityName)
-    manifest.readables foreach { case(name,prop) =>
+    manifest.readables foreach { case (name, prop) =>
       if (!prop.isTransient && prop.readable && prop.writable && !entity.properties.contains(name)) {
         val typeinfo = prop.typeinfo
         val propType = if typeinfo.isOptional then typeinfo.args(0).clazz else typeinfo.clazz
@@ -190,7 +190,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     var colName = if (lastDot == -1) propertyName else propertyName.substring(lastDot + 1)
     colName = if (key) colName + "Id" else colName
     colName = profiles.getNamingPolicy(clazz).propertyToColumnName(clazz, colName)
-    colName
+    if database.engine.keywords.contains(colName) then colName + "_"
+    else colName
   }
 
   /** 查找实体主键
@@ -422,7 +423,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val cpm = new OrmSingularProperty(name, propertyType, optional, oet)
     c.addProperty(cpm)
     val manifest = BeanInfos.get(propertyType)
-    manifest.readables foreach { case(name,prop) =>
+    manifest.readables foreach { case (name, prop) =>
       if (!prop.isTransient && prop.readable && prop.writable) {
         val typeinfo = prop.typeinfo
         val propType = if typeinfo.isOptional then typeinfo.args(0).clazz else typeinfo.clazz
@@ -446,7 +447,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   private def detectValueType(clazz: Class[_]): Unit = {
-    if (clazz == classOf[Object])  throw new RuntimeException("Cannot find scalar type for object")
+    if (clazz == classOf[Object]) throw new RuntimeException("Cannot find scalar type for object")
     if (clazz.isAnnotationPresent(classOf[value])) {
       valueTypes += clazz
     } else if (classOf[_root_.scala.reflect.Enum].isAssignableFrom(clazz)) {
@@ -519,7 +520,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     } else if (isComponent(clazz)) {
       val e = new OrmEmbeddableType(clazz)
       val manifest = BeanInfos.get(clazz)
-      manifest.readables foreach { case (name,prop) =>
+      manifest.readables foreach { case (name, prop) =>
         if (!prop.isTransient && prop.readable && prop.writable) {
           val optional = prop.typeinfo.isOptional
           val propType = prop.typeinfo.clazz
@@ -559,10 +560,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   private def bindScalar(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo): Unit = {
-    val clazz = if(typeInfo.isOptional) typeInfo.args(0).clazz else typeInfo.clazz
-    if(clazz == classOf[AnyRef]){
-      println("xxxx")
-    }
+    val clazz = if (typeInfo.isOptional) typeInfo.args(0).clazz else typeInfo.clazz
     detectValueType(clazz)
     val column = newColumn(columnName(c.clazz, name), clazz, typeInfo.isOptional)
     val property = new OrmSingularProperty(name, clazz, typeInfo.isOptional, new OrmBasicType(clazz, column))
