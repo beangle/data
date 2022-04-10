@@ -339,7 +339,6 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     else paginateQuery(query, params, limit)
   }
 
-
   override def unique[T](builder: QueryBuilder[T]): T = {
     val list = search(builder.build())
     if (list.isEmpty) {
