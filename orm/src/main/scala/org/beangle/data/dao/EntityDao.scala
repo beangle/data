@@ -46,9 +46,11 @@ trait EntityDao {
 
   def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T]
 
-  def findBy[T <: Entity[_]](entityClass: Class[T], keyName: String, values: Iterable[_]): Seq[T]
+  def findBy[T <: Entity[_]](clazz: Class[T], key: String, value: Any): Seq[T]
 
-  def findBy[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T]
+  def findBy[T <: Entity[_]](clazz: Class[T], kv: Tuple2[String, Any]*): Seq[T]
+
+  def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T]
 
   /**
     * save or update entities
@@ -75,6 +77,14 @@ trait EntityDao {
     */
   def remove[T <: Entity[ID], ID](clazz: Class[T], id: ID, ids: ID*): Unit
 
+  /** Remove entities by params
+    *
+    * @param clazz
+    * @param params
+    * @return
+    */
+  def removeBy(clazz: Class[_], params: collection.Map[String, _]): Int
+
   /**
     * Search by QueryBuilder
     */
@@ -91,10 +101,31 @@ trait EntityDao {
 
   def search[T](queryString: String, params: collection.Map[String, _], limit: PageLimit, cacheable: Boolean): Seq[T]
 
-  /**
-    * Search Unique Result
+  /** Get Top N entities
+    *
+    * @param builder
+    * @tparam T
+    * @return
     */
-  def uniqueResult[T](builder: QueryBuilder[T]): T
+  def topN[T](limit: Int, builder: QueryBuilder[T]): Seq[T]
+
+  /** Get Top N entities
+    *
+    * @param limit
+    * @param queryString
+    * @param params
+    * @tparam T
+    * @return
+    */
+  def topN[T](limit: Int, queryString: String, params: Any*): Seq[T]
+
+  /** Search Unique Result
+    */
+  def unique[T](builder: QueryBuilder[T]): T
+
+  /** Get first
+    * */
+  def first[T](builder: QueryBuilder[T]): Option[T]
 
   /** 在同一个session保存、删除
     */
@@ -124,17 +155,15 @@ trait EntityDao {
 
   def refresh[T](entity: T): T
 
-  def count(entityClass: Class[_], keyName: String, value: Any): Long
+  def count(clazz: Class[_], kvs: Tuple2[String, Any]*): Int
 
-  def exists(entityClass: Class[_], attr: String, value: Any): Boolean
+  def count(clazz: Class[_], params: collection.Map[String, _]): Int
 
-  def exists(entityName: String, attr: String, value: Any): Boolean
+  def exists(clazz: Class[_], kv: Tuple2[String, Any]*): Boolean
 
-  def duplicate(entityClass: Class[_], id: Any, params: collection.Map[String, _]): Boolean
+  def exists(clazz: Class[_], params: collection.Map[String, _]): Boolean
 
-  def duplicate(entityName: String, id: Any, params: collection.Map[String, _]): Boolean
-
-  def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, codeName: String, codeValue: Any): Boolean
+  def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, params: collection.Map[String, _]): Boolean
 
   def domain: Domain
 }

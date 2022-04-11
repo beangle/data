@@ -18,9 +18,9 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings.split
+import org.beangle.commons.xml.NodeOps._
+import org.beangle.commons.xml.XmlNode
 import org.beangle.data.jdbc.engine.Engines
-import org.beangle.data.jdbc.internal.NodeOps._
-import org.beangle.data.jdbc.internal.XmlNode
 
 import java.io.StringReader
 import scala.language.implicitConversions

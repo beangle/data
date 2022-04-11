@@ -18,7 +18,7 @@
 package org.beangle.data.orm.cfg
 
 import org.beangle.commons.config.Resources
-import org.beangle.commons.lang.Strings._
+import org.beangle.commons.lang.Strings.*
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.commons.logging.Logging
@@ -45,8 +45,10 @@ class Profiles(resources: Resources) extends Logging {
   }
 
   private def init(): Unit = {
-    namings.put("rails", new RailsNamingPolicy(this))
-    defaultProfile.naming = new RailsNamingPolicy(this)
+    val rails = new RailsNamingPolicy(this)
+    namings.put("rails", rails)
+    namings.put("ejb3", new EJB3NamingPolicy(this))
+    defaultProfile.naming = rails
     globalSchema foreach { s =>
       defaultProfile._schema = Some(s)
     }
@@ -145,8 +147,8 @@ class Profiles(resources: Resources) extends Logging {
   }
 
   /**
-   * adjust parent relation by package name
-   */
+    * adjust parent relation by package name
+    */
   private def autoWire(): Unit = {
     if (profiles.size > 1) {
       profiles.foreach {
@@ -190,7 +192,14 @@ class Profiles(resources: Resources) extends Logging {
     if (namings.contains(naming)) {
       profile.naming = namings(naming)
     } else {
-      throw new RuntimeException("Cannot find naming policy :" + naming)
+      try {
+        val policyClzz=ClassLoaders.load(naming)
+        val policy = policyClzz.getConstructor(classOf[Profiles]).newInstance(this).asInstanceOf[NamingPolicy]
+        namings.put(naming, policy)
+        profile.naming = policy
+      } catch {
+        case e: Exception => throw new RuntimeException("Cannot find naming policy :" + naming+" due to "+e.getMessage)
+      }
     }
     profiles.put(profile.packageName, profile)
     profile.parent = Option(parent)
