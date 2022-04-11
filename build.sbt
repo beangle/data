@@ -13,41 +13,44 @@ ThisBuild / scmInfo := Some(
 
 ThisBuild / developers := List(
   Developer(
-    id    = "chaostone",
-    name  = "Tihua Duan",
+    id = "chaostone",
+    name = "Tihua Duan",
     email = "duantihua@gmail.com",
-    url   = url("http://github.com/duantihua")
+    url = url("http://github.com/duantihua")
   )
 )
 
 ThisBuild / description := "The Beangle Data Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
 
-val beangle_common_ver="5.2.13"
+val beangle_common_ver = "5.2.13"
 
 val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % beangle_common_ver
 val beangle_commons_text = "org.beangle.commons" %% "beangle-commons-text" % beangle_common_ver
-val apache_common_jexl_ver="3.2.1"
+val apache_common_jexl_ver = "3.2.1"
 
-val commonDeps = Seq(beangle_commons_core, logback_classic, logback_core, scalatest)
+val commonDeps = Seq(beangle_commons_core, logback_classic % "test", logback_core % "test", scalatest)
 
 lazy val root = (project in file("."))
   .settings()
-  .aggregate(jdbc,orm,excel,csv,dbf,transfer)
+  .aggregate(jdbc, orm, excel, csv, dbf, transfer)
 
 lazy val jdbc = (project in file("jdbc"))
   .settings(
     name := "beangle-data-jdbc",
     common,
-    libraryDependencies ++= (commonDeps ++ Seq(scalaxml,HikariCP,h2))
+    libraryDependencies ++= (commonDeps ++ Seq(scalaxml, HikariCP % "optional", h2 % "test"))
   )
 
 lazy val orm = (project in file("orm"))
   .settings(
     name := "beangle-data-orm",
     common,
-    libraryDependencies ++= (commonDeps ++ Seq(beangle_commons_text,javassist,jpa)),
-    libraryDependencies ++= Seq(hibernate_core,h2,HikariCP,postgresql,spring_tx,spring_aop,spring_jdbc,hibernate_jcache,ehcache)
+    libraryDependencies ++= commonDeps,
+    libraryDependencies ++= Seq(beangle_commons_text, javassist, jpa),
+    libraryDependencies ++= Seq(hibernate_core, spring_tx, spring_aop, spring_jdbc),
+    libraryDependencies ++= Seq(hibernate_jcache % "optional", ehcache % "optional"),
+    libraryDependencies ++= Seq(h2 % "test", HikariCP % "test", postgresql % "test")
   ).dependsOn(jdbc)
 
 lazy val csv = (project in file("csv"))
@@ -77,7 +80,7 @@ lazy val transfer = (project in file("transfer"))
     name := "beangle-data-transfer",
     common,
     libraryDependencies ++= commonDeps
-  ).dependsOn(orm,excel,csv)
+  ).dependsOn(orm, excel, csv)
 
 publish / skip := true
 orm / Test / parallelExecution := false
