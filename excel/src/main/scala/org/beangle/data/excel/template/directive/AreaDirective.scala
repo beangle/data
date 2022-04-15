@@ -15,33 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.excel
+package org.beangle.data.excel.template.directive
 
-import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.exporter.ExportContext
-import org.beangle.data.transfer.io.Writer
-import org.beangle.data.excel.template.TransformHelper
+import org.beangle.data.excel.{CellRef, Size}
+import org.beangle.data.excel.template.Context
 
-import java.io.OutputStream
-import java.net.URL
-
-class ExcelTemplateWriter(val template: URL, val context: ExportContext, val outputStream: OutputStream)
-  extends Writer {
-
-  val transformHelper = new TransformHelper(template.openStream())
-
-  /**
-   * write.
-   */
-  def write(): Unit = {
-    transformHelper.transform(outputStream, context.datas)
-  }
-
-  override def format: Format = {
-    Format.Xls
-  }
-
-  override def close(): Unit = {
-
-  }
+class AreaDirective extends AbstractDirective {
+  override def applyAt(cellRef: CellRef, context: Context): Size = Size.Zero
 }

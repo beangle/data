@@ -24,8 +24,8 @@ import org.apache.poi.xssf.streaming.{SXSSFSheet, SXSSFWorkbook}
 import org.apache.poi.xssf.usermodel._
 import org.beangle.commons.lang.Numbers
 import org.beangle.data.transfer.Format
-import org.beangle.doc.excel.CellOps._
-import org.beangle.doc.excel.ExcelStyleRegistry
+import org.beangle.data.excel.CellOps._
+import org.beangle.data.excel.ExcelStyleRegistry
 import org.beangle.data.transfer.exporter.ExportContext
 import org.beangle.data.transfer.io.ItemWriter
 
