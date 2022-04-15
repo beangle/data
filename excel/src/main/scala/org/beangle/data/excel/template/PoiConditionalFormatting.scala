@@ -15,33 +15,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.excel
+package org.beangle.data.excel.template
 
-import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.exporter.ExportContext
-import org.beangle.data.transfer.io.Writer
-import org.beangle.data.excel.template.TransformHelper
+import org.apache.poi.ss.usermodel.{ConditionalFormatting, ConditionalFormattingRule}
+import org.apache.poi.ss.util.CellRangeAddress
 
-import java.io.OutputStream
-import java.net.URL
+import scala.collection.mutable
 
-class ExcelTemplateWriter(val template: URL, val context: ExportContext, val outputStream: OutputStream)
-  extends Writer {
-
-  val transformHelper = new TransformHelper(template.openStream())
-
-  /**
-   * write.
-   */
-  def write(): Unit = {
-    transformHelper.transform(outputStream, context.datas)
+class PoiConditionalFormatting(val conditionalFormatting: ConditionalFormatting) {
+  val ranges = mutable.ArraySeq.from(conditionalFormatting.getFormattingRanges)
+  val rules = new mutable.ArrayBuffer[ConditionalFormattingRule]
+  for (i <- 0 until conditionalFormatting.getNumberOfRules) {
+    rules.addOne(conditionalFormatting.getRule(i))
   }
 
-  override def format: Format = {
-    Format.Xls
-  }
-
-  override def close(): Unit = {
-
-  }
 }

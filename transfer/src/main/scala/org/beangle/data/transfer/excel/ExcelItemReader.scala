@@ -26,7 +26,7 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.io.DataType
 import org.beangle.data.transfer.Format
-import org.beangle.doc.excel.CellOps._
+import org.beangle.data.excel.CellOps._
 import org.beangle.data.transfer.io.{Attribute, ItemReader}
 
 /**
