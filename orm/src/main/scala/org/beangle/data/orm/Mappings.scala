@@ -500,8 +500,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   }
 
   private def bindCollection(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo): Unit = {
-    val entityName = typeInfo.asInstanceOf[IterableType].elementType.clazz.getName
-    val entityClazz = ClassLoaders.load(entityName)
+    val entityClazz = typeInfo.asInstanceOf[IterableType].elementType.clazz
+    val entityName = entityClazz.getName
     val typ = buildElement(entityClazz, entityName)
     val property = new OrmCollectionProperty(name, typeInfo.clazz, typ)
     c.addProperty(property)
