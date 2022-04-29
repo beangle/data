@@ -23,7 +23,7 @@ import org.beangle.commons.io.{IOs, ResourcePatternResolver}
 import org.beangle.commons.lang.{Charsets, Locales, Strings, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
-import org.beangle.data.jdbc.meta._
+import org.beangle.data.jdbc.meta.*
 import org.beangle.data.orm.Mappings
 
 import java.io.{File, FileWriter}
@@ -155,7 +155,9 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
   }
 
   private def generateTableSql(table: Table): Unit = {
-    if (processed.contains(table)) return
+    if (processed.contains(table)) {
+      return
+    }
     processed.add(table)
     checkNameLength(table.schema.name.value, table.name)
     comments ++= engine.commentsOnTable(table, true)

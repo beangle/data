@@ -24,7 +24,7 @@ import org.beangle.data.jdbc.vendor.Vendors
 /**
  * using serverName/database or url alternative
  */
-class DatasourceConfig(val driver: String, val engine: Engine) {
+class DatasourceConfig(val driver: String) {
   var name: String = _
 
   var user: String = _
@@ -35,17 +35,17 @@ class DatasourceConfig(val driver: String, val engine: Engine) {
   var catalog: Identifier = _
 
   def this(data: collection.Map[String, String]) = {
-    this(data("driver"), Vendors.drivers(data("driver")).vendor.engine)
+    this(data("driver"))
     data.foreach {
       case (k, v) =>
         k match {
-          case "user"     => this.user = v
+          case "user" => this.user = v
           case "password" => this.password = v
-          case "schema"   => this.schema = Identifier(v)
-          case "catalog"  => this.catalog = Identifier(v)
-          case "name"     => this.name = v
-          case "driver"   =>
-          case _          => props.put(k, v)
+          case "schema" => this.schema = Identifier(v)
+          case "catalog" => this.catalog = Identifier(v)
+          case "name" => this.name = v
+          case "driver" =>
+          case _ => props.put(k, v)
         }
     }
   }

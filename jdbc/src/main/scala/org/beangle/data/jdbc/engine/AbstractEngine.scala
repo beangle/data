@@ -19,7 +19,8 @@ package org.beangle.data.jdbc.engine
 
 import org.beangle.data.jdbc.meta.{MetadataLoadSql, SqlType}
 
-abstract class AbstractEngine(val version: Version) extends Engine with AbstractDialect {
+abstract class AbstractEngine extends Engine with AbstractDialect {
+
   protected[engine] var typeNames: TypeNames = _
 
   private val typeMappingBuilder = new TypeNames.Builder()
@@ -27,6 +28,8 @@ abstract class AbstractEngine(val version: Version) extends Engine with Abstract
   var metadataLoadSql = new MetadataLoadSql
 
   var keywords: Set[String] = Set.empty[String]
+
+  def version: Version
 
   def registerReserved(resourceName:String): Unit = {
     keywords ++= Engine.loadKeywords(resourceName)

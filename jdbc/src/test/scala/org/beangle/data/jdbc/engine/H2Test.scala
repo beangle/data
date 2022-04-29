@@ -17,14 +17,15 @@
 
 package org.beangle.data.jdbc.engine
 
-import javax.sql.DataSource
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.ds.DataSourceUtils
 import org.beangle.data.jdbc.meta.{Database, Identifier, MetadataLoader, Schema}
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+
+import javax.sql.DataSource
 
 class H2Test extends AnyFlatSpec with Matchers with Logging {
   protected var schema: Schema = _
@@ -46,14 +47,14 @@ class H2Test extends AnyFlatSpec with Matchers with Logging {
     case None => Map.empty[String, String]
   }
 
-  println(ClassLoaders.getResource("db.properties"))
   "h2 " should "load tables and sequences" in {
-    val ds: DataSource = DataSourceUtils.build("h2", properties("h2.username"), properties("h2.password"), Map("url" -> properties("h2.url")))
+    val ds = DataSourceUtils.build("h2", properties("h2.username"), properties("h2.password"), Map("url" -> properties("h2.url")))
 
     val meta = ds.getConnection().getMetaData()
-    val database = new Database(Engines.H2)
+    val engine = Engines.forDataSource(ds)
+    val database = new Database(engine)
     schema = database.getOrCreateSchema(Identifier("PUBLIC"))
-    val loader = new MetadataLoader(meta, Engines.H2)
+    val loader = new MetadataLoader(meta, engine)
     loader.loadTables(schema, false)
     loader.loadSequences(schema)
     listTableAndSequences

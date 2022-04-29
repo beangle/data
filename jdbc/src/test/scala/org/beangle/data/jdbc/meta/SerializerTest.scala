@@ -20,7 +20,7 @@ package org.beangle.data.jdbc.meta
 import java.io.File
 
 import org.beangle.commons.io.Files
-import org.beangle.data.jdbc.engine.{Engines, PostgreSQL}
+import org.beangle.data.jdbc.engine.{Engines, PostgreSQL10}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 
@@ -28,7 +28,7 @@ class SerializerTest extends AnyFunSpec with Matchers {
 
   describe("DBXML") {
     it("to xml") {
-      val engine = Engines.PostgreSQL
+      val engine = new PostgreSQL10
       val db = new Database(engine)
       val security = db.getOrCreateSchema("TEST")
 

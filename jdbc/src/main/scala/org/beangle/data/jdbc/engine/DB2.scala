@@ -17,24 +17,25 @@
 
 package org.beangle.data.jdbc.engine
 
-import java.sql.Types._
+import java.sql.Types.*
 
-class DB2(v: String) extends AbstractEngine(Version(v)) {
+class DB2V8 extends AbstractEngine {
+
   metadataLoadSql.sequenceSql = "select name as sequence_name,start-1 as current_value,increment,cache from sysibm.syssequences where schema=':schema'"
 
   registerReserved("db2.txt")
 
   registerTypes(
-    CHAR -> "char($l)", VARCHAR -> "varchar($l)",
+    CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "long varchar",
+    NCHAR -> "char($l)", NVARCHAR -> "varchar($l)", LONGNVARCHAR -> "long varchar",
     BOOLEAN -> "smallint", BIT -> "smallint",
     SMALLINT -> "smallint", TINYINT -> "smallint", INTEGER -> "integer", DECIMAL -> "bigint", BIGINT -> "bigint",
     FLOAT -> "float", DOUBLE -> "double", NUMERIC -> "numeric($p,$s)",
     DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
     BINARY -> "varchar($l) for bit data",
     VARBINARY -> "varchar($l) for bit data",
-    LONGVARCHAR -> "long varchar",
     LONGVARBINARY -> "long varchar for bit data",
-    BLOB -> "blob($l)", CLOB -> "clob($l)")
+    BLOB -> "blob($l)", CLOB -> "clob($l)", NCLOB -> "clob($l)")
 
   options.sequence { s =>
     s.nextValSql = "values nextval for {name}"
@@ -60,6 +61,8 @@ class DB2(v: String) extends AbstractEngine(Version(v)) {
   options.validate()
 
   override def limit(sql: String, offset: Int, limit: Int): (String, List[Int]) = {
+    if (null != options.limit.pattern) return super.limit(sql, offset, limit)
+
     if (offset == 0) {
       (sql + " fetch first " + limit + " rows only", List.empty)
     } else {
@@ -70,9 +73,9 @@ class DB2(v: String) extends AbstractEngine(Version(v)) {
     }
   }
 
+  override def version: Version = Version("[8.0]")
+
   override def defaultSchema: String = null
 
-  override def name: String = {
-    "DB2"
-  }
+  override def name: String = "DB2"
 }

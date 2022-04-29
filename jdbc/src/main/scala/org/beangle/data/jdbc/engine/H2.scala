@@ -17,20 +17,22 @@
 
 package org.beangle.data.jdbc.engine
 
-import java.sql.Types._
+import java.sql.Types.*
 
-class H2(v: String) extends AbstractEngine(Version(v)) {
+class H2 extends AbstractEngine {
   registerReserved("h2.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "character varying",
+    NCHAR -> "nchar($l)", NVARCHAR -> "nchar varying($l)", LONGNVARCHAR -> "nchar varying",
     BOOLEAN -> "boolean", BIT -> "bit",
     TINYINT -> "tinyint", SMALLINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
     FLOAT -> "float", DOUBLE -> "double",
     DECIMAL -> "decimal", NUMERIC -> "numeric($p,$s)",
     DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
     BINARY -> "binary($l)", VARBINARY -> "varbinary($l)", LONGVARBINARY -> "longvarbinary",
-    BLOB -> "longvarbinary", CLOB -> "longvarchar")
+    BLOB -> "longvarbinary", CLOB -> "longvarchar", NCLOB -> "nchar varying",
+    JAVA_OBJECT -> "json")
 
   metadataLoadSql.sequenceSql = "select sequence_name,base_value,increment,cache from information_schema.sequences where sequence_schema=':schema'"
 
@@ -62,14 +64,11 @@ class H2(v: String) extends AbstractEngine(Version(v)) {
 
   options.validate()
 
-  override def storeCase: StoreCase = {
-    StoreCase.Upper
-  }
+  override def storeCase: StoreCase = StoreCase.Upper
 
-  override def defaultSchema: String = {
-    "PUBLIC"
-  }
+  override def defaultSchema: String = "PUBLIC"
 
   override def name: String = "H2"
 
+  override def version: Version = Version("[2.1,)")
 }

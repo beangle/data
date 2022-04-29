@@ -18,22 +18,21 @@
 package org.beangle.data.jdbc.meta
 
 import java.sql.Types
-
-import org.beangle.data.jdbc.engine.Engines
+import org.beangle.data.jdbc.engine.{Engines, PostgreSQL10}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 class DiffTest extends AnyFunSpec with Matchers {
+  val engine = new PostgreSQL10
+
   describe("Diff") {
     it("column diff") {
-      val engine = Engines.PostgreSQL
       val column1 = new Column("id", engine.toType(Types.VARCHAR, 30))
       val column2 = new Column("id", engine.toType(Types.VARCHAR, 31))
       column1 should not be column2
     }
 
     it("table diff") {
-      val engine = Engines.PostgreSQL
       val id1 = new Column("id", engine.toType(Types.BIGINT))
       val id2 = new Column("id", engine.toType(Types.INTEGER))
       val name = new Column("name", engine.toType(Types.VARCHAR, 200))

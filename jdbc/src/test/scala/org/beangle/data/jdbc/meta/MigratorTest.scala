@@ -17,16 +17,16 @@
 
 package org.beangle.data.jdbc.meta
 
-import java.sql.Types
-
-import org.beangle.data.jdbc.engine.Engines
+import org.beangle.data.jdbc.engine.{Engines, PostgreSQL10}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
+import java.sql.Types
+
 class MigratorTest extends AnyFunSpec with Matchers {
+  val engine = new PostgreSQL10
   describe("Migrator") {
     it("test diff") {
-      val engine = Engines.PostgreSQL
       val newer = new Database(engine)
       val older = new Database(engine)
 
