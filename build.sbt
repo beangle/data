@@ -3,7 +3,7 @@ import org.beangle.parent.Settings._
 import sbt.Keys.libraryDependencies
 
 ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.4.3"
+ThisBuild / version := "4.5.4-SNAPSHOT"
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/beangle/data"),
