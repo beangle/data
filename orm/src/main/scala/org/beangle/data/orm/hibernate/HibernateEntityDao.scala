@@ -203,8 +203,9 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     }
   }
 
-  override def find[T <: Entity[ID], ID](clazz: Class[T], id: ID): Option[T] =
-    find[T, ID](clazz, id)
+  override def find[T <: Entity[ID], ID](clazz: Class[T], id: ID): Option[T] = {
+    find[T, ID](clazz.getName, id)
+  }
 
   override def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T] = {
     findByMulti(entityNameOf(clazz), "id", ids)
