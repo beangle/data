@@ -17,15 +17,16 @@
 
 package org.beangle.data.jdbc.meta
 
-import java.sql.Types
-
-import org.beangle.data.jdbc.engine.Engines
-import org.scalatest.matchers.should.Matchers
+import org.beangle.data.jdbc.engine.{Engines, Oracle10g, PostgreSQL10}
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+
+import java.sql.Types
 
 class TableTest extends AnyFlatSpec with Matchers {
 
-  val oracle = Engines.Oracle
+  val oracle = new Oracle10g
+  val postgresql = new PostgreSQL10
   val oracleDb = new Database(oracle)
   val test = oracleDb.getOrCreateSchema("TEST")
   val public = oracleDb.getOrCreateSchema("PUBLIC")
@@ -49,13 +50,14 @@ class TableTest extends AnyFlatSpec with Matchers {
     ageCol.nullable = false
     table.add(ageCol)
 
-    table.attach(Engines.PostgreSQL)
-    assert("create table TEST.\"USER\" (\"NAME\" varchar(30) not null, \"ID\" bigint not null, \"ENABLED\" boolean not null, \"AGE\" integer not null)" == Engines.PostgreSQL.createTable(table))
+    table.attach(postgresql)
+    assert("create table TEST.\"USER\" (\"NAME\" varchar(30) not null," +
+      " \"ID\" bigint not null, \"ENABLED\" boolean not null, \"AGE\" integer not null)" == postgresql.createTable(table))
   }
 
   "lowercase " should "corrent" in {
     val table = new Table(public, Identifier("USER"))
-    val database = new Database(Engines.PostgreSQL)
+    val database = new Database(postgresql)
     val test = database.getOrCreateSchema("TEST")
 
     val cloned = table.clone(test)

@@ -17,20 +17,20 @@
 
 package org.beangle.data.orm.hibernate.spring
 
-import org.beangle.commons.bean.{ Factory, Initializing }
+import org.beangle.commons.bean.{Factory, Initializing}
 import org.beangle.commons.lang.annotation.description
+import org.beangle.data.model.meta.Domain
 import org.beangle.data.orm.hibernate.ConfigurationBuilder
 import org.hibernate.SessionFactory
 import org.hibernate.cfg.AvailableSettings
 import org.springframework.core.io.Resource
-import java.{ util => ju }
 
+import java.util as ju
 import javax.sql.DataSource
-import org.beangle.data.model.meta.Domain
 
 @description("构建Hibernate的会话工厂")
 class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory]
-    with Initializing {
+  with Initializing {
 
   var configLocations: Array[Resource] = Array.empty
 
@@ -43,7 +43,6 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
   def init(): Unit = {
     val cfgb = new ConfigurationBuilder(dataSource)
     //  provide the Beangle managed Session as context
-    cfgb.configLocations = configLocations.toIndexedSeq.map(l => l.getURL)
     cfgb.ormLocations = ormLocations.toIndexedSeq.map(l => l.getURL)
     properties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[BeangleSessionContext].getName)
     cfgb.properties = properties

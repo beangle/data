@@ -17,12 +17,16 @@
 
 package org.beangle.data.jdbc.engine
 
-class Derby(v:String) extends DB2(v) {
+class Derby10 extends DB2V8 {
   options.comment.supportsCommentOn = false
 
-  registerReserved("db2.txt")
-
-  override def name:String={
-    "Derby"
+  options.limit { l =>
+    l.pattern = "{} fetch first ? rows only"
+    l.offsetPattern = "{} offset ? rows fetch next ? rows only"
+    l.bindInReverseOrder = false
   }
+
+  override def version: Version = Version("[10.5,)")
+
+  override def name: String = "Derby"
 }

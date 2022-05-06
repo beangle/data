@@ -17,15 +17,15 @@
 
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.engine.Engines
+import org.beangle.data.jdbc.engine.{Engines, Oracle10g}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 
 class SchemaTest extends AnyFunSpec with Matchers {
-
+  val oracle = new Oracle10g
   describe("Schema") {
     it("getTable") {
-      val database = new Database(Engines.Oracle)
+      val database = new Database(oracle)
       val db = database.getOrCreateSchema("TEST")
       val table = db.createTable("\"t 1\"")
       db.tables.put(table.name, table)

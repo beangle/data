@@ -17,23 +17,26 @@
 
 package org.beangle.data.jdbc.engine
 
-import java.sql.Types._
+import java.sql.Types.*
+import scala.collection.mutable
 
-class Oracle(v: String) extends AbstractEngine(Version(v)) {
+class Oracle10g extends AbstractEngine {
   registerReserved("oracle.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar2($l)", LONGVARCHAR -> "long",
+    NCHAR -> "nchar($l)", NVARCHAR -> "nvarchar2($l)", LONGNVARCHAR -> "nvarchar2($l)",
     BOOLEAN -> "number(1,0)", BIT -> "number(1,0)",
     SMALLINT -> "number(5,0)", TINYINT -> "number(3,0)", INTEGER -> "number(10,0)", BIGINT -> "number(19,0)",
     FLOAT -> "float", DOUBLE -> "double precision",
     DECIMAL -> "number($p,$s)", NUMERIC -> "number($p,$s)",
     DATE -> "date", TIME -> "date", TIMESTAMP -> "date",
     BINARY -> "raw", VARBINARY -> "long raw", LONGVARBINARY -> "long raw",
-    BLOB -> "blob", CLOB -> "clob")
+    BLOB -> "blob", CLOB -> "clob", NCLOB -> "nclob",
+    JAVA_OBJECT -> "blob")
 
   registerTypes2(
-    (VARCHAR, 4000, "varchar2($l)"), (VARCHAR, 2*1024*1024*1024, "clob"),(NUMERIC, 38, "number($p,$s)"),
+    (VARCHAR, 4000, "varchar2($l)"), (VARCHAR, 2 * 1024 * 1024 * 1024, "clob"), (NUMERIC, 38, "number($p,$s)"),
     (NUMERIC, Int.MaxValue, "number(38,$s)"), (VARBINARY, 2000, "raw($l)"))
 
   options.sequence { s =>
@@ -60,9 +63,7 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
 
   options.validate()
 
-  override def maxIdentifierLength: Int = {
-    30
-  }
+  override def maxIdentifierLength: Int = 30
 
   metadataLoadSql.sequenceSql = "select sequence_name,last_number as next_value,increment_by,cache_size,cycle_flag " +
     "from all_sequences where sequence_owner=':schema'"
@@ -97,16 +98,18 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
 
   /** limit offset
    * FIXME distinguish sql with order by or not
+   *
    * @see http://blog.csdn.net/czp11210/article/details/23958065
    */
   override def limit(querySql: String, offset: Int, limit: Int): (String, List[Int]) = {
+    if (null != options.limit.pattern) return super.limit(querySql, offset, limit)
     var sql = querySql.trim()
     var isForUpdate = false
     if (sql.toLowerCase().endsWith(" for update")) {
       sql = sql.substring(0, sql.length - 11)
       isForUpdate = true
     }
-    val pagingSelect = new StringBuilder(sql.length + 100)
+    val pagingSelect = new mutable.StringBuilder(sql.length + 100)
     val hasOffset = offset > 0
     if (hasOffset) pagingSelect.append("select * from ( select row_.*, rownum _rownum_ from ( ")
     else pagingSelect.append("select * from ( ")
@@ -119,13 +122,23 @@ class Oracle(v: String) extends AbstractEngine(Version(v)) {
     (pagingSelect.toString, if (hasOffset) List(limit + offset, offset) else List(limit))
   }
 
-  override def storeCase: StoreCase = {
-    StoreCase.Upper
-  }
+  override def storeCase: StoreCase = StoreCase.Upper
 
-  override def defaultSchema: String = {
-    "$user"
-  }
+  override def defaultSchema: String = "$user"
 
   override def name: String = "Oracle"
+
+  override def version: Version = Version("[10.1,)")
+}
+
+class Oracle12c extends Oracle10g {
+  options.limit { l =>
+    l.pattern = "{} fetch first ? rows only"
+    l.offsetPattern = "{} offset ? rows fetch next ? rows only"
+    l.bindInReverseOrder = false
+  }
+
+  override def maxIdentifierLength: Int = 128
+
+  override def version: Version = Version("[12.2,)")
 }

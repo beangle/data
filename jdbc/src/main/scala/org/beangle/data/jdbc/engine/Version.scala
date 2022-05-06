@@ -19,6 +19,8 @@ package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.lang.Strings
 
+import scala.collection.mutable
+
 object Version {
   def apply(version: String): Version = {
     val containStart = !version.startsWith("(")
@@ -49,22 +51,32 @@ object Version {
 }
 
 /**
-  * User [a,b] or (a,b) or a,b to discribe jdbc version range.
-  * a,b should not all empty.
-  *
-  * @author chaostone
-  */
+ * User [a,b] or (a,b) or a,b to discribe jdbc version range.
+ * a,b should not all empty.
+ *
+ * @author chaostone
+ */
 class Version(start: String, end: String, containStart: Boolean, containEnd: Boolean) {
 
   def contains(v: String): Boolean = {
     if (Strings.isNotEmpty(start)) {
-      val rs: Int = start.compareTo(v)
+      val rs = start.compareTo(v)
       if ((!containStart && 0 == rs) || rs > 0) return false
     }
     if (Strings.isNotEmpty(end)) {
-      val rs: Int = end.compareTo(v)
+      val rs = end.compareTo(v)
       if ((!containEnd && 0 == rs) || rs < 0) return false
     }
     true
+  }
+
+  override def toString: String = {
+    val sb = new mutable.StringBuilder()
+    sb.append(if containStart then '[' else '(')
+    sb.append(start)
+    sb.append(",")
+    sb.append(end)
+    sb.append(if containEnd then ']' else ')')
+    sb.mkString
   }
 }

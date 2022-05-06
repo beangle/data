@@ -17,76 +17,54 @@
 
 package org.beangle.data.jdbc.engine
 
-import javax.sql.DataSource
 import org.beangle.commons.lang.Strings
 
+import javax.sql.DataSource
 import scala.collection.mutable
 
 object Engines {
 
-  private val name2Engines = new mutable.HashMap[String, Engine]
+  private val name2Engines = new mutable.HashMap[String, List[Engine]]
 
   private def register(engines: Engine*): Unit = {
     engines.foreach { engine =>
-      name2Engines.put(engine.name, engine)
+      val engList = name2Engines.get(engine.name) match {
+        case Some(el) => el.appended(engine)
+        case None => List(engine)
+      }
+      name2Engines.put(engine.name, engList)
     }
   }
 
-  register(new PostgreSQL("[8.4)"), new MySQL("[5.0,)"), new H2("[1.3,)"), new HSQL("[2.0.0,)"),
-    new Oracle("[10.1)"), new DB2("[8.0]"), new SQLServer("[2005,2012)"), new Derby("10.5.3.0"))
+  register(new PostgreSQL10, new MySQL5, new H2, new Oracle10g, new Oracle12c, new DB2V8, new SQLServer2005,
+    new SQLServer2008, new SQLServer2012, new Derby10)
 
   def forDataSource(ds: DataSource): Engine = {
     val connection = ds.getConnection
-    val name = connection.getMetaData.getDatabaseProductName
+    val meta = connection.getMetaData
+    val name = meta.getDatabaseProductName
+    val version = s"${meta.getDatabaseMajorVersion}.${meta.getDatabaseMinorVersion}"
     connection.close()
-    forName(name)
+    forName(name, version)
   }
 
-  def forName(dbname: String): Engine = {
+  def forName(dbname: String, version: String = "last"): Engine = {
     var name = Strings.capitalize(dbname)
     name = name.replace("sql", "SQL")
-    name2Engines.get(name) match {
-      case Some(engine) => engine
+    val engineList = name2Engines.get(name) match {
+      case Some(el) => el
       case None =>
         if (dbname.toUpperCase.startsWith("DB2")) {
           name2Engines("DB2")
         } else if (dbname.toUpperCase.startsWith("SQLSERVER") || dbname.startsWith("Microsoft SQL Server")) {
           name2Engines("Microsoft SQL Server")
-        } else {
-          throw new RuntimeException(s"Cannot find engine for database $dbname")
-        }
+        } else List.empty
     }
-  }
-
-  def H2: Engine = {
-    forName("H2")
-  }
-
-  def MySQL: Engine = {
-    forName("MySQL")
-  }
-
-  def PostgreSQL: Engine = {
-    forName("PostgreSQL")
-  }
-
-  def Oracle: Engine = {
-    forName("Oracle")
-  }
-
-  def DB2: Engine = {
-    forName("DB2")
-  }
-
-  def HSQL: Engine = {
-    forName("HSQL Database Engine")
-  }
-
-  def SQLServer: Engine = {
-    forName("Microsoft SQL Server")
-  }
-
-  def Derby: Engine = {
-    forName("Derby")
+    if version == "last" then
+      engineList.last
+    else
+      val engine = engineList.find(e => e.version.contains(version))
+      if engine.isEmpty then throw new RuntimeException(s"Cannot find engine for database $dbname")
+      else engine.head
   }
 }

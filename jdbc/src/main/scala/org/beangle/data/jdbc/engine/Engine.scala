@@ -23,7 +23,7 @@ import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.data.jdbc.meta.{Identifier, MetadataLoadSql, SqlType}
 
 object Engine {
-  val reservedWords = loadKeywords("sql-reserved.txt")
+  val reservedWords: Set[String] = loadKeywords("sql-reserved.txt")
 
   def loadKeywords(resourceName: String): Set[String] = {
     val uri = "org/beangle/data/jdbc/engine/" + resourceName

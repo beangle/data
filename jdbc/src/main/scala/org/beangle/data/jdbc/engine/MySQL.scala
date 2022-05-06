@@ -17,27 +17,25 @@
 
 package org.beangle.data.jdbc.engine
 
-import java.sql.Types._
-
 import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.meta.{PrimaryKey, Table}
 
-class MySQL(v: String) extends AbstractEngine(Version(v)) {
-  override def quoteChars: (Char, Char) = {
-    ('`', '`')
-  }
+import java.sql.Types.*
 
+class MySQL5 extends AbstractEngine {
   registerReserved("mysql.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "longtext", LONGVARCHAR -> "longtext",
+    NCHAR -> "nchar($l)", NVARCHAR -> "nvarchar($l)", LONGNVARCHAR -> "nvarchar($l)",
     BOOLEAN -> "bit", BIT -> "bit",
     TINYINT -> "tinyint", SMALLINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
     FLOAT -> "float", DOUBLE -> "double precision",
     DECIMAL -> "decimal($p,$s)", NUMERIC -> "decimal($p,$s)",
     DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime",
     BINARY -> "binary($l)", VARBINARY -> "longblob", LONGVARBINARY -> "longblob",
-    BLOB -> "longblob", CLOB -> "longtext", NCLOB -> "longtext")
+    BLOB -> "longblob", CLOB -> "longtext", NCLOB -> "longtext",
+    JAVA_OBJECT -> "json")
 
   registerTypes2(
     (VARCHAR, 500, "varchar($l)"),
@@ -73,9 +71,7 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
 
   options.comment.supportsCommentOn = false
 
-  override def maxIdentifierLength: Int = {
-    64
-  }
+  override def maxIdentifierLength: Int = 64
 
   override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
                              referencedTable: String, primaryKey: Iterable[String]): String = {
@@ -90,9 +86,11 @@ class MySQL(v: String) extends AbstractEngine(Version(v)) {
     s"alter table ${table.qualifiedName}  drop primary key"
   }
 
-  override def defaultSchema: String = {
-    "PUBLIC"
-  }
+  override def defaultSchema: String = "PUBLIC"
 
   override def name: String = "MySQL"
+
+  override def quoteChars: (Char, Char) = ('`', '`')
+
+  override def version: Version = Version("[5.7,)")
 }

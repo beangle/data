@@ -17,25 +17,26 @@
 
 package org.beangle.data.jdbc.engine
 
-import java.sql.Types._
-
 import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.meta.{Column, Index, Table}
 
-class SQLServer(v: String) extends AbstractEngine(Version(v)) {
+import java.sql.Types.*
+
+class SQLServer2005 extends AbstractEngine {
 
   this.registerReserved("t-sql.txt")
 
   registerTypes(
-    CHAR -> "char($l)", VARCHAR -> "varchar(MAX)", NVARCHAR -> "nvarchar(MAX)",
+    CHAR -> "char($l)", VARCHAR -> "varchar(MAX)", LONGVARCHAR -> "text",
+    NCHAR -> "nchar($l)", NVARCHAR -> "nvarchar(MAX)", LONGNVARCHAR -> "ntext",
     BIT -> "bit", BOOLEAN -> "bit",
     TINYINT -> "smallint", SMALLINT -> "smallint", INTEGER -> "int", BIGINT -> "bigint",
     FLOAT -> "float", DOUBLE -> "double precision",
     DECIMAL -> "double precision", NUMERIC -> "numeric($p,$s)",
     DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime2",
-    BINARY -> "binary", VARBINARY -> "varbinary(MAX)",
-    LONGVARCHAR -> "text", LONGVARBINARY -> "varbinary(MAX)",
-    BLOB -> "varbinary(MAX)", CLOB -> "varchar(MAX)")
+    BINARY -> "binary", VARBINARY -> "varbinary(MAX)", LONGVARBINARY -> "varbinary(MAX)",
+    BLOB -> "varbinary(MAX)", CLOB -> "varchar(MAX)", NCLOB -> "ntext",
+    JAVA_OBJECT -> "nvarchar(MAX)")
 
   registerTypes2(
     (VARCHAR, 8000, "varchar($l)"),
@@ -61,7 +62,8 @@ class SQLServer(v: String) extends AbstractEngine(Version(v)) {
   options.validate()
 
   override def limit(querySql: String, offset: Int, limit: Int): (String, List[Int]) = {
-    val sb: StringBuilder = new StringBuilder(querySql)
+    if (null != options.limit.pattern) return super.limit(querySql, offset, limit)
+    val sb = new StringBuilder(querySql)
 
     val orderByIndex: Int = querySql.toLowerCase().indexOf("order by")
     var orderby: CharSequence = "order by current_timestmap"
@@ -121,9 +123,29 @@ class SQLServer(v: String) extends AbstractEngine(Version(v)) {
     "drop index " + i.table.qualifiedName + "." + i.literalName
   }
 
-  override def defaultSchema: String = {
-    "dbo"
-  }
+  override def defaultSchema: String = "dbo"
 
   override def name: String = "Microsoft SQL Server"
+
+  override def version: Version = Version("[2005,2008)")
+}
+
+class SQLServer2008 extends SQLServer2005 {
+  options.limit { l =>
+    l.pattern = "{} fetch first ? rows only"
+    l.offsetPattern = "{} offset ? rows fetch next ? rows only"
+    l.bindInReverseOrder = false
+  }
+
+  override def version: Version = Version("[2008,2012)")
+}
+
+class SQLServer2012 extends SQLServer2005 {
+  options.limit { l =>
+    l.pattern = "{} offset 0 rows fetch next ? rows only"
+    l.offsetPattern = "{} offset ? rows fetch next ? rows only"
+    l.bindInReverseOrder = false
+  }
+
+  override def version: Version = Version("[2012,)")
 }

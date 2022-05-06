@@ -17,22 +17,24 @@
 
 package org.beangle.data.jdbc.engine
 
-import java.sql.Types._
-
 import org.beangle.data.jdbc.meta.SqlType
 
-class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
+import java.sql.Types.*
+
+class PostgreSQL10 extends AbstractEngine {
   registerReserved("postgresql.txt")
 
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "text",
+    NCHAR -> "char($l)", NVARCHAR -> "varchar($l)", LONGNVARCHAR -> "text", //national character
     BOOLEAN -> "boolean", BIT -> "boolean",
     SMALLINT -> "smallint", TINYINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
     FLOAT -> "float4", DOUBLE -> "float8",
     DECIMAL -> "numeric($p,$s)", NUMERIC -> "numeric($p,$s)",
     DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
     BINARY -> "bytea", VARBINARY -> "bytea", LONGVARBINARY -> "bytea",
-    CLOB -> "text", BLOB -> "bytea")
+    BLOB -> "bytea", CLOB -> "text", NCLOB -> "text",
+    JAVA_OBJECT -> "json")
 
   registerTypes2(
     (VARCHAR, 50000, "varchar($l)"),
@@ -69,13 +71,12 @@ class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
   }
   options.validate()
 
-  override def maxIdentifierLength: Int = {
-    63
-  }
+  metadataLoadSql.sequenceSql = "select sequence_name,start_value,increment increment_by,cycle_option cycle_flag" +
+    " from information_schema.sequences where sequence_schema=':schema'"
 
-  override def storeCase: StoreCase = {
-    StoreCase.Lower
-  }
+  override def maxIdentifierLength: Int = 63
+
+  override def storeCase: StoreCase = StoreCase.Lower
 
   override def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
     if (sqlCode == BLOB) {
@@ -85,13 +86,9 @@ class PostgreSQL(v: String) extends AbstractEngine(Version(v)) {
     }
   }
 
-  override def defaultSchema: String = {
-    "public"
-  }
+  override def defaultSchema: String = "public"
 
   override def name: String = "PostgreSQL"
 
-  metadataLoadSql.sequenceSql = "select sequence_name,start_value,increment increment_by,cycle_option cycle_flag" +
-    " from information_schema.sequences where sequence_schema=':schema'"
-
+  override def version: Version = Version("[10.0,)")
 }

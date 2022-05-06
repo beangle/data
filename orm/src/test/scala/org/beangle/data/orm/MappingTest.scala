@@ -19,19 +19,20 @@ package org.beangle.data.orm
 
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.data.jdbc.engine.Engines
+import org.beangle.data.jdbc.engine.{Engines, PostgreSQL10}
 import org.beangle.data.jdbc.meta.Database
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 /**
-  * @author chaostone
-  */
+ * @author chaostone
+ */
 class MappingTest extends AnyFunSpec with Matchers {
   describe("Mapping") {
     it("bind") {
+      val engine = new PostgreSQL10
       val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
-      val mappings = new Mappings(new Database(Engines.PostgreSQL), ormLocations)
+      val mappings = new Mappings(new Database(engine), ormLocations)
       mappings.locale = java.util.Locale.SIMPLIFIED_CHINESE
       mappings.autobind()
       val menuBeanInfo = BeanInfos.get(classOf[UserProperty])

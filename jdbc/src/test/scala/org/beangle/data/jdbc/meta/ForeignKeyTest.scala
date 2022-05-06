@@ -17,32 +17,33 @@
 
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.engine.Engines
-import org.scalatest.matchers.should.Matchers
+import org.beangle.data.jdbc.engine.{Engines, Oracle10g, PostgreSQL10}
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class ForeignKeyTest extends AnyFlatSpec with Matchers {
+
+  val oracle = new Oracle10g
+  val postgresql = new PostgreSQL10
 
   "fk alter sql" should "corret" in {
     val tableA = buildTable()
     val fk = tableA.foreignKeys.head
-    Engines.Oracle.alterTableAddForeignKey(fk)
+    oracle.alterTableAddForeignKey(fk)
   }
 
   "drop table " should "corret" in {
     val tableA = buildTable()
-    val pgdialect = Engines.PostgreSQL
-    tableA.attach(pgdialect)
+    tableA.attach(postgresql)
     tableA.schema.name = Identifier("lowercase_a")
-    println(pgdialect.dropTable(tableA.qualifiedName))
+    println(postgresql.dropTable(tableA.qualifiedName))
     val fk = tableA.foreignKeys.head
   }
 
   "toLowerCase " should "correct" in {
-    val database = new Database(Engines.PostgreSQL)
+    val database = new Database(postgresql)
     val schema = database.getOrCreateSchema("public")
     val tableA = buildTable().clone(schema)
-    val pgdialect = Engines.PostgreSQL
     tableA.toCase(true)
     assert(tableA.foreignKeys.size == 1)
     val head = tableA.foreignKeys.head
@@ -54,7 +55,7 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
     assert(head.referencedTable.name.value == "sys_table")
 
     head.referencedTable.name = Identifier(head.referencedTable.name.value, true)
-    tableA.attach(pgdialect)
+    tableA.attach(postgresql)
 
     assert(head.name.value == "fkxyz")
     assert(head.columns.size == 1)
@@ -63,7 +64,7 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
   }
 
   def buildTable(): Table = {
-    val database = new Database(Engines.Oracle)
+    val database = new Database(oracle)
     val schema = database.getOrCreateSchema("public")
     val table = new Table(schema, Identifier("SYS_TABLE"))
     val pk = new PrimaryKey(table, "PK", "ID")

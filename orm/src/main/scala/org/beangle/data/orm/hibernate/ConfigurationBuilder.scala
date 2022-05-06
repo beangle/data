@@ -35,7 +35,6 @@ object ConfigurationBuilder {
   def default: Configuration = {
     val resolver = new ResourcePatternResolver
     val sfb = new ConfigurationBuilder(null)
-    sfb.configLocations = resolver.getResources("classpath*:META-INF/hibernate.cfg.xml")
     sfb.ormLocations = resolver.getResources("classpath*:META-INF/beangle/orm.xml")
     sfb.build()
   }
@@ -43,13 +42,9 @@ object ConfigurationBuilder {
 
 class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
 
-  var configLocations: Seq[URL] = _
-
   var ormLocations: Seq[URL] = _
 
   var properties = new ju.Properties
-
-  var engine: Option[String] = None
 
   /**
     * Import System properties and disable jdbc metadata lookup
@@ -89,10 +84,6 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
     val standardRegistryBuilder = new StandardServiceRegistryBuilder()
     val mappings = getMappings
     standardRegistryBuilder.addService(classOf[MappingService], new MappingService(mappings))
-    if (null != configLocations) {
-      for (resource <- configLocations)
-        standardRegistryBuilder.configure(resource)
-    }
     standardRegistryBuilder.applySettings(this.properties)
     val standardRegistry = standardRegistryBuilder.build()
 
@@ -104,15 +95,8 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
   }
 
   private def getMappings: Mappings = {
-    val eng = engine match {
-      case Some(e) => Engines.forName(e)
-      case None =>
-        val connection = dataSource.getConnection
-        val dbProductName = connection.getMetaData.getDatabaseProductName
-        connection.close()
-        Engines.forName(dbProductName)
-    }
-    val mappings = new Mappings(new Database(eng), ormLocations.toList)
+    val engine =  Engines.forDataSource(dataSource)
+    val mappings = new Mappings(new Database(engine), ormLocations.toList)
     mappings.autobind()
     mappings
   }

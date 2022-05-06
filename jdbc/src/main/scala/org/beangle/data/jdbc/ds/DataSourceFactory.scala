@@ -30,7 +30,7 @@ import javax.sql.DataSource
 object DataSourceFactory {
   def build(driver: String, username: String, password: String, props: collection.Map[String, String]): DataSource = {
     val factory = new DataSourceFactory
-    factory.driver=driver
+    factory.driver = driver
     factory.user = username
     factory.password = password
     factory.props ++= props
@@ -71,9 +71,9 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
             props.put("url", url)
           }
         } else if (url.startsWith("http")) {
-          val text = HttpUtils.getText(url).getOrElse("")
-          val is = new ByteArrayInputStream(text.getBytes)
-          merge(readConf(is))
+          val res = HttpUtils.getText(url)
+          if res.isOk then merge(readConf(new ByteArrayInputStream(res.getText.getBytes)))
+          else throw RuntimeException(s"access error :$url")
         } else {
           val f = new java.io.File(url)
           val urlAddr = if (f.exists) f.toURI.toURL else new URL(url)
@@ -104,6 +104,7 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
     val datasources = root \\ "datasource"
     val dbs = root \\ "db"
     if (dbs.isEmpty && datasources.isEmpty) {
+      is.close()
       DataSourceUtils.parseXml(root)
     } else {
       var conf: DatasourceConfig = null
@@ -116,6 +117,7 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
           conf = one
         }
       }
+      is.close()
       conf
     }
   }
