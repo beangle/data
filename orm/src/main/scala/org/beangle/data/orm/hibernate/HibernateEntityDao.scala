@@ -482,7 +482,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     if (entities.nonEmpty) {
       for (entity <- entities)
         entity match {
-          case col: Iterable[_] => for (elementEntry <- col) persistEntity(elementEntry, null)
+          case col: IterableOnce[_] => for (elementEntry <- col) persistEntity(elementEntry, null)
           case _ => persistEntity(entity, null)
         }
     }
