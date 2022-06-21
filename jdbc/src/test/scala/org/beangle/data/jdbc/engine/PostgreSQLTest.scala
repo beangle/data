@@ -35,7 +35,6 @@ class PostgreSQLTest extends AnyFlatSpec with Matchers {
     t2.name should be("varchar(5000)")
   }
 
-
   "big number (size >=65535) in postgresql " should " trip to less 1000 size" in {
     val scale = 0
     val precision = 65535

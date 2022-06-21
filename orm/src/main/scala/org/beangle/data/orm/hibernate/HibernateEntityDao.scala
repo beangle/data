@@ -58,8 +58,8 @@ object QuerySupport {
   }
 
   /**
-    * 统计该查询的记录数
-    */
+   * 统计该查询的记录数
+   */
   def doCount(limitQuery: LimitQuery[_], hibernateSession: Session): Int = {
     val cntQuery = limitQuery.countQuery
     if (null == cntQuery) {
@@ -71,8 +71,8 @@ object QuerySupport {
   }
 
   /**
-    * 查询结果集
-    */
+   * 查询结果集
+   */
   def doFind[T](query: BQuery[T], session: Session): Seq[T] = {
     val hQuery = query match {
       case limitQuery: LimitQuery[_] =>
@@ -88,8 +88,8 @@ object QuerySupport {
   }
 
   /**
-    * 为query设置JPA style参数
-    */
+   * 为query设置JPA style参数
+   */
   def setParameters[T](query: Query[T], argument: Iterable[_]): Query[T] = {
     if (argument != null && argument.nonEmpty) {
       var i = 1
@@ -103,8 +103,8 @@ object QuerySupport {
   }
 
   /**
-    * 为query设置参数
-    */
+   * 为query设置参数
+   */
   def setParameters[T](query: Query[T], parameterMap: collection.Map[String, _]): Query[T] = {
     if (parameterMap != null && parameterMap.nonEmpty) {
       for ((k, v) <- parameterMap; if null != k) setParameter(query, k, v)
@@ -134,8 +134,8 @@ object QuerySupport {
   }
 
   /**
-    * 针对查询条件绑定查询的值
-    */
+   * 针对查询条件绑定查询的值
+   */
   def bindValues(query: Query[_], conditions: List[Condition]): Unit = {
     var position = 0
     var hasInterrogation = false // 含有问号
@@ -156,8 +156,8 @@ object QuerySupport {
 }
 
 /**
-  * @author chaostone
-  */
+ * @author chaostone
+ */
 @description("基于Hibernate提供的通用实体DAO")
 class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao with Logging {
   val domain: Domain = DomainFactory.build(sessionFactory)
@@ -305,8 +305,8 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   /**
-    * 依据自构造的查询语句进行查询
-    */
+   * 依据自构造的查询语句进行查询
+   */
   override def search[T](query: BQuery[T]): Seq[T] = {
     query match {
       case limitQuery: LimitQuery[T] =>
@@ -482,15 +482,15 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     if (entities.nonEmpty) {
       for (entity <- entities)
         entity match {
-          case col: IterableOnce[_] => for (elementEntry <- col) persistEntity(elementEntry, null)
+          case col: IterableOnce[_] => col.iterator.foreach { e => persistEntity(e, null) }
           case _ => persistEntity(entity, null)
         }
     }
   }
 
   /**
-    * Persist entity using save or update,UPDATE entity should load in session first.
-    */
+   * Persist entity using save or update,UPDATE entity should load in session first.
+   */
   private def persistEntity(entity: Any, entityName: String): Unit = {
     if (null == entity) return
     val session = currentSession
@@ -562,16 +562,16 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   /**
-    * Support "@named-query" or "from object" styles query
-    */
+   * Support "@named-query" or "from object" styles query
+   */
   private def getNamedOrCreateQuery[T](queryString: String): Query[T] = {
     if (queryString.charAt(0) == '@') currentSession.getNamedQuery(queryString.substring(1)).asInstanceOf[Query[T]]
     else currentSession.createQuery(queryString).asInstanceOf[Query[T]]
   }
 
   /**
-    * 构造查询记录数目的查询字符串
-    */
+   * 构造查询记录数目的查询字符串
+   */
   private def buildCountQueryStr(query: Query[_]): String = {
     var queryStr = "select count(*) "
     if (query.isInstanceOf[NativeQuery[_]]) {

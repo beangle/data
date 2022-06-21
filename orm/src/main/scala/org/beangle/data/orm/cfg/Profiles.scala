@@ -39,51 +39,6 @@ class Profiles(resources: Resources) extends Logging {
 
   init()
 
-  private def globalSchema: Option[String] = {
-    val s = System.getProperty("beangle.data.orm.global_schema")
-    if (Strings.isBlank(s)) None else Some(s.trim)
-  }
-
-  private def init(): Unit = {
-    val rails = new RailsNamingPolicy(this)
-    namings.put("rails", rails)
-    namings.put("ejb3", new EJB3NamingPolicy(this))
-    defaultProfile.naming = rails
-    globalSchema foreach { s =>
-      defaultProfile._schema = Some(s)
-    }
-    val ms = new mutable.ArrayBuffer[MappingModule]
-    for (url <- resources.paths) addConfig(url, ms)
-    if (logger.isDebugEnabled) {
-      if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
-    }
-    //module排序,使其处理过程稳定化
-    modules = ms.sortBy(_.getClass.getName).toList
-  }
-
-  private def addConfig(url: URL, ms: mutable.ArrayBuffer[MappingModule]): Unit = {
-    try {
-      logger.debug(s"loading $url")
-      val is = url.openStream()
-      if (null != is) {
-        val xml = scala.xml.XML.load(is)
-        (xml \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
-        (xml \ "mapping") foreach { ele =>
-          val name = (ele \ "@name").text
-          val module = Reflections.getInstance[MappingModule]((ele \ "@class").text)
-          if (Strings.isNotBlank(name)) {
-            module.name = Some(name.trim())
-          }
-          ms += module
-        }
-        is.close()
-      }
-      autoWire()
-    } catch {
-      case e: Exception => logger.error("property load error in url:" + url, e)
-    }
-  }
-
   def getSchema(clazz: Class[_]): Option[String] = {
     val profile = getProfile(clazz)
     var schema = profile.schema
@@ -130,10 +85,6 @@ class Profiles(resources: Resources) extends Logging {
     if (isEmpty(prefix)) "" else prefix
   }
 
-  def getNamingPolicy(clazz: Class[_]): NamingPolicy = {
-    getProfile(clazz).naming
-  }
-
   def getProfile(clazz: Class[_]): MappingProfile = {
     var name = clazz.getName
     var matched: Option[MappingProfile] = None
@@ -146,9 +97,74 @@ class Profiles(resources: Resources) extends Logging {
     matched.getOrElse(defaultProfile)
   }
 
+  def getNamingPolicy(clazz: Class[_]): NamingPolicy = {
+    getProfile(clazz).naming
+  }
+
+  override def toString: String = {
+    if (profiles.isEmpty) return ""
+    val maxlength = profiles.keys.map(_.length).max
+    val sb = new StringBuilder
+    profiles.keySet.toList.sorted foreach { packageName =>
+      val profile = profiles(packageName)
+      sb.append(rightPad(packageName, maxlength, ' ')).append(" : [")
+        .append(profile.schema.getOrElse("_")).append(",")
+      sb.append(if (isEmpty(profile.prefix)) "_" else profile.prefix)
+      //      if (!module.abbreviations.isEmpty()) {
+      //        sb.append(" , ").append(module.abbreviations)
+      //      }
+      sb.append(']').append("\n")
+    }
+    if (sb.nonEmpty) sb.deleteCharAt(sb.length - 1)
+    sb.toString
+  }
+
+  private def globalSchema: Option[String] = {
+    val s = System.getProperty("beangle.data.orm.global_schema")
+    if (Strings.isBlank(s)) None else Some(s.trim)
+  }
+
+  private def init(): Unit = {
+    val rails = new RailsNamingPolicy(this)
+    namings.put("rails", rails)
+    namings.put("ejb3", new EJB3NamingPolicy(this))
+    defaultProfile.naming = rails
+    globalSchema foreach { s =>
+      defaultProfile._schema = Some(s)
+    }
+    val ms = new mutable.ArrayBuffer[MappingModule]
+    for (url <- resources.paths) addConfig(url, ms)
+    if (logger.isDebugEnabled) {
+      if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
+    }
+    //module排序,使其处理过程稳定化
+    modules = ms.sortBy(_.getClass.getName).toList
+  }
+
+  private def addConfig(url: URL, ms: mutable.ArrayBuffer[MappingModule]): Unit = {
+    try {
+      logger.debug(s"loading $url")
+      val is = url.openStream()
+      if (null != is) {
+        val xml = scala.xml.XML.load(is)
+        (xml \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
+        (xml \ "mapping") foreach { ele =>
+          val name = (ele \ "@name").text
+          val module = Reflections.getInstance[MappingModule]((ele \ "@class").text)
+          if Strings.isNotBlank(name) then module.name = Some(name.trim())
+          ms += module
+        }
+        is.close()
+      }
+      autoWire()
+    } catch {
+      case e: Exception => throw new RuntimeException("property load error in url:" + url, e)
+    }
+  }
+
   /**
-    * adjust parent relation by package name
-    */
+   * adjust parent relation by package name
+   */
   private def autoWire(): Unit = {
     if (profiles.size > 1) {
       profiles.foreach {
@@ -173,8 +189,8 @@ class Profiles(resources: Resources) extends Logging {
       profile.packageName = (melem \ "@package").text
       if (null != parent) profile.packageName = parent.packageName + "." + profile.packageName
     }
-    (melem \ "class") foreach { anElem =>
-      val clazz = ClassLoaders.load((anElem \ "@annotation").text)
+    (melem \ "annotation") foreach { anElem =>
+      val clazz = ClassLoaders.load((anElem \ "@class").text)
       val value = (anElem \ "@value").text
       val annModule = new AnnotationModule(clazz, value)
       profile._annotations += annModule
@@ -193,12 +209,12 @@ class Profiles(resources: Resources) extends Logging {
       profile.naming = namings(naming)
     } else {
       try {
-        val policyClzz=ClassLoaders.load(naming)
+        val policyClzz = ClassLoaders.load(naming)
         val policy = policyClzz.getConstructor(classOf[Profiles]).newInstance(this).asInstanceOf[NamingPolicy]
         namings.put(naming, policy)
         profile.naming = policy
       } catch {
-        case e: Exception => throw new RuntimeException("Cannot find naming policy :" + naming+" due to "+e.getMessage)
+        case e: Exception => throw new RuntimeException("Cannot find naming policy :" + naming + " due to " + e.getMessage)
       }
     }
     profiles.put(profile.packageName, profile)
@@ -216,23 +232,5 @@ class Profiles(resources: Resources) extends Logging {
         replace(newName, "{" + propertyName + "}", if (pv == null) "" else pv)
       case Some(n) => n
     }
-  }
-
-  override def toString: String = {
-    if (profiles.isEmpty) return ""
-    val maxlength = profiles.keys.map(_.length).max
-    val sb = new StringBuilder
-    profiles.keySet.toList.sorted foreach { packageName =>
-      val profile = profiles(packageName)
-      sb.append(rightPad(packageName, maxlength, ' ')).append(" : [")
-        .append(profile.schema.getOrElse("_")).append(",")
-      sb.append(if (isEmpty(profile.prefix)) "_" else profile.prefix)
-      //      if (!module.abbreviations.isEmpty()) {
-      //        sb.append(" , ").append(module.abbreviations)
-      //      }
-      sb.append(']').append("\n")
-    }
-    if (sb.nonEmpty) sb.deleteCharAt(sb.length - 1)
-    sb.toString
   }
 }
