@@ -22,3 +22,12 @@ begin
   return $1 &  $2 ;
 end;
 $BODY$;
+
+CREATE OR REPLACE FUNCTION abs (
+    p                           interval
+) RETURNS interval
+    LANGUAGE SQL IMMUTABLE STRICT
+    SET search_path FROM CURRENT
+AS $$
+SELECT GREATEST (p, -p)
+$$;

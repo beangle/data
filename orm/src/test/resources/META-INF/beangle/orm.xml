@@ -5,9 +5,9 @@
   <mapping class="org.beangle.data.orm.TestModule"/>
   <naming>
     <profile package = "org.beangle.data.orm.hibernate" pluralize="true" schema="${jpa_prefix}">
-      <class annotation = "org.beangle.data.model.annotation.code" prefix="gb_" value="nation" />
-      <class annotation = "org.beangle.data.model.annotation.code" prefix="jb_" value="ministry" />
-      <class annotation = "org.beangle.data.model.annotation.code" prefix="xb_" value="school" schema="school"/>
+      <annotation class= "org.beangle.data.model.annotation.code" prefix="gb_" value="nation" />
+      <annotation class = "org.beangle.data.model.annotation.code" prefix="jb_" value="ministry" />
+      <annotation class = "org.beangle.data.model.annotation.code" prefix="xb_" value="school" schema="school"/>
 
       <profile package = "naming" plau="true" schema="${jpa_prefix}_naming"/>
     </profile>
