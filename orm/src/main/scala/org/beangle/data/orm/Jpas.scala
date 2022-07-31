@@ -18,7 +18,9 @@
 package org.beangle.data.orm
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.model.{ Entity, Component }
+import org.beangle.data.model.{Component, Entity}
+import org.hibernate.proxy.HibernateProxy
+
 import java.lang.annotation.Annotation
 
 object Jpas {
@@ -58,5 +60,12 @@ object Jpas {
     classOf[Component].isAssignableFrom(clazz) ||
       null != clazz.getAnnotation(classOf[org.beangle.commons.bean.component]) ||
       null != clazz.getAnnotation(JpaComponentAnn)
+  }
+
+  def entityClass(entity: Any): Class[_] = {
+    entity match {
+      case proxy: HibernateProxy => proxy.getHibernateLazyInitializer.getPersistentClass
+      case _ => entity.getClass
+    }
   }
 }

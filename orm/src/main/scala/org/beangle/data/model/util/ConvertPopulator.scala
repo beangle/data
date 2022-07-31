@@ -24,26 +24,27 @@ import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.{Objects, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.model.Entity
-import org.beangle.data.model.meta._
+import org.beangle.data.model.meta.*
 
 object ConvertPopulator extends Logging {
   val TrimStr = true
 }
 
 /**
-  * ConvertPopulator
-  * @author chaostone
-  */
+ * ConvertPopulator
+ *
+ * @author chaostone
+ */
 
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.data.model.util.ConvertPopulator._
+import org.beangle.data.model.util.ConvertPopulator.*
 
 class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) extends Populator with Logging {
   val properties = new Properties(conversion)
 
   /** Initialize target's attribuate path
-    * Return the last property value and type.
-    */
+   * Return the last property value and type.
+   */
   override def init(target: Entity[_], et: EntityType, attr: String): (Any, Property) = {
     var propObj: Any = target
     var property: Any = null
@@ -94,19 +95,19 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
   }
 
   /**
-    * 安静的拷贝属性，如果属性非法或其他错误则记录日志
-    */
+   * 安静的拷贝属性，如果属性非法或其他错误则记录日志
+   */
   override def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean = {
     populate(target, entityType, Map(attr -> value)).fails.isEmpty
   }
 
   /**
-    * 将params中的属性([attr(string)->value(object)]，放入到实体类中。
-    * <p>
-    * 如果引用到了别的实体，那么<br>
-    * 如果params中的id为null，则将该实体的置为null.<br>
-    * 否则新生成一个实体，将其id设为params中指定的值。 空字符串按照null处理
-    */
+   * 将params中的属性([attr(string)->value(object)]，放入到实体类中。
+   * <p>
+   * 如果引用到了别的实体，那么<br>
+   * 如果params中的id为null，则将该实体的置为null.<br>
+   * 否则新生成一个实体，将其id设为params中指定的值。 空字符串按照null处理
+   */
   override def populate(entity: Entity[_], entityType: EntityType, params: collection.Map[String, Any]): Populator.CopyResult = {
     val result = new Populator.CopyResult
     val idName = entityType.id.name
@@ -124,11 +125,11 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
             if (null != value && value.toString != "0") {
               val old = properties.get[Any](entity, idName)
               if (null == old || old.toString == "0") {
-                copyValue(entity, attr, value, result)
+                copyValue(entity, entityType, attr, value, result)
               }
             }
           } else {
-            copyValue(entity, attr, value, result)
+            copyValue(entity, entityType, attr, value, result)
           }
         } else {
           val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf('.'))
@@ -144,24 +145,24 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
                       val foreignKey = ft.id.name
                       if (attr.endsWith("." + foreignKey)) {
                         if (null == value) {
-                          copyValue(entity, parentAttr, null, result)
+                          copyValue(entity, entityType, parentAttr, null, result)
                         } else {
                           val oldValue = properties.get[Object](entity, attr)
                           val newValue = convert(ft, foreignKey, value)
                           if (!Objects.equals(oldValue, newValue)) {
                             // 如果外键已经有值
                             if (null != oldValue) {
-                              copyValue(entity, parentAttr, null, result)
+                              copyValue(entity, entityType, parentAttr, null, result)
                               init(entity, entityType, parentAttr)
                             }
                             properties.set(entity, attr, newValue)
                           }
                         }
                       } else {
-                        copyValue(entity, attr, value, result)
+                        copyValue(entity, entityType, attr, value, result)
                       }
                     case _ =>
-                      copyValue(entity, attr, value, result)
+                      copyValue(entity, entityType, attr, value, result)
                   }
                 case _ =>
               }
@@ -184,8 +185,8 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
     }
   }
 
-  private def copyValue(target: AnyRef, attr: String, value: Any, result: Populator.CopyResult): Any = {
-    val targetValue = properties.copy(target, attr, value)
+  private def copyValue(target: AnyRef, entityType: EntityType, attr: String, value: Any, result: Populator.CopyResult): Any = {
+    val targetValue = properties.copy(target, BeanInfos.get(entityType.clazz), attr, value)
     if (null == value && null != targetValue || null != value && null == targetValue) {
       result.addFail(attr, "copied value" + targetValue)
     }
