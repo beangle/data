@@ -49,13 +49,13 @@ object Conditions extends Logging {
   def extractConditions(alias: String, entity: Entity[_]): List[Condition] = {
     if (null == entity) return Nil
     val conditions = new collection.mutable.ListBuffer[Condition]
-    val prefix = if (null != alias && alias.length > 0 && !alias.endsWith(".")) alias + "." else ""
+    val prefix = if (null != alias && alias.nonEmpty && !alias.endsWith(".")) alias + "." else ""
     var curr = ""
     try {
       val props = Properties.writables(entity.getClass)
       for (attr <- props) {
         curr = attr
-        val value = Properties.get(entity, attr)
+        val value = Properties.get[Any](entity, attr)
         if (null != value && !value.isInstanceOf[Seq[_]] && !value.isInstanceOf[java.util.Collection[_]])
           addAttrCondition(conditions, prefix + attr, value)
       }
@@ -107,7 +107,7 @@ object Conditions extends Logging {
       case e: Entity[_] =>
         try {
           val key = "id"
-          val property = Properties.get(e, key)
+          val property = Properties.get[Any](e, key)
           if (Id.isValid(property)) {
             val content = new StringBuilder(name)
             content.append('.').append(key).append(" = :").append(name.replace('.', '_')).append('_').append(key)
@@ -129,7 +129,7 @@ object Conditions extends Logging {
       val props = Properties.writables(component.getClass)
       for (attr <- props) {
         curr = attr
-        val value = Properties.get(component, attr)
+        val value = Properties.get[Any](component, attr)
         if (null != value && !value.isInstanceOf[Seq[_]] && !value.isInstanceOf[java.util.Collection[_]])
           addAttrCondition(conditions, prefix + "." + attr, value)
       }

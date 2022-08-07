@@ -18,7 +18,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings.split
-import org.beangle.commons.xml.NodeOps._
+import org.beangle.commons.xml.NodeOps.given
 import org.beangle.commons.xml.XmlNode
 import org.beangle.data.jdbc.engine.Engines
 
