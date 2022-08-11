@@ -18,8 +18,8 @@
 package org.beangle.data.transfer.importer.listener
 
 import org.beangle.commons.bean.Properties
-import org.beangle.commons.lang.Strings
-import org.beangle.data.dao.EntityDao
+import org.beangle.commons.lang.Strings.*
+import org.beangle.data.dao.{EntityDao, OqlBuilder}
 import org.beangle.data.model.Entity
 import org.beangle.data.transfer.importer.{AbstractImporter, ImportListener, ImportResult, MultiEntityImporter}
 
@@ -37,7 +37,7 @@ object ForeignerListener {
  */
 class ForeignerListener(entityDao: EntityDao) extends ImportListener {
 
-  import ForeignerListener._
+  import ForeignerListener.*
 
   protected val foreignersMap = new collection.mutable.HashMap[String, collection.mutable.HashMap[String, Object]]
 
@@ -63,38 +63,27 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
     val iter = itermTransfer.attrs.iterator
     while (iter.hasNext) {
       val attri = iter.next().name
-      var foreignerKeyIndex = -1
-      val isForeigner = foreignerKeys exists { fk =>
-        foreignerKeyIndex += 1
-        val endWithKey = attri.endsWith("." + fk) && Strings.count(attri, '.') >= 2
-        if (endWithKey) {
-          val shortName = Strings.substringBefore(attri, ".")
-          aliases.contains(shortName)
-        } else {
-          false
+      val isForeigner =
+        foreignerKeys exists { fk =>
+          val endWithKey = attri.endsWith("." + fk) && count(attri, '.') >= 2
+          if endWithKey then aliases.contains(substringBefore(attri, ".")) else false
         }
-      }
       if (isForeigner) {
         val codeStr = transfer.curData(attri).asInstanceOf[String]
         var foreigner: Object = null
         // 外键的代码是空的
-        if (Strings.isNotEmpty(codeStr)) {
-          val codeValue =
-            if (codeStr.contains(" ")) {
-              Strings.substringBefore(codeStr, " ")
-            } else {
-              codeStr
-            }
+        if (isNotEmpty(codeStr)) {
+          val codeValue = if codeStr.contains(" ") then substringBefore(codeStr, " ") else codeStr
           var entity: Object = null
           if (multiEntity) {
-            val shortName = Strings.substringBefore(attri, ".")
+            val shortName = substringBefore(attri, ".")
             entity = transfer.asInstanceOf[MultiEntityImporter].getCurrent(shortName)
           } else {
             entity = transfer.current
           }
 
-          val attr = Strings.substringAfter(attri, ".")
-          var nestedForeigner = Properties.get[Object](entity, Strings.substring(attr, 0, attr.lastIndexOf(".")))
+          val attr = substringAfter(attri, ".")
+          var nestedForeigner = Properties.get[Object](entity, substring(attr, 0, attr.lastIndexOf(".")))
           if (nestedForeigner.isInstanceOf[Option[_]]) {
             nestedForeigner = nestedForeigner.asInstanceOf[Option[AnyRef]].orNull
           }
@@ -106,7 +95,9 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
               foreigner = foreignerMap.get(codeValue).orNull
               if (foreigner == null) {
                 val clazz = nestedForeigner.getClass.asInstanceOf[Class[Entity[_]]]
-                val foreigners = entityDao.findBy(clazz, foreignerKeys(foreignerKeyIndex), List(codeValue))
+                val query = OqlBuilder.from(clazz, "f")
+                query.where(foreignerKeys.map(k => s"f.$k = :fk_value").mkString(" or "), codeValue)
+                val foreigners = entityDao.search(query)
                 if (foreigners.nonEmpty) {
                   foreigner = foreigners.head
                   foreignerMap.put(codeValue, foreigner)
@@ -116,7 +107,7 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
               }
             case _ =>
           }
-          val parentAttr = Strings.substring(attr, 0, attr.lastIndexOf("."))
+          val parentAttr = substring(attr, 0, attr.lastIndexOf("."))
           val entityImporter = transfer.asInstanceOf[MultiEntityImporter]
           entityImporter.populator.populate(entity.asInstanceOf[Entity[_]], entityImporter.domain.getEntity(entity.getClass).get, parentAttr, foreigner)
         }

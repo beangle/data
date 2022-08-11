@@ -18,6 +18,7 @@
 package org.beangle.data.transfer.importer
 
 import org.beangle.commons.lang.Objects
+
 import scala.collection.mutable.ListBuffer
 
 object ImporterMessage {
@@ -27,10 +28,11 @@ object ImporterMessage {
   /** Constant <code>ERROR_ATTRS_EXPORT="error.transfer.attrs.export"</code> */
   val ERROR_ATTRS_EXPORT = "error.transfer.attrs.export"
 }
+
 /**
  * 转换消息
  */
-class ImportMessage(val index: Int, val message: String, value: Any) {
+class ImportMessage(val index: Int, val location: String, val message: String, value: Any) {
 
   /**
    * 消息中使用的对应值

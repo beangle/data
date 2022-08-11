@@ -17,10 +17,10 @@
 
 package org.beangle.data.transfer.importer
 
-import java.util.Locale
-
-import org.beangle.data.transfer.io.{Attribute, Reader}
 import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.io.{Attribute, Reader}
+
+import java.util.Locale
 
 /**
  * 数据转换接口
@@ -71,12 +71,14 @@ trait Importer {
   /**
    * 查询正在转换的对象的次序号,从1开始
    */
-  def tranferIndex: Int
+  def transferIndex: Int
 
   /**
    * 返回方前正在转换成的对象
    */
   def current: AnyRef
+
+  def dataLocation: String
 
   /**
    * 是否忽略空值
@@ -105,6 +107,8 @@ trait Importer {
   var curData: collection.mutable.Map[String, Any] = _
 
   var prepare: ImportPrepare = _
+
+  var stopOnError: Boolean = true
 }
 
 class ImportSetting {
@@ -118,4 +122,6 @@ class ImportSetting {
   var shortName: String = _
 
   var listeners: List[ImportListener] = List.empty[ImportListener]
+
+  var stopOnError: Boolean = true
 }

@@ -33,7 +33,7 @@ class DebugListener extends ImportListener {
   }
 
   override def onItemStart(tr: ImportResult): Unit = {
-    tr.addMessage("start Item", transfer.tranferIndex.toString)
+    tr.addMessage("start Item", transfer.transferIndex.toString)
   }
 
   override def onItemFinish(tr: ImportResult): Unit = {

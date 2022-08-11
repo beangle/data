@@ -121,4 +121,8 @@ class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format = F
     this.sheet.getWorkbook.close()
   }
 
+  /**   当前数据的位置   */
+  override def location: String = {
+    indexInSheet.toString
+  }
 }

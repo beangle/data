@@ -79,4 +79,9 @@ class CsvItemReader(reader: LineNumberReader) extends ItemReader with Logging {
   override def close(): Unit = {
     IOs.close(reader)
   }
+
+  /** 当前数据的位置 */
+  override def location: String = {
+    indexInCsv.toString
+  }
 }
