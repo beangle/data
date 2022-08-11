@@ -76,9 +76,7 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
           var value = entry._2
           // 处理空字符串并对所有的字符串进行trim
           value match {
-            case s: String =>
-              if (Strings.isBlank(s)) value = null
-              else value = Strings.trim(s)
+            case s: String => value = if Strings.isBlank(s) then null else Strings.trim(s)
             case _ =>
           }
           // 处理null值

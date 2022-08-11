@@ -36,6 +36,8 @@ trait Reader {
    */
   def format: Format
 
+  /**当前数据的位置*/
+  def location:String
   /**
    * 关闭
    */

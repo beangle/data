@@ -17,19 +17,18 @@
 
 package org.beangle.data.transfer.importer
 
-import java.util.Locale
-
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
 import org.beangle.data.transfer.io.Attribute
 
+import java.util.Locale
 import scala.collection.mutable.ListBuffer
 
 /** 导入的抽象和缺省实现
-  *
-  * @author chaostone
-  */
+ *
+ * @author chaostone
+ */
 abstract class AbstractImporter extends Importer with Logging {
   protected var transferResult: ImportResult = _
   protected val listeners = new ListBuffer[ImportListener]
@@ -38,59 +37,56 @@ abstract class AbstractImporter extends Importer with Logging {
   protected var index = 0
 
   /**
-    * 进行转换
-    */
+   * 进行转换
+   */
   def transfer(tr: ImportResult): Unit = {
     this.transferResult = tr
     this.transferResult.transfer = this
     val transferStartAt = System.currentTimeMillis()
     try {
       prepare.prepare(this)
-    } catch {
-      // 预导入发生位置错误，错误信息已经记录在tr了
-      case e: Throwable => e.printStackTrace(); return
-    }
-    listeners.foreach(l => l.onStart(tr))
-    while (read()) {
-      val transferItemStart = System.currentTimeMillis()
-      index += 1
-      beforeImportItem()
-      if (isDataValid) {
-        val errors = tr.errors
-        // 实体转换开始
-        listeners.foreach(l => l.onItemStart(tr))
-        // 如果转换前已经存在错误,则不进行转换
-        if (tr.errors == errors) {
-          // 进行转换
-          transferItem()
-          // 实体转换结束
-          listeners.foreach(l => l.onItemFinish(tr))
-          // 如果导入过程中没有错误，将成功记录数增一
-          if (tr.errors == errors) this.success += 1
-          else this.fail += 1
+      listeners.foreach(l => l.onStart(tr))
+      var stopped = false
+      while (!stopped && read()) {
+        index += 1
+        try {
+          beforeImportItem()
+          if (isDataValid) {
+            val errors = tr.errors
+            listeners.foreach(l => l.onItemStart(tr))
+            if (tr.errors == errors) { // 如果转换前已经存在错误,则不进行转换
+              transferItem()
+              listeners.foreach(l => l.onItemFinish(tr))
+              if tr.errors == errors then this.success += 1 else this.fail += 1
+            }
+          }
+        } catch {
+          case e: Throwable =>
+            if stopOnError then
+              stopped = true
+              tr.addFailure("导入异常,剩余数据停止导入", e.getMessage)
+            else
+              tr.addFailure("导入异常", e.getMessage)
+            this.fail += 1
         }
       }
+      listeners.foreach(l => l.onFinish(tr))
+      reader.close()
+    } catch {
+      case e: Throwable => tr.addFailure("导入异常", e.getMessage)
     }
-    listeners.foreach(l => l.onFinish(tr))
-    reader.close()
     logger.debug("importer elapse: " + (System.currentTimeMillis() - transferStartAt))
   }
 
-  def ignoreNull: Boolean = {
-    true
-  }
+  override def ignoreNull: Boolean = true
 
-  def locale: Locale = {
-    Locale.getDefault()
-  }
+  override def locale: Locale = Locale.getDefault()
 
-  def format: Format = {
-    reader.format
-  }
+  override def format: Format = reader.format
 
-  def tranferIndex: Int = {
-    index
-  }
+  override def transferIndex: Int = index
+
+  override def dataLocation: String = if null != reader then reader.location else "-1"
 
   override def addListener(listener: ImportListener): Importer = {
     listeners += listener
@@ -102,8 +98,8 @@ abstract class AbstractImporter extends Importer with Logging {
   }
 
   /**
-    * 改变现有某个属性的值
-    */
+   * 改变现有某个属性的值
+   */
   def changeCurValue(attr: String, value: Any): Unit = {
     this.curData.put(attr, value)
   }
