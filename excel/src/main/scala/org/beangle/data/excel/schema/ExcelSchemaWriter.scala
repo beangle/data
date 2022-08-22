@@ -146,7 +146,7 @@ object ExcelSchemaWriter {
     schema.sheets.find(_.name != sheet.getSheetName) foreach { codeSheet =>
       var codeColIdx = 'A'.toInt
       for (c <- codeSheet.columns if !finded) {
-        if (c.datas == col.refs) {
+        if (c.datas eq col.refs) {
           finded = true
         }
         codeColIdx += 1

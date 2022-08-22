@@ -52,6 +52,16 @@ class ExcelSchema {
   }
 
   def generate(os: OutputStream): Unit = {
+    val template = sheets.head
+    val hasRefs = template.columns.exists(c => null != c.refs && c.refs.nonEmpty)
+    if (hasRefs) {
+      val refSheet = createScheet("参考数据")
+      template.columns foreach { c =>
+        if (null != c.refs && c.refs.nonEmpty) {
+          refSheet.add(c.name).data(c.refs)
+        }
+      }
+    }
     ExcelSchemaWriter.generate(this, os)
   }
 
