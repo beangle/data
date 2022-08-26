@@ -62,6 +62,7 @@ abstract class AbstractImporter extends Importer with Logging {
           }
         } catch {
           case e: Throwable =>
+            logger.error(e.getMessage, e)
             if stopOnError then
               stopped = true
               tr.addFailure("导入异常,剩余数据停止导入", e.getMessage)
@@ -130,13 +131,6 @@ abstract class AbstractImporter extends Importer with Logging {
 
   def setAttrs(attrs: List[Attribute]): Unit = {
     this.attrs = attrs.toArray
-  }
-
-  def description(attr: String): String = {
-    attrs.find(_.name == attr) match {
-      case None => ""
-      case Some(e) => e.description
-    }
   }
 
 }

@@ -109,6 +109,13 @@ trait Importer {
   var prepare: ImportPrepare = _
 
   var stopOnError: Boolean = true
+
+  def description(attr: String): String = {
+    attrs.find(_.name == attr) match {
+      case None => ""
+      case Some(e) => e.description
+    }
+  }
 }
 
 class ImportSetting {

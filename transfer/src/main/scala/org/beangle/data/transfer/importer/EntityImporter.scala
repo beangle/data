@@ -151,9 +151,8 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
         case Some(entityType) =>
           entity = entityType.newInstance()
           currents.put(alias, entity)
-          entity
         case None =>
-          logger.error("Not register entity type for $alias")
+          logger.error(s"Not register entity type for $alias")
           throw new IllegalFormatException("Not register entity type for " + alias, null)
       }
     }
