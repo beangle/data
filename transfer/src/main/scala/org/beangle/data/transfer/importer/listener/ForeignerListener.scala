@@ -18,10 +18,13 @@
 package org.beangle.data.transfer.importer.listener
 
 import org.beangle.commons.bean.Properties
+import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings.*
 import org.beangle.data.dao.{EntityDao, OqlBuilder}
 import org.beangle.data.model.Entity
 import org.beangle.data.transfer.importer.{AbstractImporter, ImportListener, ImportResult, MultiEntityImporter}
+
+import scala.collection.mutable
 
 object ForeignerListener {
   val CACHE_SIZE = 500
@@ -39,14 +42,18 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
 
   import ForeignerListener.*
 
-  protected val foreignersMap = new collection.mutable.HashMap[String, collection.mutable.HashMap[String, Object]]
+  protected val foreignersMap = new mutable.HashMap[String, mutable.HashMap[String, Object]]
 
-  private val foreignerKeys = new collection.mutable.ListBuffer[String]
+  private val foreignerKeys = new mutable.ListBuffer[String]
   foreignerKeys += "code"
 
   private var multiEntity = false
 
   private var aliases: Set[String] = Set.empty
+
+  private val ignores = Collections.newSet[String]
+
+  private var keyAttrs: Set[String] = _
 
   override def onStart(tr: ImportResult): Unit = {
     transfer match {
@@ -55,62 +62,67 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
         aliases = mei.aliases.toSet
       case _ => multiEntity = false
     }
+    // 过滤所有外键
+    val keyNames = Collections.newSet[String]
+    transfer.attrs foreach { attr =>
+      val attrName = attr.name
+      if (!ignores.contains(attrName)) {
+        val isForeigner =
+          foreignerKeys exists { fk =>
+            val endWithKey = attrName.endsWith("." + fk) && count(attrName, '.') >= 2
+            if endWithKey then aliases.contains(substringBefore(attrName, ".")) else false
+          }
+        if isForeigner then keyNames += attrName
+      }
+    }
+    keyAttrs = keyNames.toSet
   }
 
   override def onItemFinish(tr: ImportResult): Unit = {
-    val itermTransfer = transfer.asInstanceOf[AbstractImporter]
-    // 过滤所有外键
-    val iter = itermTransfer.attrs.iterator
+    val iter = keyAttrs.iterator
     while (iter.hasNext) {
-      val attri = iter.next().name
-      val isForeigner =
-        foreignerKeys exists { fk =>
-          val endWithKey = attri.endsWith("." + fk) && count(attri, '.') >= 2
-          if endWithKey then aliases.contains(substringBefore(attri, ".")) else false
+      val attri = iter.next()
+      val codeStr = transfer.curData(attri).asInstanceOf[String]
+      var foreigner: Object = null
+      // 外键的代码是空的
+      if (isNotEmpty(codeStr)) {
+        val codeValue = if codeStr.contains(" ") then substringBefore(codeStr, " ") else codeStr
+        var entity: Object = null
+        if (multiEntity) {
+          val shortName = substringBefore(attri, ".")
+          entity = transfer.asInstanceOf[MultiEntityImporter].getCurrent(shortName)
+        } else {
+          entity = transfer.current
         }
-      if (isForeigner) {
-        val codeStr = transfer.curData(attri).asInstanceOf[String]
-        var foreigner: Object = null
-        // 外键的代码是空的
-        if (isNotEmpty(codeStr)) {
-          val codeValue = if codeStr.contains(" ") then substringBefore(codeStr, " ") else codeStr
-          var entity: Object = null
-          if (multiEntity) {
-            val shortName = substringBefore(attri, ".")
-            entity = transfer.asInstanceOf[MultiEntityImporter].getCurrent(shortName)
-          } else {
-            entity = transfer.current
-          }
 
-          val attr = substringAfter(attri, ".")
-          var nestedForeigner = Properties.get[Object](entity, substring(attr, 0, attr.lastIndexOf(".")))
-          if (nestedForeigner.isInstanceOf[Option[_]]) {
-            nestedForeigner = nestedForeigner.asInstanceOf[Option[AnyRef]].orNull
-          }
-          nestedForeigner match {
-            case _: Entity[_] =>
-              val className = nestedForeigner.getClass.getName
-              val foreignerMap = foreignersMap.getOrElseUpdate(className, new collection.mutable.HashMap[String, Object])
-              if (foreignerMap.size > CACHE_SIZE) foreignerMap.clear()
-              foreigner = foreignerMap.get(codeValue).orNull
-              if (foreigner == null) {
-                val clazz = nestedForeigner.getClass.asInstanceOf[Class[Entity[_]]]
-                val query = OqlBuilder.from(clazz, "f")
-                query.where(foreignerKeys.map(k => s"f.$k = :fk_value").mkString(" or "), codeValue)
-                val foreigners = entityDao.search(query)
-                if (foreigners.nonEmpty) {
-                  foreigner = foreigners.head
-                  foreignerMap.put(codeValue, foreigner)
-                } else {
-                  tr.addFailure("代码不存在", codeValue)
-                }
-              }
-            case _ =>
-          }
-          val parentAttr = substring(attr, 0, attr.lastIndexOf("."))
-          val entityImporter = transfer.asInstanceOf[MultiEntityImporter]
-          entityImporter.populator.populate(entity.asInstanceOf[Entity[_]], entityImporter.domain.getEntity(entity.getClass).get, parentAttr, foreigner)
+        val attr = substringAfter(attri, ".")
+        var nestedForeigner = Properties.get[Object](entity, substring(attr, 0, attr.lastIndexOf(".")))
+        if (nestedForeigner.isInstanceOf[Option[_]]) {
+          nestedForeigner = nestedForeigner.asInstanceOf[Option[AnyRef]].orNull
         }
+        nestedForeigner match {
+          case _: Entity[_] =>
+            val className = nestedForeigner.getClass.getName
+            val foreignerMap = foreignersMap.getOrElseUpdate(className, new collection.mutable.HashMap[String, Object])
+            if (foreignerMap.size > CACHE_SIZE) foreignerMap.clear()
+            foreigner = foreignerMap.get(codeValue).orNull
+            if (foreigner == null) {
+              val clazz = nestedForeigner.getClass.asInstanceOf[Class[Entity[_]]]
+              val query = OqlBuilder.from(clazz, "f")
+              query.where(foreignerKeys.map(k => s"f.$k = :fk_value").mkString(" or "), codeValue)
+              val foreigners = entityDao.search(query)
+              if (foreigners.nonEmpty) {
+                foreigner = foreigners.head
+                foreignerMap.put(codeValue, foreigner)
+              } else {
+                tr.addFailure(transfer.description(attri) + "代码不存在", codeValue)
+              }
+            }
+          case _ =>
+        }
+        val parentAttr = substring(attr, 0, attr.lastIndexOf("."))
+        val entityImporter = transfer.asInstanceOf[MultiEntityImporter]
+        entityImporter.populator.populate(entity.asInstanceOf[Entity[_]], entityImporter.domain.getEntity(entity.getClass).get, parentAttr, foreigner)
       }
     }
   }
@@ -119,4 +131,7 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
     this.foreignerKeys += key
   }
 
+  def ignore(names: String*): Unit = {
+    ignores ++= names
+  }
 }
