@@ -220,7 +220,7 @@ class CellData(val cellRef: CellRef, var cell: Cell) {
   protected def isParamsComment(cellComment: String): Boolean = cellComment.trim.startsWith(JX_PARAMS_PREFIX)
 
   private def setTargetCellType(): Unit = {
-    targetCellType = DataType.toType(evaluationResult.getClass)
+    targetCellType = if null == evaluationResult then DataType.String else DataType.toType(evaluationResult.getClass)
   }
 
   /**

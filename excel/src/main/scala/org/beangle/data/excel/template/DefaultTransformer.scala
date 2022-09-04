@@ -57,7 +57,7 @@ object DefaultTransformer {
 
   def createInitialContext: Context = {
     val context = new Context
-//    context.putVar(POI_CONTEXT_KEY, Sheets)
+    //    context.putVar(POI_CONTEXT_KEY, Sheets)
     context
   }
 }
@@ -221,9 +221,12 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
       val cellAddress = new CellAddress(rowNum, i)
       val comment = sheet.getCellComment(cellAddress)
       if (comment != null && comment.getString != null) {
-        val cellData = CellData(new CellRef(sheet.getSheetName, rowNum, i), null)
-        cellData.cellComment = comment.getString.getString
-        commentDataCells.addOne(cellData)
+        val cc = comment.getString.getString
+        if (Strings.isNotBlank(cc)) {
+          val cellData = CellData(new CellRef(sheet.getSheetName, rowNum, i), null)
+          cellData.cellComment = comment.getString.getString
+          commentDataCells.addOne(cellData)
+        }
       }
     }
     commentDataCells
