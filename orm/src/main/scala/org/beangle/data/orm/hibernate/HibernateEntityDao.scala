@@ -95,7 +95,7 @@ object QuerySupport {
       var i = 1
       val iter = argument.iterator
       while (iter.hasNext) {
-        query.setParameter(i, iter.next().asInstanceOf[AnyRef])
+        setParameter(query, i, iter.next().asInstanceOf[AnyRef])
         i += 1
       }
     }
@@ -108,6 +108,17 @@ object QuerySupport {
   def setParameters[T](query: Query[T], parameterMap: collection.Map[String, _]): Query[T] = {
     if (parameterMap != null && parameterMap.nonEmpty) {
       for ((k, v) <- parameterMap; if null != k) setParameter(query, k, v)
+    }
+    query
+  }
+
+  def setParameter[T](query: Query[T], idx: Int, value: Any): Query[T] = {
+    value match {
+      case null => query.setParameter(idx, null.asInstanceOf[AnyRef])
+      case av: Array[AnyRef] => query.setParameterList(idx, av)
+      case col: java.util.Collection[_] => query.setParameterList(idx, col)
+      case iter: Iterable[_] => query.setParameterList(idx, asJava(iter.toList))
+      case _ => query.setParameter(idx, value)
     }
     query
   }
@@ -279,7 +290,10 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   override def count(clazz: Class[_], params: collection.Map[String, _]): Int = {
     val entityName = entityNameOf(clazz)
     val where = buildWhere(params)
-    val hql = s"select count(*) from ${entityName} where " + where._1
+    val hql =
+      if Strings.isEmpty(where._1) then s"select count(*) from ${entityName}"
+      else s"select count(*) from ${entityName} where " + where._1
+
     val rs = search[Number](hql, where._2)
     if (rs.isEmpty) 0 else rs.head.intValue()
   }
