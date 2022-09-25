@@ -53,10 +53,10 @@ abstract class AbstractImporter extends Importer with Logging {
           beforeImportItem()
           if (isDataValid) {
             val errors = tr.errors
-            listeners.foreach(l => l.onItemStart(tr))
+            for (l <- listeners; if tr.errors == errors) l.onItemStart(tr)
             if (tr.errors == errors) { // 如果转换前已经存在错误,则不进行转换
               transferItem()
-              listeners.foreach(l => l.onItemFinish(tr))
+              for (l <- listeners; if tr.errors == errors) l.onItemFinish(tr)
               if tr.errors == errors then this.success += 1 else this.fail += 1
             }
           }

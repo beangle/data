@@ -240,12 +240,14 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
 
   def add(key: ForeignKey): ForeignKey = {
     key.table = this
+    this.foreignKeys.dropWhileInPlace(_.name == key.name)
     foreignKeys += key
     key
   }
 
   def add(key: UniqueKey): UniqueKey = {
     key.table = this
+    this.uniqueKeys.dropWhileInPlace(_.name == key.name)
     this.uniqueKeys += key
     key
   }
@@ -265,6 +267,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
 
   def add(index: Index): Index = {
     index.table = this
+    this.indexes.dropWhileInPlace(_.name == index.name)
     indexes += index
     index
   }

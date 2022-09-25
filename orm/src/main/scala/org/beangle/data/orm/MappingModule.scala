@@ -61,7 +61,7 @@ object MappingModule {
         if (Strings.isBlank(name)) {
           uk.name = Identifier(Constraint.autoname(uk))
         }
-        holder.mapping.table.uniqueKeys += uk
+        holder.mapping.table.add(uk)
       } else {
         val idx = new Index(holder.mapping.table, Identifier(name))
         idx.unique = false
@@ -72,7 +72,7 @@ object MappingModule {
         if (Strings.isBlank(name)) {
           idx.name = Identifier(Constraint.autoname(idx))
         }
-        holder.mapping.table.indexes += idx
+        holder.mapping.table.add(idx)
       }
     }
   }
