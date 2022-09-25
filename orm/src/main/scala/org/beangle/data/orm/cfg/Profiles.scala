@@ -132,16 +132,16 @@ class Profiles(resources: Resources) extends Logging {
     globalSchema foreach { s =>
       defaultProfile._schema = Some(s)
     }
-    val ms = new mutable.ArrayBuffer[MappingModule]
+    val ms = new mutable.HashMap[String, MappingModule]
     for (url <- resources.paths) addConfig(url, ms)
     if (logger.isDebugEnabled) {
       if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
     }
     //module排序,使其处理过程稳定化
-    modules = ms.sortBy(_.getClass.getName).toList
+    modules = ms.values.toSeq.sortBy(_.getClass.getName).toList
   }
 
-  private def addConfig(url: URL, ms: mutable.ArrayBuffer[MappingModule]): Unit = {
+  private def addConfig(url: URL, ms: mutable.HashMap[String, MappingModule]): Unit = {
     try {
       logger.debug(s"loading $url")
       val is = url.openStream()
@@ -150,9 +150,14 @@ class Profiles(resources: Resources) extends Logging {
         (xml \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
         (xml \ "mapping") foreach { ele =>
           val name = (ele \ "@name").text
-          val module = Reflections.getInstance[MappingModule]((ele \ "@class").text)
-          if Strings.isNotBlank(name) then module.name = Some(name.trim())
-          ms += module
+          val clz = (ele \ "@class").text
+          if (ms.contains(clz)) {
+            logger.warn("duplicated moudule " + clz)
+          } else {
+            val module = Reflections.getInstance[MappingModule](clz)
+            if Strings.isNotBlank(name) then module.name = Some(name.trim())
+            ms.put(clz, module)
+          }
         }
         is.close()
       }
