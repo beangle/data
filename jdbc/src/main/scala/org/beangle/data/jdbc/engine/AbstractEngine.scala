@@ -31,7 +31,7 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
 
   def version: Version
 
-  def registerReserved(resourceName:String): Unit = {
+  def registerReserved(resourceName: String): Unit = {
     keywords ++= Engine.loadKeywords(resourceName)
   }
 
@@ -51,6 +51,7 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
   }
 
   /** 按照该类型的容量进行登记
+   *
    * @param tuples 类型映射
    */
   protected def registerTypes2(tuples: (Int, Int, String)*): Unit = {

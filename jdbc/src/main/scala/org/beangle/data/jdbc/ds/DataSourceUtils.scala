@@ -22,9 +22,8 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty, substringBetween}
 import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.engine.Engine
+import org.beangle.data.jdbc.engine.{DriverInfo, Drivers, Engine}
 import org.beangle.data.jdbc.meta.Identifier
-import org.beangle.data.jdbc.vendor.{DriverInfo, Vendors}
 
 import java.io.InputStream
 import java.util.Properties
@@ -65,10 +64,11 @@ object DataSourceUtils extends Logging {
     if (null != username) properties.put("username", username)
     if (null != password) properties.put("password", password)
 
+    val driverInfo = Drivers.get(driver).get
     if (properties.containsKey("jdbcUrl")) {
-      Class.forName(Vendors.drivers(driver).className)
+      Class.forName(driverInfo.className)
     } else {
-      if (!properties.containsKey("dataSourceClassName")) properties.put("dataSourceClassName", Vendors.drivers(driver).dataSourceClassName)
+      if (!properties.containsKey("dataSourceClassName")) properties.put("dataSourceClassName", driverInfo.dataSourceClassName)
     }
     properties
   }
@@ -92,9 +92,9 @@ object DataSourceUtils extends Logging {
     var driverName = (xml \\ "driver").text.trim
     if (isEmpty(driverName) && isNotEmpty(url)) driverName = substringBetween(url, "jdbc:", ":")
 
-    Vendors.drivers.get(driverName) match {
+    Drivers.get(driverName) match {
       case Some(d) => driver = d
-      case None => throw new RuntimeException("Not Supported:[" + driverName + "] supports:" + Vendors.driverPrefixes)
+      case None => throw new RuntimeException("Not Supported:[" + driverName + "] supports:" + Drivers.driverPrefixes)
     }
     val dbconf = new DatasourceConfig(driverName)
     if (isNotEmpty(url)) dbconf.props.put("url", url)

@@ -26,7 +26,7 @@ import org.beangle.commons.lang.Strings._
 import org.beangle.commons.lang.{Numbers, SystemInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.ds.{DataSourceUtils, DatasourceConfig}
-import org.beangle.data.jdbc.vendor.UrlFormat
+import org.beangle.data.jdbc.engine.UrlFormat
 
 object Sql extends Logging {
 

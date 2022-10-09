@@ -43,6 +43,8 @@ class H2 extends AbstractEngine {
     s.dropSql = "drop sequence if exists {name}"
   }
 
+  options.drop.table.sql = "drop table {name} cascade"
+
   options.limit.pattern = "{} limit ?"
   options.limit.offsetPattern = "{} limit ? offset ?"
   options.limit.bindInReverseOrder = true

@@ -19,7 +19,7 @@ package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.meta._
+import org.beangle.data.jdbc.meta.*
 
 trait AbstractDialect extends Dialect {
   self: Engine =>
@@ -30,7 +30,7 @@ trait AbstractDialect extends Dialect {
    */
   override def createTable(table: Table): String = {
     val buf = new StringBuilder("create table").append(' ').append(table.qualifiedName).append(" (")
-    val iter: Iterator[Column] = table.columns.iterator
+    val iter = table.columns.iterator
     while (iter.hasNext) {
       val col: Column = iter.next()
       buf.append(col.name.toLiteral(this)).append(' ')
@@ -266,7 +266,7 @@ trait AbstractDialect extends Dialect {
   }
 
   override def dropIndex(i: Index): String = {
-    if (i.table.schema.name.value.length > 0) {
+    if (i.table.schema.name.value.nonEmpty) {
       "drop index " + i.table.schema.name.toString + "." + i.literalName
     } else {
       "drop index " + i.literalName

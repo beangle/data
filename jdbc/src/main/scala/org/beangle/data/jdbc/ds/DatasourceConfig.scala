@@ -17,9 +17,7 @@
 
 package org.beangle.data.jdbc.ds
 
-import org.beangle.data.jdbc.engine.Engine
 import org.beangle.data.jdbc.meta.Identifier
-import org.beangle.data.jdbc.vendor.Vendors
 
 /**
  * using serverName/database or url alternative

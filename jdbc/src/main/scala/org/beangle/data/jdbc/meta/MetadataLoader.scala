@@ -17,9 +17,6 @@
 
 package org.beangle.data.jdbc.meta
 
-import java.sql.{DatabaseMetaData, ResultSet, Statement}
-import java.util.concurrent.ConcurrentLinkedQueue
-
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings.replace
 import org.beangle.commons.lang.time.Stopwatch
@@ -27,6 +24,8 @@ import org.beangle.commons.lang.{Strings, ThreadTasks}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.Engine
 
+import java.sql.{DatabaseMetaData, ResultSet, Statement}
+import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
@@ -58,7 +57,7 @@ object MetadataColumns {
 
 class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
 
-  import MetadataColumns._
+  import MetadataColumns.*
 
   def loadTables(schema: Schema, extras: Boolean): Unit = {
     val TYPES = Array("TABLE")
@@ -163,9 +162,9 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     // load index
     rs = meta.getConnection.createStatement().executeQuery(sql.indexInfoSql.replace(":schema", schemaName))
     while (rs.next()) {
-      getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach {
-        table =>
-          val indexName = rs.getString(IndexName)
+      getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
+        val indexName = rs.getString(IndexName)
+        if (!table.primaryKey.exists(_.name.value == indexName)) {
           val idx = table.getIndex(indexName) match {
             case None => table.add(new Index(table, Identifier(indexName)))
             case Some(oldIdx) => oldIdx
@@ -179,6 +178,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
             case Some(column) => idx.addColumn(column.name)
             case None => idx.addColumn(Identifier(columnName))
           }
+        }
       }
     }
     rs.close()
