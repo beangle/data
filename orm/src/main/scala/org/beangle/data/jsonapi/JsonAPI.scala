@@ -19,6 +19,7 @@ package org.beangle.data.jsonapi
 
 import org.beangle.commons.collection.{Collections, Properties}
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.lang.reflect.TypeInfo.{IterableType, OptionType}
 import org.beangle.commons.text.escape.JavascriptEscaper
@@ -31,9 +32,14 @@ import java.time.*
 import java.time.format.DateTimeFormatter
 import scala.collection.mutable
 
+/**
+ * Create JSON api
+ * @see https://jsonapi.org/format/
+ */
+@beta
 object JsonAPI {
 
-  def newJson(data: Resource, context: Context): Json = {
+  def newJson(data: Resource)(using context: Context): Json = {
     val json = new Json
     json.put("datas", data)
     val included = context.includedSeq
@@ -42,7 +48,7 @@ object JsonAPI {
     json
   }
 
-  def newJson(datas: Iterable[Resource], context: Context): Json = {
+  def newJson(datas: Iterable[Resource])(using context: Context): Json = {
     val json = new Json
     json.put("datas", datas)
     val included = context.includedSeq
@@ -63,7 +69,7 @@ object JsonAPI {
     ctx
   }
 
-  def create(entity: Entity[_], context: JsonAPI.Context, path: String): Resource = {
+  def create(entity: Entity[_], path: String)(using context: Context): Resource = {
     val clazz = Jpas.entityClass(entity)
     val entityType = typeName(clazz)
     val id = entity.id.toString
@@ -77,22 +83,23 @@ object JsonAPI {
         val ginfo = BeanInfos.get(clazz)
         val filter = context.filters.getFilter(clazz)
         ginfo.properties foreach { p =>
-          if (p._2.getter.nonEmpty && !p._2.isTransient && filter.isIncluded(p._1)) {
+          if (p._2.isTransient) filter.transients += p._1
+          if (p._2.getter.nonEmpty && filter.isIncluded(p._1)) {
             val pName = p._1
             val pValue = p._2.getter.get.invoke(entity)
             val typeInfo = p._2.typeinfo
             if typeInfo.isIterable then
               val elemType = typeInfo.asInstanceOf[IterableType].elementType
               if classOf[Entity[_]].isAssignableFrom(elemType.clazz) then
-                m.refs(pName, pValue.asInstanceOf[Iterable[Entity[_]]], context)
+                m.refs(pName, pValue.asInstanceOf[Iterable[Entity[_]]])
               else
                 m.attr(pName, pValue)
             else if typeInfo.isOptional then
               pValue.asInstanceOf[Option[_]] foreach { inner =>
-                m.field(pName, inner, context)
+                m.field(pName, inner)
               }
             else
-              m.field(pName, pValue, context)
+              m.field(pName, pValue)
           }
         }
         if m.attributes.isEmpty then m.attributes = null
@@ -118,9 +125,12 @@ object JsonAPI {
   }
 
   class Filter(val includes: Set[String], val excludes: Set[String]) {
+
+    val transients: mutable.Set[String] = Collections.newSet[String]
+
     def isIncluded(name: String): Boolean = {
       if excludes.contains(name) then false
-      else includes.contains("*") || includes.contains(name)
+      else includes.contains(name) || (includes.contains("*") && !transients.contains(name))
     }
 
     def merge(newIncludes: collection.Set[String], newExcludes: collection.Set[String]): Filter = {
@@ -214,12 +224,14 @@ object JsonAPI {
     }
 
     def mkJson(entities: Iterable[Entity[_]], properties: String*): Json = {
+      given context: Context = this
+
       if entities.nonEmpty then
         val first = entities.head
         this.filters.include(Jpas.entityClass(first), properties: _*)
       end if
-      val resources = entities.map { g => JsonAPI.create(g, this, "") }
-      JsonAPI.newJson(resources, this)
+      val resources = entities.map { g => JsonAPI.create(g, "") }
+      JsonAPI.newJson(resources)
     }
 
   }
@@ -232,20 +244,28 @@ object JsonAPI {
   class Resource(val id: String, val `type`: String, path: String) {
     var attributes = new Properties
     var relationships = new Properties
+    var links: Links = _
 
-    def field(pName: String, value: Any, context: JsonAPI.Context): Unit = {
+    def linkSelf(url: String): Resource = {
+      links = new Links(url)
+      this
+    }
+
+    def field(pName: String, value: Any)(using context: JsonAPI.Context): Resource = {
       value match {
-        case e: Entity[_] => this.ref(pName, e, context)
+        case e: Entity[_] => this.ref(pName, e)
         case _ => this.attr(pName, value)
       }
+      this
     }
 
-    def attr(name: String, value: Any): Unit = {
+    def attr(name: String, value: Any): Resource = {
       if (null == attributes) attributes = new Properties
       attributes.put(name, value)
+      this
     }
 
-    def ref(name: String, value: Entity[_], context: JsonAPI.Context): Unit = {
+    def ref(name: String, value: Entity[_])(using context: JsonAPI.Context): Resource = {
       val pJson = new Json
       val typ = typeName(Jpas.entityClass(value))
       val id = value.id.toString
@@ -256,10 +276,12 @@ object JsonAPI {
       val refPath = pathFor(name)
       if context.shouldInclude(refPath) then
         val refDatas = context.includedResources.getOrElseUpdate(typ, Collections.newMap)
-        if !refDatas.contains(id) then JsonAPI.create(value, context, refPath)
+        if !refDatas.contains(id) then JsonAPI.create(value, refPath)
+
+      this
     }
 
-    def refs(name: String, pValues: Iterable[Entity[_]], context: JsonAPI.Context): Unit = {
+    def refs(name: String, pValues: Iterable[Entity[_]])(using context: JsonAPI.Context): Resource = {
       if pValues.nonEmpty then
         val pJson = new Json
         val typ = typeName(Jpas.entityClass(pValues.head))
@@ -274,9 +296,10 @@ object JsonAPI {
             val refDatas = context.includedResources.getOrElseUpdate(typ, Collections.newMap)
             val id = pValue.id.toString
             if !refDatas.contains(id) then
-              JsonAPI.create(pValue, context, refsPath)
+              JsonAPI.create(pValue, refsPath)
           }
       end if
+      this
     }
 
     def pathFor(name: String): String = {
@@ -292,4 +315,9 @@ object JsonAPI {
       new Properties("id" -> id, "type" -> typeName)
     }
   }
+
+  class Links(val self: String) {
+    var related: Option[String] = None
+  }
+
 }
