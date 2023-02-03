@@ -24,7 +24,6 @@ import java.util.regex.Pattern
 
 object Drivers {
 
-
   /** PostgreSQL driver info
    *
    * @see https://jdbc.postgresql.org/documentation/head/connect.html

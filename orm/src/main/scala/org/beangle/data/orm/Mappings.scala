@@ -207,7 +207,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val pm = etm.id
     val idName = pm.name
     val column = pm.asInstanceOf[OrmSingularProperty].columns.head
-    column.comment = Some(getComment(clazz, idName) + (":" + etm.idGenerator.name))
+    column.comment = Some(getComment(clazz, idName) + (":" + etm.idGenerator.strategy))
     etm.table.createPrimaryKey("", column.name.toLiteral(etm.table.engine))
     etm.table.comment = Some(getComment(clazz, clazz.getSimpleName))
     etm.table.module = etm.module
@@ -576,7 +576,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val property = new OrmSingularProperty(name, clazz, typeInfo.isOptional, typ)
     property.joinColumn = Some(column)
     c.addProperty(property)
-    entity.table.add(column) //FIXME merge into addProperty
+    entity.table.add(column)
   }
 
   private def newColumn(name: String, clazz: Class[_], optional: Boolean): Column = {

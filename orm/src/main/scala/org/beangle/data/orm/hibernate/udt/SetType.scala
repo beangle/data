@@ -17,10 +17,10 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import java.{util => ju}
-
+import java.util as ju
 import org.hibernate.collection.spi.PersistentCollection
 import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.metamodel.CollectionClassification
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
 
@@ -33,11 +33,11 @@ import scala.jdk.javaapi.CollectionConverters.asJava
 class SetType extends UserCollectionType {
   type MSet = mutable.Set[Object]
 
-  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection = {
+  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
     new PersistentSet(session)
   }
 
-  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection = {
+  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[_] = {
     new PersistentSet(session, collection.asInstanceOf[MSet])
   }
 
@@ -52,13 +52,18 @@ class SetType extends UserCollectionType {
   override def indexOf(collection: Object, entity: Object): Object = null
 
   override def replaceElements(original: Object, target: Object, persister: CollectionPersister,
-                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor): Unit = {
+                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor): Object = {
     val targetSeq = target.asInstanceOf[MSet]
     targetSeq.clear()
-    targetSeq ++= original.asInstanceOf[Seq[Object]]
+    targetSeq ++= original.asInstanceOf[Iterable[Object]]
+    targetSeq
   }
 
   override def instantiate(anticipatedSize: Int): Object = {
     new mutable.HashSet[Object]
   }
+
+  override def getCollectionClass: Class[_] = classOf[MSet]
+
+  override def getClassification: CollectionClassification = CollectionClassification.SET
 }

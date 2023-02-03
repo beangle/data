@@ -30,7 +30,7 @@ class Oracle10g extends AbstractEngine {
     SMALLINT -> "number(5,0)", TINYINT -> "number(3,0)", INTEGER -> "number(10,0)", BIGINT -> "number(19,0)",
     FLOAT -> "float", DOUBLE -> "double precision",
     DECIMAL -> "number($p,$s)", NUMERIC -> "number($p,$s)",
-    DATE -> "date", TIME -> "date", TIMESTAMP -> "date",
+    DATE -> "date", TIME -> "date", TIMESTAMP -> "date",TIMESTAMP_WITH_TIMEZONE -> "timestamp with time zone",
     BINARY -> "raw", VARBINARY -> "long raw", LONGVARBINARY -> "long raw",
     BLOB -> "blob", CLOB -> "clob", NCLOB -> "nclob",
     JAVA_OBJECT -> "blob")

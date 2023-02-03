@@ -17,26 +17,23 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import java.io.{Serializable => JSerializable}
-import java.sql.ResultSet
-import java.{util => ju}
-
 import org.hibernate.`type`.Type
-import org.hibernate.collection.internal.AbstractPersistentCollection
-import org.hibernate.collection.internal.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
+import org.hibernate.collection.spi.AbstractPersistentCollection
+import org.hibernate.collection.spi.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
 import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.hibernate.loader.CollectionAliases
+import org.hibernate.metamodel.mapping.PluralAttributeMapping
 import org.hibernate.persister.collection.CollectionPersister
 
+import java.io.Serializable as JSerializable
+import java.sql.ResultSet
+import java.util as ju
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
 class PersistentMap(session: SharedSessionContractImplementor)
-  extends AbstractPersistentCollection(session) with mutable.Map[Object, Object] {
+  extends AbstractPersistentCollection[Object](session) with mutable.Map[Object, Object] {
   type MM = mutable.Map[Object, Object]
   type MHashMap = mutable.HashMap[Object, Object]
-
-  private var loadingEntries: mutable.ListBuffer[Array[Object]] = _
 
   private var map: mutable.Map[Object, Object] = null
 
@@ -55,7 +52,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     cloned
   }
 
-  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[_] = {
+  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[Object] = {
     SeqHelper.getOrphans(snapshot.asInstanceOf[MM].values, map.values, entityName, getSession)
   }
 
@@ -65,16 +62,30 @@ class PersistentMap(session: SharedSessionContractImplementor)
     (sn.size == map.size) && !map.exists { e => elementType.isDirty(e._2, sn.get(e._1).orNull, getSession) }
   }
 
+  override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
+    this.map = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Map[Object, Object]]
+    endRead()
+  }
+
+  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
+    val collectionDescriptor = attributeMapping.getCollectionDescriptor
+    val size = if null == loadingStateList then 0 else loadingStateList.size
+    this.map = collectionDescriptor.getCollectionSemantics
+      .instantiateRaw(size, collectionDescriptor).asInstanceOf[mutable.Map[Object, Object]]
+    if null != loadingStateList then
+      val i = loadingStateList.iterator()
+      while (i.hasNext) {
+        val kv = i.next().asInstanceOf[Array[Object]]
+        this.map.put(kv(0), kv(1))
+      }
+  }
+
   override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
     snapshot.asInstanceOf[MM].isEmpty
   }
 
   override def isWrapper(collection: Object): Boolean = {
     map eq collection
-  }
-
-  def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int): Unit = {
-    this.map = persister.getCollectionType.instantiate(anticipatedSize).asInstanceOf[MM]
   }
 
   override def size: Int = {
@@ -138,37 +149,16 @@ class PersistentMap(session: SharedSessionContractImplementor)
     map.toString()
   }
 
-  override def readFrom(rs: ResultSet, persister: CollectionPersister, descriptor: CollectionAliases,
-                        owner: Object): Object = {
-    val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases, getSession)
-    if (null != element) {
-      val index = persister.readIndex(rs, descriptor.getSuffixedIndexAliases, getSession)
-      if (loadingEntries == null) loadingEntries = new mutable.ListBuffer[Array[Object]]
-      loadingEntries += Array[Object](index, element)
-    }
-    element
-  }
-
-  override def endRead(): Boolean = {
-    if (loadingEntries != null) {
-      loadingEntries.foreach { entry =>
-        map.put(entry(0), entry(1))
-      }
-      loadingEntries = null
-    }
-    super.endRead()
-  }
-
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
     asJava(map.iterator)
   }
 
-  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable, owner: Object): Unit = {
+  override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
     val size = array.length
-    beforeInitialize(persister, size)
+    this.map = persister.getCollectionType.instantiate(size).asInstanceOf[MM]
     Range(0, size, 2) foreach { i =>
-      map.put(
+      this.map.put(
         persister.getIndexType.assemble(array(i), getSession, owner),
         persister.getElementType.assemble(array(i + 1), getSession, owner))
     }
@@ -240,7 +230,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     map.iterator
   }
 
-  final class Put(val value: (Object, Object)) extends DelayedOperation {
+  final class Put(val value: (Object, Object)) extends DelayedOperation[Object] {
     override def operate(): Unit = {
       map += value
     }
@@ -250,7 +240,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     override def getOrphan(): Object = null
   }
 
-  final class Remove(index: Object, old: Object) extends DelayedOperation {
+  final class Remove(index: Object, old: Object) extends DelayedOperation[Object] {
     override def operate(): Unit = {
       map.remove(index)
     }
@@ -260,7 +250,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     override def getOrphan(): Object = old
   }
 
-  final class Clear extends DelayedOperation {
+  final class Clear extends DelayedOperation[Object] {
     override def operate(): Unit = {
       map.clear()
     }

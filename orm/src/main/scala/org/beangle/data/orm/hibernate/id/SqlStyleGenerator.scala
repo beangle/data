@@ -17,31 +17,31 @@
 
 package org.beangle.data.orm.hibernate.id
 
-import java.sql.Connection
-import java.time.LocalDate
-import java.{ util => ju }
-
-import org.beangle.commons.lang.{ JLong, Strings }
+import org.beangle.commons.lang.{JLong, Strings}
 import org.beangle.data.jdbc.meta.Table
 import org.beangle.data.orm.hibernate.cfg.MappingService
-import org.hibernate.`type`.{ LongType, Type }
+import org.hibernate.`type`.Type
 import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.hibernate.id.{ Configurable, IdentifierGenerator }
-import org.hibernate.id.PersistentIdentifierGenerator.{ SCHEMA, TABLE }
+import org.hibernate.id.PersistentIdentifierGenerator.{SCHEMA, TABLE}
+import org.hibernate.id.{Configurable, IdentifierGenerator}
 import org.hibernate.jdbc.AbstractReturningWork
 import org.hibernate.service.ServiceRegistry
+
+import java.sql.Connection
+import java.time.LocalDate
+import java.util as ju
 
 /**
  * Id generator based on function or procedure,
  * format:
  *
- *   {{{
+ * {{{
  *      id_function()
- *   }}}
+ * }}}
  *
- *   default function is date_id
+ * default function is date_id
  */
-abstract class SqlStyleGenerator extends IdentifierGenerator  {
+abstract class SqlStyleGenerator extends IdentifierGenerator {
 
   protected def sql: String
 

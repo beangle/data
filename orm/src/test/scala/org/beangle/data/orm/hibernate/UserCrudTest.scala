@@ -30,7 +30,7 @@ object UserCrudTest {
 
   def testCrud(sf: SessionFactory): Unit = {
     val entityDao = new HibernateEntityDao(sf)
-    val session = sf.getCurrentSession
+    val session = sf.getCurrentSession()
     val transaction = session.beginTransaction()
     val user = new User(1)
     user.name = new Name

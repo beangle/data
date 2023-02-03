@@ -17,6 +17,6 @@
 
 package org.beangle.data.model
 
-trait Component {
+trait Component extends Serializable {
 
 }

@@ -17,13 +17,13 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import java.io.{Serializable => JSerializable}
-import java.lang.reflect.{Constructor, Field}
-import java.sql.{PreparedStatement, ResultSet, Types}
-import java.{util => ju}
-
 import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.usertype.{ParameterizedType, UserType}
+
+import java.io.Serializable as JSerializable
+import java.lang.reflect.{Constructor, Field}
+import java.sql.{PreparedStatement, ResultSet, Types}
+import java.util as ju
 
 object ValueType {
   val types = Map[Class[_], Int]((classOf[Short], Types.SMALLINT), (classOf[Int], Types.INTEGER),
@@ -35,88 +35,85 @@ object ValueType {
     (classOf[String], new StringMapper))
 
   trait ValueMapper {
-    def newInstance(constructor: Constructor[Object], resultSet: ResultSet, name: String): Object = {
-      val value = getValue(resultSet, name)
+    def newInstance(constructor: Constructor[Object], resultSet: ResultSet, position: Int): Object = {
+      val value = getValue(resultSet, position)
       if (resultSet.wasNull()) {
         return null;
       }
       constructor.newInstance(value)
     }
 
-    def getValue(resultSet: ResultSet, name: String): Object
+    def getValue(resultSet: ResultSet, position: Int): Object
   }
 
   class ShortMapper extends ValueMapper {
-    override def getValue(resultSet: ResultSet, name: String): Object = {
-      java.lang.Short.valueOf(resultSet.getShort(name))
+    override def getValue(resultSet: ResultSet, position: Int): Object = {
+      java.lang.Short.valueOf(resultSet.getShort(position))
     }
   }
 
   class IntMapper extends ValueMapper {
-    override def getValue(resultSet: ResultSet, name: String): Object = {
-      java.lang.Integer.valueOf(resultSet.getInt(name))
+    override def getValue(resultSet: ResultSet, position: Int): Object = {
+      java.lang.Integer.valueOf(resultSet.getInt(position))
     }
   }
 
   class LongMapper extends ValueMapper {
-    override def getValue(resultSet: ResultSet, name: String): Object = {
-      java.lang.Long.valueOf(resultSet.getLong(name))
+    override def getValue(resultSet: ResultSet, position: Int): Object = {
+      java.lang.Long.valueOf(resultSet.getLong(position))
     }
   }
 
   class FloatMapper extends ValueMapper {
-    override def getValue(resultSet: ResultSet, name: String): Object = {
-      java.lang.Float.valueOf(resultSet.getFloat(name))
+    override def getValue(resultSet: ResultSet, position: Int): Object = {
+      java.lang.Float.valueOf(resultSet.getFloat(position))
     }
   }
 
   class DoubleMapper extends ValueMapper {
-    override def getValue(resultSet: ResultSet, name: String): Object = {
-      java.lang.Double.valueOf(resultSet.getDouble(name))
+    override def getValue(resultSet: ResultSet, position: Int): Object = {
+      java.lang.Double.valueOf(resultSet.getDouble(position))
     }
   }
 
   class StringMapper extends ValueMapper {
-    override def getValue(resultSet: ResultSet, name: String): Object = {
-      resultSet.getString(name)
+    override def getValue(resultSet: ResultSet, position: Int): Object = {
+      resultSet.getString(position)
     }
   }
 
 }
 
-class ValueType extends UserType with ParameterizedType {
-  var returnedClass: Class[_] = _
-  var sqlTypes: Array[Int] = _
+class ValueType extends UserType[Object] with ParameterizedType {
+  var returnedClass: Class[Object] = _
+  var sqlType: Int = _
   var field: Field = _
   var constructor: Constructor[Object] = _
   var valueMapper: ValueType.ValueMapper = _
 
-  override def equals(x: Object, y: Object): Boolean = {
-    x == y
-  }
+  override def getSqlType: Int = sqlType
+  override def equals(x: Object, y: Object): Boolean = x == y
 
-  override def hashCode(x: Object): Int = {
-    x.hashCode()
-  }
+  override def hashCode(x: Object): Int = x.hashCode()
 
-  override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SharedSessionContractImplementor, owner: Object): Object = {
-    valueMapper.newInstance(constructor, resultSet, names(0))
+  override def nullSafeGet(resultSet: ResultSet, position: Int, session: SharedSessionContractImplementor, owner: Object): Object = {
+    valueMapper.newInstance(constructor, resultSet, position)
   }
 
   override def nullSafeSet(statement: PreparedStatement, value: Object, index: Int, session: SharedSessionContractImplementor): Unit = {
     if (value == null) {
-      statement.setNull(index, sqlTypes(0))
+      statement.setNull(index, sqlType)
     } else {
       statement.setObject(index, field.get(value))
     }
   }
 
   override def setParameterValues(parameters: ju.Properties): Unit = {
-    this.returnedClass = Class.forName(parameters.getProperty("valueClass"))
+    this.returnedClass = Class.forName(parameters.getProperty("valueClass")).asInstanceOf[Class[Object]]
     var underlyClass: Class[_] = null
     this.returnedClass.getDeclaredFields foreach { f =>
       underlyClass = f.getType
-      this.sqlTypes = Array(ValueType.types(underlyClass))
+      this.sqlType = ValueType.types(underlyClass)
       this.field = f
     }
     if (this.field == null || underlyClass == null)
@@ -128,7 +125,7 @@ class ValueType extends UserType with ParameterizedType {
 
   override def deepCopy(value: Object): Object = value
 
-  override def isMutable() = false
+  override def isMutable = false
 
   override def disassemble(value: Object): JSerializable = {
     value.asInstanceOf[JSerializable]

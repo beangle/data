@@ -17,54 +17,47 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import java.io.{ Serializable => JSerializable }
-import java.sql.{ PreparedStatement, ResultSet, Types }
-import java.time.{ LocalDate, YearMonth }
-
 import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.usertype.UserType
 
-class YearMonthType extends UserType {
-  var returnedClass: Class[_] = classOf[YearMonth]
-  var sqlTypes: Array[Int] = Array(Types.DATE)
+import java.io.Serializable as JSerializable
+import java.sql.{PreparedStatement, ResultSet, Types}
+import java.time.{LocalDate, YearMonth}
 
-  override def equals(x: Object, y: Object): Boolean = {
-    x == y
+class YearMonthType extends UserType[YearMonth] {
+  var returnedClass = classOf[YearMonth]
+
+  override def getSqlType: Int = Types.DATE
+
+  override def equals(x: YearMonth, y: YearMonth): Boolean = x == y
+
+  override def hashCode(x: YearMonth): Int = x.hashCode()
+
+  override def nullSafeGet(resultSet: ResultSet, position: Int, session: SharedSessionContractImplementor, owner: Object): YearMonth = {
+    val value = resultSet.getDate(position)
+    if resultSet.wasNull() then null else YearMonth.from(value.toLocalDate)
   }
 
-  override def hashCode(x: Object): Int = {
-    x.hashCode()
-  }
-
-  override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SharedSessionContractImplementor, owner: Object): Object = {
-    val value = resultSet.getDate(names(0))
-    if (resultSet.wasNull()) {
-      null
-    } else {
-      YearMonth.from(value.toLocalDate)
-    }
-  }
-
-  override def nullSafeSet(statement: PreparedStatement, value: Object, index: Int, session: SharedSessionContractImplementor): Unit = {
+  override def nullSafeSet(statement: PreparedStatement, value: YearMonth, index: Int, session: SharedSessionContractImplementor): Unit = {
     if (value == null) {
-      statement.setNull(index, sqlTypes(0))
+      statement.setNull(index, getSqlType)
     } else {
-      val ym = value.asInstanceOf[YearMonth]
-      val date = LocalDate.of(ym.getYear, ym.getMonth, 1)
+      val date = LocalDate.of(value.getYear, value.getMonth, 1)
       statement.setDate(index, java.sql.Date.valueOf(date))
     }
   }
 
-  override def deepCopy(value: Object): Object = value
+  override def deepCopy(value: YearMonth): YearMonth = value
 
   override def isMutable() = false
 
-  override def disassemble(value: Object): JSerializable = {
+  override def disassemble(value: YearMonth): JSerializable = {
     value.asInstanceOf[JSerializable]
   }
-  override def assemble(cached: JSerializable, owner: Object): Object = {
-    cached.asInstanceOf[Object]
+
+  override def assemble(cached: JSerializable, owner: Object): YearMonth = {
+    cached.asInstanceOf[YearMonth]
   }
 
-  override def replace(original: Object, target: Object, owner: Object) = original
+  override def replace(original: YearMonth, target: YearMonth, owner: Object): YearMonth = original
 }

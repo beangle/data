@@ -17,44 +17,53 @@
 
 package org.beangle.data.orm.hibernate.cfg
 
-import java.lang.reflect.Modifier
-import java.time.YearMonth
-import java.{util => ju}
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.data.orm.hibernate.ScalaPropertyAccessStrategy
-import org.beangle.data.orm.hibernate.id._
-import org.beangle.data.orm.hibernate.udt._
-import org.beangle.data.jdbc.meta.Column
+import org.beangle.commons.lang.reflect.TypeInfo.{GeneralType, OptionType}
+import org.beangle.data.jdbc.meta.{Column, SqlType}
 import org.beangle.data.model.meta.{BasicType, EntityType}
-import org.beangle.data.orm._
+import org.beangle.data.orm.*
+import org.beangle.data.orm.hibernate.id.*
+import org.beangle.data.orm.hibernate.udt.*
+import org.beangle.data.orm.hibernate.{ScalaPropertyAccessStrategy, ScalaPropertyAccessor}
+import org.hibernate.`type`.SqlTypes
 import org.hibernate.boot.MetadataSources
-import org.hibernate.boot.model.TypeDefinition
 import org.hibernate.boot.model.naming.{Identifier, ObjectNameNormalizer}
 import org.hibernate.boot.model.source.spi.MetadataSourceProcessor
+import org.hibernate.boot.model.{IdentifierGeneratorDefinition, TypeDefinition}
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService
 import org.hibernate.boot.registry.selector.spi.StrategySelector
 import org.hibernate.boot.spi.{InFlightMetadataCollector, MetadataBuildingContext}
 import org.hibernate.cfg.CollectionSecondPass
 import org.hibernate.engine.OptimisticLockStyle
 import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, IDENTIFIER_NORMALIZER, SCHEMA}
-import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory
 import org.hibernate.mapping.Collection.{DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_KEY_COLUMN_NAME}
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
-import org.hibernate.mapping.{Backref, DependantValue, Index, IndexBackref, KeyValue, PersistentClass, RootClass, SimpleValue, ToOne, UniqueKey, Value, Bag => HBag, Collection => HCollection, Column => HColumn, Component => HComponent, Fetchable => HFetchable, List => HList, ManyToOne => HManyToOne, Map => HMap, OneToMany => HOneToMany, Property => HProperty, Set => HSet}
+import org.hibernate.mapping.{Backref, BasicValue, DependantValue, Index, IndexBackref, KeyValue, PersistentClass, RootClass, SimpleValue, ToOne, UniqueKey, Value, Bag as HBag, Collection as HCollection, Column as HColumn, Component as HComponent, Fetchable as HFetchable, List as HList, ManyToOne as HManyToOne, Map as HMap, OneToMany as HOneToMany, Property as HProperty, Set as HSet}
 import org.hibernate.property.access.spi.PropertyAccessStrategy
 import org.hibernate.tuple.{GeneratedValueGeneration, GenerationTiming}
 import org.hibernate.{FetchMode, MappingException}
 
+import java.lang.reflect.Modifier
+import java.time.YearMonth
+import java.util as ju
+
 /** Beangle Model Bind Metadadta processor.
-  *
-  * @see org.hibernate.boot.model.source.internal.hbm.ModelBinder
-  */
+ *
+ * @see org.hibernate.boot.model.source.internal.hbm.ModelBinder
+ */
 class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBuildingContext) extends MetadataSourceProcessor {
 
   private val metadata: InFlightMetadataCollector = context.getMetadataCollector
 
   private val mappings = metadataSources.getServiceRegistry.getService(classOf[MappingService]).mappings
+
+  private val additionalIdGenerators = Map(
+    IdGenerator.AutoIncrement -> classOf[AutoIncrementGenerator].getName,
+    IdGenerator.Date -> classOf[DateStyleGenerator].getName,
+    IdGenerator.DateTime -> classOf[DateTimeStyleGenerator].getName,
+    IdGenerator.Code -> classOf[CodeStyleGenerator].getName
+  )
 
   private val objectNameNormalizer = new ObjectNameNormalizer() {
     protected override def getBuildingContext: MetadataBuildingContext = {
@@ -90,18 +99,16 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
   }
 
   /**
-    * Process all custom Type definitions.  This step has no
-    * prerequisites.
-    */
+   * Process all custom Type definitions.  This step has no
+   * prerequisites.
+   */
   override def processTypeDefinitions(): Unit = {
     val cls = context.getBuildingOptions.getServiceRegistry.getService(classOf[ClassLoaderService])
 
     Map(
       (classOf[YearMonth].getName, classOf[YearMonthType])) foreach {
       case (name, clazz) =>
-        val p = new ju.HashMap[String, String]
-        val definition = new TypeDefinition(name, clazz, Array(name), p)
-        context.getMetadataCollector.addTypeDefinition(definition)
+        context.getMetadataCollector.getTypeDefinitionRegistry.register(new TypeDefinition(name, clazz, Array(name), new ju.HashMap[String, String]))
     }
 
     val types = new collection.mutable.HashMap[String, TypeDef]
@@ -114,18 +121,15 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
         val p = new ju.HashMap[String, String]
         t.params foreach (e => p.put(e._1, e._2))
         val definition = new TypeDefinition(m, cls.classForName(t.clazz), null, p)
-        context.getMetadataCollector.addTypeDefinition(definition)
+        context.getMetadataCollector.getTypeDefinitionRegistry.register(definition)
     }
   }
 
   override def processIdentifierGenerators(): Unit = {
-    val identifierFactory = metadata.getIdentifierGeneratorFactory.asInstanceOf[MutableIdentifierGeneratorFactory]
     // 注册缺省的sequence生成器
-    identifierFactory.register(IdGenerator.SeqPerTable, classOf[SeqPerTableStyleGenerator])
-    identifierFactory.register(IdGenerator.AutoIncrement, classOf[AutoIncrementGenerator])
-    identifierFactory.register(IdGenerator.Date, classOf[DateStyleGenerator])
-    identifierFactory.register(IdGenerator.DateTime, classOf[DateTimeStyleGenerator])
-    identifierFactory.register(IdGenerator.Code, classOf[CodeStyleGenerator])
+    additionalIdGenerators foreach { case (name, strategy) =>
+      metadata.addDefaultIdentifierGenerator(new IdentifierGeneratorDefinition(name, strategy))
+    }
   }
 
   override def processEntityHierarchies(processedEntityNames: java.util.Set[String]): Unit = {
@@ -150,24 +154,24 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: OrmCollectionProperty)
-    extends CollectionSecondPass(context, collection, new java.util.HashMap[String, String]) {
+  private class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: OrmCollectionProperty)
+    extends CollectionSecondPass(context, collection) {
 
-    def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
-      bindCollectionSecondPass(colp, collection, entities.asInstanceOf[java.util.Map[String, PersistentClass]])
+    def secondPass(entities: java.util.Map[String, PersistentClass]): Unit = {
+      bindCollectionSecondPass(colp, collection, entities)
       collection.createAllKeys()
     }
   }
 
-  class MapSecondPass(context: MetadataBuildingContext, map: HMap, mapp: OrmMapProperty)
-    extends CollectionSecondPass(context, map, new java.util.HashMap[String, String]) {
-    override def secondPass(entities: java.util.Map[_, _], inheritedMetas: java.util.Map[_, _]): Unit = {
-      bindMapSecondPass(mapp, map, entities.asInstanceOf[java.util.Map[String, PersistentClass]])
+  private class MapSecondPass(context: MetadataBuildingContext, map: HMap, mapp: OrmMapProperty)
+    extends CollectionSecondPass(context, map) {
+    override def secondPass(entities: java.util.Map[String, PersistentClass]): Unit = {
+      bindMapSecondPass(mapp, map, entities)
       map.createAllKeys()
     }
   }
 
-  def bindClass(em: OrmEntityType): RootClass = {
+  private def bindClass(em: OrmEntityType): RootClass = {
     val entity = new RootClass(context)
     entity.setOptimisticLockStyle(OptimisticLockStyle.interpretOldCode(em.optimisticLockStyle))
     entity.setEntityName(em.entityName)
@@ -183,7 +187,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
       entity.setProxyInterfaceName(em.clazz.getName)
     }
 
-    val table = metadata.addTable(em.table.schema.name.value, null, em.table.name.value, null, em.isAbstract)
+    val table = metadata.addTable(em.table.schema.name.value, null, em.table.name.value, null, em.isAbstract, context)
     entity.setTable(table)
     em.properties foreach {
       case (propertyName, p) =>
@@ -198,7 +202,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
                   bindSimpleId(em, entity, propertyName, spm)
                   entity.createPrimaryKey()
                 } else {
-                  value = bindSimpleValue(new SimpleValue(context, table), propertyName, spm, btm.clazz.getName)
+                  value = bindSimpleValue(new BasicValue(context, table), propertyName, spm, btm.clazz.getName)
                 }
               case etm: OrmEmbeddableType =>
                 val subpath = qualify(em.entityName, propertyName)
@@ -247,10 +251,11 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
   }
 
   private def bindSimpleId(em: OrmEntityType, entity: RootClass, idName: String, idp: OrmSingularProperty): Unit = {
-    val id = new SimpleValue(context, entity.getTable)
+    val id = new BasicValue(context, entity.getTable)
     entity.setIdentifier(id)
+    id.setTypeName(idp.propertyType.clazz.getName)
     bindColumns(idp.columns, id, idName)
-    setTypeUsingReflection(id, entity.getMappedClass, idName)
+    //setTypeUsingReflection(id, entity.getMappedClass, idName)
     val prop = new HProperty
     prop.setValue(id)
     bindProperty(idName, idp, prop)
@@ -259,8 +264,8 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     makeIdentifier(em, id)
   }
 
-  def bindCollectionSecondPass(colp: OrmPluralProperty, collection: HCollection,
-                               entities: java.util.Map[String, PersistentClass]): Unit = {
+  private def bindCollectionSecondPass(colp: OrmPluralProperty, collection: HCollection,
+                                       entities: java.util.Map[String, PersistentClass]): Unit = {
     colp.element match {
       case et: EntityType =>
         if (colp.one2many) {
@@ -284,7 +289,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
             collection.setElement(element)
             bindComponent(element, compositeElem, collection.getRole + ".element", false)
           case e: OrmBasicType =>
-            val elt = new SimpleValue(context, collection.getCollectionTable)
+            val elt = new BasicValue(context, collection.getCollectionTable)
             collection.setElement(elt)
             bindSimpleValue(elt, DEFAULT_ELEMENT_COLUMN_NAME, e, e.clazz.getName)
         }
@@ -304,7 +309,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     colp.index foreach { idx =>
       val index = new SimpleColumn(idx)
       val list = collection.asInstanceOf[HList]
-      val iv = bindSimpleValue(new SimpleValue(context, collection.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, index, "integer")
+      val iv = bindSimpleValue(new BasicValue(context, collection.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, index, "integer")
       list.setIndex(iv)
     }
 
@@ -324,17 +329,15 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  def bindMapSecondPass(mapp: OrmMapProperty, map: HMap, entities: java.util.Map[String, PersistentClass]): Unit = {
+  private def bindMapSecondPass(mapp: OrmMapProperty, map: HMap, entities: java.util.Map[String, PersistentClass]): Unit = {
     bindCollectionSecondPass(mapp, map, entities)
 
     mapp.key match {
       case bt: BasicType =>
-        map.setIndex(bindSimpleValue(new SimpleValue(context, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME,
+        map.setIndex(bindSimpleValue(new BasicValue(context, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME,
           new SimpleColumn(mapp.keyColumn), bt.clazz.getName))
       case kt: EntityType =>
-        map.setIndex(bindManyToOne(
-          new HManyToOne(context, map.getCollectionTable),
-          DEFAULT_INDEX_COLUMN_NAME, kt.entityName, mapp.keyColumn))
+        map.setIndex(bindManyToOne(new HManyToOne(context, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, kt.entityName, mapp.keyColumn))
       case ck: OrmEmbeddableType =>
         map.setIndex(bindComponent(new HComponent(context, map), ck, map.getRole + ".index", map.isOneToMany))
     }
@@ -358,7 +361,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
       val td = metadata.getTypeDefinition(typeName)
       if (null != td) {
         value.setTypeName(td.getTypeImplementorClass.getName)
-        value.setTypeParameters(td.getParametersAsProperties)
+        value.setTypeParameters(td.getParameters)
       } else {
         if (typeName.equals("[B")) {
           value.setTypeName("binary")
@@ -366,6 +369,10 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
           value.setTypeName(typeName)
         }
       }
+    }
+    //hibernate use a custom sqlType for instant type.
+    if (typeName == "java.time.Instant") {
+      colHolder.columns foreach (c => c.sqlType = c.sqlType.copy(code = SqlTypes.TIMESTAMP_UTC))
     }
     bindColumns(colHolder.columns, value, name)
     value
@@ -392,27 +399,25 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
       column.setName(physicalName)
       if (table != null) {
         table.addColumn(column)
-        metadata.asInstanceOf[InFlightMetadataCollector].addColumnNameBinding(table, logicalName, column)
+        metadata.addColumnNameBinding(table, logicalName, column)
       }
       simpleValue.addColumn(column)
     }
   }
 
-  def bindColumn(cm: Column, column: HColumn): Unit = {
+  private def bindColumn(cm: Column, column: HColumn): Unit = {
     val sqlType = cm.sqlType
     column.setSqlTypeCode(sqlType.code)
-    if (sqlType.isNumberType) {
-      column.setPrecision(sqlType.precision.getOrElse(0))
-    } else {
-      column.setLength(sqlType.precision.getOrElse(0))
-    }
+    if sqlType.isNumberType then column.setPrecision(sqlType.precision.getOrElse(0))
+    else column.setLength(sqlType.precision.getOrElse(0))
+
     column.setScale(sqlType.scale.getOrElse(0))
     column.setNullable(cm.nullable)
     column.setUnique(cm.unique)
     cm.defaultValue foreach (v => column.setDefaultValue(v))
   }
 
-  def bindManyToOne(manyToOne: HManyToOne, name: String, entityName: String, col: Column, fetchable: Fetchable = null): HManyToOne = {
+  private def bindManyToOne(manyToOne: HManyToOne, name: String, entityName: String, col: Column, fetchable: Fetchable = null): HManyToOne = {
     bindColumns(List(col), manyToOne, name)
     if (null != fetchable) initOuterJoinFetchSetting(manyToOne, fetchable)
     manyToOne.setReferencedEntityName(entityName)
@@ -424,7 +429,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     manyToOne
   }
 
-  def initOuterJoinFetchSetting(col: HFetchable, seqp: Fetchable): Unit = {
+  private def initOuterJoinFetchSetting(col: HFetchable, seqp: Fetchable): Unit = {
     seqp.fetch match {
       case Some(fetch) => col.setFetchMode(if ("join" == fetch) FetchMode.JOIN else FetchMode.SELECT)
       case None => col.setFetchMode(FetchMode.DEFAULT)
@@ -432,10 +437,11 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     col.setLazy(true)
   }
 
-  def makeIdentifier(em: OrmEntityType, sv: SimpleValue): Unit = {
+  private def makeIdentifier(em: OrmEntityType, sv: SimpleValue): Unit = {
     if (null == globalIdGenerator && em.idGenerator == null) throw new RuntimeException("Cannot find id generator for entity " + em.entityName)
     val idgenerator = if (null != globalIdGenerator) globalIdGenerator else em.idGenerator
-    sv.setIdentifierGeneratorStrategy(idgenerator.name)
+    val strategry = additionalIdGenerators.getOrElse(idgenerator.strategy, idgenerator.strategy)
+    sv.setIdentifierGeneratorStrategy(strategry)
     val params = new ju.Properties
     params.put(IDENTIFIER_NORMALIZER, objectNameNormalizer)
 
@@ -463,15 +469,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     s"$first.$second"
   }
 
-  def setTypeUsingReflection(value: Value, clazz: Class[_], propertyName: String): Unit = {
-    value match {
-      case sv: SimpleValue =>
-        if (null == sv.getTypeName) BeanInfos.get(clazz).getPropertyType(propertyName) foreach (clz => sv.setTypeName(clz.getName))
-      case _ =>
-    }
-  }
-
-  def createCollection(colp: OrmPluralProperty, owner: PersistentClass): HCollection = {
+  private def createCollection(colp: OrmPluralProperty, owner: PersistentClass): HCollection = {
     colp match {
       case _: OrmMapProperty => new HMap(context, owner)
       case cp: OrmCollectionProperty =>
@@ -483,7 +481,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  def bindComponent(component: HComponent, comp: OrmEmbeddableType, path: String, isEmbedded: Boolean): HComponent = {
+  private def bindComponent(component: HComponent, comp: OrmEmbeddableType, path: String, isEmbedded: Boolean): HComponent = {
     component.setEmbedded(isEmbedded)
     component.setRoleName(path)
 
@@ -510,7 +508,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
           case sm: OrmSingularProperty =>
             sm.propertyType match {
               case btm: OrmBasicType =>
-                value = bindSimpleValue(new SimpleValue(context, component.getTable), relativePath, sm, btm.clazz.getName)
+                value = bindSimpleValue(new BasicValue(context, component.getTable), relativePath, sm, btm.clazz.getName)
               case et: EntityType =>
                 value = bindManyToOne(new HManyToOne(context, component.getTable), propertyName, et.entityName, sm.joinColumn.get, sm)
               case etm: OrmEmbeddableType =>
@@ -529,13 +527,16 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     if (classOf[collection.Set[_]].isAssignableFrom(p.clazz)) {
       coll.setTypeName(classOf[SetType].getName)
     } else if (classOf[collection.Seq[_]].isAssignableFrom(p.clazz)) {
-      coll.setTypeName(classOf[SeqType].getName)
+      if coll.isInstanceOf[HBag] then
+        coll.setTypeName(classOf[BagType].getName)
+      else
+        coll.setTypeName(classOf[SeqType].getName)
     } else if (classOf[collection.Map[_, _]].isAssignableFrom(p.clazz)) {
       coll.setTypeName(classOf[MapType].getName)
     }
   }
 
-  def bindCollection(entity: PersistentClass, role: String, cp: OrmPluralProperty, coll: HCollection): HCollection = {
+  private def bindCollection(entity: PersistentClass, role: String, cp: OrmPluralProperty, coll: HCollection): HCollection = {
     coll.setRole(role)
     coll.setInverse(cp.inverse)
     cp.where foreach (v => coll.setWhere(v))
@@ -555,7 +556,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
         oneToMany.setReferencedEntityName(et.entityName)
       case _ =>
         val tableName = cp.table.get
-        val table = metadata.addTable(coll.getOwner.getTable.getSchema, null, tableName, cp.subselect.orNull, false)
+        val table = metadata.addTable(coll.getOwner.getTable.getSchema, null, tableName, cp.subselect.orNull, false, context)
         coll.setCollectionTable(table)
     }
 
@@ -576,8 +577,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     coll
   }
 
-  def createProperty(value: Value, propertyName: String, clazz: Class[_], pm: OrmProperty): HProperty = {
-    setTypeUsingReflection(value, clazz, propertyName)
+  private def createProperty(value: Value, propertyName: String, clazz: Class[_], pm: OrmProperty): HProperty = {
     value match {
       case toOne: ToOne =>
         val propertyRef = toOne.getReferencedPropertyName
@@ -595,19 +595,20 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     prop
   }
 
-  def bindProperty(propertyName: String, pm: OrmProperty, property: HProperty): Unit = {
+  private def bindProperty(propertyName: String, pm: OrmProperty, property: HProperty): Unit = {
     property.setName(propertyName)
-    property.setPropertyAccessorName("scala")
+    property.setPropertyAccessorName(ScalaPropertyAccessor.name)
     property.setCascade(pm.cascade.getOrElse(context.getMappingDefaults.getImplicitCascadeStyleName))
-    property.setUpdateable(pm.updateable)
+    property.setUpdateable(pm.updatable)
     property.setInsertable(pm.insertable)
+    property.setOptional(pm.optional)
     property.setOptimisticLocked(pm.optimisticLocked)
     pm.generated foreach { v =>
       val generationTiming = GenerationTiming.parseFromName(v)
       property.setValueGenerationStrategy(new GeneratedValueGeneration(generationTiming))
       if (pm.insertable) throw new MappingException(s"both insertable and generated finded for property: $propertyName")
-      if (pm.updateable && generationTiming == GenerationTiming.ALWAYS) throw new MappingException(s"both updateable and generated finded for property: $propertyName")
+      if (pm.updatable && generationTiming == GenerationTiming.ALWAYS) throw new MappingException(s"both updateable and generated finded for property: $propertyName")
     }
-    property.setLazy(pm.lazyed)
+    property.setLazy(pm.isLazy)
   }
 }

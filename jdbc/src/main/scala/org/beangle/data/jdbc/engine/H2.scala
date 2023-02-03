@@ -29,7 +29,7 @@ class H2 extends AbstractEngine {
     TINYINT -> "tinyint", SMALLINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
     FLOAT -> "float", DOUBLE -> "double",
     DECIMAL -> "decimal", NUMERIC -> "numeric($p,$s)",
-    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
+    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",TIMESTAMP_WITH_TIMEZONE -> "timestamp with time zone",
     BINARY -> "binary($l)", VARBINARY -> "varbinary($l)", LONGVARBINARY -> "longvarbinary",
     BLOB -> "longvarbinary", CLOB -> "longvarchar", NCLOB -> "nchar varying",
     JAVA_OBJECT -> "json")

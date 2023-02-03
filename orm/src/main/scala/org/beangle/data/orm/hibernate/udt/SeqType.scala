@@ -17,14 +17,14 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import java.{util => ju}
-
+import java.util as ju
 import org.hibernate.collection.spi.PersistentCollection
 import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.metamodel.CollectionClassification
 import org.hibernate.persister.collection.CollectionPersister
 import org.hibernate.usertype.UserCollectionType
 
-import scala.collection.mutable.{Buffer, ListBuffer}
+import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
 /**
@@ -32,34 +32,39 @@ import scala.jdk.javaapi.CollectionConverters.asJava
   */
 class SeqType extends UserCollectionType {
 
-  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection = {
+  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
     new PersistentSeq(session)
   }
 
-  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection = {
-    new PersistentSeq(session, collection.asInstanceOf[Buffer[Object]])
+  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[_]= {
+    new PersistentSeq(session, collection.asInstanceOf[mutable.Buffer[Object]])
   }
 
   override def getElementsIterator(collection: Object): ju.Iterator[Any] = {
-    asJava(collection.asInstanceOf[Buffer[_]].iterator)
+    asJava(collection.asInstanceOf[mutable.Buffer[_]].iterator)
   }
 
   override def contains(collection: Object, entity: Object): Boolean = {
-    collection.asInstanceOf[Buffer[_]].contains(entity)
+    collection.asInstanceOf[mutable.Buffer[_]].contains(entity)
   }
 
   override def indexOf(collection: Object, entity: Object): Integer = {
-    Integer.valueOf(collection.asInstanceOf[Buffer[Object]].indexOf(entity))
+    Integer.valueOf(collection.asInstanceOf[mutable.Buffer[Object]].indexOf(entity))
   }
 
   override def replaceElements(original: Object, target: Object, persister: CollectionPersister,
-                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor): Unit = {
-    val targetSeq = target.asInstanceOf[Buffer[Any]]
+                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor): Object = {
+    val targetSeq = target.asInstanceOf[mutable.Buffer[Any]]
     targetSeq.clear()
-    targetSeq ++= original.asInstanceOf[Seq[Any]]
+    targetSeq ++= original.asInstanceOf[Iterable[Any]]
+    targetSeq
   }
 
   override def instantiate(anticipatedSize: Int): Object = {
-    new ListBuffer[Object]()
+    new mutable.ArrayBuffer(anticipatedSize)
   }
+
+  override def getCollectionClass: Class[_] = classOf[mutable.Buffer[_]]
+
+  override def getClassification: CollectionClassification = CollectionClassification.LIST
 }

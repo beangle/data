@@ -19,36 +19,36 @@ package org.beangle.data.orm.hibernate.udt
 
 import org.beangle.commons.conversion.Converter
 import org.beangle.commons.conversion.string.EnumConverters
+import org.beangle.commons.lang.Enums
 import org.hibernate.engine.spi.{SessionImplementor, SharedSessionContractImplementor}
 import org.hibernate.usertype.{ParameterizedType, UserType}
 
 import java.io.Serializable as JSerializable
 import java.sql.{PreparedStatement, ResultSet, Types}
 import java.util as ju
-import org.beangle.commons.lang.Enums
 
-class EnumType extends UserType with ParameterizedType {
+class EnumType extends UserType[Object] with ParameterizedType {
 
-  private var converter: Converter[String,Object] = _
+  private var converter: Converter[String, Object] = _
 
-  var returnedClass: Class[_] = _
+  var returnedClass: Class[Object] = _
 
   var ordinal: Boolean = true
 
-  override def sqlTypes(): Array[Int] = {
-    if (ordinal) Array(Types.INTEGER) else Array(Types.VARCHAR)
+  override def getSqlType: Int = {
+    if (ordinal) Types.INTEGER else Types.VARCHAR
   }
 
   override def equals(x: Object, y: Object) = x == y
 
   override def hashCode(x: Object) = x.hashCode()
 
-  override def nullSafeGet(resultSet: ResultSet, names: Array[String], session: SharedSessionContractImplementor, owner: Object): Object = {
+  override def nullSafeGet(resultSet: ResultSet, position: Int, session: SharedSessionContractImplementor, owner: AnyRef): Object = {
     if (ordinal) {
-      val value = resultSet.getInt(names(0))
+      val value = resultSet.getInt(position)
       if resultSet.wasNull() then null else converter.apply(value.toString)
     } else {
-      val value = resultSet.getString(names(0))
+      val value = resultSet.getString(position)
       if resultSet.wasNull() then null else converter.apply(value)
     }
   }
@@ -58,7 +58,7 @@ class EnumType extends UserType with ParameterizedType {
       if (value == null) {
         statement.setNull(index, Types.INTEGER)
       } else {
-        statement.setInt(index,Enums.id(value))
+        statement.setInt(index, Enums.id(value))
       }
     } else {
       if (value == null) {
@@ -71,7 +71,7 @@ class EnumType extends UserType with ParameterizedType {
 
   override def setParameterValues(parameters: ju.Properties): Unit = {
     val enumClass = parameters.getProperty("enumClass")
-    returnedClass = Class.forName(enumClass)
+    returnedClass = Class.forName(enumClass).asInstanceOf[Class[Object]]
     converter = EnumConverters.getConverter(returnedClass).get
   }
 

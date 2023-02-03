@@ -33,7 +33,7 @@ class SQLServer2005 extends AbstractEngine {
     TINYINT -> "smallint", SMALLINT -> "smallint", INTEGER -> "int", BIGINT -> "bigint",
     FLOAT -> "float", DOUBLE -> "double precision",
     DECIMAL -> "double precision", NUMERIC -> "numeric($p,$s)",
-    DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime2",
+    DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime2", TIMESTAMP_WITH_TIMEZONE -> "datetimeoffset",
     BINARY -> "binary", VARBINARY -> "varbinary(MAX)", LONGVARBINARY -> "varbinary(MAX)",
     BLOB -> "varbinary(MAX)", CLOB -> "varchar(MAX)", NCLOB -> "ntext",
     JAVA_OBJECT -> "nvarchar(MAX)")

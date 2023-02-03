@@ -87,7 +87,7 @@ object MappingModule {
   /** 不可更新，不可插入 */
   class ReadOnly extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
-      pm.updateable = false
+      pm.updatable = false
       pm.insertable = false
     }
   }
@@ -95,7 +95,7 @@ object MappingModule {
   /** 不可更新，但可插入 */
   class Immutable extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
-      pm.updateable = false
+      pm.updatable = false
       pm.insertable = true
     }
   }

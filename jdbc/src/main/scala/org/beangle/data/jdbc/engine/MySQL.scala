@@ -32,7 +32,7 @@ class MySQL5 extends AbstractEngine {
     TINYINT -> "tinyint", SMALLINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
     FLOAT -> "float", DOUBLE -> "double precision",
     DECIMAL -> "decimal($p,$s)", NUMERIC -> "decimal($p,$s)",
-    DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime",
+    DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime",TIMESTAMP_WITH_TIMEZONE -> "timestamp",
     BINARY -> "binary($l)", VARBINARY -> "longblob", LONGVARBINARY -> "longblob",
     BLOB -> "longblob", CLOB -> "longtext", NCLOB -> "longtext",
     JAVA_OBJECT -> "json")

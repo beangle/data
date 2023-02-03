@@ -26,7 +26,6 @@ import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, Operat
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.Domain
 import org.hibernate.collection.spi.PersistentCollection
-import org.hibernate.engine.jdbc.StreamUtils
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.proxy.HibernateProxy
 import org.hibernate.query.{NativeQuery, Query}
@@ -50,7 +49,7 @@ object QuerySupport {
         //FIXME native query cannot enable cache
         session.createNativeQuery(bquery.statement).asInstanceOf[Query[T]]
       } else {
-        val q = session.createQuery(bquery.statement).asInstanceOf[Query[T]]
+        val q = session.createQuery(bquery.statement, null).asInstanceOf[Query[T]]
         if (bquery.cacheable) q.setCacheable(bquery.cacheable)
         q
       }
@@ -128,6 +127,8 @@ object QuerySupport {
       case null => query.setParameter(param, null.asInstanceOf[AnyRef])
       case av: Array[AnyRef] => query.setParameterList(param, av)
       case col: java.util.Collection[_] => query.setParameterList(param, col)
+      case Some(v) => setParameter(query, param, v)
+      case None => query.setParameter(param, null.asInstanceOf[AnyRef])
       case iter: Iterable[_] => query.setParameterList(param, asJava(iter.toList))
       case _ => query.setParameter(param, value)
     }
@@ -180,7 +181,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   private def createQuery(hql: String): Query[_] = {
-    currentSession.createQuery(hql).asInstanceOf[Query[_]]
+    currentSession.createQuery(hql, null).asInstanceOf[Query[_]]
   }
 
   protected def entityNameOf(clazz: Class[_]): String = {
@@ -422,7 +423,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
         } else {
           Hibernate.initialize(proxy)
         }
-      case pc: PersistentCollection => Hibernate.initialize(pc)
+      case pc: PersistentCollection[_] => Hibernate.initialize(pc)
     }
     rs
   }
@@ -432,8 +433,8 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     val session = currentSession
     for (entity <- entities; if null != entity)
       entity match {
-        case seq: Iterable[_] => seq.foreach(session.delete)
-        case _ => session.delete(entity)
+        case seq: Iterable[_] => seq.foreach(session.remove)
+        case _ => session.remove(entity)
       }
   }
 
@@ -509,22 +510,22 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     if (null == entity) return
     val session = currentSession
     entity match {
-      case hp: HibernateProxy => session.update(hp)
+      case hp: HibernateProxy => session.merge(hp)
       case e: Entity[_] =>
         val en = if (null == entityName) entityNameOf(entity.getClass) else entityName
         if (null == e.id) {
-          session.save(en, entity)
+          session.persist(en, entity)
         } else {
           val si = session.asInstanceOf[SessionImplementor]
           if (si.getContextEntityIdentifier(entity) == null) {
-            session.save(en, entity)
+            session.persist(en, entity)
           } else {
-            session.update(en, entity)
+            session.merge(en, entity)
           }
         }
       case _ =>
         val en = if (null == entityName) entityNameOf(entity.getClass) else entityName
-        session.saveOrUpdate(en, entity)
+        session.persist(en, entity)
     }
   }
 
@@ -555,32 +556,25 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     executeUpdate(hql.toString(), newParams)
   }
 
-  def createBlob(inputStream: InputStream, length: Int): Blob = {
-    Hibernate.getLobCreator(currentSession).createBlob(inputStream, length)
+  override def createBlob(inputStream: InputStream, length: Int): Blob = {
+    currentSession.getLobHelper.createBlob(inputStream, length)
   }
 
-  def createBlob(inputStream: InputStream): Blob = {
+  override def createBlob(inputStream: InputStream): Blob = {
     val buffer = new ByteArrayOutputStream(inputStream.available())
-    StreamUtils.copy(inputStream, buffer)
-    Hibernate.getLobCreator(currentSession).createBlob(buffer.toByteArray)
+    currentSession.getLobHelper.createBlob(buffer.toByteArray)
   }
 
-  def createClob(str: String): Clob = {
-    Hibernate.getLobCreator(currentSession).createClob(str)
-  }
-
-  def isCollectionType(clazz: Class[_]): Boolean = {
-    clazz.isArray ||
-      classOf[java.util.Collection[_]].isAssignableFrom(clazz) ||
-      classOf[scala.collection.Iterable[_]].isAssignableFrom(clazz)
+  override def createClob(str: String): Clob = {
+    currentSession.getLobHelper.createClob(str)
   }
 
   /**
    * Support "@named-query" or "from object" styles query
    */
   private def getNamedOrCreateQuery[T](queryString: String): Query[T] = {
-    if (queryString.charAt(0) == '@') currentSession.getNamedQuery(queryString.substring(1)).asInstanceOf[Query[T]]
-    else currentSession.createQuery(queryString).asInstanceOf[Query[T]]
+    if (queryString.charAt(0) == '@') currentSession.createNamedQuery(queryString.substring(1), null).asInstanceOf[Query[T]]
+    else currentSession.createNamedQuery(queryString, null).asInstanceOf[Query[T]]
   }
 
   /**

@@ -31,7 +31,7 @@ class DB2V8 extends AbstractEngine {
     BOOLEAN -> "smallint", BIT -> "smallint",
     SMALLINT -> "smallint", TINYINT -> "smallint", INTEGER -> "integer", DECIMAL -> "bigint", BIGINT -> "bigint",
     FLOAT -> "float", DOUBLE -> "double", NUMERIC -> "numeric($p,$s)",
-    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
+    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",TIMESTAMP_WITH_TIMEZONE -> "timestamp",
     BINARY -> "varchar($l) for bit data",
     VARBINARY -> "varchar($l) for bit data",
     LONGVARBINARY -> "long varchar for bit data",

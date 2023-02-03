@@ -120,6 +120,11 @@ final class OrmEntityType(val entityName: String, var clazz: Class[_], var table
   }
 }
 
+/**
+ * BasicMapping
+ * @param clazz
+ * @param column
+ */
 final class OrmBasicType(clazz: Class[_], var column: Column) extends BasicType(clazz)
   with OrmType with Cloneable with ColumnHolder {
 
@@ -183,7 +188,7 @@ object IdGenerator {
   val Native = "native"
 }
 
-final class IdGenerator(var name: String) {
+final class IdGenerator(var strategy: String) {
   val params: mutable.Map[String, String] = Collections.newMap[String, String]
   var nullValue: Option[String] = None
 

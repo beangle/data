@@ -17,59 +17,69 @@
 
 package org.beangle.data.orm.hibernate.cfg
 
+import org.hibernate.`type`.BasicTypeRegistry
 import org.hibernate.`type`.spi.TypeConfiguration
-import org.hibernate.`type`.{BasicType, BasicTypeRegistry}
 import org.hibernate.boot.MetadataSources
-import org.hibernate.boot.internal.{InFlightMetadataCollectorImpl, MetadataBuildingContextRootImpl}
+import org.hibernate.boot.internal.{InFlightMetadataCollectorImpl, MetadataBuilderImpl, MetadataBuildingContextRootImpl}
 import org.hibernate.boot.model.process.internal.{ManagedResourcesImpl, ScanningCoordinator}
 import org.hibernate.boot.model.process.spi.ManagedResources
 import org.hibernate.boot.model.{TypeContributions, TypeContributor}
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService
-import org.hibernate.boot.spi._
+import org.hibernate.boot.spi.*
 import org.hibernate.engine.jdbc.spi.JdbcServices
-import org.hibernate.usertype.{CompositeUserType, UserType}
 
 import scala.jdk.javaapi.CollectionConverters.asScala
 
-/** MetadataBuildProcess
-  * Clone hibernate spi,and invoke BindSourceProcessor
-  * @see org.hibernate.boot.model.process.spi.MetadataBuildingProcess
-  */
-object MetadataBuildingProcess {
+/** Register in META-INF/services/org.hibernate.boot.spi.MetadataBuilderFactory
+ *
+ * load Beangle orm bind persistence definitions.
+ *
+ */
+class BindMetadataBuilderFactory extends MetadataBuilderFactory {
+  def getMetadataBuilder(sources: MetadataSources, defaultBuilder: MetadataBuilderImplementor): MetadataBuilderImplementor = {
+    new BindMetadataBuilderFactory.MetadataBuilder(sources)
+  }
+}
+
+object BindMetadataBuilderFactory {
+  class MetadataBuilder(sources: MetadataSources) extends MetadataBuilderImpl(sources) {
+    override def build(): MetadataImplementor = {
+      BindMetadataBuilderFactory.build(sources, getBootstrapContext, getMetadataBuildingOptions)
+    }
+  }
 
   def build(sources: MetadataSources, context: BootstrapContext, options: MetadataBuildingOptions): MetadataImplementor = {
     complete(sources, prepare(sources, context), context, options)
   }
 
   /** First step of 2-phase for MetadataSources->Metadata process
-    * @param sources The MetadataSources
-    * @param ctx     The bootstrapContext
-    * @return
-    */
-  def prepare(sources: MetadataSources, ctx: BootstrapContext): ManagedResources = {
-    val managedResources = ManagedResourcesImpl.baseline(sources, ctx)
-    //FIXME why scan
-    ScanningCoordinator.INSTANCE.coordinateScan(managedResources, ctx, sources.getXmlMappingBinderAccess)
-    managedResources
+   *
+   * @param sources The MetadataSources
+   * @param ctx     The bootstrapContext
+   * @return
+   */
+  private def prepare(sources: MetadataSources, ctx: BootstrapContext): ManagedResources = {
+    ManagedResourcesImpl.baseline(sources, ctx)
   }
 
   /** Second step of 2-phase for MetadataSources->Metadata process
-    * @param sources          The MetadataSources
-    * @param managedResources The token/memento from 1st phase
-    * @param context          The bootstrapContext
-    * @param options          The building options
-    * @return Token/memento representing all known users resources (classes, packages, mapping files, etc).
-    */
-  def complete(sources: MetadataSources, managedResources: ManagedResources, context: BootstrapContext,
-               options: MetadataBuildingOptions): MetadataImplementor = {
+   *
+   * @param sources          The MetadataSources
+   * @param managedResources The token/memento from 1st phase
+   * @param context          The bootstrapContext
+   * @param options          The building options
+   * @return Token/memento representing all known users resources (classes, packages, mapping files, etc).
+   */
+  private def complete(sources: MetadataSources, managedResources: ManagedResources, context: BootstrapContext,
+                       options: MetadataBuildingOptions): MetadataImplementor = {
     val metadataCollector = new InFlightMetadataCollectorImpl(context, options)
 
     handleTypes(context, options)
 
-    val rootContext = new MetadataBuildingContextRootImpl(context, options, metadataCollector)
+    val rootContext = new MetadataBuildingContextRootImpl("beangle", context, options, metadataCollector)
 
-    for (converterInfo <- asScala(managedResources.getAttributeConverterDefinitions)) {
-      metadataCollector.addAttributeConverter(converterInfo.toConverterDescriptor(rootContext))
+    for (converterDescriptor <- asScala(managedResources.getAttributeConverterDescriptors)) {
+      metadataCollector.addAttributeConverter(converterDescriptor)
     }
 
     context.getTypeConfiguration.scope(rootContext)
@@ -106,14 +116,12 @@ object MetadataBuildingProcess {
     metadataCollector.buildMetadataInstance(rootContext)
   }
 
-  def handleTypes(context: BootstrapContext, options: MetadataBuildingOptions): BasicTypeRegistry = {
+  private def handleTypes(context: BootstrapContext, options: MetadataBuildingOptions): BasicTypeRegistry = {
 
     val classLoaderService = options.getServiceRegistry.getService(classOf[ClassLoaderService])
 
     // ultimately this needs to change a little bit to account for HHH-7792
-    val basicTypeRegistry = new BasicTypeRegistry()
-
-    val typeContributions = new BasicTypeContributions(basicTypeRegistry,context)
+    val typeContributions = new BasicTypeContributions(context)
 
     // add Dialect contributed types
     val dialect = options.getServiceRegistry.getService(classOf[JdbcServices]).getDialect
@@ -126,7 +134,10 @@ object MetadataBuildingProcess {
 
     // add explicit application registered types
     context.getTypeConfiguration.addBasicTypeRegistrationContributions(options.getBasicTypeRegistrations)
-    basicTypeRegistry
+    new BasicTypeRegistry(typeContributions.getTypeConfiguration)
   }
 
+  class BasicTypeContributions(ctx: BootstrapContext) extends TypeContributions {
+    override def getTypeConfiguration: TypeConfiguration = ctx.getTypeConfiguration
+  }
 }

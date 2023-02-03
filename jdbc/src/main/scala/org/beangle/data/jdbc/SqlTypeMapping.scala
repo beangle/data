@@ -72,9 +72,9 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
     (classOf[java.sql.Timestamp], TIMESTAMP),
     (classOf[java.util.Date], TIMESTAMP),
     (classOf[java.util.Calendar], TIMESTAMP),
-    (classOf[java.time.Instant], TIMESTAMP),
+    (classOf[java.time.Instant], TIMESTAMP_WITH_TIMEZONE),
     (classOf[java.time.LocalDateTime], TIMESTAMP),
-    (classOf[java.time.ZonedDateTime], TIMESTAMP),
+    (classOf[java.time.ZonedDateTime], TIMESTAMP_WITH_TIMEZONE),
 
     (classOf[java.util.Locale], VARCHAR),
 

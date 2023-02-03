@@ -17,26 +17,26 @@
 
 package org.beangle.data.orm.hibernate.id
 
-import java.sql.Connection
-import java.{util => ju}
-
-import org.beangle.commons.lang.Strings
-import org.beangle.data.orm.hibernate.cfg.MappingService
+import org.beangle.commons.lang.{Primitives, Strings}
 import org.beangle.data.jdbc.meta.Table
-import org.hibernate.`type`.{IntegerType, LongType, ShortType, Type}
+import org.beangle.data.orm.hibernate.cfg.MappingService
+import org.hibernate.`type`.*
 import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.id.PersistentIdentifierGenerator.{SCHEMA, TABLE}
 import org.hibernate.id.{Configurable, IdentifierGenerator}
 import org.hibernate.jdbc.AbstractReturningWork
 import org.hibernate.service.ServiceRegistry
 
+import java.sql.Connection
+import java.util as ju
+
 class AutoIncrementGenerator extends IdentifierGenerator {
-  var identifierType: Type = _
+  var identifierType: Class[_] = _
   val sql = "{? = call next_id(?)}"
   var tableName: String = _
 
   override def configure(t: Type, params: ju.Properties, serviceRegistry: ServiceRegistry): Unit = {
-    this.identifierType = t
+    this.identifierType = Primitives.unwrap(t.asInstanceOf[BasicType[_]].getJavaType)
     val em = serviceRegistry.getService(classOf[MappingService]).mappings.entityTypes(params.getProperty(IdentifierGenerator.ENTITY_NAME))
     val ownerSchema = em.table.schema.name.toString
     val schema = if (Strings.isEmpty(ownerSchema)) params.getProperty(SCHEMA) else ownerSchema
@@ -53,11 +53,10 @@ class AutoIncrementGenerator extends IdentifierGenerator {
             st.setString(2, tableName)
             st.execute()
             val id = java.lang.Long.valueOf(st.getLong(1))
-            identifierType match {
-              case _: LongType => id
-              case _: IntegerType => Integer.valueOf(id.intValue())
-              case _: ShortType => java.lang.Short.valueOf(id.shortValue())
-            }
+
+            if identifierType == classOf[Long] then id
+            else if identifierType == classOf[Int] then Integer.valueOf(id.intValue)
+            else java.lang.Short.valueOf(id.shortValue)
           } finally {
             st.close()
           }

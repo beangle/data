@@ -17,30 +17,29 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import java.{util => ju}
-
 import org.hibernate.engine.internal.ForeignKeys
 import org.hibernate.engine.spi.{SharedSessionContractImplementor, Status, TypedValue}
 import org.hibernate.internal.util.collections.IdentitySet
 
+import java.util as ju
 import scala.jdk.javaapi.CollectionConverters.asJava
 
 private[udt] object SeqHelper {
 
-  def getOrphans(oldElements: Iterable[_], currentElements: Iterable[_], entityName: String, session: SharedSessionContractImplementor): ju.Collection[Any] = {
+  def getOrphans(oldElements: Iterable[Object], currentElements: Iterable[Object], entityName: String, session: SharedSessionContractImplementor): ju.Collection[Object] = {
     // short-circuit(s)
     if (currentElements.isEmpty) return asJava(oldElements.toSeq)
     if (oldElements.isEmpty) return ju.Collections.emptyList()
 
-    val entityPersister = session.getFactory.getMetamodel.entityPersister(entityName)
+    val entityPersister = session.getFactory.getMappingMetamodel.findEntityDescriptor(entityName)
     val idType = entityPersister.getIdentifierType
 
     // create the collection holding the Orphans
-    val res = new ju.ArrayList[Any]
+    val res = new ju.ArrayList[Object]
 
     // collect EntityIdentifier(s) of the *current* elements - add them into a HashSet for fast access
-    val currentIds = new ju.HashSet[Any]
-    val currentSaving = new IdentitySet()
+    val currentIds = new ju.HashSet[Object]
+    val currentSaving = new IdentitySet[Object]
     currentElements foreach { current =>
       if (current != null && ForeignKeys.isNotTransient(entityName, current, null, session)) {
         val ee = session.getPersistenceContext.getEntry(current)

@@ -21,29 +21,31 @@ import org.beangle.commons.lang.Strings
 
 object TypeMatrix {
 
+  private val ColumnWidth = 25
+
   def main(args: Array[String]): Unit = {
     printTypeMatrix()
   }
 
   private def leftPad(name: String): Unit = {
-    print(Strings.leftPad(name, 15, ' ') +"    ")
+    print(Strings.leftPad(name, ColumnWidth, ' ') + "    ")
   }
 
   private def rightPad(name: String): Unit = {
     val info =
-      if name.length > 15 then name.substring(0, 12) + "..."
-      else Strings.rightPad(name, 15, ' ')
+      if name.length > ColumnWidth then name.substring(0, ColumnWidth - 3) + "..."
+      else Strings.rightPad(name, ColumnWidth, ' ')
     print(info)
   }
 
   def printTypeMatrix(): Unit = {
     import java.sql.Types.*
-    val types = Array(BOOLEAN, BIT, CHAR, NCHAR, TINYINT, SMALLINT, INTEGER, BIGINT,
-      FLOAT, REAL, DOUBLE, DECIMAL, NUMERIC, DATE, TIME, TIMESTAMP, VARCHAR, NVARCHAR, LONGVARCHAR, LONGNVARCHAR,
-      BINARY, VARBINARY, LONGVARBINARY, BLOB, CLOB, NCLOB)
+    val types = Array(BOOLEAN, BIT, CHAR, NCHAR, TINYINT, SMALLINT, INTEGER, BIGINT, FLOAT, REAL, DOUBLE, DECIMAL, NUMERIC,
+      DATE, TIME, TIMESTAMP, TIMESTAMP_WITH_TIMEZONE, VARCHAR, NVARCHAR, LONGVARCHAR, LONGNVARCHAR, BINARY, VARBINARY,
+      LONGVARBINARY, BLOB, CLOB, NCLOB)
 
     val typeNames = Array("BOOLEAN", "BIT", "CHAR", "NCHAR", "TINYINT", "SMALLINT", "INTEGER", "BIGINT",
-      "FLOAT", "REAL", "DOUBLE", "DECIMAL", "NUMERIC", "DATE", "TIME", "TIMESTAMP", "VARCHAR", "NVARCHAR",
+      "FLOAT", "REAL", "DOUBLE", "DECIMAL", "NUMERIC", "DATE", "TIME", "TIMESTAMP", "TIMESTAMPTZ", "VARCHAR", "NVARCHAR",
       "LONGVARCHAR", "LONGNVARCHAR", "BINARY", "VARBINARY", "LONGVARBINARY", "BLOB", "CLOB", "NCLOB")
 
     val engines = Array(new PostgreSQL10, new H2, new MySQL5,
@@ -54,7 +56,7 @@ object TypeMatrix {
       rightPad(Strings.replace(dialect.getClass.getSimpleName, "Dialect", ""))
     }
 
-    println("-" * 15 * 7)
+    println("\n" + "-" * ColumnWidth * 7)
     for (i <- types.indices) {
       leftPad(typeNames(i))
       for (engine <- engines) {

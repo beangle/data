@@ -17,19 +17,21 @@
 
 package org.beangle.data.orm.hibernate
 
-import java.net.URL
-import java.{util => ju}
-
-import javax.sql.DataSource
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.logging.Logging
-import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.beangle.data.jdbc.engine.Engines
 import org.beangle.data.jdbc.meta.Database
 import org.beangle.data.orm.Mappings
+import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
-import org.hibernate.cfg.{AvailableSettings, Configuration}
+import org.hibernate.cfg.Configuration
+import org.hibernate.cfg.AvailableSettings.*
+import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
+
+import java.net.URL
+import java.util as ju
+import javax.sql.DataSource
 
 object ConfigurationBuilder {
   def default: Configuration = {
@@ -47,10 +49,9 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
   var properties = new ju.Properties
 
   /**
-    * Import System properties and disable jdbc metadata lookup
-    */
+   * Import System properties
+   */
   protected def importSysProperties(): Unit = {
-    // 1. Import system properties
     val sysProps = System.getProperties
     val keys = sysProps.propertyNames
     while (keys.hasMoreElements) {
@@ -64,23 +65,24 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
     }
   }
 
-  protected def customProperties(): Unit = {
-    // 2. disable metadata lookup
-    val useJdbcMetaName = "hibernate.temp.use_jdbc_metadata_defaults"
-    if (properties.containsKey(AvailableSettings.DIALECT) && !properties.containsKey(useJdbcMetaName)) {
-      properties.put(useJdbcMetaName, "false")
-    } else {
-      properties.put(useJdbcMetaName, "true")
-    }
-    if (dataSource != null) properties.put(AvailableSettings.DATASOURCE, dataSource)
-    properties.put("hibernate.connection.handling_mode", "DELAYED_ACQUISITION_AND_HOLD")
-    properties.put("hibernate.ejb.metamodel.population", "disabled")
+  protected def addDefaultProperties(): Unit = {
+    //properties.put("hibernate.type.preferred_instant_jdbc_type", "TIMESTAMP")
+    if (dataSource != null) properties.put(DATASOURCE, dataSource)
+    addDefault(CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
+    addDefault(CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.orm.hibernate.SpringSessionContext")
+    addDefault(SCANNER_DISCOVERY,"none")
+    addDefault(XML_MAPPING_ENABLED, "false")
+    addDefault(SHOW_SQL, "false")
+    addDefault(FORMAT_SQL, "false")
+  }
+
+  private def addDefault(name: String, value: Any): Unit = {
+    if !properties.contains(name) then properties.put(name, value)
   }
 
   def build(): Configuration = {
+    addDefaultProperties()
     importSysProperties()
-    customProperties()
-
     val standardRegistryBuilder = new StandardServiceRegistryBuilder()
     val mappings = getMappings
     standardRegistryBuilder.addService(classOf[MappingService], new MappingService(mappings))
@@ -95,7 +97,7 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
   }
 
   private def getMappings: Mappings = {
-    val engine =  Engines.forDataSource(dataSource)
+    val engine = Engines.forDataSource(dataSource)
     val mappings = new Mappings(new Database(engine), ormLocations.toList)
     mappings.autobind()
     mappings

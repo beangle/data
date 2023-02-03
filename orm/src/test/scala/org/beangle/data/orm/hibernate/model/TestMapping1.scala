@@ -39,7 +39,7 @@ object TestMapping1 extends MappingModule {
       e.roleList is(ordered, table("users_roles_list"))
       e.profiles is depends("user")
       e.properties is(table("users_props"), eleColumn("value2"), eleLength(200))
-    }.generator(IdGenerator.Native)
+    }.generator(IdGenerator.Assigned)
 
     bind[SkillType]
     bind[Skill].table("skill_list")

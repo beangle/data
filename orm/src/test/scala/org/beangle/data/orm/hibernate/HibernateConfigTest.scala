@@ -19,7 +19,6 @@ package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.orm.hibernate.model.{ExtendRole, Role, User}
-import org.beangle.data.orm.hibernate.spring.{LocalSessionFactoryBean, SessionUtils}
 import org.beangle.data.model.meta.SingularProperty
 import org.beangle.data.model.util.ConvertPopulator
 import org.scalatest.matchers.should.Matchers
@@ -38,15 +37,13 @@ class HibernateConfigTest extends AnyFunSpec with Matchers {
   builder.properties.put("hibernate.cache.use_second_level_cache","true")
   builder.properties.put("hibernate.javax.cache.provider","org.ehcache.jsr107.EhcacheCachingProvider")
   builder.properties.put("hibernate.cache.use_query_cache", "true")
-  builder.properties.put("hibernate.ejb.metamodel.population", "disabled")
   builder.init()
 
   val sf = builder.result
 
   val entityDao = new HibernateEntityDao(sf)
   val domain = entityDao.domain
-  SessionUtils.enableBinding(sf)
-  SessionUtils.openSession(sf)
+  SessionHelper.openSession(sf)
 
   val roleMetaOption = domain.getEntity(classOf[Role])
   val userMetaOption = domain.getEntity(classOf[User])

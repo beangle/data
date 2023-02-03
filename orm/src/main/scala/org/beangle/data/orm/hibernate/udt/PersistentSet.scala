@@ -17,25 +17,22 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import java.io.{Serializable => JSerializable}
-import java.sql.ResultSet
-import java.{util => ju}
-
-import scala.jdk.javaapi.CollectionConverters.asJava
-import scala.collection.mutable.{ListBuffer, HashMap => MHashMap, HashSet => MHashSet, Set => MSet}
 import org.hibernate.`type`.Type
-import org.hibernate.collection.internal.AbstractPersistentCollection
-import org.hibernate.collection.internal.AbstractPersistentCollection.DelayedOperation
+import org.hibernate.collection.spi.AbstractPersistentCollection
+import org.hibernate.collection.spi.AbstractPersistentCollection.DelayedOperation
 import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.hibernate.loader.CollectionAliases
+import org.hibernate.metamodel.mapping.PluralAttributeMapping
 import org.hibernate.persister.collection.CollectionPersister
 
+import java.io.Serializable as JSerializable
+import java.sql.ResultSet
+import java.util as ju
 import scala.collection.mutable
+import scala.collection.mutable.{ListBuffer, HashMap as MHashMap, HashSet as MHashSet, Set as MSet}
+import scala.jdk.javaapi.CollectionConverters.asJava
 
 class PersistentSet(session: SharedSessionContractImplementor)
-  extends AbstractPersistentCollection(session) with MSet[Object] {
-
-  protected var tempList: mutable.Buffer[Object] = _
+  extends AbstractPersistentCollection[Object](session) with MSet[Object] {
 
   protected var set: MSet[Object] = _
 
@@ -57,7 +54,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
     cloned
   }
 
-  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[_] = {
+  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[Object] = {
     SeqHelper.getOrphans(snapshot.asInstanceOf[MHashMap[Object, Object]].keys, set, entityName, getSession)
   }
 
@@ -76,19 +73,28 @@ class PersistentSet(session: SharedSessionContractImplementor)
     }
   }
 
+  override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
+    this.set = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Set[Object]]
+    endRead()
+  }
+
+  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
+    val collectionDescriptor = attributeMapping.getCollectionDescriptor
+    val size = if null == loadingStateList then 0 else loadingStateList.size
+    this.set = collectionDescriptor.getCollectionSemantics
+      .instantiateRaw(size, collectionDescriptor).asInstanceOf[mutable.Set[Object]]
+    if null != loadingStateList then
+      import scala.jdk.javaapi.CollectionConverters.asScala
+      this.set.addAll(asScala(loadingStateList))
+  }
+
   override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
     snapshot.asInstanceOf[MHashMap[_, _]].isEmpty
   }
 
-  def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int): Unit = {
-    this.set = persister.getCollectionType.instantiate(anticipatedSize).asInstanceOf[MHashSet[Object]]
-  }
-
-  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable,
-                                   owner: Object): Unit = {
+  override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
-    val size = array.length
-    beforeInitialize(persister, size)
+    this.set = persister.getCollectionType.instantiate(array.length).asInstanceOf[MHashSet[Object]]
     array foreach { ele =>
       val newone = persister.getElementType.assemble(ele, getSession, owner)
       if (null != newone) this.set += newone
@@ -154,25 +160,6 @@ class PersistentSet(session: SharedSessionContractImplementor)
   override def toString: String = {
     read();
     set.toString
-  }
-
-  override def readFrom(rs: ResultSet, persister: CollectionPersister, descriptor: CollectionAliases,
-                        owner: Object): Object = {
-    val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases, getSession)
-    if (null != element) tempList += element
-    element
-  }
-
-  override def beginRead(): Unit = {
-    super.beginRead()
-    tempList = new ListBuffer[Object]
-  }
-
-  override def endRead(): Boolean = {
-    this.set ++= tempList
-    tempList = null
-    setInitialized()
-    true
   }
 
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
@@ -248,7 +235,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
     }
   }
 
-  final class Clear extends DelayedOperation {
+  final class Clear extends DelayedOperation[Object] {
     override def operate(): Unit = {
       set.clear()
     }

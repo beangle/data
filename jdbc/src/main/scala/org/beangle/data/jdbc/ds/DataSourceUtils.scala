@@ -26,6 +26,7 @@ import org.beangle.data.jdbc.engine.{DriverInfo, Drivers, Engine}
 import org.beangle.data.jdbc.meta.Identifier
 
 import java.io.InputStream
+import java.sql.Connection
 import java.util.Properties
 import javax.sql.DataSource
 import scala.language.existentials
@@ -116,4 +117,12 @@ object DataSourceUtils extends Logging {
     dbconf
   }
 
+  def resetConnectionAfterTransaction(con: Connection, previousIsolationLevel: Integer, resetReadOnly: Boolean): Unit = {
+    try {
+      if previousIsolationLevel != null then con.setTransactionIsolation(previousIsolationLevel)
+      if resetReadOnly then con.setReadOnly(false)
+    } catch {
+      case ex: Throwable =>
+    }
+  }
 }

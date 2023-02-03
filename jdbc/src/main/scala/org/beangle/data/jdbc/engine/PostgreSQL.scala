@@ -31,7 +31,7 @@ class PostgreSQL10 extends AbstractEngine {
     SMALLINT -> "smallint", TINYINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
     FLOAT -> "float4", DOUBLE -> "float8",
     DECIMAL -> "numeric($p,$s)", NUMERIC -> "numeric($p,$s)",
-    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",
+    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp", TIMESTAMP_WITH_TIMEZONE -> "timestamp with time zone",
     BINARY -> "bytea", VARBINARY -> "bytea", LONGVARBINARY -> "bytea",
     BLOB -> "bytea", CLOB -> "text", NCLOB -> "text",
     JAVA_OBJECT -> "json")

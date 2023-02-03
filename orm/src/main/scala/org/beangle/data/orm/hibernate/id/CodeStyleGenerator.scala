@@ -17,35 +17,30 @@
 
 package org.beangle.data.orm.hibernate.id
 
-import java.{ util => ju }
-
-import org.beangle.commons.lang.{ Chars, Numbers }
+import org.beangle.commons.lang.{Chars, Numbers, Primitives}
 import org.beangle.data.model.pojo.Coded
-import org.hibernate.`type`.{ IntegerType, LongType, ShortType, Type }
+import org.hibernate.`type`.*
 import org.hibernate.dialect.Dialect
-import org.hibernate.engine.spi.SessionImplementor
-import org.hibernate.id.{ Configurable, IdentifierGenerator }
+import org.hibernate.engine.spi.{SessionImplementor, SharedSessionContractImplementor}
+import org.hibernate.id.{Configurable, IdentifierGenerator}
 import org.hibernate.service.ServiceRegistry
-import org.hibernate.engine.spi.SharedSessionContractImplementor
+
+import java.util as ju
 
 /**
  * Id generator based on function or procedure
  */
 class CodeStyleGenerator extends IdentifierGenerator {
-  var identifierType: Type = _
+  var identifierType: Class[_] = _
 
   override def configure(t: Type, params: ju.Properties, sr: ServiceRegistry): Unit = {
-    this.identifierType = t;
+    this.identifierType = Primitives.unwrap(t.asInstanceOf[BasicType[_]].getJavaType)
   }
 
   override def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {
     obj match {
       case coded: Coded =>
-        var result = identifierType match {
-          case lt: LongType    => Numbers.convert2Long(coded.code, null)
-          case it: IntegerType => Numbers.convert2Int(coded.code, null)
-          case st: ShortType   => Numbers.convert2Short(coded.code, null)
-        }
+        var result = convertToId(coded.code)
         if (null == result) {
           val code = coded.code
           val builder = new StringBuilder
@@ -57,14 +52,17 @@ class CodeStyleGenerator extends IdentifierGenerator {
               builder ++= String.valueOf(ch)
             }
           }
-          result = identifierType match {
-            case lt: LongType    => Numbers.convert2Long(builder.toString)
-            case it: IntegerType => Numbers.convert2Int(builder.toString)
-            case st: ShortType   => Numbers.convert2Short(builder.toString)
-          }
+          result = convertToId(builder.toString())
         }
         result
       case _ => throw new RuntimeException("CodedIdGenerator only support Coded")
     }
+  }
+
+  private def convertToId(code: String): java.io.Serializable = {
+    if identifierType == classOf[Long] then Numbers.convert2Long(code, null)
+    else if identifierType == classOf[Int] then Numbers.convert2Int(code, null)
+    else if identifierType == classOf[Short] then Numbers.convert2Short(code, null)
+    else null
   }
 }

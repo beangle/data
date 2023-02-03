@@ -62,10 +62,10 @@ object TypeNames {
     def put(typecode: Int, capacity: Int, pattern: String): Unit = {
       val info = parse(pattern)
 
-      val names = code2names.getOrElseUpdate(typecode, new mutable.ArrayBuffer[Tuple2[Int, String]])
+      val names = code2names.getOrElseUpdate(typecode, new mutable.ArrayBuffer[(Int, String)])
       names += (capacity -> info.name)
 
-      val codes = name2codes.getOrElseUpdate(info.category, new mutable.ArrayBuffer[Tuple2[Int, Int]])
+      val codes = name2codes.getOrElseUpdate(info.category, new mutable.ArrayBuffer[(Int, Int)])
       val precision = info.precision match {
         case Some(p) =>
           if (capacity == 0) {

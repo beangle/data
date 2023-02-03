@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate.spring
+package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.bean.{Factory, Initializing}
 import org.beangle.commons.lang.annotation.description
@@ -32,8 +32,6 @@ import javax.sql.DataSource
 class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory]
   with Initializing {
 
-  var configLocations: Array[Resource] = Array.empty
-
   var ormLocations: Array[Resource] = Array.empty
 
   var properties = new ju.Properties
@@ -42,9 +40,7 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
 
   def init(): Unit = {
     val cfgb = new ConfigurationBuilder(dataSource)
-    //  provide the Beangle managed Session as context
     cfgb.ormLocations = ormLocations.toIndexedSeq.map(l => l.getURL)
-    properties.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, classOf[BeangleSessionContext].getName)
     cfgb.properties = properties
     val config = cfgb.build()
     result = config.buildSessionFactory()

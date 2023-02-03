@@ -17,22 +17,21 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import java.io.{Serializable => JSerializable}
-import java.sql.ResultSet
-import java.{util => ju}
-
 import org.hibernate.`type`.Type
-import org.hibernate.collection.internal.AbstractPersistentCollection
-import org.hibernate.collection.internal.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
+import org.hibernate.collection.spi.AbstractPersistentCollection
+import org.hibernate.collection.spi.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
 import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.hibernate.loader.CollectionAliases
+import org.hibernate.metamodel.mapping.PluralAttributeMapping
 import org.hibernate.persister.collection.CollectionPersister
 
+import java.io.Serializable as JSerializable
+import java.sql.ResultSet
+import java.util as ju
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
 class PersistentSeq(session: SharedSessionContractImplementor)
-  extends AbstractPersistentCollection(session) with mutable.Buffer[Object] {
+  extends AbstractPersistentCollection[Object](session) with mutable.Buffer[Object] {
 
   protected var list: mutable.Buffer[Object] = _
 
@@ -46,28 +45,39 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def getSnapshot(persister: CollectionPersister): JSerializable = {
-    val clonedList = new mutable.ListBuffer[Object]
+    val clonedList = new mutable.ArrayBuffer[Object]
     list.foreach { ele => clonedList += persister.getElementType.deepCopy(ele, persister.getFactory) }
     clonedList
   }
 
-  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[_] = {
-    SeqHelper.getOrphans(snapshot.asInstanceOf[mutable.ListBuffer[_]], list, entityName, getSession)
+  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[Object] = {
+    SeqHelper.getOrphans(snapshot.asInstanceOf[mutable.ArrayBuffer[Object]], list, entityName, getSession)
   }
 
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
     val elementType = persister.getElementType
-    val sn = getSnapshot().asInstanceOf[mutable.ListBuffer[_]]
+    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[_]]
     val itr = list.iterator
     (sn.size == list.size) && !sn.exists { ele => elementType.isDirty(itr.next(), ele, getSession) }
   }
 
-  override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
-    snapshot.asInstanceOf[collection.Seq[_]].isEmpty
+  override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
+    list = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Buffer[Object]]
+    endRead()
   }
 
-  override def beforeInitialize(persister: CollectionPersister, anticipatedSize: Int): Unit = {
-    this.list = new mutable.ListBuffer[Object]
+  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
+    val collectionDescriptor = attributeMapping.getCollectionDescriptor
+    val size = if null == loadingStateList then 0 else loadingStateList.size
+    this.list = collectionDescriptor.getCollectionSemantics
+      .instantiateRaw(size, collectionDescriptor).asInstanceOf[mutable.Buffer[Object]]
+    if null != loadingStateList then
+      import scala.jdk.javaapi.CollectionConverters.asScala
+      list.addAll(asScala(loadingStateList))
+  }
+
+  override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
+    snapshot.asInstanceOf[collection.Seq[_]].isEmpty
   }
 
   override def isWrapper(collection: Object): Boolean = {
@@ -208,30 +218,13 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     list.toString()
   }
 
-  override def readFrom(rs: ResultSet, persister: CollectionPersister,
-                        descriptor: CollectionAliases, owner: Object): Object = {
-    val element = persister.readElement(rs, owner, descriptor.getSuffixedElementAliases, getSession)
-    if (null == descriptor.getSuffixedIndexAliases) {
-      list += element
-    } else {
-      val index = persister.readIndex(rs, descriptor.getSuffixedIndexAliases, getSession)
-        .asInstanceOf[Integer].intValue
-      //pad with nulls from the current last element up to the new index
-      Range(list.size, index + 1) foreach (i => list.insert(i, null))
-      list(index) = element
-    }
-    element
-  }
-
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
     asJava(list.iterator)
   }
 
-  override def initializeFromCache(persister: CollectionPersister, disassembled: JSerializable,
-                                   owner: Object): Unit = {
+  override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
-    val size = array.length
-    beforeInitialize(persister, size)
+    this.list = persister.getCollectionType.instantiate(array.length).asInstanceOf[mutable.Buffer[Object]]
     array foreach { ele => list += persister.getElementType.assemble(ele, getSession, owner) }
   }
 
@@ -241,7 +234,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
 
   override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
     val deletes = new ju.ArrayList[Object]()
-    val sn = getSnapshot().asInstanceOf[mutable.ListBuffer[Object]]
+    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
     val end =
       if (sn.size > list.size) {
         Range(list.size, sn.size) foreach { i => deletes.add(if (indexIsFormula) sn(i) else Integer.valueOf(i)) }
@@ -260,12 +253,12 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
-    val sn = getSnapshot().asInstanceOf[mutable.ListBuffer[Object]]
+    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
     list(i) != null && (i >= sn.size || sn(i) == null)
   }
 
   override def needsUpdating(entry: Object, i: Int, elemType: Type): Boolean = {
-    val sn = getSnapshot().asInstanceOf[mutable.ListBuffer[Object]]
+    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
     i < sn.size && sn(i) != null && list(i) != null && elemType.isDirty(list(i), sn(i), getSession)
   }
 
@@ -278,7 +271,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def getSnapshotElement(entry: Object, i: Int): Object = {
-    getSnapshot().asInstanceOf[mutable.ListBuffer[Object]](i)
+    getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]](i)
   }
 
   override def equals(other: Any): Boolean = {
@@ -295,7 +288,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     entry != null
   }
 
-  final class Clear extends DelayedOperation {
+  final class Clear extends DelayedOperation[Object] {
     override def operate(): Unit = {
       list.clear()
     }
@@ -307,7 +300,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     }
   }
 
-  final class Add(val value: Object) extends DelayedOperation {
+  final class Add(val value: Object) extends DelayedOperation[Object] {
     override def operate(): Unit = {
       list += value
     }
@@ -317,7 +310,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     override def getOrphan: Object = null
   }
 
-  final class Set(index: Int, value: Object, old: Object) extends DelayedOperation {
+  final class Set(index: Int, value: Object, old: Object) extends DelayedOperation[Object] {
     override def operate(): Unit = {
       list.update(index, value)
     }
@@ -327,7 +320,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     override def getOrphan: Object = null
   }
 
-  final class Remove(index: Int, old: Object) extends DelayedOperation {
+  final class Remove(index: Int, old: Object) extends DelayedOperation[Object] {
     override def operate(): Unit = {
       list.remove(index)
     }
@@ -337,7 +330,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     override def getOrphan: Object = old
   }
 
-  final class SimpleRemove(old: Object) extends DelayedOperation {
+  final class SimpleRemove(old: Object) extends DelayedOperation[Object] {
     override def operate(): Unit = {
       list -= old
     }

@@ -28,10 +28,10 @@ abstract class OrmProperty(val name: String, val clazz: Class[_], var optional: 
   var cascade: Option[String] = None
   var mergeable: Boolean = true
 
-  var updateable: Boolean = true
+  var updatable: Boolean = true
   var insertable: Boolean = true
   var optimisticLocked: Boolean = true
-  var lazyed: Boolean = false
+  var isLazy: Boolean = false
   var generator: IdGenerator = _
   var generated: Option[String] = None
 
@@ -53,7 +53,7 @@ final class OrmSingularProperty(name: String, clazz: Class[_], optional: Boolean
   def columns: Iterable[Column] = {
     propertyType match {
       case b: OrmBasicType => List(b.column)
-      case e: OrmEntityType => joinColumn
+      case _: OrmEntityType => joinColumn
       case _ => throw new RuntimeException("Cannot support iterable column over Embedded")
     }
   }
