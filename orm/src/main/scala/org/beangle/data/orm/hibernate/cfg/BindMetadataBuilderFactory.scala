@@ -106,11 +106,6 @@ object BindMetadataBuilderFactory {
 
     processor.finishUp()
 
-    val classLoaderService = options.getServiceRegistry.getService(classOf[ClassLoaderService])
-    for (contributor <- asScala(classLoaderService.loadJavaServices(classOf[MetadataContributor]))) {
-      contributor.contribute(metadataCollector, context.getJandexView)
-    }
-
     metadataCollector.processSecondPasses(rootContext)
 
     metadataCollector.buildMetadataInstance(rootContext)

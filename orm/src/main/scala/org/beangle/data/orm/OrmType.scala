@@ -20,7 +20,7 @@ package org.beangle.data.orm
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.meta.{Column, Table}
-import org.beangle.data.model.meta._
+import org.beangle.data.model.meta.*
 
 import scala.collection.mutable
 
@@ -79,12 +79,16 @@ final class OrmEntityType(val entityName: String, var clazz: Class[_], var table
   var isLazy: Boolean = true
   var proxy: String = _
   var isAbstract: Boolean = _
-  var optimisticLockStyle: Int = -1
+  var optimisticLockStyle: String = "NONE"
   var idGenerator: IdGenerator = _
   var module: Option[String] = None
 
   def cacheable: Boolean = {
     Strings.isNotBlank(cacheUsage)
+  }
+
+  def lockStyle(style: String): Unit = {
+    this.optimisticLockStyle = style
   }
 
   def cache(region: String, usage: String): this.type = {
@@ -122,6 +126,7 @@ final class OrmEntityType(val entityName: String, var clazz: Class[_], var table
 
 /**
  * BasicMapping
+ *
  * @param clazz
  * @param column
  */

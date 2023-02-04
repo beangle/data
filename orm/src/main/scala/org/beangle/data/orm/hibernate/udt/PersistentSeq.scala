@@ -20,7 +20,7 @@ package org.beangle.data.orm.hibernate.udt
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.collection.spi.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
-import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.engine.spi.{CollectionEntry, SharedSessionContractImplementor}
 import org.hibernate.metamodel.mapping.PluralAttributeMapping
 import org.hibernate.persister.collection.CollectionPersister
 
@@ -286,6 +286,24 @@ class PersistentSeq(session: SharedSessionContractImplementor)
 
   override def entryExists(entry: Object, i: Int): Boolean = {
     entry != null
+  }
+
+  def queuedRemove(element: Object): Boolean = {
+    val entry = getSession.getPersistenceContextInternal.getCollectionEntry(this)
+    if (entry == null) {
+      throwLazyInitializationExceptionIfNotConnected()
+      throwLazyInitializationException("collection not associated with session")
+    }
+    else {
+      val persister = entry.getLoadedPersister
+      if (hasQueuedOperations) getSession.flush()
+      if (persister.elementExists(entry.getLoadedKey, element, getSession)) {
+        elementRemoved = true
+        queueOperation(SimpleRemove(element))
+        return true
+      }
+    }
+    false
   }
 
   final class Clear extends DelayedOperation[Object] {

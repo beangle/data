@@ -27,21 +27,21 @@ import org.beangle.data.orm.hibernate.id.*
 import org.beangle.data.orm.hibernate.udt.*
 import org.beangle.data.orm.hibernate.{ScalaPropertyAccessStrategy, ScalaPropertyAccessor}
 import org.hibernate.`type`.SqlTypes
+import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.model.naming.{Identifier, ObjectNameNormalizer}
 import org.hibernate.boot.model.source.spi.MetadataSourceProcessor
 import org.hibernate.boot.model.{IdentifierGeneratorDefinition, TypeDefinition}
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService
 import org.hibernate.boot.registry.selector.spi.StrategySelector
-import org.hibernate.boot.spi.{InFlightMetadataCollector, MetadataBuildingContext}
-import org.hibernate.cfg.CollectionSecondPass
+import org.hibernate.boot.spi.{InFlightMetadataCollector, MetadataBuildingContext, SecondPass}
 import org.hibernate.engine.OptimisticLockStyle
 import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, IDENTIFIER_NORMALIZER, SCHEMA}
 import org.hibernate.mapping.Collection.{DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_KEY_COLUMN_NAME}
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
 import org.hibernate.mapping.{Backref, BasicValue, DependantValue, Index, IndexBackref, KeyValue, PersistentClass, RootClass, SimpleValue, ToOne, UniqueKey, Value, Bag as HBag, Collection as HCollection, Column as HColumn, Component as HComponent, Fetchable as HFetchable, List as HList, ManyToOne as HManyToOne, Map as HMap, OneToMany as HOneToMany, Property as HProperty, Set as HSet}
 import org.hibernate.property.access.spi.PropertyAccessStrategy
-import org.hibernate.tuple.{GeneratedValueGeneration, GenerationTiming}
+import org.hibernate.tuple.GenerationTiming
 import org.hibernate.{FetchMode, MappingException}
 
 import java.lang.reflect.Modifier
@@ -154,18 +154,16 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
   }
 
-  private class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: OrmCollectionProperty)
-    extends CollectionSecondPass(context, collection) {
+  private class CollSecondPass(context: MetadataBuildingContext, collection: HCollection, colp: OrmCollectionProperty) extends SecondPass {
 
-    def secondPass(entities: java.util.Map[String, PersistentClass]): Unit = {
+    override def doSecondPass(entities: java.util.Map[String, PersistentClass]): Unit = {
       bindCollectionSecondPass(colp, collection, entities)
       collection.createAllKeys()
     }
   }
 
-  private class MapSecondPass(context: MetadataBuildingContext, map: HMap, mapp: OrmMapProperty)
-    extends CollectionSecondPass(context, map) {
-    override def secondPass(entities: java.util.Map[String, PersistentClass]): Unit = {
+  private class MapSecondPass(context: MetadataBuildingContext, map: HMap, mapp: OrmMapProperty) extends SecondPass {
+    override def doSecondPass(entities: java.util.Map[String, PersistentClass]): Unit = {
       bindMapSecondPass(mapp, map, entities)
       map.createAllKeys()
     }
@@ -173,7 +171,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
 
   private def bindClass(em: OrmEntityType): RootClass = {
     val entity = new RootClass(context)
-    entity.setOptimisticLockStyle(OptimisticLockStyle.interpretOldCode(em.optimisticLockStyle))
+    entity.setOptimisticLockStyle(OptimisticLockStyle.valueOf(em.optimisticLockStyle))
     entity.setEntityName(em.entityName)
     entity.setJpaEntityName(em.entityName)
 
@@ -255,7 +253,6 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     entity.setIdentifier(id)
     id.setTypeName(idp.propertyType.clazz.getName)
     bindColumns(idp.columns, id, idName)
-    //setTypeUsingReflection(id, entity.getMappedClass, idName)
     val prop = new HProperty
     prop.setValue(id)
     bindProperty(idName, idp, prop)
@@ -302,7 +299,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
       else collection.getOwner.getRecursiveProperty(propRef).getValue.asInstanceOf[KeyValue]
 
     val key = new DependantValue(context, collection.getCollectionTable, keyVal)
-    key.setCascadeDeleteEnabled(false)
+    key.setOnDeleteAction(OnDeleteAction.NO_ACTION)
     bindSimpleValue(key, DEFAULT_KEY_COLUMN_NAME, keyElem, collection.getOwner.getIdentifier.getType.getName)
     collection.setKey(key)
 
@@ -442,22 +439,22 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     val idgenerator = if (null != globalIdGenerator) globalIdGenerator else em.idGenerator
     val strategry = additionalIdGenerators.getOrElse(idgenerator.strategy, idgenerator.strategy)
     sv.setIdentifierGeneratorStrategy(strategry)
-    val params = new ju.Properties
+    val params = new ju.HashMap[String,Object]
     params.put(IDENTIFIER_NORMALIZER, objectNameNormalizer)
 
     val name = metadata.getDatabase.getDefaultNamespace.getPhysicalName
     val database = metadata.getDatabase
     if (null != name && null != name.getSchema) {
-      params.setProperty(SCHEMA, database.getDefaultNamespace().getPhysicalName.getSchema.render(database.getDialect))
+      params.put(SCHEMA, database.getDefaultNamespace().getPhysicalName.getSchema.render(database.getDialect))
     }
     if (null != name && null != name.getCatalog) {
-      params.setProperty(CATALOG, database.getDefaultNamespace().getPhysicalName.getCatalog.render(database.getDialect))
+      params.put(CATALOG, database.getDefaultNamespace().getPhysicalName.getCatalog.render(database.getDialect))
     }
 
     idgenerator.params foreach {
-      case (k, v) => params.setProperty(k, v)
+      case (k, v) => params.put(k, v)
     }
-    sv.setIdentifierGeneratorProperties(params)
+    sv.setIdentifierGeneratorParameters(params)
     sv.getTable.setIdentifierValue(sv)
     idgenerator.nullValue match {
       case Some(v) => sv.setNullValue(v)
@@ -603,12 +600,6 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     property.setInsertable(pm.insertable)
     property.setOptional(pm.optional)
     property.setOptimisticLocked(pm.optimisticLocked)
-    pm.generated foreach { v =>
-      val generationTiming = GenerationTiming.parseFromName(v)
-      property.setValueGenerationStrategy(new GeneratedValueGeneration(generationTiming))
-      if (pm.insertable) throw new MappingException(s"both insertable and generated finded for property: $propertyName")
-      if (pm.updatable && generationTiming == GenerationTiming.ALWAYS) throw new MappingException(s"both updateable and generated finded for property: $propertyName")
-    }
     property.setLazy(pm.isLazy)
   }
 }

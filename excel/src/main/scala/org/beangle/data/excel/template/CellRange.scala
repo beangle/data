@@ -93,10 +93,13 @@ class CellRange(var startCellRef: CellRef, var width: Int, var height: Int) {
   private def isVerticalShiftAllowed(row: Int, heightChange: Int, cellRow: Int, cellCol: Int): Boolean = {
     if (changeMatrix(cellRow)(cellCol)) return false
     if (heightChange >= 0) return true
-    for (i <- cellRow - 1 until row by -1) {
-      if (isEmpty(i, cellCol)) return false
+    var i= cellRow - 1
+    var nonEmpty = true
+    while(i > row && nonEmpty){
+      nonEmpty = !isEmpty(i,cellCol)
+      i -= 1
     }
-    true
+    nonEmpty
   }
 
   def excludeCells(startCol: Int, endCol: Int, startRow: Int, endRow: Int): Unit = {
