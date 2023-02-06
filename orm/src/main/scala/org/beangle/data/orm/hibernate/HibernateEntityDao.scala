@@ -574,7 +574,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
    */
   private def getNamedOrCreateQuery[T](queryString: String): Query[T] = {
     if (queryString.charAt(0) == '@') currentSession.createNamedQuery(queryString.substring(1), null).asInstanceOf[Query[T]]
-    else currentSession.createNamedQuery(queryString, null).asInstanceOf[Query[T]]
+    else currentSession.createQuery(queryString, null).asInstanceOf[Query[T]]
   }
 
   /**

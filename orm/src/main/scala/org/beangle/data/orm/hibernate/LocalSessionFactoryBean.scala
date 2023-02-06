@@ -34,14 +34,16 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
 
   var ormLocations: Array[Resource] = Array.empty
 
+  var devMode: Boolean = false
+
   var properties = new ju.Properties
 
   var result: SessionFactory = _
 
   def init(): Unit = {
-    val cfgb = new ConfigurationBuilder(dataSource)
+    val cfgb = new ConfigurationBuilder(dataSource, properties)
     cfgb.ormLocations = ormLocations.toIndexedSeq.map(l => l.getURL)
-    cfgb.properties = properties
+    if (devMode) cfgb.enableDevMode()
     val config = cfgb.build()
     result = config.buildSessionFactory()
   }

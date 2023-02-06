@@ -18,6 +18,7 @@
 package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.io.ResourcePatternResolver
+import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.Engines
 import org.beangle.data.jdbc.meta.Database
@@ -25,12 +26,13 @@ import org.beangle.data.orm.Mappings
 import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
-import org.hibernate.cfg.Configuration
 import org.hibernate.cfg.AvailableSettings.*
+import org.hibernate.cfg.Configuration
 import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
 
 import java.net.URL
 import java.util as ju
+import java.util.Properties
 import javax.sql.DataSource
 
 object ConfigurationBuilder {
@@ -42,11 +44,9 @@ object ConfigurationBuilder {
   }
 }
 
-class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
+class ConfigurationBuilder(val dataSource: DataSource,properties :ju.Properties = new Properties()) extends Logging {
 
   var ormLocations: Seq[URL] = _
-
-  var properties = new ju.Properties
 
   /**
    * Import System properties
@@ -70,14 +70,36 @@ class ConfigurationBuilder(val dataSource: DataSource) extends Logging {
     if (dataSource != null) properties.put(DATASOURCE, dataSource)
     addDefault(CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
     addDefault(CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.orm.hibernate.SpringSessionContext")
-    addDefault(SCANNER_DISCOVERY,"none")
+    addDefault(SCANNER_DISCOVERY, "none")
     addDefault(XML_MAPPING_ENABLED, "false")
+
+    addDefault(MAX_FETCH_DEPTH, "1")
+    addDefault(STATEMENT_BATCH_SIZE, "20")
+    addDefault(STATEMENT_FETCH_SIZE, "500")
+    addDefault(DEFAULT_BATCH_FETCH_SIZE, "500")
+    addDefault(USE_GET_GENERATED_KEYS, "true")
+
+    addDefault(USE_SECOND_LEVEL_CACHE, "true")
+    addDefault(USE_QUERY_CACHE, "true")
+    addDefault(CACHE_REGION_FACTORY, "jcache")
+
+    if (!properties.contains("hibernate.javax.cache.provider")) {
+      addDefault("hibernate.javax.cache.missing_cache_strategy", "create")
+      val caffeine = "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider"
+      if ClassLoaders.get(caffeine).nonEmpty then addDefault("hibernate.javax.cache.provider", caffeine)
+    }
+
     addDefault(SHOW_SQL, "false")
     addDefault(FORMAT_SQL, "false")
   }
 
+  def enableDevMode(): Unit = {
+    addDefault(SHOW_SQL, "true")
+    addDefault(LOG_SLOW_QUERY, "100") //100ms
+  }
+
   private def addDefault(name: String, value: Any): Unit = {
-    if !properties.contains(name) then properties.put(name, value)
+    if !properties.containsKey(name) then properties.put(name, value)
   }
 
   def build(): Configuration = {
