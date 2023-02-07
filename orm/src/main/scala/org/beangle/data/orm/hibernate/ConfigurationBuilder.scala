@@ -76,7 +76,7 @@ class ConfigurationBuilder(val dataSource: DataSource,properties :ju.Properties 
     addDefault(MAX_FETCH_DEPTH, "1")
     addDefault(STATEMENT_BATCH_SIZE, "20")
     addDefault(STATEMENT_FETCH_SIZE, "500")
-    addDefault(DEFAULT_BATCH_FETCH_SIZE, "500")
+    addDefault(DEFAULT_BATCH_FETCH_SIZE, "100")
     addDefault(USE_GET_GENERATED_KEYS, "true")
 
     addDefault(USE_SECOND_LEVEL_CACHE, "true")
