@@ -17,13 +17,12 @@
 
 package org.beangle.data.orm.hibernate
 
-import java.time.{LocalDate, YearMonth}
-
 import org.beangle.commons.lang.time.{HourMinute, WeekState, WeekTime}
 import org.beangle.data.dao.OqlBuilder
-import org.beangle.data.orm.hibernate.model.{LongIdResource, _}
+import org.beangle.data.orm.hibernate.model.*
 import org.hibernate.SessionFactory
 
+import java.time.{LocalDate, YearMonth}
 import scala.collection.mutable.ListBuffer
 
 object UserCrudTest {
@@ -74,7 +73,14 @@ object UserCrudTest {
     role2.parent = Some(role1)
     entityDao.saveOrUpdate(role1, role2, role3, role4, role41)
     entityDao.saveOrUpdate(user)
-    session.flush();
+    session.flush()
+    user.name.first = "1"
+    entityDao.saveOrUpdate(user)
+    session.flush()
+    user.age = Some(21)
+    entityDao.saveOrUpdate(user)
+    session.flush()
+
     val query = OqlBuilder.from(classOf[Role], "r").where("r.parent = :parent", role1)
     val list = entityDao.search(query)
     assert(list.size == 1)
@@ -87,7 +93,7 @@ object UserCrudTest {
     val list2 = entityDao.search(query2)
     assert(list2.size == 3)
 
-    val query3 = OqlBuilder.from(classOf[User], "u").where("u.age = :age", 20)
+    val query3 = OqlBuilder.from(classOf[User], "u").where("u.age = :age", 21)
     val list3 = entityDao.search(query3)
     assert(list3.size == 1)
 

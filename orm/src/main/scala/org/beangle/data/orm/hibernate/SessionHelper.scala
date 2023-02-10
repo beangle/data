@@ -96,7 +96,7 @@ object SessionHelper extends Logging {
   }
 
   private def prepareFlushMode(session: Session, readOnly: Boolean): FlushMode = {
-    val flushMode = session.getHibernateFlushMode()
+    val flushMode = session.getHibernateFlushMode
     // suppress flushing for a read-only transaction.
     if (readOnly) {
       if (flushMode != FlushMode.MANUAL) {
@@ -190,7 +190,7 @@ object SessionHelper extends Logging {
     var session: Session = null
     if (null == holder) {
       session = doOpenSession(factory, interceptor, initializer)
-      session.setHibernateFlushMode(FlushMode.MANUAL)
+      session.setHibernateFlushMode(FlushMode.COMMIT)
       holder = new SessionHolder(session)
       bindResource(factory, holder)
     }
