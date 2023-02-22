@@ -15,23 +15,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate
+package org.beangle.data.orm.hibernate.model
 
-import org.hibernate.Session
-import org.hibernate.context.spi.CurrentSessionContext
-import org.hibernate.engine.spi.SessionFactoryImplementor
+import org.beangle.commons.collection.Collections
+import org.beangle.data.model.LongId
+import org.beangle.data.model.pojo.Named
 
-/**
- * @author chaostone
- */
-class SpringSessionContext(val sessionFactory: SessionFactoryImplementor) extends CurrentSessionContext {
+import java.time.LocalDate
+import scala.collection.mutable
 
-  /**
-   * Retrieve the Spring-managed Session for the current thread, if any.
-   */
-  def currentSession: Session = {
-    val sh = SessionHelper.currentSession(this.sessionFactory)
-    if sh == null then SessionHelper.openSession(this.sessionFactory).session
-    else sh.session
+class Course extends LongId, Named {
+
+  var levels: mutable.Set[CourseLevel] = Collections.newSet[CourseLevel]
+
+  def addLevel(l: Int): Unit = {
+    val cl = new CourseLevel
+    cl.course = this
+    this.levels += cl
+    cl.level = l
+    cl.beginOn = LocalDate.now()
   }
+}
+
+class CourseLevel extends LongId {
+  var course: Course = _
+  var level: Int = _
+  var beginOn: LocalDate = _
 }

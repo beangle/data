@@ -43,5 +43,13 @@ object TestMapping1 extends MappingModule {
 
     bind[SkillType]
     bind[Skill].table("skill_list")
+
+    bind[Course].declare { e =>
+      e.levels is depends("course")
+    }.generator(IdGenerator.Native)
+
+    bind[CourseLevel].declare { e =>
+      index("", true, e.course, e.level)
+    }.generator(IdGenerator.Native)
   }
 }

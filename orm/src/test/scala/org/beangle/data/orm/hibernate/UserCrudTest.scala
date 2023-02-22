@@ -131,6 +131,15 @@ object UserCrudTest {
     savedRole4.children -= role41
     entityDao.saveOrUpdate(savedRole4)
     session.flush()
+
+    val course = new Course()
+    course.name="course 1"
+    course.addLevel(1)
+    entityDao.saveOrUpdate(course)
+    session.flush()
+    course.addLevel(2)
+    entityDao.saveOrUpdate(course)
+    session.flush()
     transaction.commit()
 
     session.close()
