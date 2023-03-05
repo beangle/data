@@ -45,7 +45,7 @@ object QuerySupport {
 
   private def buildHibernateQuery[T](bquery: BQuery[T], session: Session): Query[T] = {
     val query =
-      if (bquery.lang == BQuery.SQL) {
+      if (bquery.lang == BQuery.Lang.SQL) {
         //FIXME native query cannot enable cache
         session.createNativeQuery(bquery.statement).asInstanceOf[Query[T]]
       } else {

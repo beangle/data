@@ -18,11 +18,14 @@
 package org.beangle.data.dao
 
 object Query {
-  case class Lang(name: String)
-  val OQL = Lang("hql")
-  val SQL = Lang("sql")
+  enum Lang(name: String) {
+    case OQL extends Lang("oql")
+    case SQL extends Lang("sql")
+  }
 }
-import Query._
+
+import org.beangle.data.dao.Query.*
+
 /**
  * 数据查询接口
  *

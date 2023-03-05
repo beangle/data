@@ -27,8 +27,6 @@ object SqlBuilder {
     sqlQuery.statement = queryStr
     sqlQuery
   }
-
-  val Lang = Query.Lang("Sql")
 }
 
 class SqlBuilder extends AbstractQueryBuilder[Array[Any]] {
@@ -37,5 +35,5 @@ class SqlBuilder extends AbstractQueryBuilder[Array[Any]] {
     "select count(*) from (" + genQueryStatement(false) + ")"
   }
 
-  override def lang: Query.Lang = SqlBuilder.Lang
+  override def lang: Query.Lang = Query.Lang.SQL
 }

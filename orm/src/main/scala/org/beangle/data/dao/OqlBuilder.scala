@@ -22,7 +22,6 @@ import org.beangle.commons.lang.Strings._
 import org.beangle.data.orm.Jpas
 
 object OqlBuilder {
-  val Lang = Query.Lang("Oql")
 
   def oql[E](oql: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
@@ -141,5 +140,5 @@ class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
     this
   }
 
-  override def lang: Query.Lang = OqlBuilder.Lang
+  override def lang: Query.Lang = Query.Lang.OQL
 }

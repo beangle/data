@@ -17,10 +17,11 @@
 
 package org.beangle.data.csv.internal
 
+import org.beangle.data.csv.CsvFormat
+import org.beangle.data.csv.internal.CsvParser.*
+
 import java.io.IOException
 import scala.collection.mutable
-import CsvParser.*
-import org.beangle.data.csv.CsvFormat
 
 object CsvParser {
 
@@ -62,7 +63,7 @@ class CsvParser(var format: CsvFormat) {
   /**
    * Parses an incoming String and returns an array of elements.
    *
-   * @param nextLine  the string to parse
+   * @param nextLine the string to parse
    * @param multi
    * @return the Comma-tokenized list of elements, or null if nextLine is null
    * @throws IOException if bad things happen during the read
@@ -149,10 +150,11 @@ class CsvParser(var format: CsvFormat) {
    */
   protected def isAllWhiteSpace(sb: CharSequence): Boolean = {
     val result = true
-    for (i <- 0 until sb.length) {
+    var i = 0
+    while (i < sb.length()) {
       val c = sb.charAt(i)
-      if (!Character.isWhitespace(c))
-        return false
+      if !Character.isWhitespace(c) then return false
+      i += 1
     }
     result
   }
