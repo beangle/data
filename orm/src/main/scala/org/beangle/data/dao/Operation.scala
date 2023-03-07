@@ -18,12 +18,13 @@
 package org.beangle.data.dao
 
 import scala.collection.mutable.ListBuffer
+
 /**
  * Operation class.
  *
  * @author chaostone
  */
-object Operation{
+object Operation {
 
   class Builder {
     private val operations = new ListBuffer[Operation]
@@ -31,9 +32,9 @@ object Operation{
     def saveOrUpdate(entities: AnyRef*): this.type = {
       for (entity <- entities) {
         entity match {
-          case null           =>
+          case null =>
           case c: Iterable[_] => c foreach (e => operations += Operation(OperationType.SaveUpdate, e))
-          case _              => operations += Operation(OperationType.SaveUpdate, entity)
+          case _ => operations += Operation(OperationType.SaveUpdate, entity)
         }
       }
       this
@@ -43,9 +44,9 @@ object Operation{
       for (entity <- entities) {
         if (null != entity) {
           entity match {
-            case null           =>
+            case null =>
             case c: Iterable[_] => c foreach (e => operations += Operation(OperationType.Remove, e))
-            case _              => operations += Operation(OperationType.Remove, entity)
+            case _ => operations += Operation(OperationType.Remove, entity)
           }
         }
       }
@@ -55,15 +56,15 @@ object Operation{
     def build(): List[Operation] = operations.toList
   }
 
-  def saveOrUpdate(entities: AnyRef*): Builder = new Builder().saveOrUpdate(entities)
+  def saveOrUpdate(entities: AnyRef*): Builder = new Builder().saveOrUpdate(entities: _*)
 
-  def remove(entities: AnyRef*): Builder = new Builder().remove(entities)
+  def remove(entities: AnyRef*): Builder = new Builder().remove(entities: _*)
 
 }
 
 case class Operation(val typ: OperationType, val data: Any)
 
-enum OperationType{
-  case  SaveUpdate, Remove
+enum OperationType {
+  case SaveUpdate, Remove
 
 }
