@@ -76,7 +76,7 @@ object SqlType {
     } else if (SqlType.isStringType(code)) {
       SqlType(code, name, Some(precision), None)
     } else if (SqlType.isTimeType(code)) {
-      if code == TIMESTAMP && scaleOption == None then scaleOption = Some(6)
+      if code == TIMESTAMP && scaleOption.contains(6) then scaleOption = None
       SqlType(code, name, None, scaleOption)
     } else {
       if (precision > 0) {

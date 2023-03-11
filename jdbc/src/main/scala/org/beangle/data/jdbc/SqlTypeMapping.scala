@@ -51,8 +51,8 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
     (classOf[java.lang.Long], BIGINT),
 
     (classOf[BigInteger], BIGINT),
-    (classOf[Float], FLOAT),
-    (classOf[java.lang.Float], FLOAT),
+    (classOf[Float], REAL),
+    (classOf[java.lang.Float], REAL),
     (classOf[Double], DOUBLE),
     (classOf[java.lang.Double], DOUBLE),
     (classOf[BigDecimal], DECIMAL),
