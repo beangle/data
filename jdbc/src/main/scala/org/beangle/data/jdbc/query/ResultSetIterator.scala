@@ -17,13 +17,14 @@
 
 package org.beangle.data.jdbc.query
 
+import org.beangle.commons.collection.Collections
+import org.beangle.commons.io.IOs
+import org.beangle.data.jdbc.engine.Engine
+
 import java.io.Closeable
 import java.sql.ResultSet
 
-import org.beangle.commons.collection.Collections
-import org.beangle.commons.io.IOs
-
-class ResultSetIterator(rs: ResultSet) extends Iterator[Array[Any]] with Closeable {
+class ResultSetIterator(rs: ResultSet, engine: Engine) extends Iterator[Array[Any]] with Closeable {
 
   var nextRecord: Array[Any] = _
 
@@ -60,7 +61,7 @@ class ResultSetIterator(rs: ResultSet) extends Iterator[Array[Any]] with Closeab
       }
     val typ = Array.ofDim[Int](cols)
     (0 until cols) foreach { i =>
-      typ(i) = meta.getColumnType(i + 1)
+      typ(i) = engine.resolveCode(meta.getColumnType(i + 1), meta.getColumnTypeName(i + 1))
     }
     typ
   }

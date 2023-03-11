@@ -65,6 +65,14 @@ trait Engine extends Dialect {
 
   def toType(sqlCode: Int, precision: Int, scale: Int): SqlType
 
+  /** resolve all driver typecodes to jdbc typecodes
+   *
+   * @param typeCode
+   * @param typeName
+   * @return
+   */
+  def resolveCode(typeCode: Int, typeName: String): Int = typeCode
+
   def needQuote(name: String): Boolean = {
     val lowcaseName = name.toLowerCase
     val rs = (lowcaseName.indexOf(' ') > -1) || Engine.reservedWords.contains(lowcaseName) || keywords.contains(lowcaseName)

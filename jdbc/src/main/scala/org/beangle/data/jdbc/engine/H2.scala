@@ -27,9 +27,9 @@ class H2 extends AbstractEngine {
     NCHAR -> "nchar($l)", NVARCHAR -> "nchar varying($l)", LONGNVARCHAR -> "nchar varying",
     BOOLEAN -> "boolean", BIT -> "bit",
     TINYINT -> "tinyint", SMALLINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
-    FLOAT -> "float", DOUBLE -> "double",
+    REAL -> "real", FLOAT -> "float", DOUBLE -> "double",
     DECIMAL -> "decimal", NUMERIC -> "numeric($p,$s)",
-    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",TIMESTAMP_WITH_TIMEZONE -> "timestamp with time zone",
+    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp", TIMESTAMP_WITH_TIMEZONE -> "timestamp with time zone",
     BINARY -> "binary($l)", VARBINARY -> "varbinary($l)", LONGVARBINARY -> "longvarbinary",
     BLOB -> "longvarbinary", CLOB -> "longvarchar", NCLOB -> "nchar varying",
     JAVA_OBJECT -> "json")
@@ -43,25 +43,25 @@ class H2 extends AbstractEngine {
     s.dropSql = "drop sequence if exists {name}"
   }
 
-  options.drop.table.sql = "drop table {name} cascade"
+  options.table.drop.sql = "drop table {name} cascade"
 
   options.limit.pattern = "{} limit ?"
   options.limit.offsetPattern = "{} limit ? offset ?"
   options.limit.bindInReverseOrder = true
   options.comment.supportsCommentOn = true
 
-  options.alter { a =>
-    a.table.changeType = "alter {column} {type}"
-    a.table.setDefault = "alter {column} set default {value}"
-    a.table.dropDefault = "alter {column} set default null"
-    a.table.setNotNull = "alter {column} set not null"
-    a.table.dropNotNull = "alter {column} set null"
-    a.table.addColumn = "add {column} {type}"
-    a.table.dropColumn = "drop column {column}"
-    a.table.renameColumn = "alter column {oldcolumn} rename to {newcolumn}"
+  options.table.alter { a =>
+    a.changeType = "alter {column} {type}"
+    a.setDefault = "alter {column} set default {value}"
+    a.dropDefault = "alter {column} set default null"
+    a.setNotNull = "alter {column} set not null"
+    a.dropNotNull = "alter {column} set null"
+    a.addColumn = "add {column} {type}"
+    a.dropColumn = "drop column {column}"
+    a.renameColumn = "alter column {oldcolumn} rename to {newcolumn}"
 
-    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
-    a.table.dropConstraint = "drop constraint {name}"
+    a.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.dropConstraint = "drop constraint {name}"
   }
 
   options.validate()

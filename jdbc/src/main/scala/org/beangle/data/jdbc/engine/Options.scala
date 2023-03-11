@@ -17,19 +17,9 @@
 
 package org.beangle.data.jdbc.engine
 
+import org.beangle.data.jdbc.engine.Options.TableOptions
+
 object Options {
-
-  class CreateOption {
-    var table = new CreateTableOption
-  }
-
-  class AlterOption {
-    var table = new AlterTableOption
-  }
-
-  class DropOption {
-    var table = new DropTableOption
-  }
 
   class AlterTableOption {
     var changeType: String = _
@@ -39,9 +29,9 @@ object Options {
     var dropDefault: String = _
     var addPrimaryKey: String = _
     var dropConstraint: String = _
-    var addColumn:String=_
+    var addColumn: String = _
     var dropColumn: String = _
-    var renameColumn:String=_
+    var renameColumn: String = _
   }
 
   class CreateTableOption {
@@ -56,6 +46,10 @@ object Options {
 
   class DropTableOption {
     var sql = "drop table {name}"
+  }
+
+  class TruncateTableOption {
+    var sql = "truncate table {name}"
   }
 
   class ConstraintOption {
@@ -76,15 +70,38 @@ object Options {
     var selectNextValSql: String = _
   }
 
+  class TableOptions {
+    val alter = new AlterTableOption
+    val create = new CreateTableOption
+    val drop = new DropTableOption
+    val truncate = new Options.TruncateTableOption
+
+    def create(f: Options.CreateTableOption => Unit): Unit = {
+      f(this.create)
+    }
+
+    def alter(f: Options.AlterTableOption => Unit): Unit = {
+      f(this.alter)
+    }
+
+    def validate(): Unit = {
+      require(null != alter.changeType, "Alter column type sql is required")
+      require(null != alter.setNotNull, "Alter column set not null sql is required")
+      require(null != alter.dropNotNull, "Alter column drop not null sql is required")
+      require(null != alter.setDefault, "Alter column set default sql is required")
+      require(null != alter.dropDefault, "Alter column drop default sql is required")
+      require(null != alter.addColumn, "Add column sql is required")
+      require(null != alter.dropColumn, "Drop column sql is required")
+
+      require(null != alter.addPrimaryKey, "Add primary key sql is required")
+      require(null != alter.dropConstraint, "Drop constraint sql is required")
+    }
+  }
 }
 
 class Options {
 
-  val create = new Options.CreateOption
-
-  val alter = new Options.AlterOption
-
-  val drop = new Options.DropOption
+  val table = new TableOptions()
 
   var comment = new Options.CommentOption
 
@@ -94,10 +111,6 @@ class Options {
 
   var sequence = new Options.SequenceOption
 
-  def create(f: Options.CreateOption => Unit): Unit = {
-    f(this.create)
-  }
-
   def sequence(f: Options.SequenceOption => Unit): Unit = {
     f(this.sequence)
   }
@@ -106,20 +119,7 @@ class Options {
     f(this.limit)
   }
 
-  def alter(f: Options.AlterOption => Unit): Unit = {
-    f(this.alter)
-  }
-
   def validate(): Unit = {
-    require(null != alter.table.changeType, "Alter column type sql is required")
-    require(null != alter.table.setNotNull, "Alter column set not null sql is required")
-    require(null != alter.table.dropNotNull, "Alter column drop not null sql is required")
-    require(null != alter.table.setDefault, "Alter column set default sql is required")
-    require(null != alter.table.dropDefault, "Alter column drop default sql is required")
-    require(null != alter.table.addColumn, "Add column sql is required")
-    require(null != alter.table.dropColumn, "Drop column sql is required")
-
-    require(null!= alter.table.addPrimaryKey,"Add primary key sql is required")
-    require(null != alter.table.dropConstraint,"Drop constraint sql is required")
+    table.validate()
   }
 }

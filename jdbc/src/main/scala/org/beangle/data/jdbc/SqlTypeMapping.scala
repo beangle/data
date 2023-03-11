@@ -17,16 +17,15 @@
 
 package org.beangle.data.jdbc
 
-import java.math.BigInteger
-import java.sql.Types._
-import java.time.Year
-
-import org.beangle.commons.lang.Strings
-import org.beangle.commons.lang.Enums
+import org.beangle.commons.lang.{Enums, Strings}
 import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.time.{HourMinute, WeekState}
 import org.beangle.data.jdbc.engine.Engine
 import org.beangle.data.jdbc.meta.SqlType
+
+import java.math.BigInteger
+import java.sql.Types.*
+import java.time.Year
 
 object SqlTypeMapping {
   def DefaultStringSqlType = SqlType(VARCHAR, "varchar(255)", 255)
@@ -72,8 +71,9 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
     (classOf[java.sql.Timestamp], TIMESTAMP),
     (classOf[java.util.Date], TIMESTAMP),
     (classOf[java.util.Calendar], TIMESTAMP),
-    (classOf[java.time.Instant], TIMESTAMP_WITH_TIMEZONE),
     (classOf[java.time.LocalDateTime], TIMESTAMP),
+    (classOf[java.time.Instant], TIMESTAMP_WITH_TIMEZONE),
+    (classOf[java.time.OffsetDateTime], TIMESTAMP_WITH_TIMEZONE),
     (classOf[java.time.ZonedDateTime], TIMESTAMP_WITH_TIMEZONE),
 
     (classOf[java.util.Locale], VARCHAR),
@@ -111,9 +111,9 @@ class DefaultSqlTypeMapping(engine: Engine) extends SqlTypeMapping {
                 i += 1
               }
               concretTypes.getOrElse(find, raiseMappingError(clazz))
-            }else if (Enums.isEnum(clazz)) {
+            } else if (Enums.isEnum(clazz)) {
               INTEGER
-            }else {
+            } else {
               raiseMappingError(clazz)
             }
         }

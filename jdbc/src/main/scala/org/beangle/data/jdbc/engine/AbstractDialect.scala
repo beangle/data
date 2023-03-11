@@ -42,12 +42,12 @@ trait AbstractDialect extends Dialect {
       if (!col.nullable) {
         buf.append(" not null")
       }
-      val useUniqueConstraint = col.unique && (!col.nullable || options.create.table.supportsNullUnique)
+      val useUniqueConstraint = col.unique && (!col.nullable || options.table.create.supportsNullUnique)
       if (useUniqueConstraint) {
-        if (options.create.table.supportsUnique) buf.append(" unique")
+        if (options.table.create.supportsUnique) buf.append(" unique")
       }
 
-      if (col.hasCheck && options.create.table.supportsColumnCheck) {
+      if (col.hasCheck && options.table.create.supportsColumnCheck) {
         buf.append(" check (").append(col.check.get).append(")")
       }
       if (!options.comment.supportsCommentOn) {
@@ -66,10 +66,14 @@ trait AbstractDialect extends Dialect {
     buf.toString
   }
 
+  override def truncate(table: Table): String = {
+    Strings.replace(options.table.truncate.sql, "{name}", table.qualifiedName)
+  }
+
   /** Table removal sql
    */
   override def dropTable(table: String): String = {
-    Strings.replace(options.drop.table.sql, "{name}", table)
+    Strings.replace(options.table.drop.sql, "{name}", table)
   }
 
   override def commentOnColumn(table: Table, column: Column, comment: Option[String]): Option[String] = {
@@ -124,7 +128,7 @@ trait AbstractDialect extends Dialect {
         sql += s" default $v"
       }
     }
-    if (options.create.table.supportsColumnCheck) {
+    if (options.table.create.supportsColumnCheck) {
       col.check foreach { c =>
         sql += s" check $c"
       }
@@ -137,7 +141,7 @@ trait AbstractDialect extends Dialect {
   }
 
   override def alterTableRenameColumn(table: Table, col: Column, newName: String): String = {
-    var renameClause = options.alter.table.renameColumn
+    var renameClause = options.table.alter.renameColumn
     renameClause = Strings.replace(renameClause, "{oldcolumn}", col.name.toLiteral(table.engine))
     renameClause = Strings.replace(renameClause, "{newcolumn}", newName)
     renameClause = Strings.replace(renameClause, "{type}", col.sqlType.name)
@@ -145,20 +149,20 @@ trait AbstractDialect extends Dialect {
   }
 
   override def alterTableDropColumn(table: Table, col: Column): String = {
-    var alterClause = options.alter.table.dropColumn
+    var alterClause = options.table.alter.dropColumn
     alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
     s"alter table ${table.qualifiedName} $alterClause"
   }
 
   override def alterTableModifyColumnSetNotNull(table: Table, col: Column): String = {
-    var alterClause = options.alter.table.setNotNull
+    var alterClause = options.table.alter.setNotNull
     alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
     alterClause = Strings.replace(alterClause, "{type}", col.sqlType.name)
     s"alter table ${table.qualifiedName} $alterClause"
   }
 
   override def alterTableModifyColumnDropNotNull(table: Table, col: Column): String = {
-    var alterClause = options.alter.table.dropNotNull
+    var alterClause = options.table.alter.dropNotNull
     alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
     alterClause = Strings.replace(alterClause, "{type}", col.sqlType.name)
     s"alter table ${table.qualifiedName} $alterClause"
@@ -166,8 +170,8 @@ trait AbstractDialect extends Dialect {
 
   override def alterTableModifyColumnDefault(table: Table, col: Column, v: Option[String]): String = {
     var alterClause = v match {
-      case Some(_) => options.alter.table.setDefault
-      case None => options.alter.table.dropNotNull
+      case Some(_) => options.table.alter.setDefault
+      case None => options.table.alter.dropNotNull
     }
     alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
     var value = v.getOrElse("null")
@@ -177,7 +181,7 @@ trait AbstractDialect extends Dialect {
   }
 
   override def alterTableModifyColumnType(table: Table, col: Column, sqlType: SqlType): String = {
-    var alterClause = options.alter.table.changeType
+    var alterClause = options.table.alter.changeType
     alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
     alterClause = Strings.replace(alterClause, "{type}", sqlType.name)
     s"alter table ${table.qualifiedName} $alterClause"
@@ -197,7 +201,7 @@ trait AbstractDialect extends Dialect {
   }
 
   override def alterTableAddPrimaryKey(table: Table, pk: PrimaryKey): String = {
-    var alterClause = options.alter.table.addPrimaryKey
+    var alterClause = options.table.alter.addPrimaryKey
     alterClause = Strings.replace(alterClause, "{name}", pk.name.toLiteral(table.engine))
     alterClause = Strings.replace(alterClause, "{column-list}", nameList(pk.columns, table.engine))
     s"alter table ${table.qualifiedName} $alterClause"
@@ -208,7 +212,7 @@ trait AbstractDialect extends Dialect {
   }
 
   override def alterTableDropConstraint(table: Table, name: String): String = {
-    var alterClause = options.alter.table.dropConstraint
+    var alterClause = options.table.alter.dropConstraint
     alterClause = Strings.replace(alterClause, "{name}", name)
     s"alter table ${table.qualifiedName} $alterClause"
   }

@@ -19,6 +19,7 @@ package org.beangle.data.jdbc.meta
 
 /**
  * JDBC column metadata
+ *
  * @author chaostone
  */
 class Column(var name: Identifier, var sqlType: SqlType, var nullable: Boolean = true) extends Cloneable with Comment {
@@ -47,14 +48,14 @@ class Column(var name: Identifier, var sqlType: SqlType, var nullable: Boolean =
     s"$name $sqlType"
   }
 
-  def same(o: Column): Boolean = {
-    this.name == o.name && this.sqlType == o.sqlType && this.nullable == o.nullable &&
+  def isSame(o: Column): Boolean = {
+    this.name == o.name && this.sqlType.name == o.sqlType.name && this.nullable == o.nullable &&
       this.unique == o.unique && this.defaultValue == o.defaultValue && this.check == o.check
   }
 
   override def equals(other: Any): Boolean = {
     other match {
-      case c: Column => same(c)
+      case c: Column => isSame(c)
       case _ => false
     }
   }

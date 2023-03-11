@@ -17,9 +17,8 @@
 
 package org.beangle.data.jdbc.query
 
-import java.sql.Types.{BLOB, CLOB, DATE, TIMESTAMP}
+import java.sql.Types.{BLOB, CLOB, DATE, TIMESTAMP, TIMESTAMP_WITH_TIMEZONE}
 import java.sql.{BatchUpdateException, Connection, PreparedStatement, ResultSet, SQLException}
-
 import javax.sql.DataSource
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.lang.Strings
@@ -33,22 +32,18 @@ object JdbcExecutor {
   def convert(rs: ResultSet, types: Array[Int]): Array[Any] = {
     val objs = Array.ofDim[Any](types.length)
     types.indices foreach { i =>
-      var v = rs.getObject(i + 1)
-      if (null != v) {
-        types(i) match {
-          // timstamp 在驱动中类型会和java.sql.Timestamp不同
-          case TIMESTAMP => v = rs.getTimestamp(i + 1)
-          case DATE => v = rs.getDate(i + 1)
-          case BLOB =>
-            val blob = rs.getBlob(i + 1)
-            v = blob.getBytes(1, blob.length.toInt)
-          case CLOB =>
-            val clob = rs.getClob(i + 1)
-            v = clob.getSubString(1, clob.length.toInt)
-          case _ =>
-        }
+      objs(i) = types(i) match {
+        // timestamp 在驱动中类型会和java.sql.Timestamp不同
+        case TIMESTAMP | TIMESTAMP_WITH_TIMEZONE => rs.getTimestamp(i + 1)
+        case DATE => rs.getDate(i + 1)
+        case BLOB =>
+          val blob = rs.getBlob(i + 1)
+          if null == blob then null else blob.getBytes(1, blob.length.toInt)
+        case CLOB =>
+          val clob = rs.getClob(i + 1)
+          if null == clob then null else clob.getSubString(1, clob.length.toInt)
+        case _ => rs.getObject(i + 1)
       }
-      objs(i) = v
     }
     objs
   }
@@ -110,7 +105,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     stmt.setFetchSize(fetchSize)
     TypeParamSetter(sqlTypeMapping, params)(stmt)
     val rs = stmt.executeQuery()
-    new ResultSetIterator(rs)
+    new ResultSetIterator(rs,engine)
   }
 
   def query(sql: String, params: Any*): collection.Seq[Array[Any]] = {
@@ -122,7 +117,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     useConnection { conn =>
       val stmt = conn.prepareStatement(sql)
       setter(stmt)
-      new ResultSetIterator(stmt.executeQuery()).listAll()
+      new ResultSetIterator(stmt.executeQuery(),engine).listAll()
     }
   }
 
@@ -141,7 +136,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
         stmt.setInt(start + 1, i)
         start += 1
       }
-      new ResultSetIterator(stmt.executeQuery()).listAll()
+      new ResultSetIterator(stmt.executeQuery(),engine).listAll()
     }
   }
 

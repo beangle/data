@@ -19,6 +19,7 @@ package org.beangle.data.jdbc.engine
 
 import org.beangle.data.jdbc.meta.SqlType
 
+import java.sql.Types
 import java.sql.Types.*
 
 class PostgreSQL10 extends AbstractEngine {
@@ -29,9 +30,9 @@ class PostgreSQL10 extends AbstractEngine {
     NCHAR -> "char($l)", NVARCHAR -> "varchar($l)", LONGNVARCHAR -> "text", //national character
     BOOLEAN -> "boolean", BIT -> "boolean",
     SMALLINT -> "smallint", TINYINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
-    FLOAT -> "float4", DOUBLE -> "float8",
+    REAL -> "float4", FLOAT -> "float4", DOUBLE -> "float8",
     DECIMAL -> "numeric($p,$s)", NUMERIC -> "numeric($p,$s)",
-    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp", TIMESTAMP_WITH_TIMEZONE -> "timestamp with time zone",
+    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp", TIMESTAMP_WITH_TIMEZONE -> "timestamptz",
     BINARY -> "bytea", VARBINARY -> "bytea", LONGVARBINARY -> "bytea",
     BLOB -> "bytea", CLOB -> "text", NCLOB -> "text",
     JAVA_OBJECT -> "json")
@@ -54,20 +55,20 @@ class PostgreSQL10 extends AbstractEngine {
     l.bindInReverseOrder = true
   }
 
-  options.drop.table.sql = "drop table {name} cascade"
+  options.table.drop.sql = "drop table {name} cascade"
+  options.table.truncate.sql = "truncate table {name} cascade"
+  options.table.alter { a =>
+    a.changeType = "alter {column} type {type}"
+    a.setDefault = "alter {column} set default {value}"
+    a.dropDefault = "alter {column} drop default"
+    a.setNotNull = "alter {column} set not null"
+    a.dropNotNull = "alter {column} drop not null"
+    a.addColumn = "add {column} {type}"
+    a.dropColumn = "drop {column} cascade"
+    a.renameColumn = "rename column {oldcolumn} to {newcolumn}"
 
-  options.alter { a =>
-    a.table.changeType = "alter {column} type {type}"
-    a.table.setDefault = "alter {column} set default {value}"
-    a.table.dropDefault = "alter {column} drop default"
-    a.table.setNotNull = "alter {column} set not null"
-    a.table.dropNotNull = "alter {column} drop not null"
-    a.table.addColumn = "add {column} {type}"
-    a.table.dropColumn = "drop {column} cascade"
-    a.table.renameColumn = "rename column {oldcolumn} to {newcolumn}"
-
-    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
-    a.table.dropConstraint = "drop constraint {name} cascade"
+    a.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.dropConstraint = "drop constraint if exists {name} cascade"
   }
   options.validate()
 
@@ -91,4 +92,15 @@ class PostgreSQL10 extends AbstractEngine {
   override def name: String = "PostgreSQL"
 
   override def version: Version = Version("[10.0,)")
+
+  override def resolveCode(typeCode: Int, typeName: String): Int = {
+    typeCode match {
+      case TIMESTAMP =>
+        typeName match {
+          case "timestamptz" => TIMESTAMP_WITH_TIMEZONE
+          case _ => TIMESTAMP
+        }
+      case _ => typeCode
+    }
+  }
 }

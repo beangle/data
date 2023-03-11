@@ -20,6 +20,7 @@ package org.beangle.data.jdbc.engine
 class Derby10 extends DB2V8 {
   options.comment.supportsCommentOn = false
 
+  options.table.truncate.sql = "truncate table {name}"
   options.limit { l =>
     l.pattern = "{} fetch first ? rows only"
     l.offsetPattern = "{} offset ? rows fetch next ? rows only"

@@ -31,7 +31,7 @@ class SQLServer2005 extends AbstractEngine {
     NCHAR -> "nchar($l)", NVARCHAR -> "nvarchar(MAX)", LONGNVARCHAR -> "ntext",
     BIT -> "bit", BOOLEAN -> "bit",
     TINYINT -> "smallint", SMALLINT -> "smallint", INTEGER -> "int", BIGINT -> "bigint",
-    FLOAT -> "float", DOUBLE -> "double precision",
+    REAL -> "REAL", FLOAT -> "float", DOUBLE -> "double precision",
     DECIMAL -> "double precision", NUMERIC -> "numeric($p,$s)",
     DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime2", TIMESTAMP_WITH_TIMEZONE -> "datetimeoffset",
     BINARY -> "binary", VARBINARY -> "varbinary(MAX)", LONGVARBINARY -> "varbinary(MAX)",
@@ -46,18 +46,18 @@ class SQLServer2005 extends AbstractEngine {
   options.comment.supportsCommentOn = false
   options.sequence.supports = false
 
-  options.alter { a =>
-    a.table.changeType = "alter {column} {type}"
-    a.table.setDefault = "add constraint {column}_dflt default {value} for {column}"
-    a.table.dropDefault = "drop constraint {column}_dflt"
-    a.table.setNotNull = "alter column {column} {type} not null"
-    a.table.dropNotNull = "alter column {column} {type}"
-    a.table.addColumn = "add {column} {type}"
-    a.table.dropColumn = "drop column {column}"
-    a.table.renameColumn = "EXEC sp_rename '{table}.{oldcolumn}', '{newcolumn}', 'COLUMN'"
+  options.table.alter { a =>
+    a.changeType = "alter {column} {type}"
+    a.setDefault = "add constraint {column}_dflt default {value} for {column}"
+    a.dropDefault = "drop constraint {column}_dflt"
+    a.setNotNull = "alter column {column} {type} not null"
+    a.dropNotNull = "alter column {column} {type}"
+    a.addColumn = "add {column} {type}"
+    a.dropColumn = "drop column {column}"
+    a.renameColumn = "EXEC sp_rename '{table}.{oldcolumn}', '{newcolumn}', 'COLUMN'"
 
-    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
-    a.table.dropConstraint = "drop constraint {name}"
+    a.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.dropConstraint = "drop constraint {name}"
   }
   options.validate()
 
@@ -87,7 +87,7 @@ class SQLServer2005 extends AbstractEngine {
   }
 
   override def alterTableRenameColumn(table: Table, col: Column, newName: String): String = {
-    var renameClause = options.alter.table.renameColumn
+    var renameClause = options.table.alter.renameColumn
     renameClause = Strings.replace(renameClause, "{oldcolumn}", col.name.toLiteral(table.engine))
     renameClause = Strings.replace(renameClause, "{newcolumn}", newName)
     renameClause = Strings.replace(renameClause, "{table}", table.qualifiedName)

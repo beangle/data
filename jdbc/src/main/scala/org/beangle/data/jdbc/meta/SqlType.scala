@@ -17,9 +17,10 @@
 
 package org.beangle.data.jdbc.meta
 
-import java.sql.Types._
-
 import org.beangle.commons.lang.Strings
+
+import java.sql.Types
+import java.sql.Types.*
 
 object SqlType {
   private val numberTypeCodes = Set(TINYINT, SMALLINT, INTEGER, BIGINT, FLOAT, REAL, DOUBLE, NUMERIC, DECIMAL)
@@ -30,8 +31,13 @@ object SqlType {
     "numeric", "decimal", "number", "real",
     "identity"
   )
-
   private val stringTypeCodes = Set(CHAR, VARCHAR, LONGNVARCHAR)
+  private val timeTypeCodes = Set(TIME, TIME_WITH_TIMEZONE, TIMESTAMP, TIMESTAMP_WITH_TIMEZONE)
+
+  def all(): Set[Int] = {
+    val fields = classOf[Types].getDeclaredFields
+    fields.map(_.getInt(null)).toSet
+  }
 
   def isNumberType(code: Int): Boolean = {
     numberTypeCodes.contains(code)
@@ -51,6 +57,10 @@ object SqlType {
     numberTypeNames.contains(typeClass.toLowerCase)
   }
 
+  def isTimeType(code: Int): Boolean = {
+    timeTypeCodes.contains(code)
+  }
+
   def apply(code: Int, name: String): SqlType = {
     SqlType(code, name, None, None)
   }
@@ -60,10 +70,14 @@ object SqlType {
   }
 
   def apply(code: Int, name: String, precision: Int, scale: Int): SqlType = {
-    var scaleOption: Option[Int] = None
-    if (scale > 0) scaleOption = Some(scale)
+    var scaleOption = if (scale > 0) Some(scale) else None
     if (SqlType.isNumberType(code)) {
       SqlType(code, name, Some(precision), scaleOption)
+    } else if (SqlType.isStringType(code)) {
+      SqlType(code, name, Some(precision), None)
+    } else if (SqlType.isTimeType(code)) {
+      if code == TIMESTAMP && scaleOption == None then scaleOption = Some(6)
+      SqlType(code, name, None, scaleOption)
     } else {
       if (precision > 0) {
         SqlType(code, name, Some(precision), scaleOption)

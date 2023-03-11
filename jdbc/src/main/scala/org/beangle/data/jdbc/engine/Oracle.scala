@@ -17,6 +17,7 @@
 
 package org.beangle.data.jdbc.engine
 
+import java.sql.Types
 import java.sql.Types.*
 import scala.collection.mutable
 
@@ -28,9 +29,9 @@ class Oracle10g extends AbstractEngine {
     NCHAR -> "nchar($l)", NVARCHAR -> "nvarchar2($l)", LONGNVARCHAR -> "nvarchar2($l)",
     BOOLEAN -> "number(1,0)", BIT -> "number(1,0)",
     SMALLINT -> "number(5,0)", TINYINT -> "number(3,0)", INTEGER -> "number(10,0)", BIGINT -> "number(19,0)",
-    FLOAT -> "float", DOUBLE -> "double precision",
+    REAL -> "real", FLOAT -> "float", DOUBLE -> "double precision",
     DECIMAL -> "number($p,$s)", NUMERIC -> "number($p,$s)",
-    DATE -> "date", TIME -> "date", TIMESTAMP -> "date",TIMESTAMP_WITH_TIMEZONE -> "timestamp with time zone",
+    DATE -> "date", TIME -> "date", TIMESTAMP -> "date", TIMESTAMP_WITH_TIMEZONE -> "timestamp with time zone",
     BINARY -> "raw", VARBINARY -> "long raw", LONGVARBINARY -> "long raw",
     BLOB -> "blob", CLOB -> "clob", NCLOB -> "nclob",
     JAVA_OBJECT -> "blob")
@@ -45,20 +46,20 @@ class Oracle10g extends AbstractEngine {
     s.selectNextValSql = "{name}.nextval"
   }
 
-  options.drop.table.sql = "drop table {name} cascade constraints"
+  options.table.drop.sql = "drop table {name} cascade constraints"
 
-  options.alter { a =>
-    a.table.addColumn = "add {column} {type}"
-    a.table.changeType = "modify {column} {type}"
-    a.table.setDefault = "modify {column} default {value}"
-    a.table.dropDefault = "modify {column} default null"
-    a.table.setNotNull = "modify {column} not null"
-    a.table.dropNotNull = "modify {column} null"
-    a.table.dropColumn = "drop column {column}"
-    a.table.renameColumn = "rename column {oldcolumn} to {newcolumn}"
+  options.table.alter { a =>
+    a.addColumn = "add {column} {type}"
+    a.changeType = "modify {column} {type}"
+    a.setDefault = "modify {column} default {value}"
+    a.dropDefault = "modify {column} default null"
+    a.setNotNull = "modify {column} not null"
+    a.dropNotNull = "modify {column} null"
+    a.dropColumn = "drop column {column}"
+    a.renameColumn = "rename column {oldcolumn} to {newcolumn}"
 
-    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
-    a.table.dropConstraint = "drop constraint {name}"
+    a.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.dropConstraint = "drop constraint {name}"
   }
 
   options.comment.supportsCommentOn = true
@@ -131,6 +132,13 @@ class Oracle10g extends AbstractEngine {
   override def name: String = "Oracle"
 
   override def version: Version = Version("[10.1,)")
+
+  override def resolveCode(typeCode: Int, typeName: String): Int = {
+    typeCode match {
+      case -101 | -102 => Types.TIMESTAMP_WITH_TIMEZONE
+      case _ => typeCode
+    }
+  }
 }
 
 class Oracle12c extends Oracle10g {

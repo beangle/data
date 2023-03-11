@@ -28,6 +28,7 @@ import java.sql.{DatabaseMetaData, ResultSet, Statement}
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
+import java.sql.JDBCType
 
 object MetadataColumns {
   val TableName = "TABLE_NAME"
@@ -88,12 +89,12 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
       val colName = rs.getString(ColumnName)
       if (null != colName) {
         getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
-          val typecode = rs.getInt(DataType)
           val typename = new StringTokenizer(rs.getString(TypeName), "() ").nextToken()
+          val typecode = engine.resolveCode(rs.getInt(DataType),typename)
           val length = rs.getInt(ColumnSize)
           val scale = rs.getInt(DecimalDigits)
           val key = s"$typecode-$typename-$length-$scale"
-          val sqlType = types.getOrElseUpdate(key, SqlType(typecode, typename, length, scale))
+          val sqlType = types.getOrElseUpdate(key, engine.toType(typecode,length,scale))
           val nullable = "yes".equalsIgnoreCase(rs.getString(IsNullable))
           val col = new Column(Identifier(rs.getString(ColumnName)), sqlType, nullable)
           //          col.position = rs.getInt(OrdinalPosition)
@@ -224,7 +225,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
           rs = meta.getIndexInfo(null, table.schema.name.value, table.name.value, false, true)
           while (rs.next()) {
             val index = rs.getString(IndexName)
-            if (index != null) {
+            if (index != null && !table.primaryKey.exists(_.name.value == index)) {
               val info = table.getIndex(index).getOrElse(table.add(new Index(table, getIdentifier(rs, IndexName))))
               info.unique = !rs.getBoolean("NON_UNIQUE")
               val ascOrDesc = rs.getString("ASC_OR_DESC")

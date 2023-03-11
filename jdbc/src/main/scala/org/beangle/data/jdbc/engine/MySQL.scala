@@ -30,9 +30,9 @@ class MySQL5 extends AbstractEngine {
     NCHAR -> "nchar($l)", NVARCHAR -> "nvarchar($l)", LONGNVARCHAR -> "nvarchar($l)",
     BOOLEAN -> "bit", BIT -> "bit",
     TINYINT -> "tinyint", SMALLINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
-    FLOAT -> "float", DOUBLE -> "double precision",
+    REAL -> "real", FLOAT -> "float", DOUBLE -> "double precision",
     DECIMAL -> "decimal($p,$s)", NUMERIC -> "decimal($p,$s)",
-    DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime",TIMESTAMP_WITH_TIMEZONE -> "timestamp",
+    DATE -> "date", TIME -> "time", TIMESTAMP -> "datetime", TIMESTAMP_WITH_TIMEZONE -> "timestamp",
     BINARY -> "binary($l)", VARBINARY -> "longblob", LONGVARBINARY -> "longblob",
     BLOB -> "longblob", CLOB -> "longtext", NCLOB -> "longtext",
     JAVA_OBJECT -> "json")
@@ -51,18 +51,18 @@ class MySQL5 extends AbstractEngine {
     (LONGVARBINARY, 16777215, "mediumblob"))
 
   options.sequence.supports = false
-  options.alter { a =>
-    a.table.addColumn = "add {column} {type}"
-    a.table.changeType = "modify column {column} {type}"
-    a.table.setDefault = "alter {column} set default {value}"
-    a.table.dropDefault = "alter {column} drop default"
-    a.table.setNotNull = "modify {column} {type} not null"
-    a.table.dropNotNull = "modify {column} {type}"
-    a.table.dropColumn = "drop column {column}"
-    a.table.renameColumn = "change column {oldcolumn} {newcolumn} {type}"
+  options.table.alter { a =>
+    a.addColumn = "add {column} {type}"
+    a.changeType = "modify column {column} {type}"
+    a.setDefault = "alter {column} set default {value}"
+    a.dropDefault = "alter {column} drop default"
+    a.setNotNull = "modify {column} {type} not null"
+    a.dropNotNull = "modify {column} {type}"
+    a.dropColumn = "drop column {column}"
+    a.renameColumn = "change column {oldcolumn} {newcolumn} {type}"
 
-    a.table.addPrimaryKey = "add primary key ({column-list})"
-    a.table.dropConstraint = "drop constraint {name}"
+    a.addPrimaryKey = "add primary key ({column-list})"
+    a.dropConstraint = "drop constraint {name}"
   }
 
   options.limit.pattern = "{} limit ?"

@@ -30,8 +30,8 @@ class DB2V8 extends AbstractEngine {
     NCHAR -> "char($l)", NVARCHAR -> "varchar($l)", LONGNVARCHAR -> "long varchar",
     BOOLEAN -> "smallint", BIT -> "smallint",
     SMALLINT -> "smallint", TINYINT -> "smallint", INTEGER -> "integer", DECIMAL -> "bigint", BIGINT -> "bigint",
-    FLOAT -> "float", DOUBLE -> "double", NUMERIC -> "numeric($p,$s)",
-    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp",TIMESTAMP_WITH_TIMEZONE -> "timestamp",
+    REAL -> "real", FLOAT -> "real", DOUBLE -> "double", NUMERIC -> "numeric($p,$s)",
+    DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp", TIMESTAMP_WITH_TIMEZONE -> "timestamp",
     BINARY -> "varchar($l) for bit data",
     VARBINARY -> "varchar($l) for bit data",
     LONGVARBINARY -> "long varchar for bit data",
@@ -44,19 +44,20 @@ class DB2V8 extends AbstractEngine {
   }
   options.comment.supportsCommentOn = true
 
+  options.table.truncate.sql = "truncate table {name} immediate"
   // 和 postgresql 比较接近
-  options.alter { a =>
-    a.table.addColumn = "add {column} {type}"
-    a.table.changeType = "alter column {column} set data type {type}"
-    a.table.setDefault = "alter column {column} set default {value}"
-    a.table.dropDefault = "alter column {column} drop default"
-    a.table.setNotNull = "alter column {column} set not null"
-    a.table.dropNotNull = "alter column {column} drop not null"
-    a.table.dropColumn = "drop column {column}"
-    a.table.renameColumn = "rename column {oldcolumn} to {newcolumn}"
+  options.table.alter { a =>
+    a.addColumn = "add {column} {type}"
+    a.changeType = "alter column {column} set data type {type}"
+    a.setDefault = "alter column {column} set default {value}"
+    a.dropDefault = "alter column {column} drop default"
+    a.setNotNull = "alter column {column} set not null"
+    a.dropNotNull = "alter column {column} drop not null"
+    a.dropColumn = "drop column {column}"
+    a.renameColumn = "rename column {oldcolumn} to {newcolumn}"
 
-    a.table.addPrimaryKey = "add constraint {name} primary key ({column-list})"
-    a.table.dropConstraint = "drop constraint {name}"
+    a.addPrimaryKey = "add constraint {name} primary key ({column-list})"
+    a.dropConstraint = "drop constraint {name}"
   }
   options.validate()
 

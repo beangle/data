@@ -17,17 +17,23 @@
 
 package org.beangle.data.jdbc.engine
 
-import java.sql.Types
-import java.sql.Types._
-
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Numbers, Strings}
-import org.beangle.data.jdbc.meta._
+import org.beangle.data.jdbc.meta.*
 
+import java.sql.Types
+import java.sql.Types.*
 import scala.collection.mutable
 
 object TypeNames {
 
+  /** TypeInfo
+   *
+   * @param name
+   * @param category varchar/number
+   * @param precision
+   * @param scale
+   */
   case class TypeInfo(name: String, category: String, precision: Option[String], scale: Option[String]) {
     def precisionValue: Int = {
       precision match {
@@ -54,11 +60,11 @@ object TypeNames {
     }
 
     /** 注册类型代码和模式
-      *
-      * @param typecode 类型代码
-      * @param capacity 该类型的length或者precision
-      * @param pattern  类型的模式
-      */
+     *
+     * @param typecode 类型代码
+     * @param capacity 该类型的length或者precision
+     * @param pattern  类型的模式
+     */
     def put(typecode: Int, capacity: Int, pattern: String): Unit = {
       val info = parse(pattern)
 
@@ -98,12 +104,12 @@ object TypeNames {
         if (pattern.contains(")")) {
           scale = Strings.substringBetween(pattern, ",", ")")
         } else {
-          throw new RuntimeException(s"Unrecoganize sql type $pattern")
+          throw new RuntimeException(s"Unrecognized sql type $pattern")
         }
       } else if (pattern.contains(")")) {
         precision = Strings.substringBetween(pattern, "(", ")")
       } else {
-        throw new RuntimeException(s"Unrecoganize sql type $pattern")
+        throw new RuntimeException(s"Unrecognized sql type $pattern")
       }
       Strings.substringBefore(pattern, "(").toLowerCase
     } else {
@@ -118,16 +124,16 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
                 private val name2codes: Map[String, List[(Int, Int)]]) {
 
   /** get default type name for specified type
-    *
-    * @param typecode the type key
-    * @return the default type name associated with specified key
-    */
+   *
+   * @param typecode the type key
+   * @return the default type name associated with specified key
+   */
   def toType(typecode: Int): SqlType = {
     toType(typecode, 0, 0)
   }
 
   def toType(sqlCode: Int, precision: Int, scale: Int): SqlType = {
-    val targetCode = translate(sqlCode, precision)
+    val targetCode = normalize(sqlCode, precision)
     SqlType(targetCode, toName(targetCode, precision, scale), precision, scale)
   }
 
@@ -139,21 +145,21 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
   }
 
   protected[engine] def toName(typecode: Int): String = {
-    code2names.get(translate(typecode, 0)) match {
+    code2names.get(normalize(typecode, 0)) match {
       case None => "other"
       case Some(l) => l.head._2
     }
   }
 
   /**
-    * get type name for specified type and size
-    *
-    * @param typecode  the type key
-    * @param precision the SQL precision
-    * @param scale     the SQL scale
-    * @return the associated name with smallest capacity >= size, if available
-    *         and the default type name otherwise
-    */
+   * get type name for specified type and size
+   *
+   * @param typecode  the type key
+   * @param precision the SQL precision
+   * @param scale     the SQL scale
+   * @return the associated name with smallest capacity >= size, if available
+   *         and the default type name otherwise
+   */
   protected[engine] def toName(typecode: Int, precision: Int, scale: Int): String = {
     code2names.get(typecode) match {
       case None => "other"
@@ -176,7 +182,7 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
     }
   }
 
-  private def translate(sqlCode: Int, precision: Int) = {
+  private def normalize(sqlCode: Int, precision: Int) = {
     sqlCode match {
       case DECIMAL | NUMERIC =>
         precision match {
@@ -186,7 +192,6 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
           case 19 => BIGINT
           case _ => sqlCode
         }
-      case REAL => FLOAT
       case _ => sqlCode
     }
   }

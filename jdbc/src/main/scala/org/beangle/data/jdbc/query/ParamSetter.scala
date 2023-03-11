@@ -17,19 +17,19 @@
 
 package org.beangle.data.jdbc.query
 
-import java.io._
-import java.math.BigDecimal
-import java.sql.Types._
-import java.sql.{Blob, Clob, Date, PreparedStatement, SQLException, Time, Timestamp}
-import java.time._
-import java.{util => ju}
-
 import org.beangle.commons.io.IOs
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.SqlTypeMapping
 
+import java.io.*
+import java.math.BigDecimal
+import java.sql.{Blob, Clob, Date, PreparedStatement, SQLException, Time, Timestamp}
+import java.sql.Types.*
+import java.time.*
+import java.util as ju
+
 object TypeParamSetter {
-    def apply(sqlTypeMapping: SqlTypeMapping, params: collection.Seq[Any]): TypeParamSetter = {
+  def apply(sqlTypeMapping: SqlTypeMapping, params: collection.Seq[Any]): TypeParamSetter = {
     val types = new Array[Int](params.length)
     types.indices foreach { i =>
       types(i) = if (null == params(i)) VARCHAR else sqlTypeMapping.sqlCode(params(i).getClass)
@@ -94,7 +94,7 @@ object ParamSetter extends Logging {
             case _ =>
               stmt.setObject(index, value, DATE)
           }
-        case TIME =>
+        case TIME | TIME_WITH_TIMEZONE =>
           value match {
             case lt: LocalTime =>
               stmt.setTime(index, Time.valueOf(lt))
@@ -108,20 +108,15 @@ object ParamSetter extends Logging {
             case _ =>
               stmt.setObject(index, value, TIME)
           }
-        case TIMESTAMP =>
+        case TIMESTAMP | TIMESTAMP_WITH_TIMEZONE =>
           value match {
-            case i: Instant =>
-              stmt.setTimestamp(index, Timestamp.from(i))
-            case ldt: LocalDateTime =>
-              stmt.setTimestamp(index, Timestamp.valueOf(ldt))
-            case zdt: ZonedDateTime =>
-              stmt.setTimestamp(index, Timestamp.valueOf(zdt.toLocalDateTime))
-            case ts: Timestamp =>
-              stmt.setTimestamp(index, ts)
-            case jc: ju.Calendar =>
-              stmt.setTimestamp(index, new Timestamp(jc.getTime.getTime), jc)
-            case jd: ju.Date =>
-              stmt.setTimestamp(index, new Timestamp(jd.getTime))
+            case i: Instant => stmt.setTimestamp(index, Timestamp.from(i))
+            case odt: OffsetDateTime => stmt.setTimestamp(index, Timestamp.from(odt.toInstant))
+            case ldt: LocalDateTime => stmt.setTimestamp(index, Timestamp.valueOf(ldt))
+            case zdt: ZonedDateTime => stmt.setTimestamp(index, Timestamp.valueOf(zdt.toLocalDateTime))
+            case ts: Timestamp => stmt.setTimestamp(index, ts)
+            case jc: ju.Calendar => stmt.setTimestamp(index, new Timestamp(jc.getTime.getTime), jc)
+            case jd: ju.Date => stmt.setTimestamp(index, new Timestamp(jd.getTime))
             case _ => stmt.setObject(index, value, TIMESTAMP)
           }
         case BINARY | VARBINARY | LONGVARBINARY =>

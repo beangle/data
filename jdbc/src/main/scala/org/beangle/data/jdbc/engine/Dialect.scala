@@ -17,11 +17,11 @@
 
 package org.beangle.data.jdbc.engine
 
-import org.beangle.data.jdbc.meta._
+import org.beangle.data.jdbc.meta.*
 
 /** RDBMS Dialect
-  * Focus on ddl and dml sql generation.
-  */
+ * Focus on ddl and dml sql generation.
+ */
 trait Dialect {
 
   def createTable(table: Table): String
@@ -32,11 +32,13 @@ trait Dialect {
 
   def insert(table: Table): String
 
+  def truncate(table: Table): String
+
   def alterTableAddColumn(table: Table, col: Column): List[String]
 
   def alterTableDropColumn(table: Table, col: Column): String
 
-  def alterTableRenameColumn(table: Table, col: Column,newName:String): String
+  def alterTableRenameColumn(table: Table, col: Column, newName: String): String
 
   def alterTableModifyColumnType(table: Table, col: Column, sqlType: SqlType): String
 
@@ -61,14 +63,14 @@ trait Dialect {
   def dropSequence(seq: Sequence): String
 
   /** generate limit sql
-    *
-    * @param offset is 0 based
-    */
+   *
+   * @param offset is 0 based
+   */
   def limit(query: String, offset: Int, limit: Int): (String, List[Int])
 
   def commentOnColumn(table: Table, column: Column, comment: Option[String]): Option[String]
 
-  def commentsOnTable(table: Table,includeMissing:Boolean): List[String]
+  def commentsOnTable(table: Table, includeMissing: Boolean): List[String]
 
   def commentOnTable(table: String, comment: Option[String]): Option[String]
 
@@ -76,5 +78,5 @@ trait Dialect {
 
   def dropIndex(i: Index): String
 
-  def supportSequence:Boolean
+  def supportSequence: Boolean
 }
