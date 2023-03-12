@@ -117,22 +117,21 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     tb
   }
 
-  def isSame(o: Table): Boolean = {
+  /** 两个表格是否结构相同
+   *
+   * @param o
+   * @return
+   */
+  def isSameStruct(o: Table): Boolean = {
     if this.qualifiedName != o.qualifiedName then false
     else if this.columns.size != o.columns.size then false
     else
-      val columnSame = this.columns.forall { c =>
+      this.columns.forall { c =>
         o.columns.find(_.name == c.name) match {
           case None => false
           case Some(c2) => c.isSame(c2)
         }
       }
-      if !columnSame then false
-      else
-        this.primaryKey.map(_.name) == o.primaryKey.map(_.name) &&
-          this.foreignKeys.map(_.name).toSet == o.foreignKeys.map(_.name).toSet &&
-          this.uniqueKeys.map(_.name).toSet == o.uniqueKeys.map(_.name).toSet &&
-          this.indexes.map(_.name).toSet == o.indexes.map(_.name).toSet
   }
 
   def toCase(lower: Boolean): Unit = {
