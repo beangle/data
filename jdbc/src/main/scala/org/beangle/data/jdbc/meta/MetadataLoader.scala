@@ -24,11 +24,10 @@ import org.beangle.commons.lang.{Strings, ThreadTasks}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.Engine
 
-import java.sql.{DatabaseMetaData, ResultSet, Statement}
+import java.sql.{DatabaseMetaData, JDBCType, ResultSet, Statement}
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
-import java.sql.JDBCType
 
 object MetadataColumns {
   val TableName = "TABLE_NAME"
@@ -60,6 +59,16 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
 
   import MetadataColumns.*
 
+  def schemas(): Set[String] = {
+    val rs = meta.getSchemas();
+    val names = Collections.newBuffer[String]
+    while (rs.next()) {
+      names.addOne(rs.getString("TABLE_SCHEM"))
+    }
+    rs.close()
+    names.toSet
+  }
+
   def loadTables(schema: Schema, extras: Boolean): Unit = {
     val TYPES = Array("TABLE")
     val newCatalog = if (schema.catalog.isEmpty) null else schema.catalog.get.value
@@ -90,11 +99,11 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
       if (null != colName) {
         getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
           val typename = new StringTokenizer(rs.getString(TypeName), "() ").nextToken()
-          val typecode = engine.resolveCode(rs.getInt(DataType),typename)
+          val typecode = engine.resolveCode(rs.getInt(DataType), typename)
           val length = rs.getInt(ColumnSize)
           val scale = rs.getInt(DecimalDigits)
           val key = s"$typecode-$typename-$length-$scale"
-          val sqlType = types.getOrElseUpdate(key, engine.toType(typecode,length,scale))
+          val sqlType = types.getOrElseUpdate(key, engine.toType(typecode, length, scale))
           val nullable = "yes".equalsIgnoreCase(rs.getString(IsNullable))
           val col = new Column(Identifier(rs.getString(ColumnName)), sqlType, nullable)
           //          col.position = rs.getInt(OrdinalPosition)
@@ -117,7 +126,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
       if (engine.metadataLoadSql.supportsTableExtra) {
         batchLoadExtra(schema, engine.metadataLoadSql)
       } else {
-        logger.info("Loading primary key,foreign key and index.")
+        logger.debug("Loading primary key,foreign key and index.")
         val tableNames = new ConcurrentLinkedQueue[String]
         tableNames.addAll(asJava(tables.keySet.toList.sortWith(_ < _)))
         ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
@@ -195,7 +204,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
         try {
           val table = tables(nextTableName)
           val schema = table.schema
-          logger.info(s"Loading ${table.qualifiedName}...")
+          logger.debug(s"Loading ${table.qualifiedName}...")
           // load primary key
           var rs: ResultSet = null
           rs = meta.getPrimaryKeys(null, table.schema.name.value, table.name.value)
@@ -225,7 +234,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
           rs = meta.getIndexInfo(null, table.schema.name.value, table.name.value, false, true)
           while (rs.next()) {
             val index = rs.getString(IndexName)
-            if (index != null && !table.primaryKey.exists(_.name.value == index)) {
+            if (index != null && !table.isPrimaryKeyIndex(index)) {
               val info = table.getIndex(index).getOrElse(table.add(new Index(table, getIdentifier(rs, IndexName))))
               info.unique = !rs.getBoolean("NON_UNIQUE")
               val ascOrDesc = rs.getString("ASC_OR_DESC")
@@ -241,7 +250,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
         }
         nextTableName = buffer.poll()
       }
-      logger.info(s"${Thread.currentThread().getName} loaded $completed tables ")
+      logger.debug(s"${Thread.currentThread().getName} loaded $completed tables ")
     }
   }
 

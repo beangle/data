@@ -70,8 +70,7 @@ class ResultSetIterator(rs: ResultSet, engine: Engine) extends Iterator[Array[An
   override def close(): Unit = {
     try {
       val smt = rs.getStatement
-      val con = smt.getConnection
-      IOs.close(rs, smt, con)
+      if null == smt then IOs.close(rs) else IOs.close(rs, smt, smt.getConnection)
     } finally {
     }
   }

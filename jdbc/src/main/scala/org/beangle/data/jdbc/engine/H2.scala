@@ -25,14 +25,19 @@ class H2 extends AbstractEngine {
   registerTypes(
     CHAR -> "char($l)", VARCHAR -> "varchar($l)", LONGVARCHAR -> "character varying",
     NCHAR -> "nchar($l)", NVARCHAR -> "nchar varying($l)", LONGNVARCHAR -> "nchar varying",
-    BOOLEAN -> "boolean", BIT -> "bit",
+    BOOLEAN -> "boolean", BIT -> "boolean",
     TINYINT -> "tinyint", SMALLINT -> "smallint", INTEGER -> "integer", BIGINT -> "bigint",
     REAL -> "real", FLOAT -> "float", DOUBLE -> "double",
     DECIMAL -> "decimal", NUMERIC -> "numeric($p,$s)",
     DATE -> "date", TIME -> "time", TIMESTAMP -> "timestamp", TIMESTAMP_WITH_TIMEZONE -> "timestamp with time zone",
     BINARY -> "binary($l)", VARBINARY -> "varbinary($l)", LONGVARBINARY -> "longvarbinary",
-    BLOB -> "longvarbinary", CLOB -> "longvarchar", NCLOB -> "nchar varying",
+    BLOB -> "blob", CLOB -> "clob", NCLOB -> "nclob",
     JAVA_OBJECT -> "json")
+
+  registerTypes2(
+    (VARCHAR, 1_000_000_00, "varchar($l)"), (VARCHAR, Int.MaxValue, "character large object"),
+    (VARBINARY, 1_000_000_00, "varbinary($l)"), (VARBINARY, Int.MaxValue, "binary large object"),
+    (BINARY, 1_000_000_00, "binary($l)"), (BINARY, Int.MaxValue, "binary large object"))
 
   metadataLoadSql.sequenceSql = "select sequence_name,base_value,increment,cache from information_schema.sequences where sequence_schema=':schema'"
 
@@ -61,7 +66,7 @@ class H2 extends AbstractEngine {
     a.renameColumn = "alter column {oldcolumn} rename to {newcolumn}"
 
     a.addPrimaryKey = "add constraint {name} primary key ({column-list})"
-    a.dropConstraint = "drop constraint {name}"
+    a.dropConstraint = "drop constraint if exists {name} cascade"
   }
 
   options.validate()

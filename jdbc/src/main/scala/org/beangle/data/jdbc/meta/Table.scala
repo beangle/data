@@ -117,6 +117,10 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     tb
   }
 
+  def isPrimaryKeyIndex(indexName: String): Boolean = {
+    primaryKey.exists(_.name.value == indexName) || indexName.toLowerCase.contains("primary_key")
+  }
+
   /** 两个表格是否结构相同
    *
    * @param o
