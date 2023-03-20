@@ -26,6 +26,8 @@ trait AbstractDialect extends Dialect {
 
   protected var options = new Options
 
+  override def createSchema(name: String): String = s"create schema ${name}"
+
   /** Table creation sql
    */
   override def createTable(table: Table): String = {

@@ -125,6 +125,8 @@ class Oracle10g extends AbstractEngine {
     (pagingSelect.toString, if (hasOffset) List(limit + offset, offset) else List(limit))
   }
 
+  override def createSchema(name: String): String = null
+
   override def storeCase: StoreCase = StoreCase.Upper
 
   override def defaultSchema: String = "$user"

@@ -77,7 +77,8 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
     typeNames.toType(sqlCode, precision, scale)
   }
 
-  def storeCase: StoreCase = {
-    StoreCase.Mixed
-  }
+  override def storeCase: StoreCase = StoreCase.Mixed
+
+  override def catelogAsSchema: Boolean = false
+
 }

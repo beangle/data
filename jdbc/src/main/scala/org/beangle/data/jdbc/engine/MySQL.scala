@@ -18,7 +18,7 @@
 package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.meta.{PrimaryKey, Table}
+import org.beangle.data.jdbc.meta.{Index, PrimaryKey, Table}
 
 import java.sql.Types.*
 
@@ -44,6 +44,10 @@ class MySQL5 extends AbstractEngine {
 
     (NUMERIC, 65, "decimal($p, $s)"),
     (NUMERIC, Int.MaxValue, "decimal(65, $s)"),
+
+    (BINARY, 255, "binary($l)"),
+    (BINARY, 65535, "blob"),
+    (BINARY, Int.MaxValue, "longblob"),
 
     (VARBINARY, 255, "tinyblob"),
     (VARBINARY, 65535, "blob"),
@@ -73,6 +77,10 @@ class MySQL5 extends AbstractEngine {
 
   override def maxIdentifierLength: Int = 64
 
+  override def catelogAsSchema: Boolean = true
+
+  override def createSchema(name: String): String = s"create database if not exists ${name} DEFAULT CHARSET utf8 COLLATE utf8_general_ci"
+
   override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
                              referencedTable: String, primaryKey: Iterable[String]): String = {
     val cols = Strings.join(foreignKey, ", ")
@@ -86,11 +94,15 @@ class MySQL5 extends AbstractEngine {
     s"alter table ${table.qualifiedName}  drop primary key"
   }
 
+  override def dropIndex(i: Index): String = {
+    "drop index " + i.literalName + " on " + i.table.qualifiedName
+  }
+
   override def defaultSchema: String = "PUBLIC"
 
   override def name: String = "MySQL"
 
   override def quoteChars: (Char, Char) = ('`', '`')
 
-  override def version: Version = Version("[5.7,)")
+  override def version: Version = Version("[5.5,)")
 }

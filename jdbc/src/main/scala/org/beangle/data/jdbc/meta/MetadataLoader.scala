@@ -33,6 +33,7 @@ object MetadataColumns {
   val TableName = "TABLE_NAME"
   val ColumnName = "COLUMN_NAME"
   val ColumnSize = "COLUMN_SIZE"
+  val TableCat = "TABLE_CAT"
   val TableSchema = "TABLE_SCHEM"
   val IndexName = "INDEX_NAME"
   val TypeName = "TYPE_NAME"
@@ -47,6 +48,7 @@ object MetadataColumns {
   val FKTabkeSchem = "FKTABLE_SCHEM"
   val FKTableName = "FKTABLE_NAME"
 
+  val PKTableCat = "PKTABLE_CAT"
   val PKTableSchem = "PKTABLE_SCHEM"
   val PKTableName = "PKTABLE_NAME"
   val PKColumnName = "PKCOLUMN_NAME"
@@ -60,27 +62,43 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
   import MetadataColumns.*
 
   def schemas(): Set[String] = {
-    val rs = meta.getSchemas();
     val names = Collections.newBuffer[String]
-    while (rs.next()) {
-      names.addOne(rs.getString("TABLE_SCHEM"))
+    if (engine.catelogAsSchema) {
+      val rs = meta.getCatalogs()
+      while (rs.next()) {
+        names.addOne(rs.getString("TABLE_CAT"))
+      }
+      rs.close()
+    } else {
+      val rs = meta.getSchemas()
+      while (rs.next()) {
+        names.addOne(rs.getString("TABLE_SCHEM"))
+      }
+      rs.close()
     }
-    rs.close()
     names.toSet
   }
 
   def loadTables(schema: Schema, extras: Boolean): Unit = {
     val TYPES = Array("TABLE")
-    val newCatalog = if (schema.catalog.isEmpty) null else schema.catalog.get.value
-    val schemaName = schema.name.value
+    var catelogName = if (null == schema.catalog || schema.catalog.isEmpty) null else schema.catalog.get.value
+    var schemaPattern = schema.name.value
+    if Strings.isBlank(catelogName) then catelogName = null
+    if Strings.isBlank(schemaPattern) then schemaPattern = null
+
+    if (null == catelogName && null != schemaPattern && engine.catelogAsSchema) {
+      val t = catelogName
+      catelogName = schemaPattern
+      schemaPattern = t
+    }
 
     val sw = new Stopwatch(true)
-    var rs = meta.getTables(newCatalog, schemaName, null, TYPES)
+    var rs = meta.getTables(catelogName, schemaPattern, null, TYPES)
     val tables = new mutable.HashMap[String, Table]
     while (rs.next()) {
       val tableName = rs.getString(TableName)
       if (!tableName.startsWith("BIN$")) {
-        val table = schema.database.addTable(rs.getString(TableSchema), rs.getString(TableName))
+        val table = schema.database.addTable(getTableSchema(rs), rs.getString(TableName))
         table.updateCommentAndModule(rs.getString(Remarks))
         tables.put(Table.qualify(table.schema, table.name), table)
       }
@@ -90,14 +108,14 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
 
     // Loading columns
     sw.reset().start()
-    rs = meta.getColumns(newCatalog, schemaName, "%", "%")
+    rs = meta.getColumns(catelogName, schemaPattern, "%", "%")
     var cols = 0
     val types = Collections.newMap[String, SqlType]
     import java.util.StringTokenizer
     while (rs.next()) {
       val colName = rs.getString(ColumnName)
       if (null != colName) {
-        getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
+        getTable(schema.database, getTableSchema(rs), rs.getString(TableName)) foreach { table =>
           val typename = new StringTokenizer(rs.getString(TypeName), "() ").nextToken()
           val typecode = engine.resolveCode(rs.getInt(DataType), typename)
           val length = rs.getInt(ColumnSize)
@@ -132,6 +150,10 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
         ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
       }
     }
+  }
+
+  private def getTableSchema(rs: ResultSet): String = {
+    rs.getString(if engine.catelogAsSchema then TableCat else TableSchema)
   }
 
   private def batchLoadExtra(schema: Schema, sql: MetadataLoadSql): Unit = {
@@ -204,10 +226,13 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
         try {
           val table = tables(nextTableName)
           val schema = table.schema
+          val catelogName = if engine.catelogAsSchema then table.schema.name.value else null
+          val schemaName = if engine.catelogAsSchema then null else table.schema.name.value
+
           logger.debug(s"Loading ${table.qualifiedName}...")
           // load primary key
           var rs: ResultSet = null
-          rs = meta.getPrimaryKeys(null, table.schema.name.value, table.name.value)
+          rs = meta.getPrimaryKeys(catelogName, schemaName, table.name.value)
           var pk: PrimaryKey = null
           while (rs.next()) {
             val colnameName = Identifier(rs.getString(ColumnName))
@@ -217,7 +242,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
           if (null != pk) table.primaryKey = Some(pk)
           rs.close()
           // load imported key
-          rs = meta.getImportedKeys(null, table.schema.name.value, table.name.value)
+          rs = meta.getImportedKeys(catelogName, schemaName, table.name.value)
           while (rs.next()) {
             val fkName = rs.getString(FKName)
             val columnName = Identifier(rs.getString(FKColumnName))
@@ -225,13 +250,13 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
               case None => table.add(new ForeignKey(table, Identifier(rs.getString(FKName)), columnName))
               case Some(oldk) => oldk
             }
-            val pkSchema = schema.database.getOrCreateSchema(getIdentifier(rs, PKTableSchem))
+            val pkSchema = schema.database.getOrCreateSchema(getIdentifier(rs, if engine.catelogAsSchema then PKTableCat else PKTableSchem))
             fk.refer(TableRef(pkSchema, getIdentifier(rs, PKTableName)), getIdentifier(rs, PKColumnName))
             fk.cascadeDelete = rs.getInt(DeleteRule) != 3
           }
           rs.close()
           // load index
-          rs = meta.getIndexInfo(null, table.schema.name.value, table.name.value, false, true)
+          rs = meta.getIndexInfo(catelogName, schemaName, table.name.value, false, true)
           while (rs.next()) {
             val index = rs.getString(IndexName)
             if (index != null && !table.isPrimaryKeyIndex(index)) {

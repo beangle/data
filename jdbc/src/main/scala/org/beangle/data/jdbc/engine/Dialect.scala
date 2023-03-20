@@ -24,6 +24,8 @@ import org.beangle.data.jdbc.meta.*
  */
 trait Dialect {
 
+  def createSchema(name: String): String
+
   def createTable(table: Table): String
 
   def dropTable(table: String): String

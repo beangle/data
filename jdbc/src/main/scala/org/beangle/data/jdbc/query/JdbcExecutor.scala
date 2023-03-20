@@ -187,7 +187,7 @@ class JdbcExecutor(dataSource: DataSource) extends Logging {
     } catch {
       case be: BatchUpdateException =>
         conn.rollback()
-        rethrow(be.getNextException, sql, curParam)
+        rethrow(if be.getNextException == null then be else be.getNextException, sql, curParam)
       case e: SQLException =>
         conn.rollback()
         rethrow(e, sql, curParam)

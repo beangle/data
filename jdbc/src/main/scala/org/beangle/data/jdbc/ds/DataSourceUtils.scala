@@ -103,8 +103,9 @@ object DataSourceUtils extends Logging {
     if ((xml \ "@name").nonEmpty) dbconf.name = (xml \ "@name").text.trim
     dbconf.user = (xml \\ "user").text.trim
     dbconf.password = (xml \\ "password").text.trim
-    dbconf.schema = Identifier((xml \\ "schema").text.trim)
     dbconf.catalog = Identifier((xml \\ "catalog").text.trim)
+    dbconf.schema = Identifier((xml \\ "schema").text.trim)
+
     (xml \\ "props" \\ "prop").foreach { ele =>
       dbconf.props.put((ele \ "@name").text, (ele \ "@value").text)
     }

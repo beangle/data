@@ -40,8 +40,8 @@ object Drivers {
         + "(ADDRESS=(PROTOCOL=TCP)(HOST=<host1>)(PORT=<port1>))"
         + "(ADDRESS=(PROTOCOL=TCP)(HOST=<host2>)(PORT=<port2>)))"
         + "(CONNECT_DATA=SERVICE_NAME=<service_name>)(SERVER=DEDICATED)))"),
-    driver("mysql", "com.mysql.jdbc.jdbc2.optional.MysqlDataSource",
-      "com.mysql.jdbc.Driver", "//<host>:<port>/<database_name>"),
+    driver("mysql", "com.mysql.cj.jdbc.MysqlDataSource",
+      "com.mysql.cj.jdbc.Driver", "//<host>:<port>/<database_name>"),
     driver("mariadb", "org.mariadb.jdbc.MySQLDataSource",
       "org.mariadb.jdbc.Driver", "//<host>:<port>/<database_name>"),
     driver("h2", "org.h2.jdbcx.JdbcDataSource",

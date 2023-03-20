@@ -51,6 +51,8 @@ trait Engine extends Dialect {
 
   def defaultSchema: String
 
+  def catelogAsSchema:Boolean
+
   def storeCase: StoreCase
 
   def keywords: Set[String]
