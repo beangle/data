@@ -107,7 +107,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
       write()
       list += ele
     } else {
-      queueOperation(new Add(ele))
+      queueOperation(new SimpleAdd(ele, true))
     }
     this
   }
@@ -117,7 +117,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
       write()
       ele +=: list
     } else {
-      queueOperation(new Add(ele))
+      queueOperation(new SimpleAdd(ele, false))
     }
     this
   }
@@ -174,13 +174,13 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     (0 until count) foreach (_ => remove(idx))
   }
 
-  override def remove(n: Int): Object = {
-    val old = if (isPutQueueEnabled) readElementByIndex(n) else UNKNOWN
+  override def remove(idx: Int): Object = {
+    val old = if (isPutQueueEnabled) readElementByIndex(idx) else UNKNOWN
     if (old eq UNKNOWN) {
       write()
-      list.remove(n)
+      list.remove(idx)
     } else {
-      queueOperation(new Remove(n, old))
+      queueOperation(new Remove(idx, old))
       old
     }
   }
@@ -228,7 +228,7 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     array foreach { ele => list += persister.getElementType.assemble(ele, getSession, owner) }
   }
 
-  override def disassemble(persister: CollectionPersister): JSerializable = {
+  override def disassemble(persister: CollectionPersister): Object = {
     list.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
   }
 
@@ -318,14 +318,17 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     }
   }
 
-  final class Add(val value: Object) extends DelayedOperation[Object] {
+  final class SimpleAdd(value: Object, append: Boolean) extends AbstractValueDelayedOperation(value, null) {
     override def operate(): Unit = {
-      list += value
+      if append then list.addOne(getAddedInstance)
+      else list.prepend(getAddedInstance)
     }
+  }
 
-    override def getAddedInstance: Object = value
-
-    override def getOrphan: Object = null
+  final class SimpleRemove(orphan: Object) extends AbstractValueDelayedOperation(null, orphan) {
+    override def operate(): Unit = {
+      list.subtractOne(getOrphan)
+    }
   }
 
   final class Set(index: Int, value: Object, old: Object) extends DelayedOperation[Object] {
@@ -341,16 +344,6 @@ class PersistentSeq(session: SharedSessionContractImplementor)
   final class Remove(index: Int, old: Object) extends DelayedOperation[Object] {
     override def operate(): Unit = {
       list.remove(index)
-    }
-
-    override def getAddedInstance: Object = null
-
-    override def getOrphan: Object = old
-  }
-
-  final class SimpleRemove(old: Object) extends DelayedOperation[Object] {
-    override def operate(): Unit = {
-      list -= old
     }
 
     override def getAddedInstance: Object = null

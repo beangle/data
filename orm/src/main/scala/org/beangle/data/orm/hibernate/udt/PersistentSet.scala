@@ -166,7 +166,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
     asJava(set.iterator)
   }
 
-  override def disassemble(persister: CollectionPersister): JSerializable = {
+  override def disassemble(persister: CollectionPersister): Object = {
     this.set.map(ele => persister.getElementType.disassemble(ele, getSession, null))
       .toArray[JSerializable]
   }

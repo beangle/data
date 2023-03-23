@@ -165,7 +165,7 @@ class PersistentMap(session: SharedSessionContractImplementor)
     }
   }
 
-  override def disassemble(persister: CollectionPersister): JSerializable = {
+  override def disassemble(persister: CollectionPersister): Object = {
     val result = new Array[JSerializable](map.size * 2)
     var i = 0
     map foreach { e =>

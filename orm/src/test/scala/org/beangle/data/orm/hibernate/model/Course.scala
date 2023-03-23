@@ -18,15 +18,36 @@
 package org.beangle.data.orm.hibernate.model
 
 import org.beangle.commons.collection.Collections
-import org.beangle.data.model.LongId
 import org.beangle.data.model.pojo.Named
+import org.beangle.data.model.{Component, LongId}
 
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 import scala.collection.mutable
 
 class Course extends LongId, Named {
 
   var levels: mutable.Set[CourseLevel] = Collections.newSet[CourseLevel]
+
+  var features: mutable.Buffer[CourseFeature] = Collections.newBuffer[CourseFeature]
+
+  def addFeature(name: String, description: String): Unit = {
+    features.find(x => x.name == name) match
+      case None =>
+        val f = new CourseFeature
+        f.name = name
+        f.description = description
+        f.createdAt = Instant.now
+        features.addOne(f)
+      case Some(f) =>
+        f.description = description
+        f.createdAt = Instant.now
+  }
+
+  def hasFeature(name: String, description: String): Boolean = {
+    features.find(x => x.name == name) match
+      case None => false
+      case Some(f) => f.description == description
+  }
 
   def addLevel(l: Int): Unit = {
     val cl = new CourseLevel
@@ -41,4 +62,10 @@ class CourseLevel extends LongId {
   var course: Course = _
   var level: Int = _
   var beginOn: LocalDate = _
+}
+
+class CourseFeature extends Component {
+  var name: String = _
+  var createdAt: Instant = _
+  var description: String = _
 }

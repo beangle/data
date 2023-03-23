@@ -133,13 +133,21 @@ object UserCrudTest {
     session.flush()
 
     val course = new Course()
-    course.name="course 1"
+    course.name = "course 1"
     course.addLevel(1)
+    course.addFeature("f1", "feature 1")
+    course.addFeature("f2", "feature 2")
     entityDao.saveOrUpdate(course)
     session.flush()
     course.addLevel(2)
+    course.addFeature("f1", "feature 1 rename")
     entityDao.saveOrUpdate(course)
+    val courseId = course.id
     session.flush()
+    session.clear()
+    val c = session.get(classOf[Course], courseId)
+    assert(c.features.size == 2)
+    assert(c.hasFeature("f1", "feature 1 rename"))
     transaction.commit()
 
     session.close()
