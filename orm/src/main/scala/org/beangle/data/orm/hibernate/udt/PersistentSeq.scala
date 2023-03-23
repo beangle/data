@@ -213,11 +213,6 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     list.isEmpty
   }
 
-  override def toString: String = {
-    read()
-    list.toString()
-  }
-
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
     asJava(list.iterator)
   }
@@ -274,16 +269,6 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]](i)
   }
 
-  override def equals(other: Any): Boolean = {
-    read()
-    list.equals(other)
-  }
-
-  override def hashCode(): Int = {
-    read()
-    list.hashCode()
-  }
-
   override def entryExists(entry: Object, i: Int): Boolean = {
     entry != null
   }
@@ -304,6 +289,21 @@ class PersistentSeq(session: SharedSessionContractImplementor)
       }
     }
     false
+  }
+
+  override def equals(other: Any): Boolean = {
+    read()
+    list.equals(other)
+  }
+
+  override def hashCode(): Int = {
+    read()
+    list.hashCode()
+  }
+
+  override def toString: String = {
+    read()
+    list.toString()
   }
 
   final class Clear extends DelayedOperation[Object] {
