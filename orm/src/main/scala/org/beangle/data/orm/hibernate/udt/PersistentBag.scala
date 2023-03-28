@@ -274,7 +274,7 @@ class PersistentBag(session: SharedSessionContractImplementor)
 
   override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
-    this.bag = persister.getCollectionSemantics.instantiateRaw(size, persister).asInstanceOf[mutable.Buffer[Object]]
+    this.bag = persister.getCollectionSemantics.instantiateRaw(array.length, persister).asInstanceOf[mutable.Buffer[Object]]
     array foreach { ele =>
       val item = persister.getElementType.assemble(ele, getSession, owner)
       if (null != item) bag.addOne(item)

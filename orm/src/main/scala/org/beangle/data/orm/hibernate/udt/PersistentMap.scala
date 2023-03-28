@@ -156,9 +156,9 @@ class PersistentMap(session: SharedSessionContractImplementor)
 
   override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
-    val size = array.length
-    this.map = persister.getCollectionType.instantiate(size).asInstanceOf[MM]
-    Range(0, size, 2) foreach { i =>
+    val len = array.length
+    this.map = persister.getCollectionType.instantiate(len).asInstanceOf[MM]
+    Range(0, len, 2) foreach { i =>
       this.map.put(
         persister.getIndexType.assemble(array(i), getSession, owner),
         persister.getElementType.assemble(array(i + 1), getSession, owner))
