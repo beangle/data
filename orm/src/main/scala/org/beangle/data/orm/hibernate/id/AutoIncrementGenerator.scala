@@ -22,7 +22,6 @@ import org.beangle.data.jdbc.meta.Table
 import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.hibernate.`type`.*
 import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.hibernate.id.PersistentIdentifierGenerator.{SCHEMA, TABLE}
 import org.hibernate.id.{Configurable, IdentifierGenerator}
 import org.hibernate.jdbc.AbstractReturningWork
 import org.hibernate.service.ServiceRegistry
@@ -37,10 +36,7 @@ class AutoIncrementGenerator extends IdentifierGenerator {
 
   override def configure(t: Type, params: ju.Properties, serviceRegistry: ServiceRegistry): Unit = {
     this.identifierType = Primitives.unwrap(t.asInstanceOf[BasicType[_]].getJavaType)
-    val em = serviceRegistry.getService(classOf[MappingService]).mappings.entityTypes(params.getProperty(IdentifierGenerator.ENTITY_NAME))
-    val ownerSchema = em.table.schema.name.toString
-    val schema = if (Strings.isEmpty(ownerSchema)) params.getProperty(SCHEMA) else ownerSchema
-    tableName = Table.qualify(schema, params.getProperty(TABLE)).toLowerCase()
+    tableName = IdHelper.getTableQualifiedName(params, serviceRegistry)
   }
 
   def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {
@@ -52,11 +48,8 @@ class AutoIncrementGenerator extends IdentifierGenerator {
             st.registerOutParameter(1, java.sql.Types.BIGINT)
             st.setString(2, tableName)
             st.execute()
-            val id = java.lang.Long.valueOf(st.getLong(1))
-
-            if identifierType == classOf[Long] then id
-            else if identifierType == classOf[Int] then Integer.valueOf(id.intValue)
-            else java.lang.Short.valueOf(id.shortValue)
+            val id = st.getLong(1)
+            IdHelper.convertType(id, identifierType)
           } finally {
             st.close()
           }

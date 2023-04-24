@@ -27,7 +27,7 @@ package org.beangle.data.orm.hibernate.id
  *
  *   default function is date_id
  */
-class DateStyleGenerator  extends SqlStyleGenerator  {
+class DateStyleGenerator  extends AbstractSqlStyleGenerator  {
 
   override protected  def  sql: String = {
     "{? = call date_id()}"

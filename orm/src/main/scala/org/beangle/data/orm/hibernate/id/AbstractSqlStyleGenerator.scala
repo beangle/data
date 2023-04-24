@@ -41,7 +41,7 @@ import java.util as ju
  *
  * default function is date_id
  */
-abstract class SqlStyleGenerator extends IdentifierGenerator {
+abstract class AbstractSqlStyleGenerator extends IdentifierGenerator {
 
   protected def sql: String
 
