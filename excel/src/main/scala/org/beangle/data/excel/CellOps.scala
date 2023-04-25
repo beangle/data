@@ -19,7 +19,7 @@ package org.beangle.data.excel
 
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.{XSSFCell, XSSFRichTextString}
-import org.beangle.commons.conversion.string.BooleanConverter
+import org.beangle.commons.conversion.string.{BooleanConverter, TemporalConverter}
 import org.beangle.commons.io.DataType
 import org.beangle.commons.lang.{Dates, Numbers, Strings}
 import org.beangle.data.excel.{CellOps, ExcelStyleRegistry}
@@ -167,13 +167,13 @@ final class CellOps(private val cell: Cell) extends AnyVal {
       case DataType.Long => Numbers.convert2Long(str)
       case DataType.Float => Numbers.convert2Float(str)
       case DataType.Double => Numbers.convert2Double(str)
-      case DataType.Date => LocalDate.parse(Dates.normalize(str))
-      case DataType.DateTime => LocalDateTime.parse(Dates.normalize(str))
-      case DataType.ZonedDateTime => ZonedDateTime.parse(str)
-      case DataType.Instant => Instant.parse(str)
-      case DataType.Time => LocalTime.parse(str)
-      case DataType.YearMonth => YearMonth.parse(if (str.contains("-")) str.substring(0, 4) + "-" + str.substring(4) else str)
-      case DataType.MonthDay => MonthDay.parse(if (str.startsWith("--")) "--" + str else str)
+      case DataType.Date => TemporalConverter.ToLocalDate(str)
+      case DataType.DateTime => TemporalConverter.ToLocalDateTime(str)
+      case DataType.ZonedDateTime => TemporalConverter.ToZonedDateTime(str)
+      case DataType.Instant => TemporalConverter.ToInstant(str)
+      case DataType.Time => TemporalConverter.ToLocalTime(str)
+      case DataType.YearMonth => TemporalConverter.ToYearMonth(str)
+      case DataType.MonthDay => TemporalConverter.ToMonthDay(str)
       case _ => str
     }
   }
