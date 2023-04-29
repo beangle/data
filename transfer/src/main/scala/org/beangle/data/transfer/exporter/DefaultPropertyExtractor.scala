@@ -18,6 +18,7 @@
 package org.beangle.data.transfer.exporter
 
 import org.beangle.commons.bean.Properties
+import org.beangle.commons.lang.text.Formatters
 
 class DefaultPropertyExtractor extends PropertyExtractor {
 

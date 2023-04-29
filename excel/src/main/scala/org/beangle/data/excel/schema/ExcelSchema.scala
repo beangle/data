@@ -257,7 +257,7 @@ class ExcelColumn(var name: String) {
       case Float | Double =>
         this.isDecimal = true
         this.formular1 = "0"
-      case Date | Time | DateTime | ZonedDateTime | Instant | YearMonth | MonthDay =>
+      case Date | Time | DateTime | OffsetDateTime | Instant | YearMonth | MonthDay =>
         this.isDate = true
         val start = LocalDate.of(1900, 1, 1)
         this.formular1 = start.format(DateTimeFormatter.ofPattern(this.format.get))

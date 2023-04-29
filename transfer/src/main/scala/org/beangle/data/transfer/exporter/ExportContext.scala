@@ -18,20 +18,64 @@
 package org.beangle.data.transfer.exporter
 
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.io.DataType
+import org.beangle.commons.lang.text.{Formatter, Formatters}
 import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.io.Writer
 
 class ExportContext {
-  val datas:collection.mutable.Map[String,Any] = Collections.newMap[String, Any]
+
+  var exporter: Exporter = _
+
+  var writer: Writer = _
+
+  /** Convert all property to string before export */
+  var convertToString: Boolean = false
+
+  var typeFormatters: Map[Class[_], Formatter] = Map.empty
+
+  var propertyFormatters: Map[String, Formatter] = Map.empty
+
+  def registerFormatter(clazz: Class[_], formatter: Formatter): ExportContext = {
+    typeFormatters += (clazz -> formatter)
+    this
+  }
+
+  def registerPattern(propertyName: String, formatter: Formatter): ExportContext = {
+    propertyFormatters += (propertyName -> formatter)
+    this
+  }
+
+  def getFormatter(propertyName: String, obj: Any): Option[Formatter] = {
+    propertyFormatters.get(propertyName) match {
+      case None => if (null == obj) None else typeFormatters.get(obj.getClass)
+      case p@Some(f) => p
+    }
+  }
+
+  val datas: collection.mutable.Map[String, Any] = Collections.newMap[String, Any]
 
   var format: Format = _
 
-  var extractor: PropertyExtractor = new DefaultPropertyExtractor()
+  var extractor: PropertyExtractor = new DefaultPropertyExtractor
 
   def get[T](key: String, clazz: Class[T]): Option[T] = {
     datas.get(key).asInstanceOf[Option[T]]
   }
 
-  def put(key: String, v: Any): Unit =  {
+  def put(key: String, v: Any): Unit = {
     datas.put(key, v)
+  }
+
+  def getPropertyValue(target: Object, property: String): Any = {
+    val value = extractor.getPropertyValue(target, property)
+    getFormatter(property, value) match {
+      case None =>
+        if convertToString then
+          if (value == null) then "" else Formatters.getDefault(value.getClass).format(value)
+        else
+          value
+      case Some(formatter) => formatter.format(value)
+    }
   }
 }

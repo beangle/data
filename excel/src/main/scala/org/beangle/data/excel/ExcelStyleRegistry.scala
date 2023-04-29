@@ -23,17 +23,19 @@ import org.beangle.commons.io.DataType
 import org.beangle.commons.io.DataType.*
 import org.beangle.data.excel.ExcelStyleRegistry
 
+import java.text.{DecimalFormat, NumberFormat}
+
 object ExcelStyleRegistry {
-  private val formats = Map(String -> "@", Boolean -> "@", Short -> "0", Integer -> "0", Long -> "#,##0",
+  def defaultFormat(dt: DataType): String = {
+    defaults.getOrElse(dt, "")
+  }
+
+  val defaults = Map(String -> "@", Boolean -> "@", Short -> "0", Integer -> "0", Long -> "#,##0",
     Float -> "#,##0.##", Double -> "#,##0.##",
-    Date -> "YYYY-MM-D", Time -> "HH:MM:SS", DateTime -> "YYYY-MM-DD HH:MM:SS",
-    ZonedDateTime -> "YYYY-MM-DD!THH:MM:SS!Z",
+    Date -> "YYYY-MM-DD", Time -> "HH:MM:SS", DateTime -> "YYYY-MM-DD HH:MM:SS",
+    OffsetDateTime -> "YYYY-MM-DD!THH:MM:SS!Z",
     Instant -> "YYYY-MM-DD!THH:MM:SS!Z",
     YearMonth -> "YYYY-MM", MonthDay -> "--MM-DD")
-
-  def defaultFormat(dt: DataType): String = {
-    formats.getOrElse(dt,"")
-  }
 }
 
 class ExcelStyleRegistry(workbook: Workbook) {

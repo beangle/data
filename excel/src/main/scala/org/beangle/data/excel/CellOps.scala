@@ -169,7 +169,7 @@ final class CellOps(private val cell: Cell) extends AnyVal {
       case DataType.Double => Numbers.convert2Double(str)
       case DataType.Date => TemporalConverter.ToLocalDate(str)
       case DataType.DateTime => TemporalConverter.ToLocalDateTime(str)
-      case DataType.ZonedDateTime => TemporalConverter.ToZonedDateTime(str)
+      case DataType.OffsetDateTime => TemporalConverter.ToOffsetDateTime(str)
       case DataType.Instant => TemporalConverter.ToInstant(str)
       case DataType.Time => TemporalConverter.ToLocalTime(str)
       case DataType.YearMonth => TemporalConverter.ToYearMonth(str)

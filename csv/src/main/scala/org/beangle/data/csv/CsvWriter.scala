@@ -68,7 +68,7 @@ class CsvWriter(val writer: Writer, val format: CsvFormat = new CsvFormat.Builde
   def write(nextLine: Array[String]): Unit = {
     if (nextLine == null) return
     val sb = new StringBuilder(InitialStringSize)
-    for (i <- 0 until nextLine.length) {
+    for (i <- nextLine.indices) {
       if (i != 0)
         sb.append(format.defaultSeparator())
       val nextElement = nextLine(i)

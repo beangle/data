@@ -373,8 +373,10 @@ class CellData(val cellRef: CellRef, var cell: Cell) {
             case ldt: LocalDateTime => cell.setCellValue(ldt)
             case jud: java.util.Date => cell.setCellValue(jud)
           }
-        case DataType.ZonedDateTime =>
-          cell.setCellValue(evaluationResult.asInstanceOf[ZonedDateTime].toLocalDateTime)
+        case DataType.OffsetDateTime =>
+          evaluationResult match
+            case z: ZonedDateTime => cell.setCellValue(z.toLocalDateTime)
+            case o: OffsetDateTime => cell.setCellValue(o.toLocalDateTime)
         case DataType.Instant =>
           cell.setCellValue(evaluationResult.asInstanceOf[Instant].atZone(ZoneId.systemDefault).toLocalDateTime)
         case DataType.Integer | DataType.Float | DataType.Double => cell.setCellValue(evaluationResult.asInstanceOf[Number].doubleValue)

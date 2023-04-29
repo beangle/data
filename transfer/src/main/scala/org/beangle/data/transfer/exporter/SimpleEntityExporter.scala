@@ -17,10 +17,10 @@
 
 package org.beangle.data.transfer.exporter
 
-import scala.collection.mutable.ArrayBuffer
-
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
+
+import scala.collection.mutable.ArrayBuffer
 
 class SimpleEntityExporter extends SimpleItemExporter with Logging {
 
@@ -30,7 +30,7 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
     if (null == attrs) {
       context.get("keys", classOf[Object]) foreach { k =>
         k match {
-          case s: String        => attrs = Strings.split(s, ",")
+          case s: String => attrs = Strings.split(s, ",")
           case a: Array[String] => attrs = a
         }
       }
@@ -61,16 +61,15 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
   /**
    * 转换单个实体
    */
-  override def exportItem(): Unit =  {
+  override def exportItem(): Unit = {
     if (null == attrs) {
       super.exportItem()
       return
     }
-    val extractor = context.extractor
     val values = new Array[Any](attrs.length)
-    values.indices foreach{ i =>
+    values.indices foreach { i =>
       try {
-        values(i) = extractor.getPropertyValue(current.asInstanceOf[AnyRef], attrs(i))
+        values(i) = context.getPropertyValue(current.asInstanceOf[AnyRef], attrs(i))
       } catch {
         case e: Exception => logger.error("occur in get property :" + attrs(i), e)
       }
