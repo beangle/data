@@ -57,13 +57,18 @@ class CsvWriter(val writer: Writer, val format: CsvFormat = new CsvFormat.Builde
   /**
    * write.
    */
-  def write(allLines: collection.Seq[Array[Any]]): Unit =
-    for (line <- allLines) write(line)
+  def write(data: Any): Unit = {
+    data match {
+      case a: Array[_] => writeOne(a)
+      case lines: Iterable[_] =>
+        for (line <- lines) writeOne(line.asInstanceOf[Array[_]])
+    }
+  }
 
   /**
    * write.
    */
-  def write(nextLine: Array[Any]): Unit = {
+  private def writeOne(nextLine: Array[_]): Unit = {
     if (nextLine == null) return
     val sb = new StringBuilder(InitialStringSize)
     for (i <- nextLine.indices) {

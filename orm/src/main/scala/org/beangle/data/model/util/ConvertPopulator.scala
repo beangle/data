@@ -71,7 +71,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
               case n: SingularProperty =>
                 n.propertyType match {
                   case s: StructType => objtype = s
-                  case _ => logError(propObj, nested)
+                  case b: BasicType => if (index != attrs.length - 1) logError(propObj, nested)
                 }
               case _ => logError(propObj, nested)
             }
@@ -180,7 +180,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
     else {
       t.getProperty(attr) match {
         case Some(ty) => conversion.convert(value, ty.clazz)
-        case None => throw new RuntimeException("cannot find attribuate type of " + attr + " in " + t.entityName)
+        case None => throw new RuntimeException("cannot find attribute type of " + attr + " in " + t.entityName)
       }
     }
   }

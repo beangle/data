@@ -26,7 +26,7 @@ import java.io.{OutputStream, OutputStreamWriter}
 
 class CsvItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
   val csvw = new CsvWriter(new OutputStreamWriter(outputStream, "utf-8"),
-    new CsvFormat.Builder().delimiter('\'').escape(CsvWriter.NoEscapeChar).build())
+    new CsvFormat.Builder().escape(CsvWriter.NoEscapeChar).build())
 
   override def write(obj: Any): Unit = {
     csvw.write(obj.asInstanceOf[Array[Any]])
