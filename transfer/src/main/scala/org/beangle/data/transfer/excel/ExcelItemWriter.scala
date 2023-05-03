@@ -93,7 +93,10 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     val titles = data.asInstanceOf[Array[String]]
     for (i <- 0 until titleRow.getLastCellNum()) {
       titleRow.getCell(i).setCellStyle(titleStyle)
-      sheet.setColumnWidth(i, 256 * (2 + Chars.charLength(titles(i)))) // 2 is margin
+      var charLen = Chars.charLength(titles(i))
+      if (charLen < 10) charLen = 10 //min 10 characters
+      if (charLen > 30) charLen = 30
+      sheet.setColumnWidth(i, 256 * (2 + charLen)) // 2 is margin
     }
     index += 1
     sheet.createFreezePane(0, 1)
