@@ -275,11 +275,10 @@ class CellData(val cellRef: CellRef, var cell: Cell) {
     if (comment != null && comment.getString != null && comment.getString.getString != null) {
       val commentString: String = comment.getString.getString
       val commentLines: Array[String] = commentString.split("\\n")
-      for (commentLine <- commentLines) {
+      for (commentLine <- commentLines if null != comment) {
         if (isParamsComment(commentLine)) {
           processParams(commentLine)
           comment = null
-          return
         }
       }
       cellComment = commentString

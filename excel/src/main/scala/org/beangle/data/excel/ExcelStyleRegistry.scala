@@ -32,10 +32,10 @@ object ExcelStyleRegistry {
 
   val defaults = Map(String -> "@", Boolean -> "@", Short -> "0", Integer -> "0", Long -> "#,##0",
     Float -> "#,##0.##", Double -> "#,##0.##",
-    Date -> "YYYY-MM-DD", Time -> "HH:MM:SS", DateTime -> "YYYY-MM-DD HH:MM:SS",
-    OffsetDateTime -> "YYYY-MM-DD!THH:MM:SS!Z",
-    Instant -> "YYYY-MM-DD!THH:MM:SS!Z",
-    YearMonth -> "YYYY-MM", MonthDay -> "--MM-DD")
+    Date -> "yyyy-MM-dd", Time -> "hh:mm:ss", DateTime -> "yyyy-MM-dd hh:mm:ss",
+    OffsetDateTime -> "yyyy-MM-dd hh:mm:ss",
+    Instant -> "yyyy-MM-dd hh:mm:ss",
+    YearMonth -> "yyyy-MM", MonthDay -> "MM-dd")
 }
 
 class ExcelStyleRegistry(workbook: Workbook) {

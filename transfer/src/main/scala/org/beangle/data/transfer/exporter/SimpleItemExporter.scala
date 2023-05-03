@@ -24,15 +24,6 @@ class SimpleItemExporter extends AbstractItemExporter {
   protected var titles: Array[String] = _
 
   protected override def beforeExport(): Boolean = {
-    if (null == titles) {
-      context.get("titles", classOf[Object]) foreach { t =>
-        t match {
-          case s: String        => titles = Strings.split(s, ",")
-          case a: Array[String] => titles = a
-        }
-      }
-    }
-    if (null == titles || titles.length == 0) return false
     writer.writeTitle(null, titles)
     true
   }

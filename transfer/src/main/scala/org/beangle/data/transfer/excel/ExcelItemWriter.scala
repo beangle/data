@@ -17,23 +17,23 @@
 
 package org.beangle.data.transfer.excel
 
-import java.io.OutputStream
-
 import org.apache.poi.ss.usermodel.{CellType, FillPatternType, HorizontalAlignment, VerticalAlignment}
 import org.apache.poi.xssf.streaming.{SXSSFSheet, SXSSFWorkbook}
-import org.apache.poi.xssf.usermodel._
-import org.beangle.commons.lang.Numbers
-import org.beangle.data.transfer.Format
-import org.beangle.data.excel.CellOps._
+import org.apache.poi.xssf.usermodel.*
+import org.beangle.commons.lang.{Chars, Numbers}
+import org.beangle.data.excel.CellOps.*
 import org.beangle.data.excel.ExcelStyleRegistry
+import org.beangle.data.transfer.Format
 import org.beangle.data.transfer.exporter.ExportContext
 import org.beangle.data.transfer.io.ItemWriter
 
+import java.io.OutputStream
+
 /**
-  * ExcelItemWriter class.
-  *
-  * @author chaostone
-  */
+ * ExcelItemWriter class.
+ *
+ * @author chaostone
+ */
 class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
 
   private var workbook: SXSSFWorkbook = _ // 建立新XSSFWorkbook对象
@@ -90,8 +90,10 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     writeItem(data)
     val titleRow = sheet.getRow(index)
     val titleStyle = buildTitleStyle()
+    val titles = data.asInstanceOf[Array[String]]
     for (i <- 0 until titleRow.getLastCellNum()) {
       titleRow.getCell(i).setCellStyle(titleStyle)
+      sheet.setColumnWidth(i, 256 * (2 + Chars.charLength(titles(i)))) // 2 is margin
     }
     index += 1
     sheet.createFreezePane(0, 1)

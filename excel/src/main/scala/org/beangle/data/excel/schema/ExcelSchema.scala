@@ -123,7 +123,7 @@ class ExcelColumn(var name: String) {
 
   /** 约束的第一个公式 */
   var formular1: String = _
-  /** 约束的第一个公式 */
+  /** 约束的第二个公式 */
   var formular2: Option[String] = None
 
   /** 文本长度 */

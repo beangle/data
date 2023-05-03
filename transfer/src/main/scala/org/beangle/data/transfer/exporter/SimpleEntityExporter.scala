@@ -27,34 +27,8 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
   var attrs: Array[String] = _
 
   protected override def beforeExport(): Boolean = {
-    if (null == attrs) {
-      context.get("keys", classOf[Object]) foreach { k =>
-        k match {
-          case s: String => attrs = Strings.split(s, ",")
-          case a: Array[String] => attrs = a
-        }
-      }
-      context.get("properties", classOf[String]) foreach { properties =>
-        val props = Strings.split(properties, ",")
-        val keys = new ArrayBuffer[String](props.length)
-        val titles = new ArrayBuffer[String](props.length)
-        for (prop <- props) {
-          if (prop.contains(":")) {
-            keys += Strings.substringBefore(prop, ":")
-            titles += Strings.substringAfter(prop, ":")
-          } else {
-            keys += prop
-            titles += prop
-          }
-        }
-        this.attrs = keys.toArray
-        this.titles = titles.toArray
-      }
-    }
-
-    if (null == attrs) {
-      logger.debug("attrs or propertyExtractor is null,transfer data as array.")
-    }
+    this.attrs = context.attrs
+    this.titles = context.titles
     super.beforeExport()
   }
 
@@ -62,19 +36,19 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
    * 转换单个实体
    */
   override def exportItem(): Unit = {
-    if (null == attrs) {
+    if (null == attrs || attrs.length == 0) {
       super.exportItem()
-      return
-    }
-    val values = new Array[Any](attrs.length)
-    values.indices foreach { i =>
-      try {
-        values(i) = context.getPropertyValue(current.asInstanceOf[AnyRef], attrs(i))
-      } catch {
-        case e: Exception => logger.error("occur in get property :" + attrs(i), e)
+    } else {
+      val values = new Array[Any](attrs.length)
+      values.indices foreach { i =>
+        try {
+          values(i) = context.getPropertyValue(current.asInstanceOf[AnyRef], attrs(i))
+        } catch {
+          case e: Exception => logger.error("occur in get property :" + attrs(i), e)
+        }
       }
+      writer.write(values)
     }
-    writer.write(values)
   }
 
 }

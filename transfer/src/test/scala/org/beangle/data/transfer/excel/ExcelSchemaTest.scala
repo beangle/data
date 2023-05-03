@@ -45,10 +45,6 @@ class ExcelSchemaTest extends AnyFunSpec with Matchers {
       sheet.add("联系地址", "address").length(100)
       sheet.add("子女数目", "children_count").integer(0, 8)
       sheet.add("毕业年月","graduated_on").asType(classOf[YearMonth])
-
-      val code = schema.createScheet("数据字典")
-      code.add("性别名称").data(genderNames)
-      code.add("证件类型名称").data(idTypeNames)
       val os = new FileOutputStream(file)
       schema.generate(os)
       println("template located in " + file.getAbsolutePath)

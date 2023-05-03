@@ -20,8 +20,15 @@ package org.beangle.data.transfer.exporter
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.DataType
 import org.beangle.commons.lang.text.{Formatter, Formatters}
+import org.beangle.commons.lang.{Options, Strings}
 import org.beangle.data.transfer.Format
+import org.beangle.data.transfer.csv.CsvItemWriter
+import org.beangle.data.transfer.excel.{ExcelItemWriter, ExcelTemplateExporter, ExcelTemplateWriter}
 import org.beangle.data.transfer.io.Writer
+
+import java.io.OutputStream
+import java.net.URL
+import scala.collection.mutable
 
 class ExportContext {
 
@@ -29,6 +36,11 @@ class ExportContext {
 
   var writer: Writer = _
 
+  val datas: collection.mutable.Map[String, Any] = Collections.newMap[String, Any]
+
+  var format: Format = _
+
+  var extractor: PropertyExtractor = new DefaultPropertyExtractor
   /** Convert all property to string before export */
   var convertToString: Boolean = false
 
@@ -36,12 +48,18 @@ class ExportContext {
 
   var propertyFormatters: Map[String, Formatter] = Map.empty
 
+  val sharedValues = Collections.newMap[String, String]
+
+  var fileName: String = _
+  var titles: Array[String] = _
+  var attrs: Array[String] = _
+
   def registerFormatter(clazz: Class[_], formatter: Formatter): ExportContext = {
     typeFormatters += (clazz -> formatter)
     this
   }
 
-  def registerPattern(propertyName: String, formatter: Formatter): ExportContext = {
+  def registerFormatter(propertyName: String, formatter: Formatter): ExportContext = {
     propertyFormatters += (propertyName -> formatter)
     this
   }
@@ -53,11 +71,63 @@ class ExportContext {
     }
   }
 
-  val datas: collection.mutable.Map[String, Any] = Collections.newMap[String, Any]
+  def writeTo(os: OutputStream, format: Format, suggestFileName: Option[String]): ExportContext = {
+    this.format = format
+    setFileName(suggestFileName)
+    this.writer =
+      if format == Format.Xlsx then new ExcelItemWriter(this, os)
+      else if format == Format.Csv then new CsvItemWriter(this, os)
+      else throw new RuntimeException("Cannot export to other formats, csv/xlsx supported only!")
 
-  var format: Format = _
+    if (this.format == Format.Csv) this.convertToString = true
+    this.exporter = new SimpleEntityExporter()
+    this
+  }
 
-  var extractor: PropertyExtractor = new DefaultPropertyExtractor
+  def writeTo(os: OutputStream, format: Format, suggestFileName: Option[String], template: URL): ExportContext = {
+    if format != Format.Xlsx then throw new RuntimeException("Xlsx supported only!")
+    this.format = Format.Xlsx
+    setFileName(suggestFileName)
+    this.writer = new ExcelTemplateWriter(template, this, os)
+    this.exporter = new ExcelTemplateExporter()
+    this.convertToString = false
+    this
+  }
+
+  private def setFileName(suggest: Option[String]): String = {
+    val ext = "." + Strings.uncapitalize(this.format.toString)
+    this.fileName = suggest match {
+      case Some(f) => if (!f.endsWith(ext)) f + ext else f
+      case None => "exportFile" + ext
+    }
+    this.fileName
+  }
+
+  def setTitles(properties: String, convertToString: Option[Boolean]): Unit = {
+    val props = Strings.split(properties, ",")
+    val keys = new mutable.ArrayBuffer[String](props.length)
+    val titles = new mutable.ArrayBuffer[String](props.length)
+    for (prop <- props) {
+      if (prop.contains(":")) {
+        var key = Strings.substringBefore(prop, ":")
+        var sharedValue = ""
+        if (key.contains("(")) {
+          sharedValue = Strings.substringBetween(key, "(", ")")
+          key = Strings.substringBefore(key, "(")
+          sharedValues.put(key, sharedValue)
+        } else if (key.startsWith("blank.")) {
+          sharedValues.put(key, sharedValue)
+        }
+        keys += key
+        titles += Strings.substringAfter(prop, ":")
+      } else {
+        titles += prop
+      }
+    }
+    if keys.length > 0 then this.attrs = keys.toArray
+    this.titles = titles.toArray
+    convertToString foreach { x => this.convertToString = x }
+  }
 
   def get[T](key: String, clazz: Class[T]): Option[T] = {
     datas.get(key).asInstanceOf[Option[T]]
@@ -68,14 +138,15 @@ class ExportContext {
   }
 
   def getPropertyValue(target: Object, property: String): Any = {
-    val value = extractor.getPropertyValue(target, property)
-    getFormatter(property, value) match {
+    sharedValues.get(property) match
+      case Some(v) => v
       case None =>
-        if convertToString then
-          if (value == null) then "" else Formatters.getDefault(value.getClass).format(value)
+        val value = Options.unwrap(extractor.getPropertyValue(target, property))
+        if value == null then ""
         else
-          value
-      case Some(formatter) => formatter.format(value)
-    }
+          getFormatter(property, value) match {
+            case None => if convertToString then Formatters.getDefault(value.getClass).format(value) else value
+            case Some(formatter) => formatter.format(value)
+          }
   }
 }

@@ -17,12 +17,12 @@
 
 package org.beangle.data.excel.schema
 
-import org.apache.poi.ss.usermodel.DataValidationConstraint.ValidationType.{DECIMAL, INTEGER, TEXT_LENGTH}
 import org.apache.poi.ss.usermodel.*
+import org.apache.poi.ss.usermodel.DataValidationConstraint.ValidationType.{DECIMAL, INTEGER, TEXT_LENGTH}
 import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel.*
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.{Chars, Strings}
 import org.beangle.data.excel.schema.{Constraints, ExcelColumn, ExcelSchema}
 
 import java.io.OutputStream
@@ -66,6 +66,7 @@ object ExcelSchemaWriter {
       // write column(name,comment)
       val defaultStyles = Collections.newMap[String, CellStyle]
       val columnRow = sheet.createRow(rowIdx)
+      sheet.createFreezePane(0, rowIdx + 1)
       val optionalStyle = getColumnTitleStyle(workbook, required = false)
       val requiredStyle = getColumnTitleStyle(workbook, required = true)
 

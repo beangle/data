@@ -17,12 +17,10 @@
 
 package org.beangle.data.csv
 
-import java.io.Closeable
-import java.io.IOException
-import java.io.PrintWriter
-import java.io.Writer
 import org.beangle.commons.lang.Throwables
-import CsvWriter._
+import org.beangle.data.csv.CsvWriter.*
+
+import java.io.{Closeable, IOException, PrintWriter, Writer}
 
 object CsvWriter {
 
@@ -59,20 +57,21 @@ class CsvWriter(val writer: Writer, val format: CsvFormat = new CsvFormat.Builde
   /**
    * write.
    */
-  def write(allLines: collection.Seq[Array[String]]): Unit =
+  def write(allLines: collection.Seq[Array[Any]]): Unit =
     for (line <- allLines) write(line)
 
   /**
    * write.
    */
-  def write(nextLine: Array[String]): Unit = {
+  def write(nextLine: Array[Any]): Unit = {
     if (nextLine == null) return
     val sb = new StringBuilder(InitialStringSize)
     for (i <- nextLine.indices) {
       if (i != 0)
         sb.append(format.defaultSeparator())
-      val nextElement = nextLine(i)
-      if (null != nextElement) {
+      val nextElem = nextLine(i)
+      if (null != nextElem) {
+        val nextElement = nextElem.toString
         if (!format.isDelimiter(NoQuoteChar)) sb.append(format.delimiter)
         sb.append(if (containsSpecialChar(nextElement)) processLine(nextElement) else nextElement)
         if (!format.isDelimiter(NoQuoteChar)) sb.append(format.delimiter)
