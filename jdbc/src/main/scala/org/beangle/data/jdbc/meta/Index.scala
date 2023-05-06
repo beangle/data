@@ -39,17 +39,15 @@ import org.beangle.commons.collection.Collections
 import org.beangle.data.jdbc.engine.Engine
 
 /**
-  * JDBC index metadata
-  *
-  * @author chaostone
-  */
+ * JDBC index metadata
+ *
+ * @author chaostone
+ */
 class Index(var table: Table, var name: Identifier) extends Cloneable {
 
   var columns: collection.mutable.Buffer[Identifier] = Collections.newBuffer
 
   var unique: Boolean = false
-
-  var ascOrDesc: Option[Boolean] = None
 
   def toCase(lower: Boolean): Unit = {
     this.name = name.toCase(lower)
@@ -88,7 +86,7 @@ class Index(var table: Table, var name: Identifier) extends Cloneable {
   override def equals(other: Any): Boolean = {
     other match {
       case c: Index =>
-        this.name == c.name && this.columns == c.columns && this.unique == c.unique && this.ascOrDesc == c.ascOrDesc
+        this.name == c.name && this.columns == c.columns && this.unique == c.unique
       case _ => false
     }
   }

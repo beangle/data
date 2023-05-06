@@ -58,9 +58,7 @@ object MappingModule {
           }
           ch.columns.foreach(e => uk.addColumn(e.name))
         }
-        if (Strings.isBlank(name)) {
-          uk.name = Identifier(Constraint.autoname(uk))
-        }
+        if Strings.isBlank(name) then uk.name = Identifier(Constraint.autoname(uk))
         holder.mapping.table.add(uk)
       } else {
         val idx = new Index(holder.mapping.table, Identifier(name))
@@ -136,7 +134,21 @@ object MappingModule {
   class Unique extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
-      ch.columns foreach (c => c.unique = true)
+      ch.columns foreach { c =>
+        c.unique = true
+        val table = holder.mapping.table
+        table.createUniqueKey(table.name.value + "_" + c.name.value + "_key", c.name.value)
+      }
+    }
+  }
+
+  class DefaultValue(v: String) extends PropertyDeclaration {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
+      ch.columns foreach { c =>
+        if c.sqlType.isStringType && !v.startsWith("'") then c.defaultValue = Some("'" + v + "'")
+        else c.defaultValue = Some(v)
+      }
     }
   }
 
@@ -254,7 +266,10 @@ object MappingModule {
   class ColumnName(name: String) extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
-      if (ch.columns.size == 1) ch.columns.head.name = Identifier(name)
+      if (ch.columns.size == 1) {
+        val table = holder.mapping.table
+        table.rename(ch.columns.head, Identifier(name))
+      }
     }
   }
 
@@ -345,7 +360,14 @@ object MappingModule {
     }
 
     def generator(strategy: String): this.type = {
-      mapping.idGenerator = new IdGenerator(strategy)
+      mapping.idGenerator = new IdGenerator(strategy, autoConfig = false)
+      if (mapping.isAbstract) { //update subclass idgenerator
+        mappings.entityTypes.values foreach { et =>
+          if (null == et.idGenerator || et.idGenerator.autoConfig) {
+            et.idGenerator = mapping.idGenerator
+          }
+        }
+      }
       this
     }
 
@@ -403,14 +425,14 @@ object MappingModule {
     }
   }
 
-  inline def cast[T](pm: OrmProperty, holder: EntityHolder[_], msg: String) : T =
-    ${MappingMacro.castImpl[T]('pm,'holder,'msg)}
+  inline def cast[T](pm: OrmProperty, holder: EntityHolder[_], msg: String): T =
+    ${ MappingMacro.castImpl[T]('pm, 'holder, 'msg) }
 }
 
 @beta
 abstract class MappingModule(var name: Option[String]) extends Logging {
 
-  import MappingModule._
+  import MappingModule.*
 
   private var currentHolder: EntityHolder[_] = _
   private val defaultIdGenerators = Collections.newMap[Class[_], String]
@@ -451,6 +473,8 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
 
   protected def immutable = new Immutable
 
+  protected def default(v: String) = new DefaultValue(v)
+
   protected def lob = new Lob
 
   protected def length(len: Int) = new Length(len)
@@ -459,7 +483,7 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
 
   protected def cacheable(region: String, usage: String): Cache = new Cache(new CacheHolder(mappings, region, usage))
 
-  protected inline def target[T]: Target = ${MappingMacro.target[T]}
+  protected inline def target[T]: Target = ${ MappingMacro.target[T] }
 
   protected def depends(clazz: Class[_], mappedBy: String): One2Many = new One2Many(Some(clazz), mappedBy).cascaded
 
@@ -491,24 +515,26 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
 
   protected def joinColumn(name: String): JoinColumn = new JoinColumn(name)
 
-  protected inline def bind[T: ClassTag]: EntityHolder[T] = ${MappingMacro.bind[T]('{""},'this)}
+  protected inline def bind[T: ClassTag]: EntityHolder[T] = ${ MappingMacro.bind[T]('{ "" }, 'this) }
 
-  protected inline def bind[T: ClassTag](entityName: String): EntityHolder[T] = ${MappingMacro.bind[T]('entityName,'this)}
+  protected inline def bind[T: ClassTag](entityName: String): EntityHolder[T] = ${ MappingMacro.bind[T]('entityName, 'this) }
 
-  def bindImpl[T](cls: Class[T], entityName: String,bi:BeanInfo): EntityHolder[T] = {
+  def bindImpl[T](cls: Class[T], entityName: String, bi: BeanInfo): EntityHolder[T] = {
     val mapping = mappings.autobind(cls, entityName, bi)
-    //find superclass's id generator
-    var superCls: Class[_] = cls.getSuperclass
-    while (null != superCls && superCls != classOf[Object]) {
-      if (entityMappings.contains(superCls.getName)) {
-        mapping.idGenerator = entityMappings(superCls.getName).idGenerator
-        if (null != mapping.idGenerator) superCls = classOf[Object]
+
+    if (null == mapping.idGenerator) {
+      //find superclass's id generator
+      var superCls: Class[_] = cls.getSuperclass
+      while (null != superCls && superCls != classOf[Object] && null == mapping.idGenerator) {
+        if (entityMappings.contains(superCls.getName)) {
+          val idg = entityMappings(superCls.getName).idGenerator
+          if null != idg && !idg.autoConfig then mapping.idGenerator = idg
+        }
+        superCls = superCls.getSuperclass
       }
-      superCls = superCls.getSuperclass
     }
 
-    //find id genertor by id type
-    if (null == mapping.idGenerator) {
+    if (null == mapping.idGenerator) { //find id genertor by id type
       bi.getPropertyType("id") foreach { idtype =>
         val unsaved = if (idtype.isPrimitive) "0" else "null"
         mapping.idGenerator = defaultIdGenerators.get(idtype) match {
@@ -541,7 +567,7 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
     new Entities(mappings, newEntities ++ entityMappings, cacheConfig)
   }
 
-  protected final inline def collection[T](inline properties: String*): List[Collection] = ${MappingMacro.collection[T]('properties)}
+  protected final inline def collection[T](inline properties: String*): List[Collection] = ${ MappingMacro.collection[T]('properties) }
 
   protected final def defaultCache(region: String, usage: String): Unit = {
     cacheConfig.region = region

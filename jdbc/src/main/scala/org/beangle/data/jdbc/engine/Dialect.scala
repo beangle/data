@@ -36,29 +36,7 @@ trait Dialect {
 
   def truncate(table: Table): String
 
-  def alterTableAddColumn(table: Table, col: Column): List[String]
-
-  def alterTableDropColumn(table: Table, col: Column): String
-
-  def alterTableRenameColumn(table: Table, col: Column, newName: String): String
-
-  def alterTableModifyColumnType(table: Table, col: Column, sqlType: SqlType): String
-
-  def alterTableModifyColumnSetNotNull(table: Table, col: Column): String
-
-  def alterTableModifyColumnDropNotNull(table: Table, col: Column): String
-
-  def alterTableModifyColumnDefault(table: Table, col: Column, v: Option[String]): String
-
-  def alterTableAddForeignKey(fk: ForeignKey): String
-
-  def alterTableAddUnique(fk: UniqueKey): String
-
-  def alterTableAddPrimaryKey(table: Table, pk: PrimaryKey): String
-
-  def alterTableDropPrimaryKey(table: Table, pk: PrimaryKey): String
-
-  def alterTableDropConstraint(table: Table, name: String): String
+  def alterTable(table: Table): AlterTableDialect
 
   def createSequence(seq: Sequence): String
 
@@ -81,4 +59,32 @@ trait Dialect {
   def dropIndex(i: Index): String
 
   def supportSequence: Boolean
+}
+
+trait AlterTableDialect(val table:Table) {
+
+  def addColumn(col: Column): List[String]
+
+  def dropColumn( col: Column): String
+
+  def renameColumn(col: Column, newName: String): String
+
+  def modifyColumnType(col: Column, sqlType: SqlType): String
+
+  def modifyColumnSetNotNull(col: Column): String
+
+  def modifyColumnDropNotNull(col: Column): String
+
+  def modifyColumnDefault(col: Column, v: Option[String]): String
+
+  def addForeignKey(fk: ForeignKey): String
+
+  def addUnique(fk: UniqueKey): String
+
+  def addPrimaryKey(pk: PrimaryKey): String
+
+  def dropPrimaryKey(pk: PrimaryKey): String
+
+  def dropConstraint(name: String): String
+
 }

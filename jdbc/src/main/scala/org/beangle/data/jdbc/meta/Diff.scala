@@ -17,12 +17,11 @@
 
 package org.beangle.data.jdbc.meta
 
-import java.io.File
-
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.Files
-import org.beangle.data.jdbc.engine.Engine
+import org.beangle.data.jdbc.engine.{AlterTableDialect, Engine}
 
+import java.io.File
 import scala.collection.mutable
 
 object Diff {
@@ -147,139 +146,133 @@ object Diff {
   def sql(diff: DatabaseDiff): Iterable[String] = {
     if (diff.isEmpty) return List.empty
 
-    val sb = Collections.newBuffer[String]
+    val schemaDdl = Collections.newBuffer[String]
+    val dropTableDdl = Collections.newBuffer[String]
+    val newTableDdl = Collections.newBuffer[String]
+    val columnDdl = Collections.newBuffer[String]
+
+    val primaryKeyDdl = Collections.newBuffer[String]
+    val foreignKeyDdl = Collections.newBuffer[String]
+    val uniqueKeyDdl = Collections.newBuffer[String]
+    val indexDdl = Collections.newBuffer[String]
+    val commentDdl = Collections.newBuffer[String]
+
     val engine = diff.newer.engine
-    diff.schemas.newer foreach { n =>
-      sb += s"""create schema $n"""
+    diff.schemas.newerList foreach { n =>
+      schemaDdl += s"""create schema $n"""
     }
-    diff.schemas.removed foreach { n =>
-      sb += s"DROP schema $n cascade"
+    diff.schemas.removedList foreach { n =>
+      schemaDdl += s"DROP schema $n cascade"
     }
-    diff.schemaDiffs foreach { case (schema, sdf) =>
-      sdf.tables.removed foreach { t =>
-        sb += engine.dropTable(diff.older.getTable(schema, t).get.qualifiedName)
+    diff.schemaDiffs.keys.toList.sorted foreach { schema =>
+      val sdf = diff.schemaDiffs(schema)
+      sdf.tables.removedList foreach { t =>
+        dropTableDdl += engine.dropTable(diff.older.getTable(schema, t).get.qualifiedName)
       }
-      sdf.tables.newer foreach { t =>
+      sdf.tables.newerList foreach { t =>
         val tb = diff.newer.getTable(schema, t).get
-        sb += engine.createTable(tb)
-        sb ++= engine.commentsOnTable(tb,false)
-        tb.primaryKey foreach { pk =>
-          sb += engine.alterTableAddPrimaryKey(tb, pk)
-        }
-
-        tb.uniqueKeys foreach { uk =>
-          sb += engine.alterTableAddUnique(uk)
-        }
-
-        tb.indexes foreach { idx =>
-          sb += engine.createIndex(idx)
-        }
-
-        tb.foreignKeys foreach { fk =>
-          sb += engine.alterTableAddForeignKey(fk)
-        }
+        newTableDdl += engine.createTable(tb)
+        commentDdl ++= engine.commentsOnTable(tb, false)
+        val alter = engine.alterTable(tb)
+        tb.primaryKey foreach { pk => primaryKeyDdl += alter.addPrimaryKey(pk) }
+        tb.uniqueKeys foreach { uk => uniqueKeyDdl += alter.addUnique(uk) }
+        tb.indexes foreach { idx => indexDdl += engine.createIndex(idx) }
+        tb.foreignKeys foreach { fk => foreignKeyDdl += alter.addForeignKey(fk) }
       }
-      sdf.tableDiffs foreach { case (_, tdf) =>
+      sdf.tableDiffs.keys.toList.sorted foreach { t =>
+        val tdf = sdf.tableDiffs(t)
+        val alter = engine.alterTable(tdf.newer)
         if (tdf.hasComment) {
-          sb ++= engine.commentOnTable(tdf.older.qualifiedName, tdf.newer.comment)
+          commentDdl ++= engine.commentOnTable(tdf.older.qualifiedName, tdf.newer.comment)
         }
-        tdf.columns.removed foreach { c =>
-          sb += engine.alterTableDropColumn(tdf.older, tdf.older.column(c))
+        tdf.columns.removedList foreach { c =>
+          columnDdl += alter.dropColumn(tdf.older.column(c))
         }
-        tdf.columns.newer foreach { c =>
-          sb ++= engine.alterTableAddColumn(tdf.newer, tdf.newer.column(c))
+        tdf.columns.newerList foreach { c =>
+          columnDdl ++= alter.addColumn(tdf.newer.column(c))
         }
         tdf.columns.renamed foreach { case (o, n) =>
           val oCol = tdf.older.column(o)
           val nCol = tdf.newer.column(n)
-
-          if (nCol.sqlType != oCol.sqlType) {
-            sb += engine.alterTableModifyColumnType(tdf.older, oCol, nCol.sqlType)
-          }
-          if (nCol.defaultValue != oCol.defaultValue) {
-            sb += engine.alterTableModifyColumnDefault(tdf.older, oCol, nCol.defaultValue)
-          }
-          if (nCol.nullable != oCol.nullable) {
-            if (nCol.nullable) {
-              sb += engine.alterTableModifyColumnDropNotNull(tdf.newer, nCol)
-            } else {
-              sb += engine.alterTableModifyColumnSetNotNull(tdf.newer, nCol)
-            }
-          }
-          sb += engine.alterTableRenameColumn(tdf.older, oCol, nCol.name.toLiteral(engine))
+          columnDdl += alter.renameColumn(oCol, nCol.name.toLiteral(engine))
+          alterColumn(engine, alter, tdf.newer, oCol, nCol, columnDdl, commentDdl)
         }
-        tdf.columns.updated foreach { c =>
+        tdf.columns.updatedList foreach { c =>
           val oCol = tdf.older.column(c)
           val nCol = tdf.newer.column(c)
-          if (nCol.sqlType != oCol.sqlType) {
-            sb += engine.alterTableModifyColumnType(tdf.older, oCol, nCol.sqlType)
-          }
-          if (nCol.defaultValue != oCol.defaultValue) {
-            sb += engine.alterTableModifyColumnDefault(tdf.older, oCol, nCol.defaultValue)
-          }
-          if (nCol.nullable != oCol.nullable) {
-            if (nCol.nullable) {
-              sb += engine.alterTableModifyColumnDropNotNull(tdf.newer, nCol)
-            } else {
-              sb += engine.alterTableModifyColumnSetNotNull(tdf.newer, nCol)
-            }
-          }
-          if (nCol.comment != oCol.comment) {
-            sb ++= engine.commentOnColumn(tdf.older, oCol, nCol.comment)
-          }
-          // ignore check and unique,using constrants
+          alterColumn(engine, alter, tdf.newer, oCol, nCol, columnDdl, commentDdl)
         }
         if (tdf.hasPrimaryKey) {
-          if (tdf.older.primaryKey.nonEmpty) {
-            sb += engine.alterTableDropPrimaryKey(tdf.older, tdf.older.primaryKey.get)
-          }
-          if (tdf.newer.primaryKey.nonEmpty) {
-            sb += engine.alterTableAddPrimaryKey(tdf.newer, tdf.newer.primaryKey.get)
-          }
+          if tdf.older.primaryKey.nonEmpty then primaryKeyDdl += alter.dropPrimaryKey(tdf.older.primaryKey.get)
+          if tdf.newer.primaryKey.nonEmpty then primaryKeyDdl += alter.addPrimaryKey(tdf.newer.primaryKey.get)
         }
 
         // remove old forignkeys
-        tdf.foreignKeys.removed foreach { fk =>
-          sb += engine.alterTableDropConstraint(tdf.older, fk)
+        tdf.foreignKeys.removedList foreach { fk =>
+          foreignKeyDdl += alter.dropConstraint(fk)
         }
-        tdf.foreignKeys.updated foreach { fk =>
-          sb += engine.alterTableDropConstraint(tdf.older, fk)
-          sb += engine.alterTableAddForeignKey(tdf.newer.getForeignKey(fk).get)
+        tdf.foreignKeys.updatedList foreach { fk =>
+          foreignKeyDdl += alter.dropConstraint(fk)
+          foreignKeyDdl += alter.addForeignKey(tdf.newer.getForeignKey(fk).get)
         }
-
-        tdf.foreignKeys.newer foreach { fk =>
-          sb += engine.alterTableAddForeignKey(tdf.newer.getForeignKey(fk).get)
+        tdf.foreignKeys.newerList foreach { fk =>
+          foreignKeyDdl += alter.addForeignKey(tdf.newer.getForeignKey(fk).get)
         }
 
         // remove old uniquekeys
-        tdf.uniqueKeys.removed foreach { uk =>
-          sb += engine.alterTableDropConstraint(tdf.older, uk)
+        tdf.uniqueKeys.removedList foreach { uk =>
+          uniqueKeyDdl += alter.dropConstraint(uk)
         }
-
-        tdf.uniqueKeys.updated foreach { uk =>
-          sb += engine.alterTableDropConstraint(tdf.older, uk)
-          sb += engine.alterTableAddUnique(tdf.newer.getUniqueKey(uk).get)
+        tdf.uniqueKeys.updatedList foreach { uk =>
+          uniqueKeyDdl += alter.dropConstraint(uk)
+          uniqueKeyDdl += alter.addUnique(tdf.newer.getUniqueKey(uk).get)
         }
-        tdf.uniqueKeys.newer foreach { uk =>
-          sb += engine.alterTableAddUnique(tdf.newer.getUniqueKey(uk).get)
+        tdf.uniqueKeys.newerList foreach { uk =>
+          uniqueKeyDdl += alter.addUnique(tdf.newer.getUniqueKey(uk).get)
         }
 
         //remove old index
-        tdf.indexes.removed foreach { idx =>
-          sb += engine.dropIndex(tdf.older.getIndex(idx).get)
+        tdf.indexes.removedList foreach { idx =>
+          indexDdl += engine.dropIndex(tdf.older.getIndex(idx).get)
         }
-
-        tdf.indexes.updated foreach { idx =>
-          sb += engine.dropIndex(tdf.older.getIndex(idx).get)
-          sb += engine.createIndex(tdf.newer.getIndex(idx).get)
+        tdf.indexes.updatedList foreach { idx =>
+          indexDdl += engine.dropIndex(tdf.older.getIndex(idx).get)
+          indexDdl += engine.createIndex(tdf.newer.getIndex(idx).get)
         }
-
-        tdf.indexes.newer foreach { idx =>
-          sb += engine.createIndex(tdf.newer.getIndex(idx).get)
+        tdf.indexes.newerList foreach { idx =>
+          indexDdl += engine.createIndex(tdf.newer.getIndex(idx).get)
         }
       }
     }
-    sb
+    val result = Collections.newBuffer[String]
+    result ++= schemaDdl
+    result ++= dropTableDdl
+    result ++= newTableDdl
+    result ++= columnDdl
+    result ++= primaryKeyDdl
+    result ++= foreignKeyDdl
+    result ++= uniqueKeyDdl
+    result ++= indexDdl
+    result ++= commentDdl
+    result
+  }
+
+  private def alterColumn(engine: Engine, alter: AlterTableDialect, table: Table, oCol: Column, nCol: Column,
+                          columnDdl: mutable.Buffer[String], commentDdl: mutable.Buffer[String]): Unit = {
+    if (nCol.sqlType.name != oCol.sqlType.name) {
+      columnDdl += alter.modifyColumnType(oCol, nCol.sqlType)
+    }
+    if (nCol.defaultValue != oCol.defaultValue) {
+      columnDdl += alter.modifyColumnDefault(oCol, nCol.defaultValue)
+    }
+    if (nCol.nullable != oCol.nullable) {
+      if nCol.nullable then columnDdl += alter.modifyColumnDropNotNull(nCol)
+      else columnDdl += alter.modifyColumnSetNotNull(nCol)
+    }
+    if (nCol.comment != oCol.comment) {
+      commentDdl ++= engine.commentOnColumn(table, nCol, nCol.comment)
+    }
+    // ignore check and unique,using constrants
   }
 
 }
@@ -303,6 +296,12 @@ case class NameDiff(newer: Set[String], removed: Set[String], renamed: Set[(Stri
   def isEmpty: Boolean = {
     newer.isEmpty && removed.isEmpty && updated.isEmpty && renamed.isEmpty
   }
+
+  def newerList: List[String] = newer.toList.sorted
+
+  def removedList: List[String] = removed.toList.sorted
+
+  def updatedList: List[String] = updated.toList.sorted
 }
 
 class TableDiff(val older: Table, val newer: Table) {

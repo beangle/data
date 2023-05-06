@@ -86,14 +86,6 @@ class SQLServer2005 extends AbstractEngine {
     (sb.toString(), List(offset + 1, offset + limit))
   }
 
-  override def alterTableRenameColumn(table: Table, col: Column, newName: String): String = {
-    var renameClause = options.table.alter.renameColumn
-    renameClause = Strings.replace(renameClause, "{oldcolumn}", col.name.toLiteral(table.engine))
-    renameClause = Strings.replace(renameClause, "{newcolumn}", newName)
-    renameClause = Strings.replace(renameClause, "{table}", table.qualifiedName)
-    renameClause
-  }
-
   protected def replaceDistinctWithGroupBy(sql: StringBuilder): Unit = {
     val distinctIndex = sql.indexOf("distinct")
     if (distinctIndex > 0) {

@@ -273,17 +273,29 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     key
   }
 
+  def remove(column: Column): Unit = {
+    columns.find(_.name == column.name) foreach { c =>
+      columns -= c
+      uniqueKeys --= uniqueKeys.filter { uk => uk.columns.size == 1 && uk.columns.contains(c.name) }
+    }
+  }
+
+  def rename(column: Column, newName: Identifier): Unit = {
+    remove(column)
+    column.name = newName
+    add(column)
+  }
+
   def add(column: Column): Column = {
-    columns.find(_.name == column.name) foreach columns.subtractOne
+    val ukName = uniqueKeys.find { uk => uk.columns.size == 1 && uk.columns.contains(column.name) }.map(_.name.value)
+    remove(column)
     columns += column
+    if column.unique then this.createUniqueKey(ukName.getOrElse(this.name.value + "_" + column.name.value + "_key"), column.name.value)
     column
   }
 
   def add(cols: Column*): Unit = {
-    cols foreach { col =>
-      columns.find(_.name == col.name) foreach columns.subtractOne
-      columns += col
-    }
+    cols foreach { col => add(col) }
   }
 
   def add(index: Index): Index = {
@@ -345,6 +357,12 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
         }
       case None => comment
     }
+  }
+
+  def convertIndexToUniqueKeys(): Unit = {
+    val ui = indexes.filter(i => i.unique)
+    indexes --= ui
+    ui foreach { i => createUniqueKey(i.name.value, i.columns.map(_.value).toSeq: _*) }
   }
 }
 

@@ -17,10 +17,11 @@
 
 package org.beangle.data.jdbc.meta
 
-import java.sql.Types
 import org.beangle.data.jdbc.engine.{Engines, PostgreSQL10}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.sql.Types
 
 class DiffTest extends AnyFunSpec with Matchers {
   val engine = new PostgreSQL10
@@ -40,12 +41,14 @@ class DiffTest extends AnyFunSpec with Matchers {
       val code2 = new Column("code", engine.toType(Types.VARCHAR, 20))
       code2.unique = true
 
-      val table1 = new Table(null, Identifier("users"))
-      val table2 = new Table(null, Identifier("users"))
+      val database = new Database(engine)
+      val schema = database.getOrCreateSchema("public")
+      val table1 = new Table(schema, Identifier("users"))
+      val table2 = new Table(schema, Identifier("users"))
       table1.add(id1, name, code1)
       table2.add(id2, name, code2)
 
-      val rs = Diff.diff(table2,table1,engine)
+      val rs = Diff.diff(table2, table1, engine)
       rs shouldBe defined
       rs foreach { tableDiff =>
         tableDiff.columns.updated should have size 2

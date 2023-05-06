@@ -29,7 +29,7 @@ class ForeignKeyTest extends AnyFlatSpec with Matchers {
   "fk alter sql" should "corret" in {
     val tableA = buildTable()
     val fk = tableA.foreignKeys.head
-    oracle.alterTableAddForeignKey(fk)
+    oracle.alterTable(tableA).addForeignKey(fk)
   }
 
   "drop table " should "corret" in {

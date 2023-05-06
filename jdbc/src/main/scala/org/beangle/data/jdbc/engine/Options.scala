@@ -28,6 +28,7 @@ object Options {
     var setDefault: String = _
     var dropDefault: String = _
     var addPrimaryKey: String = _
+    var dropPrimaryKey: String = _
     var dropConstraint: String = _
     var addColumn: String = _
     var dropColumn: String = _
@@ -35,8 +36,6 @@ object Options {
   }
 
   class CreateTableOption {
-    var supportsNullUnique = false
-    var supportsUnique = true
     var supportsColumnCheck = true
   }
 

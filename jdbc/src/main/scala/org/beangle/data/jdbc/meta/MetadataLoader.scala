@@ -33,6 +33,8 @@ object MetadataColumns {
   val TableName = "TABLE_NAME"
   val ColumnName = "COLUMN_NAME"
   val ColumnSize = "COLUMN_SIZE"
+  val ColumnDef = "COLUMN_DEF"
+
   val TableCat = "TABLE_CAT"
   val TableSchema = "TABLE_SCHEM"
   val IndexName = "INDEX_NAME"
@@ -63,7 +65,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
 
   def schemas(): Set[String] = {
     val names = Collections.newBuffer[String]
-    if (engine.catelogAsSchema) {
+    if (engine.catalogAsSchema) {
       val rs = meta.getCatalogs()
       while (rs.next()) {
         names.addOne(rs.getString("TABLE_CAT"))
@@ -81,23 +83,23 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
 
   def loadTables(schema: Schema, extras: Boolean): Unit = {
     val TYPES = Array("TABLE")
-    var catelogName = if (null == schema.catalog || schema.catalog.isEmpty) null else schema.catalog.get.value
+    var catalogName = if (null == schema.catalog || schema.catalog.isEmpty) null else schema.catalog.get.value
     var schemaPattern = schema.name.value
-    if Strings.isBlank(catelogName) then catelogName = null
+    if Strings.isBlank(catalogName) then catalogName = null
     if Strings.isBlank(schemaPattern) then schemaPattern = null
 
-    if (null == catelogName && null != schemaPattern && engine.catelogAsSchema) {
-      val t = catelogName
-      catelogName = schemaPattern
+    if (null == catalogName && null != schemaPattern && engine.catalogAsSchema) {
+      val t = catalogName
+      catalogName = schemaPattern
       schemaPattern = t
     }
 
     val sw = new Stopwatch(true)
-    var rs = meta.getTables(catelogName, schemaPattern, null, TYPES)
+    var rs = meta.getTables(catalogName, schemaPattern, null, TYPES)
     val tables = new mutable.HashMap[String, Table]
     while (rs.next()) {
       val tableName = rs.getString(TableName)
-      if (!tableName.startsWith("BIN$")) {
+      if (!tableName.contains("$")) {
         val table = schema.database.addTable(getTableSchema(rs), rs.getString(TableName))
         table.updateCommentAndModule(rs.getString(Remarks))
         tables.put(Table.qualify(table.schema, table.name), table)
@@ -108,7 +110,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
 
     // Loading columns
     sw.reset().start()
-    rs = meta.getColumns(catelogName, schemaPattern, "%", "%")
+    rs = meta.getColumns(catalogName, schemaPattern, "%", "%")
     var cols = 0
     val types = Collections.newMap[String, SqlType]
     import java.util.StringTokenizer
@@ -124,8 +126,12 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
           val sqlType = types.getOrElseUpdate(key, engine.toType(typecode, length, scale))
           val nullable = "yes".equalsIgnoreCase(rs.getString(IsNullable))
           val col = new Column(Identifier(rs.getString(ColumnName)), sqlType, nullable)
-          //          col.position = rs.getInt(OrdinalPosition)
           col.comment = Option(rs.getString(Remarks))
+          var defaultValue = rs.getString(ColumnDef)
+          if (null != defaultValue && defaultValue.contains("::")) {
+            defaultValue = Strings.substringBefore(defaultValue, "::")
+          }
+          col.defaultValue = Option(defaultValue)
           table.add(col)
           cols += 1
         }
@@ -147,13 +153,13 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
         logger.debug("Loading primary key,foreign key and index.")
         val tableNames = new ConcurrentLinkedQueue[String]
         tableNames.addAll(asJava(tables.keySet.toList.sortWith(_ < _)))
-        ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "metaloader")
+        ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "meta-loader")
       }
     }
   }
 
   private def getTableSchema(rs: ResultSet): String = {
-    rs.getString(if engine.catelogAsSchema then TableCat else TableSchema)
+    rs.getString(if engine.catalogAsSchema then TableCat else TableSchema)
   }
 
   private def batchLoadExtra(schema: Schema, sql: MetadataLoadSql): Unit = {
@@ -202,8 +208,6 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
             case Some(oldIdx) => oldIdx
           }
           idx.unique = !rs.getBoolean("NON_UNIQUE")
-          val ascOrDesc = rs.getString("ASC_OR_DESC")
-          if (null != ascOrDesc) idx.ascOrDesc = Some("A" == ascOrDesc)
           val columnName = rs.getString(ColumnName)
           //for oracle m_row$$ column
           table.getColumn(columnName) match {
@@ -214,10 +218,11 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
       }
     }
     rs.close()
-    logger.info(s"Load contraint and index in $sw.")
+    schema.tables.values foreach { t => t.convertIndexToUniqueKeys() }
+    logger.info(s"Load constraint and index in $sw.")
   }
 
-  class MetaLoadTask(val buffer: ConcurrentLinkedQueue[String], val tables: mutable.HashMap[String, Table])
+  private class MetaLoadTask(val buffer: ConcurrentLinkedQueue[String], val tables: mutable.HashMap[String, Table])
     extends Runnable {
     def run(): Unit = {
       var completed = 0
@@ -226,23 +231,23 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
         try {
           val table = tables(nextTableName)
           val schema = table.schema
-          val catelogName = if engine.catelogAsSchema then table.schema.name.value else null
-          val schemaName = if engine.catelogAsSchema then null else table.schema.name.value
+          val catalogName = if engine.catalogAsSchema then table.schema.name.value else null
+          val schemaName = if engine.catalogAsSchema then null else table.schema.name.value
 
           logger.debug(s"Loading ${table.qualifiedName}...")
           // load primary key
           var rs: ResultSet = null
-          rs = meta.getPrimaryKeys(catelogName, schemaName, table.name.value)
+          rs = meta.getPrimaryKeys(catalogName, schemaName, table.name.value)
           var pk: PrimaryKey = null
           while (rs.next()) {
-            val colnameName = Identifier(rs.getString(ColumnName))
-            if (null == pk) pk = new PrimaryKey(table, Identifier(rs.getString(PKName)), colnameName)
-            else pk.addColumn(colnameName)
+            val colName = Identifier(rs.getString(ColumnName))
+            if (null == pk) pk = new PrimaryKey(table, Identifier(rs.getString(PKName)), colName)
+            else pk.addColumn(colName)
           }
           if (null != pk) table.primaryKey = Some(pk)
           rs.close()
           // load imported key
-          rs = meta.getImportedKeys(catelogName, schemaName, table.name.value)
+          rs = meta.getImportedKeys(catalogName, schemaName, table.name.value)
           while (rs.next()) {
             val fkName = rs.getString(FKName)
             val columnName = Identifier(rs.getString(FKColumnName))
@@ -250,32 +255,32 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
               case None => table.add(new ForeignKey(table, Identifier(rs.getString(FKName)), columnName))
               case Some(oldk) => oldk
             }
-            val pkSchema = schema.database.getOrCreateSchema(getIdentifier(rs, if engine.catelogAsSchema then PKTableCat else PKTableSchem))
+            val pkSchema = schema.database.getOrCreateSchema(getIdentifier(rs, if engine.catalogAsSchema then PKTableCat else PKTableSchem))
             fk.refer(TableRef(pkSchema, getIdentifier(rs, PKTableName)), getIdentifier(rs, PKColumnName))
             fk.cascadeDelete = rs.getInt(DeleteRule) != 3
           }
           rs.close()
+
           // load index
-          rs = meta.getIndexInfo(catelogName, schemaName, table.name.value, false, true)
+          rs = meta.getIndexInfo(catalogName, schemaName, table.name.value, false, true)
           while (rs.next()) {
             val index = rs.getString(IndexName)
             if (index != null && !table.isPrimaryKeyIndex(index)) {
               val info = table.getIndex(index).getOrElse(table.add(new Index(table, getIdentifier(rs, IndexName))))
               info.unique = !rs.getBoolean("NON_UNIQUE")
-              val ascOrDesc = rs.getString("ASC_OR_DESC")
-              if (null != ascOrDesc) info.ascOrDesc = Some("A" == ascOrDesc)
               info.addColumn(getIdentifier(rs, ColumnName))
             }
           }
           rs.close()
           completed += 1
+          table.convertIndexToUniqueKeys()
         } catch {
           case _: IndexOutOfBoundsException =>
-          case e: Exception => logger.error("Error in convertion ", e)
+          case e: Exception => logger.error("Error in loading metadata ", e)
         }
         nextTableName = buffer.poll()
       }
-      logger.debug(s"${Thread.currentThread().getName} loaded $completed tables ")
+      logger.debug(s"${Thread.currentThread().getName} loaded $completed tables")
     }
   }
 

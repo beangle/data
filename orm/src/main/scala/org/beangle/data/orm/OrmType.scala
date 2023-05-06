@@ -108,15 +108,15 @@ final class OrmEntityType(val entityName: String, var clazz: Class[_], var table
   def addProperties(added: collection.Map[String, OrmProperty]): Unit = {
     if (added.nonEmpty) {
       properties ++= added
-      inheriteColumns(this.table, added)
+      inheritColumns(this.table, added)
     }
   }
 
-  private def inheriteColumns(table: Table, inheris: collection.Map[String, OrmProperty]): Unit = {
+  private def inheritColumns(table: Table, inheris: collection.Map[String, OrmProperty]): Unit = {
     inheris.values foreach {
       case spm: OrmSingularProperty =>
         spm.propertyType match {
-          case etm: OrmEmbeddableType => inheriteColumns(table, etm.properties)
+          case etm: OrmEmbeddableType => inheritColumns(table, etm.properties)
           case _ => spm.columns foreach table.add
         }
       case _ =>
@@ -193,7 +193,7 @@ object IdGenerator {
   val Native = "native"
 }
 
-final class IdGenerator(var strategy: String) {
+final class IdGenerator(val strategy: String, val autoConfig: Boolean = true) {
   val params: mutable.Map[String, String] = Collections.newMap[String, String]
   var nullValue: Option[String] = None
 

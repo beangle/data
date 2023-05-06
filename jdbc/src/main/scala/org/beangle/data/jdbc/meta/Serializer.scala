@@ -43,6 +43,7 @@ object Serializer {
           colElem.get("unique").foreach(n => col.unique = n.toBoolean)
           colElem.get("check").foreach(n => col.check = Some(n))
           colElem.get("comment").foreach(n => col.comment = Some(n))
+          colElem.get("defaultValue").foreach(n => col.defaultValue = Some(n))
         }
         (tableElem \ "primary-key") foreach { pkElem =>
           table.createPrimaryKey(pkElem.name, split(pkElem.attr("columns")).toSeq: _*)
@@ -65,6 +66,7 @@ object Serializer {
           idxElem.get("unique").foreach(n => unique = n.toBoolean)
           table.createIndex(idxElem.name, unique, split(idxElem.attr("columns")).toSeq: _*)
         }
+        table.convertIndexToUniqueKeys()
       }
     }
     database
@@ -142,9 +144,7 @@ object Serializer {
         table.uniqueKeys foreach { uk =>
           val ukNode = ukNodes.createChild("unique-key", "name" -> uk.name)
           ukNode.attr("columns", collectNames(uk.columns))
-          if (!uk.enabled) {
-            ukNode.attr("enabled", uk.enabled.toString)
-          }
+          if !uk.enabled then ukNode.attr("enabled", uk.enabled.toString)
         }
       }
       if (table.indexes.nonEmpty) {

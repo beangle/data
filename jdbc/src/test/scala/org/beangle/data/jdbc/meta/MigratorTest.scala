@@ -64,7 +64,7 @@ class MigratorTest extends AnyFunSpec with Matchers {
       val pk2 = user2.createPrimaryKey("", "code")
       val diff = Diff.sql(Diff.diff(newer, older))
       println(engine.createTable(user2))
-      println(engine.alterTableAddPrimaryKey(user2, pk2))
+      println(engine.alterTable(user2).addPrimaryKey(pk2))
       println(diff.mkString(";\n"))
     }
   }

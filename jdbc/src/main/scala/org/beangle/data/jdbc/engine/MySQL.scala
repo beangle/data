@@ -66,6 +66,7 @@ class MySQL5 extends AbstractEngine {
     a.renameColumn = "change column {oldcolumn} {newcolumn} {type}"
 
     a.addPrimaryKey = "add primary key ({column-list})"
+    a.dropPrimaryKey = "drop primary key"
     a.dropConstraint = "drop constraint {name}"
   }
 
@@ -77,21 +78,21 @@ class MySQL5 extends AbstractEngine {
 
   override def maxIdentifierLength: Int = 64
 
-  override def catelogAsSchema: Boolean = true
+  override def catalogAsSchema: Boolean = true
 
   override def createSchema(name: String): String = s"create database if not exists ${name} DEFAULT CHARSET utf8 COLLATE utf8_general_ci"
 
-  override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
-                             referencedTable: String, primaryKey: Iterable[String]): String = {
-    val cols = Strings.join(foreignKey, ", ")
-    new StringBuffer(30).append(" add index ").append(constraintName).append(" (").append(cols)
-      .append("), add constraint ").append(constraintName).append(" foreign key (").append(cols)
-      .append(") references ").append(referencedTable).append(" (")
-      .append(Strings.join(primaryKey, ", ")).append(')').toString
-  }
-
-  override def alterTableDropPrimaryKey(table: Table, pk: PrimaryKey): String = {
-    s"alter table ${table.qualifiedName}  drop primary key"
+  override def alterTable(table: Table): AlterTableDialect = {
+    new DefaultAlterTableDialect(table, options) {
+      override def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
+                                 referencedTable: String, primaryKey: Iterable[String]): String = {
+        val cols = Strings.join(foreignKey, ", ")
+        new StringBuffer(30).append(" add index ").append(constraintName).append(" (").append(cols)
+          .append("), add constraint ").append(constraintName).append(" foreign key (").append(cols)
+          .append(") references ").append(referencedTable).append(" (")
+          .append(Strings.join(primaryKey, ", ")).append(')').toString
+      }
+    }
   }
 
   override def dropIndex(i: Index): String = {

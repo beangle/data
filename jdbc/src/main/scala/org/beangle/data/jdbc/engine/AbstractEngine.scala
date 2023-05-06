@@ -17,6 +17,7 @@
 
 package org.beangle.data.jdbc.engine
 
+import org.beangle.commons.lang.Strings
 import org.beangle.data.jdbc.meta.{MetadataLoadSql, SqlType}
 
 abstract class AbstractEngine extends Engine with AbstractDialect {
@@ -79,6 +80,7 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
 
   override def storeCase: StoreCase = StoreCase.Mixed
 
-  override def catelogAsSchema: Boolean = false
+  override def catalogAsSchema: Boolean = false
 
+  override def systemSchemas: Seq[String] = List.empty
 }

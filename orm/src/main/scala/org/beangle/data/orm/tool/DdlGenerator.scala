@@ -163,24 +163,24 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     comments ++= engine.commentsOnTable(table, true)
     tables += engine.createTable(table)
 
+    val alter = engine.alterTable(table)
     table.primaryKey foreach { pk =>
       checkNameLength(table.qualifiedName, pk.name)
-      keys += engine.alterTableAddPrimaryKey(table, pk)
+      keys += alter.addPrimaryKey(pk)
     }
 
     table.uniqueKeys foreach { uk =>
       checkNameLength(table.qualifiedName, uk.name)
-      keys += engine.alterTableAddUnique(uk)
+      keys += alter.addUnique(uk)
     }
 
     table.indexes foreach { idx =>
       checkNameLength(idx.literalName, idx.name)
-      //for order by table
-      indexes += table.qualifiedName + "--" + engine.createIndex(idx)
+      indexes += table.qualifiedName + "--" + engine.createIndex(idx) //for order by table
     }
 
     table.foreignKeys foreach { fk =>
-      constraints += engine.alterTableAddForeignKey(fk)
+      constraints += alter.addForeignKey(fk)
     }
   }
 

@@ -79,4 +79,6 @@ class DB2V8 extends AbstractEngine {
   override def defaultSchema: String = null
 
   override def name: String = "DB2"
+
+  override def systemSchemas: Seq[String] = List.empty
 }

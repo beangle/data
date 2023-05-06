@@ -22,7 +22,7 @@ import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, TypeInfo}
-import org.beangle.commons.lang.{ClassLoaders, Strings}
+import org.beangle.commons.lang.{ClassLoaders, Primitives, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.jdbc.meta.{Column, Database, Table}
@@ -537,7 +537,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
           } else if (isComponent(propType)) {
             property = new OrmSingularProperty(name, propType, optional, buildElement(propType, null))
           } else {
-            val column = newColumn(columnName(propType, name), propType, optional)
+            val column = newScalarColumn(columnName(propType, name), propType, optional)
             val ormType = new OrmBasicType(propType, column)
             property = new OrmSingularProperty(name, propType, optional, ormType)
           }
@@ -562,7 +562,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   private def bindScalar(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo): Unit = {
     val clazz = if (typeInfo.isOptional) typeInfo.args(0).clazz else typeInfo.clazz
     detectValueType(clazz)
-    val column = newColumn(columnName(c.clazz, name), clazz, typeInfo.isOptional)
+    val column = newScalarColumn(columnName(c.clazz, name), clazz, typeInfo.isOptional)
     val property = new OrmSingularProperty(name, clazz, typeInfo.isOptional, new OrmBasicType(clazz, column))
     entity.table.add(column)
     c.addProperty(property)
@@ -577,6 +577,14 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     property.joinColumn = Some(column)
     c.addProperty(property)
     entity.table.add(column)
+  }
+
+  private def newScalarColumn(name: String, clazz: Class[_], optional: Boolean): Column = {
+    val col = new Column(database.engine.toIdentifier(name), sqlTypeMapping.sqlType(clazz), optional)
+    if (clazz.isPrimitive && !optional) {
+      col.defaultValue = Some(String.valueOf(Primitives.default(clazz)))
+    }
+    col
   }
 
   private def newColumn(name: String, clazz: Class[_], optional: Boolean): Column = {

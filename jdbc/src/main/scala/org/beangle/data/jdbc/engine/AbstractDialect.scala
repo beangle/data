@@ -18,7 +18,8 @@
 package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.Strings.{isEmpty, join, replace}
+import org.beangle.data.jdbc.engine.Options.AlterTableOption
 import org.beangle.data.jdbc.meta.*
 
 trait AbstractDialect extends Dialect {
@@ -38,44 +39,36 @@ trait AbstractDialect extends Dialect {
       buf.append(col.name.toLiteral(this)).append(' ')
       buf.append(col.sqlType.name)
 
-      col.defaultValue foreach { dv =>
-        buf.append(" default ").append(dv)
-      }
-      if (!col.nullable) {
-        buf.append(" not null")
-      }
-      val useUniqueConstraint = col.unique && (!col.nullable || options.table.create.supportsNullUnique)
-      if (useUniqueConstraint) {
-        if (options.table.create.supportsUnique) buf.append(" unique")
-      }
+      col.defaultValue foreach { dv => buf.append(" default ").append(dv) }
+      if !col.nullable then buf.append(" not null")
 
       if (col.hasCheck && options.table.create.supportsColumnCheck) {
         buf.append(" check (").append(col.check.get).append(")")
       }
       if (!options.comment.supportsCommentOn) {
-        col.comment foreach { c =>
-          buf.append(s" comment '$c'")
-        }
+        col.comment foreach { c => buf.append(s" comment '$c'") }
       }
       if (iter.hasNext) buf.append(", ")
     }
     buf.append(')')
     if (!options.comment.supportsCommentOn) {
-      table.comment foreach { c =>
-        buf.append(s" comment '$c'")
-      }
+      table.comment foreach { c => buf.append(s" comment '$c'") }
     }
     buf.toString
   }
 
   override def truncate(table: Table): String = {
-    Strings.replace(options.table.truncate.sql, "{name}", table.qualifiedName)
+    replace(options.table.truncate.sql, "{name}", table.qualifiedName)
+  }
+
+  override def alterTable(table: Table): AlterTableDialect = {
+    DefaultAlterTableDialect(table, options)
   }
 
   /** Table removal sql
    */
   override def dropTable(table: String): String = {
-    Strings.replace(options.table.drop.sql, "{name}", table)
+    replace(options.table.drop.sql, "{name}", table)
   }
 
   override def commentOnColumn(table: Table, column: Column, comment: Option[String]): Option[String] = {
@@ -120,121 +113,15 @@ trait AbstractDialect extends Dialect {
     }
   }
 
-  override def alterTableAddColumn(table: Table, col: Column): List[String] = {
-    val buf = Collections.newBuffer[String]
-    var sql = s"alter table ${table.qualifiedName} add column ${col.name} ${col.sqlType.name}"
-    col.defaultValue foreach { v =>
-      if (col.sqlType.isStringType) {
-        sql += s" default '$v''"
-      } else {
-        sql += s" default $v"
-      }
-    }
-    if (options.table.create.supportsColumnCheck) {
-      col.check foreach { c =>
-        sql += s" check $c"
-      }
-    }
-    buf += sql
-    if (!col.nullable) {
-      buf += alterTableModifyColumnSetNotNull(table, col)
-    }
-    buf.toList
-  }
-
-  override def alterTableRenameColumn(table: Table, col: Column, newName: String): String = {
-    var renameClause = options.table.alter.renameColumn
-    renameClause = Strings.replace(renameClause, "{oldcolumn}", col.name.toLiteral(table.engine))
-    renameClause = Strings.replace(renameClause, "{newcolumn}", newName)
-    renameClause = Strings.replace(renameClause, "{type}", col.sqlType.name)
-    s"alter table ${table.qualifiedName} $renameClause"
-  }
-
-  override def alterTableDropColumn(table: Table, col: Column): String = {
-    var alterClause = options.table.alter.dropColumn
-    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
-    s"alter table ${table.qualifiedName} $alterClause"
-  }
-
-  override def alterTableModifyColumnSetNotNull(table: Table, col: Column): String = {
-    var alterClause = options.table.alter.setNotNull
-    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
-    alterClause = Strings.replace(alterClause, "{type}", col.sqlType.name)
-    s"alter table ${table.qualifiedName} $alterClause"
-  }
-
-  override def alterTableModifyColumnDropNotNull(table: Table, col: Column): String = {
-    var alterClause = options.table.alter.dropNotNull
-    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
-    alterClause = Strings.replace(alterClause, "{type}", col.sqlType.name)
-    s"alter table ${table.qualifiedName} $alterClause"
-  }
-
-  override def alterTableModifyColumnDefault(table: Table, col: Column, v: Option[String]): String = {
-    var alterClause = v match {
-      case Some(_) => options.table.alter.setDefault
-      case None => options.table.alter.dropNotNull
-    }
-    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
-    var value = v.getOrElse("null")
-    if (col.sqlType.isStringType) value = s"'$value'"
-    alterClause = Strings.replace(alterClause, "{value}", value)
-    s"alter table ${table.qualifiedName} $alterClause"
-  }
-
-  override def alterTableModifyColumnType(table: Table, col: Column, sqlType: SqlType): String = {
-    var alterClause = options.table.alter.changeType
-    alterClause = Strings.replace(alterClause, "{column}", col.name.toLiteral(table.engine))
-    alterClause = Strings.replace(alterClause, "{type}", sqlType.name)
-    s"alter table ${table.qualifiedName} $alterClause"
-  }
-
-  override def alterTableAddForeignKey(fk: ForeignKey): String = {
-    require(null != fk.name && null != fk.table && null != fk.referencedTable)
-    require(fk.referencedColumns.nonEmpty, " reference columns is empty.")
-    require(fk.columns.nonEmpty, s"${fk.name} column's size should greate than 0")
-
-    val engine = fk.table.engine
-    val referencedColumnNames = fk.referencedColumns.map(x => x.toLiteral(engine)).toList
-    val result = "alter table " + fk.table.qualifiedName + foreignKeySql(fk.literalName, fk.columnNames,
-      fk.referencedTable.qualifiedName, referencedColumnNames)
-
-    if (fk.cascadeDelete && options.constraint.supportsCascadeDelete) result + " on delete cascade" else result
-  }
-
-  override def alterTableAddPrimaryKey(table: Table, pk: PrimaryKey): String = {
-    var alterClause = options.table.alter.addPrimaryKey
-    alterClause = Strings.replace(alterClause, "{name}", pk.name.toLiteral(table.engine))
-    alterClause = Strings.replace(alterClause, "{column-list}", nameList(pk.columns, table.engine))
-    s"alter table ${table.qualifiedName} $alterClause"
-  }
-
-  override def alterTableDropPrimaryKey(table: Table, pk: PrimaryKey): String = {
-    this.alterTableDropConstraint(table, pk.name.toLiteral(table.engine))
-  }
-
-  override def alterTableDropConstraint(table: Table, name: String): String = {
-    var alterClause = options.table.alter.dropConstraint
-    alterClause = Strings.replace(alterClause, "{name}", name)
-    s"alter table ${table.qualifiedName} $alterClause"
-  }
-
-  override def alterTableAddUnique(fk: UniqueKey): String = {
-    require(null != fk.name && null != fk.table)
-    require(fk.columns.nonEmpty, s"${fk.name} column's size should greate than 0")
-    val engine = fk.table.engine
-    "alter table " + fk.table.qualifiedName + " add constraint " + fk.literalName + " unique (" + nameList(fk.columns, engine) + ")"
-  }
-
   override def limit(query: String, offset: Int, size: Int): (String, List[Int]) = {
     val hasOffset = offset > 0
     val limitOrMax = if (null == options.limit.offsetPattern) offset + size else size
 
     if (hasOffset) {
       val params = if (options.limit.bindInReverseOrder) List(limitOrMax, offset) else List(offset, limitOrMax)
-      (Strings.replace(options.limit.offsetPattern, "{}", query), params)
+      (replace(options.limit.offsetPattern, "{}", query), params)
     } else {
-      (Strings.replace(options.limit.pattern, "{}", query), List(limitOrMax))
+      (replace(options.limit.pattern, "{}", query), List(limitOrMax))
     }
   }
 
@@ -272,11 +159,10 @@ trait AbstractDialect extends Dialect {
   }
 
   override def dropIndex(i: Index): String = {
-    if (i.table.schema.name.value.nonEmpty) {
+    if i.table.schema.name.value.nonEmpty then
       "drop index " + i.table.schema.name.toString + "." + i.literalName
-    } else {
+    else
       "drop index " + i.literalName
-    }
   }
 
   override def insert(table: Table): String = {
@@ -301,22 +187,134 @@ trait AbstractDialect extends Dialect {
     sb.toString()
   }
 
+  override def supportSequence: Boolean = {
+    null != options.sequence
+  }
+
+}
+
+class DefaultAlterTableDialect(table: Table, options: Options) extends AlterTableDialect(table) {
+
+  override def addColumn(col: Column): List[String] = {
+    val buf = Collections.newBuffer[String]
+    var sql = s"alter table ${table.qualifiedName} add column ${col.name} ${col.sqlType.name}"
+    col.defaultValue foreach { v =>
+      if (col.sqlType.isStringType) {
+        sql += s" default '$v''"
+      } else {
+        sql += s" default $v"
+      }
+    }
+    if (options.table.create.supportsColumnCheck) {
+      col.check foreach { c =>
+        sql += s" check $c"
+      }
+    }
+    buf += sql
+    if (!col.nullable) {
+      buf += modifyColumnSetNotNull(col)
+    }
+    buf.toList
+  }
+
+  override def renameColumn(col: Column, newName: String): String = {
+    var renameClause = options.table.alter.renameColumn
+    renameClause = replace(renameClause, "{oldcolumn}", col.name.toLiteral(table.engine))
+    renameClause = replace(renameClause, "{newcolumn}", newName)
+    renameClause = replace(renameClause, "{type}", col.sqlType.name)
+    renameClause = replace(renameClause, "{table}", table.qualifiedName)
+    s"alter table ${table.qualifiedName} $renameClause"
+  }
+
+  override def dropColumn(col: Column): String = {
+    var alterClause = options.table.alter.dropColumn
+    alterClause = replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def modifyColumnSetNotNull(col: Column): String = {
+    var alterClause = options.table.alter.setNotNull
+    alterClause = replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    alterClause = replace(alterClause, "{type}", col.sqlType.name)
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def modifyColumnDropNotNull(col: Column): String = {
+    var alterClause = options.table.alter.dropNotNull
+    alterClause = replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    alterClause = replace(alterClause, "{type}", col.sqlType.name)
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def modifyColumnDefault(col: Column, v: Option[String]): String = {
+    var alterClause = v match {
+      case Some(_) => options.table.alter.setDefault
+      case None => options.table.alter.dropDefault
+    }
+    alterClause = replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    var value = v.getOrElse("null")
+    if (col.sqlType.isStringType) value = s"'$value'"
+    alterClause = replace(alterClause, "{value}", value)
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def modifyColumnType(col: Column, sqlType: SqlType): String = {
+    var alterClause = options.table.alter.changeType
+    alterClause = replace(alterClause, "{column}", col.name.toLiteral(table.engine))
+    alterClause = replace(alterClause, "{type}", sqlType.name)
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def addForeignKey(fk: ForeignKey): String = {
+    require(null != fk.name && null != fk.table && null != fk.referencedTable)
+    require(fk.referencedColumns.nonEmpty, " reference columns is empty.")
+    require(fk.columns.nonEmpty, s"${fk.name} column's size should greate than 0")
+
+    val engine = fk.table.engine
+    val referencedColumnNames = fk.referencedColumns.map(x => x.toLiteral(engine)).toList
+    val result = "alter table " + fk.table.qualifiedName + foreignKeySql(fk.literalName, fk.columnNames,
+      fk.referencedTable.qualifiedName, referencedColumnNames)
+
+    if (fk.cascadeDelete && options.constraint.supportsCascadeDelete) result + " on delete cascade" else result
+  }
+
+  override def addPrimaryKey(pk: PrimaryKey): String = {
+    var alterClause = options.table.alter.addPrimaryKey
+    alterClause = replace(alterClause, "{name}", pk.name.toLiteral(table.engine))
+    alterClause = replace(alterClause, "{column-list}", nameList(pk.columns, table.engine))
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def dropPrimaryKey(pk: PrimaryKey): String = {
+    val dk = options.table.alter.dropPrimaryKey
+    if isEmpty(dk) then this.dropConstraint(pk.name.toLiteral(table.engine))
+    else s"alter table ${table.qualifiedName} $dk"
+  }
+
+  override def dropConstraint(name: String): String = {
+    var alterClause = options.table.alter.dropConstraint
+    alterClause = replace(alterClause, "{name}", name)
+    s"alter table ${table.qualifiedName} $alterClause"
+  }
+
+  override def addUnique(fk: UniqueKey): String = {
+    require(null != fk.name && null != fk.table)
+    require(fk.columns.nonEmpty, s"${fk.name} column's size should great than 0")
+    "alter table " + fk.table.qualifiedName + " add constraint " + fk.literalName + " unique (" + nameList(fk.columns, table.engine) + ")"
+  }
+
   protected def foreignKeySql(constraintName: String, foreignKey: Iterable[String],
                               referencedTable: String, primaryKey: Iterable[String]): String = {
     val res: StringBuffer = new StringBuffer(30)
     res.append(" add constraint ").append(constraintName).append(" foreign key (")
-      .append(Strings.join(foreignKey, ", ")).append(") references ").append(referencedTable)
+      .append(join(foreignKey, ", ")).append(") references ").append(referencedTable)
     if (primaryKey.nonEmpty) {
-      res.append(" (").append(Strings.join(primaryKey, ", ")).append(')')
+      res.append(" (").append(join(primaryKey, ", ")).append(')')
     }
     res.toString
   }
 
   private def nameList(seq: Iterable[Identifier], engine: Engine): String = {
     seq.map(_.toLiteral(engine)).mkString(",")
-  }
-
-  override def supportSequence: Boolean = {
-    null != options.sequence
   }
 }
