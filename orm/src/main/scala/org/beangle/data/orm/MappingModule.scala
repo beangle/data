@@ -361,9 +361,10 @@ object MappingModule {
 
     def generator(strategy: String): this.type = {
       mapping.idGenerator = new IdGenerator(strategy, autoConfig = false)
-      if (mapping.isAbstract) { //update subclass idgenerator
+      if (mapping.isAbstract) { //update subclass id generator
+        val clazz = mapping.clazz
         mappings.entityTypes.values foreach { et =>
-          if (null == et.idGenerator || et.idGenerator.autoConfig) {
+          if (clazz.isAssignableFrom(et.clazz) && (null == et.idGenerator || et.idGenerator.autoConfig)) {
             et.idGenerator = mapping.idGenerator
           }
         }
