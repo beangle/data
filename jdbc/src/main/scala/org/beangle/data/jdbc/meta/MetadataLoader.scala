@@ -115,6 +115,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     val types = Collections.newMap[String, SqlType]
     import java.util.StringTokenizer
     while (rs.next()) {
+      val defaultValue = rs.getString(ColumnDef) //read first in oracle,my be it's long type
       val colName = rs.getString(ColumnName)
       if (null != colName) {
         getTable(schema.database, getTableSchema(rs), rs.getString(TableName)) foreach { table =>
@@ -127,11 +128,13 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
           val nullable = "yes".equalsIgnoreCase(rs.getString(IsNullable))
           val col = new Column(Identifier(rs.getString(ColumnName)), sqlType, nullable)
           col.comment = Option(rs.getString(Remarks))
-          var defaultValue = rs.getString(ColumnDef)
-          if (null != defaultValue && defaultValue.contains("::")) {
-            defaultValue = Strings.substringBefore(defaultValue, "::")
+          if (null != defaultValue) {
+            var dv = Strings.trim(defaultValue)
+            if (Strings.isNotEmpty(dv) && dv.contains("::")) {
+              dv = Strings.substringBefore(dv, "::")
+            }
+            if dv.nonEmpty && dv != "null" then col.defaultValue = Option(dv)
           }
-          col.defaultValue = Option(defaultValue)
           table.add(col)
           cols += 1
         }
