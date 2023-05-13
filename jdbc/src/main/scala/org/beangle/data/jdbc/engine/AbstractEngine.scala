@@ -100,7 +100,6 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
     }
   }
 
-
   override def storeCase: StoreCase = StoreCase.Mixed
 
   override def catalogAsSchema: Boolean = false
