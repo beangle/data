@@ -72,6 +72,14 @@ class PostgreSQL10 extends AbstractEngine {
   }
   options.validate()
 
+  functions { f =>
+    f.currentDate = "current_date"
+    f.localTime = "localtime"
+    f.currentTime = "current_time"
+    f.localTimestamp = "localtimestamp"
+    f.currentTimestamp = "current_timestamp"
+  }
+
   metadataLoadSql.sequenceSql = "select sequence_name,start_value,increment increment_by,cycle_option cycle_flag" +
     " from information_schema.sequences where sequence_schema=':schema'"
 

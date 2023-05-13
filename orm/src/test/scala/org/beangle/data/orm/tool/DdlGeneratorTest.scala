@@ -34,6 +34,7 @@ class DdlGeneratorTest extends AnyFunSpec with Matchers {
       }
       target += Files./ + "ddl"
       DdlGenerator.main(Array("postgresql", target, "zh_CN"))
+      DdlGenerator.main(Array("oracle", target, "zh_CN"))
       println(target)
     }
   }

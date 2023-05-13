@@ -17,6 +17,8 @@
 
 package org.beangle.data.jdbc.engine
 
+import org.beangle.data.jdbc.meta.SqlType
+
 import java.sql.Types
 import java.sql.Types.*
 import scala.collection.mutable
@@ -140,6 +142,16 @@ class Oracle10g extends AbstractEngine {
       case -101 | -102 => Types.TIMESTAMP_WITH_TIMEZONE
       case _ => typeCode
     }
+  }
+
+  override def supportBoolean: Boolean = false
+
+  functions { f =>
+    f.currentDate = "current_date"
+    f.localTime = "localtimestamp"
+    f.currentTime = "current_timestamp"
+    f.localTimestamp = "localtimestamp"
+    f.currentTimestamp = "current_timestamp"
   }
 }
 

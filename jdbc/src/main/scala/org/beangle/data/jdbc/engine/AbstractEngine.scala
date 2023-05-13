@@ -17,7 +17,7 @@
 
 package org.beangle.data.jdbc.engine
 
-import org.beangle.commons.lang.Strings
+import org.beangle.commons.lang.{Numbers, Strings}
 import org.beangle.data.jdbc.meta.{MetadataLoadSql, SqlType}
 
 abstract class AbstractEngine extends Engine with AbstractDialect {
@@ -25,6 +25,8 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
   protected[engine] var typeNames: TypeNames = _
 
   private val typeMappingBuilder = new TypeNames.Builder()
+
+  val systemFunctions: SystemFunctions = new SystemFunctions
 
   var metadataLoadSql = new MetadataLoadSql
 
@@ -45,9 +47,7 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
   }
 
   protected def registerTypes(tuples: (Int, String)*): Unit = {
-    tuples foreach { tuple =>
-      typeMappingBuilder.put(tuple._1, tuple._2)
-    }
+    tuples foreach { tuple => typeMappingBuilder.put(tuple._1, tuple._2) }
     typeNames = typeMappingBuilder.build()
   }
 
@@ -56,9 +56,7 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
    * @param tuples 类型映射
    */
   protected def registerTypes2(tuples: (Int, Int, String)*): Unit = {
-    tuples foreach { tuple =>
-      typeMappingBuilder.put(tuple._1, tuple._2, tuple._3)
-    }
+    tuples foreach { tuple => typeMappingBuilder.put(tuple._1, tuple._2, tuple._3) }
     typeNames = typeMappingBuilder.build()
   }
 
@@ -78,9 +76,35 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
     typeNames.toType(sqlCode, precision, scale)
   }
 
+  override def supportBoolean: Boolean = true
+
+  def functions(f: SystemFunctions => Unit): Unit = {
+    f(this.systemFunctions)
+  }
+
+  override def convert(sqlType: SqlType, value: String): Option[String] = {
+    if value == null then None
+    else {
+      if sqlType.isNumberType || sqlType.isBooleanType && !supportBoolean then
+        value match
+          case "true" => Some("1")
+          case "false" => Some("0")
+          case _ => Some(value).filter(Numbers.isDigits)
+      else if sqlType.isBooleanType then
+        value match
+          case "1" | "Y" | "true" | "yes" => Some("true")
+          case "0" | "N" | "false" | "no" => Some("false")
+          case _ => None
+      else if sqlType.isTemporalType then Option(systemFunctions.current(sqlType))
+      else Option(value)
+    }
+  }
+
+
   override def storeCase: StoreCase = StoreCase.Mixed
 
   override def catalogAsSchema: Boolean = false
 
   override def systemSchemas: Seq[String] = List.empty
+
 }

@@ -28,6 +28,7 @@ class TestModule extends MappingModule {
       e.properties.is(depends("user"), readOnly)
       e.friends is eleColumn("friend_user_id")
       e.tags.is(table("users_tags"), keyLength(30), eleColumn("value2"), eleLength(200))
+      e.updatedAt is default("current")
     }
 
     bind[TestRole].declare { e =>
