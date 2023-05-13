@@ -15,21 +15,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate
+package org.beangle.data.jdbc.engine
 
-import org.beangle.commons.lang.SystemInfo
-import org.beangle.data.orm.tool.DdlGenerator
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.funspec.AnyFunSpec
+import org.beangle.data.jdbc.meta.SqlType
 
-class DdlGeneratorTest extends AnyFunSpec with Matchers {
+class SystemFunctions {
 
-  describe("DdlGenerator") {
-    it("generate") {
-      val dir = SystemInfo.tmpDir
-      DdlGenerator.main(Array("postgresql", dir, "zh_CN"))
-      println("genderate ddl in " + dir)
-    }
+  var currentDate: String = _
+
+  var localTime: String = _
+  var currentTime: String = _
+
+  var localTimestamp: String = _
+  var currentTimestamp: String = _
+
+  def current(sqlType: SqlType): String = {
+    sqlType.code match
+      case java.sql.Types.TIMESTAMP_WITH_TIMEZONE => currentTimestamp
+      case java.sql.Types.TIMESTAMP => localTimestamp
+      case java.sql.Types.DATE => currentDate
+      case java.sql.Types.TIME_WITH_TIMEZONE => currentTime
+      case java.sql.Types.TIME => localTime
+      case _ => null
   }
-
 }

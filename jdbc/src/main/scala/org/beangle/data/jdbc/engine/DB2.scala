@@ -61,6 +61,14 @@ class DB2V8 extends AbstractEngine {
   }
   options.validate()
 
+  functions { f =>
+    f.currentDate = "current_date"
+    f.localTime = "current_time"
+    f.currentTime = "current_time"
+    f.localTimestamp = "current_timestamp"
+    f.currentTimestamp = "current_timestamp"
+  }
+
   override def limit(sql: String, offset: Int, limit: Int): (String, List[Int]) = {
     if (null != options.limit.pattern) return super.limit(sql, offset, limit)
 
@@ -81,4 +89,6 @@ class DB2V8 extends AbstractEngine {
   override def name: String = "DB2"
 
   override def systemSchemas: Seq[String] = List.empty
+
+  override def supportBoolean: Boolean = false
 }

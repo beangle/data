@@ -121,5 +121,11 @@ trait Engine extends Dialect {
     }
   }
 
+  def convert(sqlType: SqlType, value: String): Option[String]
+
+  def supportBoolean: Boolean
+
   def metadataLoadSql: MetadataLoadSql
+
+  def systemFunctions: SystemFunctions
 }

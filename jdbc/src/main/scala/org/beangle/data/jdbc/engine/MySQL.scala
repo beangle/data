@@ -76,6 +76,14 @@ class MySQL5 extends AbstractEngine {
 
   options.comment.supportsCommentOn = false
 
+  functions { f =>
+    f.currentDate = "current_date"
+    f.localTime = "current_time"
+    f.currentTime = "current_time"
+    f.localTimestamp = "current_timestamp(6)"
+    f.currentTimestamp = "current_timestamp(6)"
+  }
+
   override def maxIdentifierLength: Int = 64
 
   override def catalogAsSchema: Boolean = true
@@ -106,4 +114,5 @@ class MySQL5 extends AbstractEngine {
   override def quoteChars: (Char, Char) = ('`', '`')
 
   override def version: Version = Version("[5.5,)")
+
 }

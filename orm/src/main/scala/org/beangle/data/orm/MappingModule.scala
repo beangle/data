@@ -22,6 +22,7 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfoDigger, BeanInfos}
 import org.beangle.commons.logging.Logging
+import org.beangle.data.jdbc.engine.Engine
 import org.beangle.data.jdbc.meta.*
 
 import java.sql.{Blob, Clob, Types}
@@ -121,7 +122,7 @@ object MappingModule {
       if (!isClob && !isBlob) {
         throw new RuntimeException(s"Cannot mapping ${holder.clazz.getName}.${pm.name}(${c.getName}) to lob!")
       } else {
-        val engine = holder.mappings.database.engine
+        val engine = holder.engine
         if (isBlob) {
           ch.columns foreach (c => c.sqlType = engine.toType(Types.BLOB))
         } else {
@@ -147,7 +148,7 @@ object MappingModule {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
       ch.columns foreach { c =>
         if c.sqlType.isStringType && !v.startsWith("'") then c.defaultValue = Some("'" + v + "'")
-        else c.defaultValue = Some(v)
+        else c.defaultValue = holder.engine.convert(c.sqlType, v)
       }
     }
   }
@@ -163,7 +164,7 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val mp = cast[OrmMapProperty](pm, holder, "key length should used on MapProperty")
       val x = mp.keyColumn
-      mp.keyColumn.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len)
+      mp.keyColumn.sqlType = holder.engine.toType(x.sqlType.code, len)
     }
   }
 
@@ -183,8 +184,8 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val mp = cast[OrmPluralProperty](pm, holder, "element length should used on PluralProperty")
       mp.element match {
-        case ch: OrmBasicType => ch.columns foreach (x => x.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len))
-        case _: OrmEntityType => mp.inverseColumn foreach (x => x.sqlType = holder.mappings.database.engine.toType(x.sqlType.code, len))
+        case ch: OrmBasicType => ch.columns foreach (x => x.sqlType = holder.engine.toType(x.sqlType.code, len))
+        case _: OrmEntityType => mp.inverseColumn foreach (x => x.sqlType = holder.engine.toType(x.sqlType.code, len))
         case _ =>
       }
     }
@@ -285,8 +286,7 @@ object MappingModule {
   class Length(len: Int) extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
-      val engine = holder.mappings.database.engine
-      ch.columns foreach (c => c.sqlType = engine.toType(c.sqlType.code, len, c.sqlType.scale.getOrElse(0)))
+      ch.columns foreach (c => c.sqlType = holder.engine.toType(c.sqlType.code, len, c.sqlType.scale.getOrElse(0)))
     }
   }
 
@@ -337,6 +337,8 @@ object MappingModule {
   final class EntityHolder[T](val mapping: OrmEntityType, val mappings: Mappings, val clazz: Class[T], module: MappingModule) {
 
     var proxy: Proxy.EntityProxy = _
+
+    def engine: Engine = mappings.database.engine
 
     def cacheable(): this.type = {
       mappings.cache(mapping, module.cacheConfig.region, module.cacheConfig.usage)

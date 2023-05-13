@@ -33,6 +33,7 @@ object SqlType {
   )
   private val stringTypeCodes = Set(CHAR, VARCHAR, LONGNVARCHAR)
   private val timeTypeCodes = Set(TIME, TIME_WITH_TIMEZONE, TIMESTAMP, TIMESTAMP_WITH_TIMEZONE)
+  private val temporalTypeCodes = Set(DATE, TIME, TIME_WITH_TIMEZONE, TIMESTAMP, TIMESTAMP_WITH_TIMEZONE)
 
   def all(): Set[Int] = {
     val fields = classOf[Types].getDeclaredFields
@@ -57,9 +58,9 @@ object SqlType {
     numberTypeNames.contains(typeClass.toLowerCase)
   }
 
-  def isTimeType(code: Int): Boolean = {
-    timeTypeCodes.contains(code)
-  }
+  def isTimeType(code: Int): Boolean = timeTypeCodes.contains(code)
+
+  def isTemporalType(code: Int): Boolean = temporalTypeCodes.contains(code)
 
   def apply(code: Int, name: String): SqlType = {
     SqlType(code, name, None, None)
@@ -90,11 +91,11 @@ object SqlType {
 
 case class SqlType(code: Int, name: String, precision: Option[Int], scale: Option[Int]) {
 
-  def isNumberType: Boolean = {
-    SqlType.isNumberType(code)
-  }
+  def isNumberType: Boolean = SqlType.isNumberType(code)
 
-  def isStringType: Boolean = {
-    SqlType.isStringType(code)
-  }
+  def isStringType: Boolean = SqlType.isStringType(code)
+
+  def isBooleanType: Boolean = code == BOOLEAN
+
+  def isTemporalType: Boolean = SqlType.isTemporalType(code)
 }

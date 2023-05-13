@@ -25,7 +25,7 @@ import java.time.LocalDate
 import scala.collection.mutable
 
 class TestRole extends LongId with Named {
-  var rootUser: Boolean = _
+  var rootUser: Boolean = true
   var properties = Collections.newMap[Int, String]
   var vocations = Collections.newSet[LocalDate]
   var users: mutable.Buffer[TestUser] = _

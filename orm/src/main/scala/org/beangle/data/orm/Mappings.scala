@@ -17,12 +17,13 @@
 
 package org.beangle.data.orm
 
+import org.beangle.commons.bean.Properties
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.reflect.TypeInfo.IterableType
-import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, TypeInfo}
-import org.beangle.commons.lang.{ClassLoaders, Primitives, Strings}
+import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, Reflections, TypeInfo}
+import org.beangle.commons.lang.{ClassLoaders, Objects, Primitives, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.jdbc.meta.{Column, Database, Table}
@@ -112,9 +113,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
   def autobind(): Unit = {
     messages = Messages(locale)
-    profiles.modules foreach { m =>
-      m.configure(this)
-    }
+    profiles.modules foreach { m => m.configure(this) }
     classTypes.subtractAll(classTypes.filter(x => x._2.properties.isEmpty).keys)
     //superclass first,merge bingdings
     classTypes.keys.toList.sortWith { (a, b) => a.isAssignableFrom(b) } foreach (cls => merge(classTypes(cls)))
@@ -139,6 +138,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
     val fixedEntityName = if (entityName == null) Jpas.findEntityName(cls) else entityName
     val entity = refEntity(cls, fixedEntityName)
+    val sample = Reflections.newInstance(cls)
     manifest.readables foreach { case (name, prop) =>
       if (!prop.isTransient && prop.readable && prop.writable && !entity.properties.contains(name)) {
         val typeinfo = prop.typeinfo
@@ -154,7 +154,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
         } else if (isComponent(propType)) {
           bindComponent(entity, entity, name, typeinfo)
         } else {
-          bindScalar(entity, entity, name, typeinfo)
+          bindScalar(entity, entity, name, typeinfo, sample)
         }
       }
     }
@@ -164,9 +164,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   def refEntity(clazz: Class[_], entityName: String): OrmEntityType = {
     entityTypes.get(entityName) match {
       case Some(entity) =>
-        if (entity.clazz != clazz && entity.clazz.isAssignableFrom(clazz)) {
-          entity.clazz = clazz
-        }
+        if entity.clazz != clazz && entity.clazz.isAssignableFrom(clazz) then entity.clazz = clazz
         entity
       case None =>
         val naming = profiles.getNamingPolicy(clazz).classToTableName(clazz, entityName)
@@ -237,9 +235,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                   case et: EntityType => entityTypes(et.entityName).cacheable
                   case _ => true
                 }
-              if (canCache) {
-                addCollection(new Collection(em.clazz, p, em.cacheRegion, em.cacheUsage))
-              }
+              if canCache then addCollection(new Collection(em.clazz, p, em.cacheRegion, em.cacheUsage))
           }
       }
     }
@@ -277,9 +273,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                   }
                   //generate implicit index
                   val defined = etm.table.indexes exists (_.columns.head == ppm.ownerColumn.name)
-                  if (!defined) {
-                    etm.table.createIndex("", false, ppm.ownerColumn.name.value)
-                  }
+                  if !defined then etm.table.createIndex("", false, ppm.ownerColumn.name.value)
                 case _ =>
               }
             } else if (ppm.many2many) {
@@ -409,9 +403,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
     val inherited = Collections.newMap[String, OrmProperty]
     inheris foreach { case (name, p) =>
-      if (entity.properties(name).mergeable) {
-        inherited.put(name, p.copy())
-      }
+      if entity.properties(name).mergeable then inherited.put(name, p.copy())
     }
     entity.addProperties(inherited)
   }
@@ -423,16 +415,14 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val cpm = new OrmSingularProperty(name, propertyType, optional, oet)
     c.addProperty(cpm)
     val manifest = BeanInfos.get(propertyType)
+    val sample = Reflections.newInstance(propertyType)
     manifest.readables foreach { case (name, prop) =>
       if (!prop.isTransient && prop.readable && prop.writable) {
         val typeinfo = prop.typeinfo
         val propType = if typeinfo.isOptional then typeinfo.args(0).clazz else typeinfo.clazz
         if (isEntity(propType)) {
-          if (propType == entity.clazz) {
-            oet.parentName = Some(name)
-          } else {
-            bindManyToOne(entity, oet, name, typeinfo)
-          }
+          if propType == entity.clazz then oet.parentName = Some(name)
+          else bindManyToOne(entity, oet, name, typeinfo)
         } else if (isSeq(propType) || isSet(propType)) {
           bindCollection(entity, oet, name, typeinfo)
         } else if (isMap(propType)) {
@@ -440,7 +430,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
         } else if (isComponent(propType)) {
           bindComponent(entity, oet, name, typeinfo)
         } else {
-          bindScalar(entity, oet, name, typeinfo)
+          bindScalar(entity, oet, name, typeinfo, sample)
         }
       }
     }
@@ -520,6 +510,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     } else if (isComponent(clazz)) {
       val e = new OrmEmbeddableType(clazz)
       val manifest = BeanInfos.get(clazz)
+      val sample = Reflections.newInstance(clazz)
       manifest.readables foreach { case (name, prop) =>
         if (!prop.isTransient && prop.readable && prop.writable) {
           val optional = prop.typeinfo.isOptional
@@ -537,7 +528,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
           } else if (isComponent(propType)) {
             property = new OrmSingularProperty(name, propType, optional, buildElement(propType, null))
           } else {
-            val column = newScalarColumn(columnName(propType, name), propType, optional)
+            val column = newScalarColumn(columnName(propType, name), propType, optional, findDefaultValue(sample, name, propType, optional))
             val ormType = new OrmBasicType(propType, column)
             property = new OrmSingularProperty(name, propType, optional, ormType)
           }
@@ -559,10 +550,11 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     entity.table.add(column)
   }
 
-  private def bindScalar(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo): Unit = {
+  private def bindScalar(entity: OrmEntityType, c: OrmStructType, name: String, typeInfo: TypeInfo, sample: Any): Unit = {
     val clazz = if (typeInfo.isOptional) typeInfo.args(0).clazz else typeInfo.clazz
     detectValueType(clazz)
-    val column = newScalarColumn(columnName(c.clazz, name), clazz, typeInfo.isOptional)
+    val defaultValue = findDefaultValue(sample, name, clazz, typeInfo.isOptional)
+    val column = newScalarColumn(columnName(c.clazz, name), clazz, typeInfo.isOptional, defaultValue)
     val property = new OrmSingularProperty(name, clazz, typeInfo.isOptional, new OrmBasicType(clazz, column))
     entity.table.add(column)
     c.addProperty(property)
@@ -579,11 +571,17 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     entity.table.add(column)
   }
 
-  private def newScalarColumn(name: String, clazz: Class[_], optional: Boolean): Column = {
+  private def findDefaultValue(sample: Any, propertyName: String, propertyClazz: Class[_], optional: Boolean): Option[String] = {
+    if propertyClazz.isPrimitive && !optional && null != sample then
+      val sqlType = sqlTypeMapping.sqlType(propertyClazz)
+      val value = Properties.get[Any](sample, propertyName).toString
+      database.engine.convert(sqlType, value)
+    else None
+  }
+
+  private def newScalarColumn(name: String, clazz: Class[_], optional: Boolean, defaultValue: Option[String]): Column = {
     val col = new Column(database.engine.toIdentifier(name), sqlTypeMapping.sqlType(clazz), optional)
-    if (clazz.isPrimitive && !optional) {
-      col.defaultValue = Some(String.valueOf(Primitives.default(clazz)))
-    }
+    col.defaultValue = defaultValue
     col
   }
 
@@ -597,4 +595,5 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     addRefComment(column, clazz, entityName)
     column
   }
+
 }

@@ -71,6 +71,14 @@ class H2 extends AbstractEngine {
 
   options.validate()
 
+  functions { f =>
+    f.currentDate = "current_date"
+    f.localTime = "current_time"
+    f.currentTime = "current_time"
+    f.localTimestamp = "current_timestamp"
+    f.currentTimestamp = "current_timestamp"
+  }
+
   override def storeCase: StoreCase = StoreCase.Upper
 
   override def defaultSchema: String = "PUBLIC"

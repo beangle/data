@@ -38,6 +38,7 @@ object TestMapping1 extends MappingModule {
       e.name.first & e.name.last & e.createdOn are notnull
       e.roleList is(ordered, table("users_roles_list"))
       e.profiles is depends("user")
+      e.member.admin is default("true")
       e.properties is(table("users_props"), eleColumn("value2"), eleLength(200))
     }.generator(IdGenerator.Assigned)
 

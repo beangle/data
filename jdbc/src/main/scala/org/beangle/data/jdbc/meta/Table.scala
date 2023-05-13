@@ -79,6 +79,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     columns foreach { col =>
       val st = col.sqlType
       col.sqlType = engine.toType(st.code, st.precision.getOrElse(0), st.scale.getOrElse(0))
+      col.defaultValue foreach { v => col.defaultValue = engine.convert(col.sqlType, v) }
       col.name = col.name.attach(engine)
     }
     this.name = this.name.attach(engine)

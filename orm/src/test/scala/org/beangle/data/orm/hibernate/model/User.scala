@@ -27,7 +27,7 @@ class User(var id: Long) extends Entity[Long] {
   var name: Name = _
   var roleSet: java.util.Set[Role] = new java.util.HashSet[Role]
   var age: Option[Int] = None
-  var money: Short = _
+  var money: Short = 30
   var properties: collection.mutable.Map[String, String] = _
   var occupy: WeekState = new WeekState(0)
   var weekday: WeekDay = WeekDay.Sun

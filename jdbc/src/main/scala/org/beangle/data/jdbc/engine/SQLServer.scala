@@ -120,6 +120,16 @@ class SQLServer2005 extends AbstractEngine {
   override def name: String = "Microsoft SQL Server"
 
   override def version: Version = Version("[2005,2008)")
+
+  override def supportBoolean: Boolean = false
+
+  functions { f =>
+    f.currentDate = "convert(date,getdate())"
+    f.localTime = "convert(time,getdate())"
+    f.currentTime = "convert(time,getdate())"
+    f.localTimestamp = "sysdatetime()"
+    f.currentTimestamp = "sysdatetimeoffset()"
+  }
 }
 
 class SQLServer2008 extends SQLServer2005 {

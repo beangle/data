@@ -56,16 +56,15 @@ object DdlGenerator {
     val target = new File(dir)
     target.mkdirs()
     if (!target.exists()) {
-      println("Cannot makedir " + target.getAbsolutePath)
+      println("Cannot make dir " + target.getAbsolutePath)
       return List.empty
     }
     val engine = Engines.forName(dialect)
     val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
     val database = new Database(engine)
     val version = System.getProperty("database.version")
-    if (Strings.isNotBlank(version)) {
-      database.version = version
-    }
+    if Strings.isNotBlank(version) then database.version = version
+
     val mappings = new Mappings(database, ormLocations)
     mappings.locale = locale
     mappings.autobind()
@@ -88,9 +87,7 @@ object DdlGenerator {
     if (contents.nonEmpty) {
       val writer = new FileWriter(dir + "/" + file, Charsets.UTF_8, false)
       contents foreach { c =>
-        if (null != c && c.nonEmpty) {
-          writer.write(c)
-        }
+        if null != c && c.nonEmpty then writer.write(c)
       }
       writer.flush()
       writer.close()
@@ -184,7 +181,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     }
   }
 
-  def checkNameLength(owner: String, i: Identifier): Unit = {
+  private def checkNameLength(owner: String, i: Identifier): Unit = {
     if (i.value.length > engine.maxIdentifierLength) {
       warnings += s"${engine.name}:${owner}.${i.value}'s length is ${i.value.length},greate than ${engine.maxIdentifierLength}"
     }
