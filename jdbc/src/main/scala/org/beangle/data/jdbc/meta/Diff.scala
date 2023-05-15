@@ -262,7 +262,7 @@ object Diff {
     if (nCol.sqlType.name != oCol.sqlType.name) {
       columnDdl += alter.modifyColumnType(oCol, nCol.sqlType)
     }
-    if (nCol.defaultValue != oCol.defaultValue) {
+    if (!nCol.defaultValue.getOrElse("").equalsIgnoreCase(oCol.defaultValue.getOrElse(""))) {
       columnDdl += alter.modifyColumnDefault(oCol, nCol.defaultValue)
     }
     if (nCol.nullable != oCol.nullable) {
