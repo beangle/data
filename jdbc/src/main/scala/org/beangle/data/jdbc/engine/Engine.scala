@@ -128,4 +128,8 @@ trait Engine extends Dialect {
   def metadataLoadSql: MetadataLoadSql
 
   def systemFunctions: SystemFunctions
+
+  override def toString: String = {
+    s"${name} ${version}"
+  }
 }
