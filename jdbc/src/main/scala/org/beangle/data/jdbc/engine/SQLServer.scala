@@ -119,7 +119,7 @@ class SQLServer2005 extends AbstractEngine {
 
   override def name: String = "Microsoft SQL Server"
 
-  override def version: Version = Version("[2005,2008)")
+  override def version: Version = Version("[9,10)")
 
   override def supportBoolean: Boolean = false
 
@@ -139,7 +139,7 @@ class SQLServer2008 extends SQLServer2005 {
     l.bindInReverseOrder = false
   }
 
-  override def version: Version = Version("[2008,2012)")
+  override def version: Version = Version("[10,11)")
 }
 
 class SQLServer2012 extends SQLServer2005 {
@@ -149,5 +149,5 @@ class SQLServer2012 extends SQLServer2005 {
     l.bindInReverseOrder = false
   }
 
-  override def version: Version = Version("[2012,)")
+  override def version: Version = Version("[11,)")
 }

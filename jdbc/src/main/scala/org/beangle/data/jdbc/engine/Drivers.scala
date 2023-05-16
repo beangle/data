@@ -56,9 +56,9 @@ object Drivers {
       "org.hsqldb.jdbcDriver", "hsql://<host>:<port>",
       "file:<path>", "hsqls://<host>:<port>", "http://<host>:<port>", "https://<host>:<port>", "res:<database_name>"),
     driver("sqlserver", "com.microsoft.sqlserver.jdbc.SQLServerDataSource",
-      "com.microsoft.sqlserver.jdbc.SQLServerDriver", "//<server_name>:<port>"),
+      "com.microsoft.sqlserver.jdbc.SQLServerDriver", "//<host>:<port>;databaseName=<database_name>;encrypt=false;"),
     driver("jtds", "net.sourceforge.jtds.jdbcx.JtdsDataSource",
-      "net.sourceforge.jtds.jdbc.Driver", "sqlserver://<server_name>:<port>/<database_name>")).map(x => (x.prefix, x)).toMap
+      "net.sourceforge.jtds.jdbc.Driver", "sqlserver://<host>:<port>/<database_name>")).map(x => (x.prefix, x)).toMap
 
   def get(prefix: String): Option[DriverInfo] = {
     drivers.get(prefix)
