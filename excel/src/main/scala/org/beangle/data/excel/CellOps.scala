@@ -130,7 +130,8 @@ final class CellOps(private val cell: Cell) extends AnyVal {
         if (DateUtil.isCellDateFormatted(cell)) {
           cell.getDateCellValue
         } else {
-          cell.getNumericCellValue
+          //这里的数字，可能是个日期，例如20090203,统一转成文本，方便转换
+          CellOps.NumFormat.format(cell.getNumericCellValue)
         }
       case CellType.BOOLEAN => if (cell.getBooleanCellValue) true else false
       case CellType.FORMULA =>
