@@ -61,8 +61,8 @@ class TransformHelperTest extends AnyFunSpec with Matchers {
       val os = new FileOutputStream(file.toFile, false)
       val helper = new TransformHelper(template)
       helper.transform(os, context)
-      println(file.toAbsolutePath.toString)
-      //file.toFile.delete()
+      //println(file.toFile.getAbsolutePath)
+      file.toFile.delete()
     }
   }
 }
