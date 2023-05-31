@@ -50,6 +50,7 @@ class TransformHelper(templateStream: InputStream) {
         Sheets.remove(transformer.workbook, _)
       }
     }
+    transformer.workbook.setForceFormulaRecalculation(true)
     transformer.write(os)
   }
 
