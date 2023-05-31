@@ -26,7 +26,7 @@ import org.beangle.commons.lang.{Objects, Strings}
 import org.beangle.data.excel.CellOps.*
 import org.beangle.data.excel.template.CellData.*
 import org.beangle.data.excel.template.Notation.*
-import org.beangle.data.excel.{AreaRef, CellRef, Sheets}
+import org.beangle.data.excel.{AreaRef, CellRef, ExcelStyleRegistry, Sheets}
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTCell
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -334,23 +334,8 @@ class CellData(val cellRef: CellRef, var cell: Cell) {
   }
 
   private def updateCellGeneralInfo(cell: Cell): Unit = {
-    if (targetCellType != DataType.Formula) cell.setCellType(getPoiCellType(targetCellType))
     if (hyperlink != null) cell.setHyperlink(hyperlink)
     if (comment != null && !Notation.isJxComment(cellComment)) cell.setComment(cellComment, commentAuthor, null)
-  }
-
-  private def getPoiCellType(cellType: DataType): CellType = {
-    if (cellType == null) return org.apache.poi.ss.usermodel.CellType.BLANK
-    cellType match {
-      case DataType.String => CellType.STRING
-      case DataType.Boolean => CellType.BOOLEAN
-      case DataType.Integer | DataType.Float | DataType.Double | DataType.Date | DataType.Time | DataType.DateTime => CellType.NUMERIC
-      case DataType.Instant | DataType.YearMonth | DataType.MonthDay => CellType.NUMERIC
-      case DataType.Formula => CellType.FORMULA
-      case DataType.Error => CellType.ERROR
-      case DataType.Blank => CellType.BLANK
-      case _ => CellType.BLANK
-    }
   }
 
   private def updateCellContents(cell: Cell): Unit = {
@@ -407,7 +392,6 @@ class CellData(val cellRef: CellRef, var cell: Cell) {
       case e: FormulaParseException =>
         try {
           logger.error("Failed to set cell formula " + evaluateResultStr + " for cell " + this.toString, e)
-          cell.setCellType(CellType.STRING)
           cell.setCellValue(evaluateResultStr)
         } catch {
           case _: Exception => logger.warn("Failed to convert formula to string for cell " + this.toString)
