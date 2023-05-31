@@ -56,12 +56,13 @@ class TransformHelperTest extends AnyFunSpec with Matchers {
       val context= new mutable.HashMap[String,Any]
       context.put("departments", departs)
       context.put("sheetNames", departs.map(_.name))
-      val template = ClassLoaders.getResourceAsStream("multisheet_markup_template.xls").orNull
+      val template = ClassLoaders.getResourceAsStream("multisheet_markup_template.xlsx").orNull
       val file = Files.createTempFile("multisheet_markup_template", ".xlsx")
       val os = new FileOutputStream(file.toFile, false)
       val helper = new TransformHelper(template)
       helper.transform(os, context)
-      file.toFile.delete()
+      println(file.toAbsolutePath.toString)
+      //file.toFile.delete()
     }
   }
 }
