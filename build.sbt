@@ -30,6 +30,7 @@ val beangle_commons_text = "org.beangle.commons" %% "beangle-commons-text" % bea
 val apache_common_jexl_ver = "3.2.1"
 
 val commonDeps = Seq(beangle_commons_core, logback_classic % "test", logback_core % "test", scalatest)
+val poi_ooxml = "org.apache.poi" % "poi-ooxml" % "5.2.3"
 
 lazy val root = (project in file("."))
   .settings()
