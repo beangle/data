@@ -182,7 +182,7 @@ class PersistentSet(session: SharedSessionContractImplementor)
 
   override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
-    !sn.get(entry).exists(ele => !elemType.isDirty(ele, entry, getSession))
+    sn.get(entry).forall(ele => elemType.isDirty(ele, entry, getSession))
   }
 
   override def needsUpdating(entry: Object, i: Int, elemType: Type): Boolean = {
