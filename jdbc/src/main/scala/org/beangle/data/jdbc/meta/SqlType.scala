@@ -49,12 +49,7 @@ object SqlType {
   }
 
   def isNumberType(name: String): Boolean = {
-    val typeClass =
-      if (name.contains("(")) {
-        Strings.substringBefore(name, "(")
-      } else {
-        name
-      }
+    val typeClass = if name.contains("(") then Strings.substringBefore(name, "(") else name
     numberTypeNames.contains(typeClass.toLowerCase)
   }
 
@@ -71,20 +66,17 @@ object SqlType {
   }
 
   def apply(code: Int, name: String, precision: Int, scale: Int): SqlType = {
-    var scaleOption = if (scale > 0) Some(scale) else None
+    val p = if precision > 0 then Some(precision) else None
+    var s = if scale > 0 then Some(scale) else None
     if (SqlType.isNumberType(code)) {
-      SqlType(code, name, Some(precision), scaleOption)
+      SqlType(code, name, p, s)
     } else if (SqlType.isStringType(code)) {
-      SqlType(code, name, Some(precision), None)
+      SqlType(code, name, p, None)
     } else if (SqlType.isTimeType(code)) {
-      if code == TIMESTAMP && scaleOption.contains(6) then scaleOption = None
-      SqlType(code, name, None, scaleOption)
+      if code == TIMESTAMP && s.contains(6) then s = None
+      SqlType(code, name, None, s)
     } else {
-      if (precision > 0) {
-        SqlType(code, name, Some(precision), scaleOption)
-      } else {
-        SqlType(code, name, None, scaleOption)
-      }
+      SqlType(code, name, p, s)
     }
   }
 }

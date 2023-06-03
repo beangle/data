@@ -116,7 +116,6 @@ object TypeNames {
       pattern.toLowerCase()
     }
     TypeInfo(pattern.toLowerCase, category, if (precision.isBlank) None else Some(precision), if (scale.isBlank) None else Some(scale))
-
   }
 }
 
@@ -164,10 +163,13 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
     code2names.get(typecode) match {
       case None => "other"
       case Some(l) =>
-        l.find(precision <= _._1) match {
+        val name = l.find(precision <= _._1) match {
           case None => replace(l.head._2, precision, scale)
           case Some(n) => replace(n._2, precision, scale)
         }
+        if name.contains("(0)") then Strings.replace(name, "(0)", "")
+        else if name.contains("(0,0)") then Strings.replace(name, "(0,0)", "")
+        else name
     }
   }
 
@@ -182,7 +184,7 @@ class TypeNames(private val code2names: Map[Int, List[(Int, String)]],
     }
   }
 
-  private def normalize(sqlCode: Int, precision: Int) = {
+  private def normalize(sqlCode: Int, precision: Int): Int = {
     sqlCode match {
       case DECIMAL | NUMERIC =>
         precision match {
