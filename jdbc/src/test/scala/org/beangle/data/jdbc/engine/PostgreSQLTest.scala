@@ -39,11 +39,16 @@ class PostgreSQLTest extends AnyFlatSpec with Matchers {
     val scale = 0
     val precision = 65535
     engine.toType(Types.NUMERIC, precision, scale).name equals "numeric(1000, 0)" should be(true)
-    engine.toType(Types.DECIMAL,  1, 0).name shouldEqual  "boolean"
+    engine.toType(Types.DECIMAL, 1, 0).name shouldEqual "boolean"
 
     //engine.toType(Types.DECIMAL,1,0) shouldEqual SqlType(BOOLEAN, "boolean", 1)
-    engine.toType(Types.DECIMAL,5,0) shouldEqual SqlType(SMALLINT, "smallint", 5)
-    engine.toType(Types.DECIMAL,10,0) shouldEqual SqlType(INTEGER, "integer", 10)
-    engine.toType(Types.DECIMAL,19,0) shouldEqual SqlType(BIGINT, "bigint", 19)
+    engine.toType(Types.DECIMAL, 5, 0) shouldEqual SqlType(SMALLINT, "smallint", 5)
+    engine.toType(Types.DECIMAL, 10, 0) shouldEqual SqlType(INTEGER, "integer", 10)
+    engine.toType(Types.DECIMAL, 19, 0) shouldEqual SqlType(BIGINT, "bigint", 19)
+
+    val nt = engine.toType(Types.DECIMAL, 0, 0)
+    nt.name shouldEqual "numeric"
+    nt.precision shouldEqual None
+    nt.scale shouldEqual None
   }
 }
