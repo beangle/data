@@ -26,7 +26,7 @@ trait CellRefGenerator {
 class MultiSheetCellRefGenerator(val sheetNames: collection.Seq[String], val startCellRef: CellRef) extends CellRefGenerator {
   override def generateCellRef(index: Int, context: Context): CellRef = {
     var sheetName = if (index >= 0 && index < sheetNames.size) sheetNames(index) else null
-    val builder = context.getVar("sheetNameBuilder") match {
+    context.getVar("sheetNameBuilder") match {
       case builder: SheetNameBuilder => sheetName = builder.createSheetName(sheetName, index)
       case _ =>
     }

@@ -25,6 +25,7 @@ import org.beangle.data.excel.template.directive.EachDirective.*
 import org.beangle.data.excel.{CellRef, Size}
 import org.slf4j.LoggerFactory
 
+import java.util
 import java.util.Collection
 import scala.collection.mutable
 
@@ -35,7 +36,7 @@ object EachDirective {
     case Right, Down
   }
 
-  case class GroupData(item:Any,items:Iterable[_])
+  case class GroupData(item: Any, items: Iterable[_])
 }
 
 class EachDirective(var `var`: String, var items: String, var area: Area, var direction: Direction = Direction.Down) extends AbstractDirective {
@@ -45,7 +46,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
   var groupOrder: String = null
   var orderBy: String = null
   var multisheet: String = null
-  var cellRefGenerator: CellRefGenerator = null
+  var pageable: Boolean = false
 
   addArea(area)
 
@@ -72,7 +73,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
   }
 
   private def orderCollection(itemsCollection: Iterable[_]): Iterable[_] = {
-    if (orderBy != null && !(orderBy.trim.isEmpty)) {
+    if (orderBy != null && !orderBy.trim.isEmpty) {
       val comp = if orderBy.contains(",") then new MultiPropertyOrdering(orderBy) else PropertyOrdering(orderBy)
       itemsCollection.toBuffer.sorted(comp)
     } else {
@@ -98,7 +99,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
     collectionObject match {
       case null => List.empty
       case a: Array[Any] => mutable.ArraySeq(a)
-      case c: Collection[_] =>
+      case c: util.Collection[_] =>
         import scala.jdk.javaapi.CollectionConverters.asScala
         asScala(c)
       case i: Iterable[_] => i
@@ -109,8 +110,8 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
   private def processCollection(context: Context, itemsCollection: Iterable[_], cellRef: CellRef, varName: String): Size = {
     var newWidth: Int = 0
     var newHeight: Int = 0
-    var cellRefGenerator: CellRefGenerator = this.cellRefGenerator
-    if (cellRefGenerator == null && multisheet != null) {
+    var cellRefGenerator: CellRefGenerator = null
+    if (multisheet != null) {
       val sheetNameList = extractSheetNameList(context)
       cellRefGenerator = new MultiSheetCellRefGenerator(sheetNameList, cellRef)
     }
@@ -124,7 +125,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
     for (obj <- itemsCollection; if !breaked) {
       context.putVar(varName, obj)
       context.putVar(varIndex, currentIndex)
-      if (select != null && !(context.isTrue(select))) {
+      if (select != null && !context.isTrue(select)) {
         context.removeVar(varName)
       } else {
         if (cellRefGenerator != null) {
@@ -140,10 +141,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
             case e: NegativeArraySizeException =>
               throw new RuntimeException("Check jx:each/lastCell parameter in template! Illegal area: " + area.getAreaRef, e)
           }
-          if (cellRefGenerator != null) {
-            newWidth = Math.max(newWidth, size.width)
-            newHeight = Math.max(newHeight, size.height)
-          } else {
+          if (cellRefGenerator == null) {
             if (direction == Direction.Down) {
               currentCell = new CellRef(currentCell.sheetName, currentCell.row + size.height, currentCell.col)
               newWidth = Math.max(newWidth, size.width)
@@ -153,14 +151,21 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
               newWidth += size.width
               newHeight = Math.max(newHeight, size.height)
             }
+          } else {
+            newWidth = Math.max(newWidth, size.width)
+            newHeight = Math.max(newHeight, size.height)
           }
           currentIndex += 1
+          if (pageable && currentIndex < itemsCollection.size) {
+            val sheet = area.transformer.workbook.getSheet(currentCell.sheetName)
+            sheet.setRowBreak(newHeight)
+          }
         }
       }
     }
     restoreVarObject(context, varIndex, currentVarIndexObject)
     restoreVarObject(context, varName, currentVarObject)
-    return new Size(newWidth, newHeight)
+    new Size(newWidth, newHeight)
   }
 
   private def restoreVarObject(context: Context, varName: String, varObject: Any): Unit = {

@@ -51,7 +51,7 @@ object DirectiveFactory {
       }
       Some(result)
     } catch {
-      case e: Throwable => None
+      case _: Throwable => None
     }
   }
 
