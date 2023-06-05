@@ -30,23 +30,24 @@ class TransformHelper(templateStream: InputStream) {
   var processFormulas = true
 
   @throws[IOException]
-  def transform(os: OutputStream, datas: collection.Map[String,Any]): Unit = {
+  def transform(os: OutputStream, datas: collection.Map[String, Any]): Unit = {
     val transformer = DefaultTransformer.createTransformer(templateStream)
     val areaBuilder = new XlsCommentAreaBuilder(transformer)
     val context = new Context(datas)
-    val xlsAreaList = areaBuilder.build()
-    for (xlsArea <- xlsAreaList) {
-      xlsArea.applyAt(CellRef(xlsArea.startCellRef.getCellName(false)), context)
+    val areas = areaBuilder.build()
+    transformer.removeAllRowBreaks()
+    for (area <- areas) {
+      area.applyAt(CellRef(area.startCellRef.getCellName(false)), context)
     }
     if (processFormulas) {
-      for (xlsArea <- xlsAreaList) {
-        xlsArea.formulaProcessor = new DefaultFormulaProcessor
-        xlsArea.processFormulas()
+      for (area <- areas) {
+        area.formulaProcessor = new DefaultFormulaProcessor
+        area.processFormulas()
       }
     }
 
     if (deleteTemplateSheet) {
-      getSheetsNameOfMultiSheetTemplate(xlsAreaList) foreach {
+      getSheetsNameOfMultiSheetTemplate(areas) foreach {
         Sheets.remove(transformer.workbook, _)
       }
     }
@@ -60,11 +61,11 @@ class TransformHelper(templateStream: InputStream) {
   private def getSheetsNameOfMultiSheetTemplate(areas: Iterable[Area]): Iterable[String] = {
     val names = new mutable.ArrayBuffer[String]
     for (xlsArea <- areas) {
-      var finded = false
-      for (directive <- xlsArea.findDirectiveByName("each"); if !finded) {
+      var found = false
+      for (directive <- xlsArea.findDirectiveByName("each"); if !found) {
         if (Strings.isNotBlank(directive.asInstanceOf[EachDirective].multisheet)) {
           names.addOne(xlsArea.getAreaRef.sheetName)
-          finded = true
+          found = true
         }
       }
     }

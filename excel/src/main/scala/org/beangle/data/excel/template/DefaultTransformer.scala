@@ -67,9 +67,19 @@ class DefaultTransformer(val workbook: Workbook) extends AbstractTransformer {
 
   override def isForwardOnly: Boolean = workbook.isInstanceOf[SXSSFWorkbook]
 
-  sheetMap = readCellData()
+  sheetMap = readSheetData()
 
-  private def readCellData(): Map[String, SheetData] = {
+  def removeAllRowBreaks(): Unit = {
+    (0 until workbook.getNumberOfSheets) foreach { i =>
+      val sheet = workbook.getSheetAt(i)
+      val breaks = sheet.getRowBreaks
+      if (null != breaks && breaks.length > 0) {
+        breaks foreach { b => sheet.removeRowBreak(b) }
+      }
+    }
+  }
+
+  private def readSheetData(): Map[String, SheetData] = {
     val numberOfSheets = workbook.getNumberOfSheets
     val sheets = new mutable.LinkedHashMap[String, SheetData]
     for (i <- 0 until numberOfSheets) {

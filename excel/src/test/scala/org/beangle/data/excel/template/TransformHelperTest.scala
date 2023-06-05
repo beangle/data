@@ -30,9 +30,28 @@ import scala.collection.mutable
 
 class TransformHelperTest extends AnyFunSpec with Matchers {
 
+  def buildContext(): mutable.HashMap[String, Any] = {
+    val derek = Employee("Eerek", 35, 3000, 0.30, MonthDay.parse("--09-01"))
+    val elsa = Employee("Elsa", 28, 1500, 0.15, MonthDay.parse("--09-02"))
+    val oleg = Employee("Oleg", 32, 2300, 0.25, MonthDay.parse("--09-03"))
+    val neil = Employee("Neil", 34, 2500, 0, MonthDay.parse("--09-04"))
+
+    val maria = Employee("Maria", 34, 1700, 0.15, MonthDay.parse("--09-04"))
+    val john = Employee("John", 35, 2800, 0.20, MonthDay.parse("--09-05"))
+
+    val it = Department("IT", derek, List(elsa, oleg, neil), "http://company.com/it")
+    val hr = Department("HR", derek, List(maria, john), "http://company.com/ha")
+
+    val departs = List(it, hr)
+    val context = new mutable.HashMap[String, Any]
+    context.put("departments", departs)
+    context.put("sheetNames", departs.map(_.name))
+    context
+  }
+
   describe("TransformHelper") {
     it("processTemplate") {
-      val context =  Map("datas" -> List("1", "2", "3", "a", "b", "c"))
+      val context = Map("datas" -> List("1", "2", "3", "a", "b", "c"))
       val template = ClassLoaders.getResourceAsStream("sample.xlsx").orNull
       val helper = new TransformHelper(template)
       val file = Files.createTempFile("sample", ".xlsx")
@@ -40,26 +59,25 @@ class TransformHelperTest extends AnyFunSpec with Matchers {
       helper.transform(os, context)
       file.toFile.delete()
     }
+
     it("generate multisheet") {
-      val derek = Employee("Eerek", 35, 3000, 0.30, MonthDay.parse("--09-01"))
-      val elsa = Employee("Elsa", 28, 1500, 0.15, MonthDay.parse("--09-02"))
-      val oleg = Employee("Oleg", 32, 2300, 0.25, MonthDay.parse("--09-03"))
-      val neil = Employee("Neil", 34, 2500, 0, MonthDay.parse("--09-04"))
-
-      val maria = Employee("Maria", 34, 1700, 0.15, MonthDay.parse("--09-04"))
-      val john = Employee("John", 35, 2800, 0.20, MonthDay.parse("--09-05"))
-
-      val it = Department("IT", derek, List(elsa, oleg, neil), "http://company.com/it")
-      val hr = Department("HR", derek, List(maria, john), "http://company.com/ha")
-
-      val departs = List(it, hr)
-      val context= new mutable.HashMap[String,Any]
-      context.put("departments", departs)
-      context.put("sheetNames", departs.map(_.name))
+      val context = buildContext()
       val template = ClassLoaders.getResourceAsStream("multisheet_markup_template.xlsx").orNull
       val file = Files.createTempFile("multisheet_markup_template", ".xlsx")
       val os = new FileOutputStream(file.toFile, false)
       val helper = new TransformHelper(template)
+      helper.transform(os, context)
+      //println(file.toFile.getAbsolutePath)
+      file.toFile.delete()
+    }
+
+    it("generate repeat") {
+      val context = buildContext()
+      val template = ClassLoaders.getResourceAsStream("markup_template.xlsx").orNull
+      val file = Files.createTempFile("markup_template", ".xlsx")
+      val os = new FileOutputStream(file.toFile, false)
+      val helper = new TransformHelper(template)
+      helper.deleteTemplateSheet = false
       helper.transform(os, context)
       //println(file.toFile.getAbsolutePath)
       file.toFile.delete()

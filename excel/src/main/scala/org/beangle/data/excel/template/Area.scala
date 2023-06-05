@@ -340,9 +340,6 @@ class Area(val startCellRef: CellRef, val size: Size, var transformer: Transform
   }
 
   private def transformStaticCells(cellRef: CellRef, context: Context, relativeStartRow: Int, relativeStartCol: Int): Unit = {
-    val sheetName = startCellRef.sheetName
-    val offsetRow = startCellRef.row
-    val startCol = startCellRef.col
     for (col <- 0 until size.width) {
       for (row <- relativeStartRow until size.height; if !(row == relativeStartRow && col < relativeStartCol)) {
         if (!cellRange.isExcluded(row, col)) {
@@ -358,7 +355,7 @@ class Area(val startCellRef: CellRef, val size: Size, var transformer: Transform
         }
       }
     }
-    if (parentDirective == null) updateRowHeights(cellRef, relativeStartRow, size.height - 1)
+    if parentDirective == null then updateRowHeights(cellRef, relativeStartRow, size.height - 1)
   }
 
   private def updateCellDataArea(srcCell: CellRef, targetCell: CellRef, context: Context): Unit = {
