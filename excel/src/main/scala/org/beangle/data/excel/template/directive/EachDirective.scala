@@ -158,7 +158,7 @@ class EachDirective(var `var`: String, var items: String, var area: Area, var di
           currentIndex += 1
           if (pageable && currentIndex < itemsCollection.size) {
             val sheet = area.transformer.workbook.getSheet(currentCell.sheetName)
-            sheet.setRowBreak(newHeight)
+            sheet.setRowBreak(newHeight - 1) // newHeight is 1-based
           }
         }
       }
