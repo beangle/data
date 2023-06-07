@@ -84,9 +84,8 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
       val attri = iter.next()
       val codeStr = transfer.curData(attri).asInstanceOf[String]
       var foreigner: Object = null
-      // 外键的代码是空的
+      // 外键的代码不是空的
       if (isNotEmpty(codeStr)) {
-        val codeValue = if codeStr.contains(" ") then substringBefore(codeStr, " ") else codeStr
         var entity: Object = null
         if (multiEntity) {
           val shortName = substringBefore(attri, ".")
@@ -105,17 +104,16 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
             val className = nestedForeigner.getClass.getName
             val foreignerMap = foreignersMap.getOrElseUpdate(className, new collection.mutable.HashMap[String, Object])
             if (foreignerMap.size > CACHE_SIZE) foreignerMap.clear()
-            foreigner = foreignerMap.get(codeValue).orNull
+            foreigner = foreignerMap.get(codeStr).orNull
             if (foreigner == null) {
               val clazz = nestedForeigner.getClass.asInstanceOf[Class[Entity[_]]]
-              val query = OqlBuilder.from(clazz, "f")
-              query.where(foreignerKeys.map(k => s"f.$k = :fk_value").mkString(" or "), codeValue)
-              val foreigners = entityDao.search(query)
-              if (foreigners.nonEmpty) {
+              val foreigners = fetchForeigners(clazz, codeStr)
+              if (foreigners.nonEmpty && foreigners.size == 1) {
                 foreigner = foreigners.head
-                foreignerMap.put(codeValue, foreigner)
+                foreignerMap.put(codeStr, foreigner)
               } else {
-                tr.addFailure(transfer.description(attri) + "代码不存在", codeValue)
+                if foreigners.isEmpty then tr.addFailure(transfer.description(attri) + "代码不存在", codeStr)
+                else tr.addFailure(transfer.description(attri) + "代码不唯一", codeStr)
               }
             }
           case _ =>
@@ -125,6 +123,18 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
         entityImporter.populator.populate(entity.asInstanceOf[Entity[_]], entityImporter.domain.getEntity(entity.getClass).get, parentAttr, foreigner)
       }
     }
+  }
+
+  private def fetchForeigners(clazz: Class[Entity[_]], codeStr: String): Seq[Entity[_]] = {
+    val query = OqlBuilder.from(clazz, "f")
+    query.where(foreignerKeys.map(k => s"f.$k = :fk_value").mkString(" or "), codeStr)
+    val foreigners = entityDao.search(query)
+    if (foreigners.isEmpty && codeStr.contains(' ')) {
+      val codeValue = substringBefore(codeStr, " ")
+      val query = OqlBuilder.from(clazz, "f")
+      query.where(foreignerKeys.map(k => s"f.$k = :fk_value").mkString(" or "), codeValue)
+      entityDao.search(query)
+    } else foreigners
   }
 
   def addForeigerKey(key: String): Unit = {
