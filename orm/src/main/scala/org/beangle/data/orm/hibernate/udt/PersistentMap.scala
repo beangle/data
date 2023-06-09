@@ -231,27 +231,6 @@ class PersistentMap(session: SharedSessionContractImplementor)
     map.iterator
   }
 
-  @Internal
-  def queuedRemove(key: Object): Object = {
-    val entry = getSession.getPersistenceContextInternal.getCollectionEntry(this)
-    if (entry == null) {
-      throwLazyInitializationExceptionIfNotConnected()
-      throwLazyInitializationException("collection not associated with session")
-    } else {
-      val persister = entry.getLoadedPersister
-      if (hasQueuedOperations) {
-        getSession.flush()
-      }
-      val element = persister.getElementByIndex(entry.getLoadedKey, key, getSession, getOwner);
-      if (element != null) {
-        elementRemoved = true
-        queueOperation(new Remove(key, element))
-        return element
-      }
-    }
-    null
-  }
-
   final class Put(val value: (Object, Object)) extends DelayedOperation[Object] {
     override def operate(): Unit = {
       map += value

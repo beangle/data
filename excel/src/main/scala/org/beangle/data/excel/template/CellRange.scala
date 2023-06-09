@@ -25,7 +25,7 @@ class CellRange(var startCellRef: CellRef, var width: Int, var height: Int) {
   private var changeMatrix = new Array[Array[Boolean]](height)
   private var colHeights = new Array[Int](width)
   private var rowWidths = new Array[Int](height)
-  var cellShiftStrategy:CellShiftStrategy = CellShiftStrategy.Inner
+  var cellShiftStrategy: CellShiftStrategy = CellShiftStrategy.Inner
 
   for (row <- 0 until height) {
     rowWidths(row) = width
@@ -64,10 +64,7 @@ class CellRange(var startCellRef: CellRef, var width: Int, var height: Int) {
   private def isHorizontalShiftAllowed(col: Int, widthChange: Int, cellRow: Int, cellCol: Int): Boolean = {
     if (changeMatrix(cellRow)(cellCol)) return false
     if (widthChange >= 0) return true
-    for (i <- cellCol - 1 until col by -1) {
-      if (isEmpty(cellRow, i)) return false
-    }
-    true
+    !(cellCol - 1 until col by -1).exists(i => isEmpty(cellRow, i))
   }
 
   def requiresColShifting(cell: CellRef, startRow: Int, endRow: Int, startColShift: Int): Boolean = {
@@ -93,10 +90,10 @@ class CellRange(var startCellRef: CellRef, var width: Int, var height: Int) {
   private def isVerticalShiftAllowed(row: Int, heightChange: Int, cellRow: Int, cellCol: Int): Boolean = {
     if (changeMatrix(cellRow)(cellCol)) return false
     if (heightChange >= 0) return true
-    var i= cellRow - 1
+    var i = cellRow - 1
     var nonEmpty = true
-    while(i > row && nonEmpty){
-      nonEmpty = !isEmpty(i,cellCol)
+    while (i > row && nonEmpty) {
+      nonEmpty = !isEmpty(i, cellCol)
       i -= 1
     }
     nonEmpty
@@ -137,10 +134,7 @@ class CellRange(var startCellRef: CellRef, var width: Int, var height: Int) {
   def contains(row: Int, col: Int): Boolean = row >= 0 && row < cells.length && col >= 0 && cells(0).length > col
 
   def containsDirectivesInRow(row: Int): Boolean = {
-    for (col <- 0 until width) {
-      if (cells(row)(col) == null || (cells(row)(col) eq CellRef.NONE)) return true
-    }
-    false
+    (0 until width).exists(col => cells(row)(col) == null || (cells(row)(col) eq CellRef.NONE))
   }
 
   def isEmpty(row: Int, col: Int): Boolean = cells(row)(col) == null

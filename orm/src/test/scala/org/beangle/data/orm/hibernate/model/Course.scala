@@ -18,6 +18,7 @@
 package org.beangle.data.orm.hibernate.model
 
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.time.WeekState
 import org.beangle.data.model.pojo.Named
 import org.beangle.data.model.{Component, LongId}
 
@@ -29,6 +30,8 @@ class Course extends LongId, Named {
   var levels: mutable.Set[CourseLevel] = Collections.newSet[CourseLevel]
 
   var features: mutable.Buffer[CourseFeature] = Collections.newBuffer[CourseFeature]
+
+  var weekstate: WeekState = WeekState.Zero
 
   def addFeature(name: String, description: String): Unit = {
     features.find(x => x.name == name) match

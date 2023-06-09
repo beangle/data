@@ -223,24 +223,6 @@ class PersistentSet(session: SharedSessionContractImplementor)
     set eq collection
   }
 
-  def queuedRemove(element: Object): Boolean = {
-    val entry = getSession.getPersistenceContextInternal.getCollectionEntry(this)
-    if (entry == null) {
-      throwLazyInitializationExceptionIfNotConnected()
-      throwLazyInitializationException("collection not associated with session")
-    }
-    else {
-      val persister = entry.getLoadedPersister
-      if (hasQueuedOperations) getSession.flush()
-      if (persister.elementExists(entry.getLoadedKey, element, getSession)) {
-        elementRemoved = true
-        queueOperation(SimpleRemove(element))
-        return true
-      }
-    }
-    false
-  }
-
   final class SimpleAdd(value: Object) extends AbstractValueDelayedOperation(value, null) {
     override def operate(): Unit = {
       set.add(getAddedInstance())
