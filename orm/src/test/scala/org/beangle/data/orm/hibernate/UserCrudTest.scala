@@ -132,6 +132,7 @@ object UserCrudTest {
     entityDao.saveOrUpdate(savedRole4)
     session.flush()
 
+    // test object collections
     val course = new Course()
     course.name = "course 1"
     course.addLevel(1)
@@ -150,6 +151,10 @@ object UserCrudTest {
     assert(c.hasFeature("f1", "feature 1 rename"))
     transaction.commit()
 
+    //test bitand on weekstate
+    val cquery = session.createQuery(s"from ${classOf[Course].getName} c where coalesce(c.weekstate,:weekstate)>0 or c.weekstate=:weekstate", classOf[Course])
+    cquery.setParameter("weekstate", WeekState.of(1, 2, 3))
+    val clist = cquery.list();
     session.close()
   }
 }

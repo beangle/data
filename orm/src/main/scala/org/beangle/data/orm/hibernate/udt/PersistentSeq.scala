@@ -273,24 +273,6 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     entry != null
   }
 
-  def queuedRemove(element: Object): Boolean = {
-    val entry = getSession.getPersistenceContextInternal.getCollectionEntry(this)
-    if (entry == null) {
-      throwLazyInitializationExceptionIfNotConnected()
-      throwLazyInitializationException("collection not associated with session")
-    }
-    else {
-      val persister = entry.getLoadedPersister
-      if (hasQueuedOperations) getSession.flush()
-      if (persister.elementExists(entry.getLoadedKey, element, getSession)) {
-        elementRemoved = true
-        queueOperation(SimpleRemove(element))
-        return true
-      }
-    }
-    false
-  }
-
   override def equals(other: Any): Boolean = {
     read()
     list.equals(other)

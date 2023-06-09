@@ -344,28 +344,6 @@ class PersistentBag(session: SharedSessionContractImplementor)
     entry != null
   }
 
-  /** Internal,When to use???
-   *
-   * @param element
-   * @return
-   */
-  def queuedRemove(element: Object): Boolean = {
-    val entry = getSession.getPersistenceContextInternal.getCollectionEntry(this)
-    if (entry == null) {
-      throwLazyInitializationExceptionIfNotConnected()
-      throwLazyInitializationException("collection not associated with session")
-    } else {
-      val persister = entry.getLoadedPersister
-      if (hasQueuedOperations) getSession.flush()
-      if (persister.elementExists(entry.getLoadedKey, element, getSession)) {
-        elementRemoved = true
-        queueOperation(SimpleRemove(element))
-        return true
-      }
-    }
-    false
-  }
-
   override def isDirectlyProvidedCollection(collection: AnyRef): Boolean = {
     isDirectlyAccessible && (providedCollection eq collection)
   }

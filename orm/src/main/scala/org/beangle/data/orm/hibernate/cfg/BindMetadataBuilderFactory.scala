@@ -17,7 +17,10 @@
 
 package org.beangle.data.orm.hibernate.cfg
 
+import org.beangle.data.orm.Mappings
+import org.beangle.data.orm.hibernate.udt.{EnumType, ValueType, YearMonthType}
 import org.hibernate.`type`.BasicTypeRegistry
+import org.hibernate.`type`.internal.ImmutableNamedBasicTypeImpl
 import org.hibernate.`type`.spi.TypeConfiguration
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.internal.{InFlightMetadataCollectorImpl, MetadataBuilderImpl, MetadataBuildingContextRootImpl}
@@ -28,6 +31,7 @@ import org.hibernate.boot.registry.classloading.spi.ClassLoaderService
 import org.hibernate.boot.spi.*
 import org.hibernate.engine.jdbc.spi.JdbcServices
 
+import java.time.YearMonth
 import scala.jdk.javaapi.CollectionConverters.asScala
 
 /** Register in META-INF/services/org.hibernate.boot.spi.MetadataBuilderFactory
@@ -74,6 +78,8 @@ object BindMetadataBuilderFactory {
                        options: MetadataBuildingOptions): MetadataImplementor = {
     val metadataCollector = new InFlightMetadataCollectorImpl(context, options)
 
+    val mappings = sources.getServiceRegistry.getService(classOf[MappingService]).mappings
+    addMappingTypes(mappings, options)
     handleTypes(context, options)
 
     val rootContext = new MetadataBuildingContextRootImpl("beangle", context, options, metadataCollector)
@@ -83,9 +89,7 @@ object BindMetadataBuilderFactory {
     }
 
     context.getTypeConfiguration.scope(rootContext)
-
-    val processor = new BindSourceProcessor(sources, rootContext)
-
+    val processor = new BindSourceProcessor(mappings, sources, rootContext)
     processor.prepare()
 
     processor.processTypeDefinitions()
@@ -96,9 +100,8 @@ object BindMetadataBuilderFactory {
     processor.processFilterDefinitions()
     processor.processFetchProfiles()
 
-    val processedEntityNames = new java.util.HashSet[String]
     processor.prepareForEntityHierarchyProcessing()
-    processor.processEntityHierarchies(processedEntityNames)
+    processor.processEntityHierarchies(new java.util.HashSet[String])
     processor.postProcessEntityHierarchies()
 
     processor.processResultSetMappings()
@@ -111,25 +114,47 @@ object BindMetadataBuilderFactory {
     metadataCollector.buildMetadataInstance(rootContext)
   }
 
+  private def addMappingTypes(mappings: Mappings, options: MetadataBuildingOptions): Unit = {
+    val registrations = options.getBasicTypeRegistrations
+
+    mappings.valueTypes foreach { valueClazz =>
+      val javaType = new ValueType(valueClazz)
+      val jdbcType = javaType.toJdbcType()
+      val vt = new ImmutableNamedBasicTypeImpl(javaType, jdbcType, valueClazz.getName)
+      registrations.add(new BasicTypeRegistration(vt, Array(valueClazz.getName)))
+    }
+
+    mappings.enumTypes foreach { enumTypeName =>
+      val javaType = new EnumType(Class.forName(enumTypeName))
+      val jdbcType = javaType.toJdbcType()
+      val vt = new ImmutableNamedBasicTypeImpl(javaType, jdbcType, enumTypeName)
+      registrations.add(new BasicTypeRegistration(vt, Array(enumTypeName)))
+    }
+
+    val ym = new YearMonthType
+    val ymType = new ImmutableNamedBasicTypeImpl(ym, ym.toJdbcType(), classOf[YearMonth].getName)
+    registrations.add(new BasicTypeRegistration(ymType, Array(ymType.getName)))
+  }
+
   private def handleTypes(context: BootstrapContext, options: MetadataBuildingOptions): BasicTypeRegistry = {
 
     val classLoaderService = options.getServiceRegistry.getService(classOf[ClassLoaderService])
 
     // ultimately this needs to change a little bit to account for HHH-7792
-    val typeContributions = new BasicTypeContributions(context)
+    val tc = new BasicTypeContributions(context)
 
     // add Dialect contributed types
     val dialect = options.getServiceRegistry.getService(classOf[JdbcServices]).getDialect
-    dialect.contributeTypes(typeContributions, options.getServiceRegistry)
+    dialect.contributeTypes(tc, options.getServiceRegistry)
 
     // add TypeContributor contributed types.
     for (contributor <- asScala(classLoaderService.loadJavaServices(classOf[TypeContributor]))) {
-      contributor.contribute(typeContributions, options.getServiceRegistry)
+      contributor.contribute(tc, options.getServiceRegistry)
     }
 
     // add explicit application registered types
-    context.getTypeConfiguration.addBasicTypeRegistrationContributions(options.getBasicTypeRegistrations)
-    new BasicTypeRegistry(typeContributions.getTypeConfiguration)
+    tc.getTypeConfiguration.addBasicTypeRegistrationContributions(options.getBasicTypeRegistrations)
+    new BasicTypeRegistry(tc.getTypeConfiguration)
   }
 
   class BasicTypeContributions(ctx: BootstrapContext) extends TypeContributions {

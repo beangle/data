@@ -26,7 +26,6 @@ import org.beangle.data.orm.*
 import org.beangle.data.orm.hibernate.id.*
 import org.beangle.data.orm.hibernate.udt.*
 import org.beangle.data.orm.hibernate.{ScalaPropertyAccessStrategy, ScalaPropertyAccessor}
-import org.hibernate.`type`.SqlTypes
 import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.model.naming.{Identifier, ObjectNameNormalizer}
@@ -41,7 +40,6 @@ import org.hibernate.mapping.Collection.{DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_KE
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
 import org.hibernate.mapping.{Backref, BasicValue, DependantValue, Index, IndexBackref, KeyValue, PersistentClass, RootClass, SimpleValue, ToOne, UniqueKey, Value, Bag as HBag, Collection as HCollection, Column as HColumn, Component as HComponent, Fetchable as HFetchable, List as HList, ManyToOne as HManyToOne, Map as HMap, OneToMany as HOneToMany, Property as HProperty, Set as HSet}
 import org.hibernate.property.access.spi.PropertyAccessStrategy
-import org.hibernate.tuple.GenerationTiming
 import org.hibernate.{FetchMode, MappingException}
 
 import java.lang.reflect.Modifier
@@ -52,11 +50,9 @@ import java.util as ju
  *
  * @see org.hibernate.boot.model.source.internal.hbm.ModelBinder
  */
-class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBuildingContext) extends MetadataSourceProcessor {
+class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, context: MetadataBuildingContext) extends MetadataSourceProcessor {
 
   private val metadata: InFlightMetadataCollector = context.getMetadataCollector
-
-  private val mappings = metadataSources.getServiceRegistry.getService(classOf[MappingService]).mappings
 
   private val additionalIdGenerators = Map(
     IdGenerator.AutoIncrement -> classOf[AutoIncrementGenerator].getName,
@@ -104,24 +100,12 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
    */
   override def processTypeDefinitions(): Unit = {
     val cls = context.getBuildingOptions.getServiceRegistry.getService(classOf[ClassLoaderService])
-
-    Map(
-      (classOf[YearMonth].getName, classOf[YearMonthType])) foreach {
-      case (name, clazz) =>
-        context.getMetadataCollector.getTypeDefinitionRegistry.register(new TypeDefinition(name, clazz, Array(name), new ju.HashMap[String, String]))
-    }
-
-    val types = new collection.mutable.HashMap[String, TypeDef]
-    types ++= mappings.typeDefs
-    mappings.valueTypes foreach (t => types += (t.getName -> new TypeDef(classOf[ValueType].getName, Map("valueClass" -> t.getName))))
-    mappings.enumTypes foreach (t => types += (t -> new TypeDef(classOf[EnumType].getName, Map("enumClass" -> t))))
-
-    types foreach {
+    mappings.typeDefs foreach {
       case (m, t) =>
         val p = new ju.HashMap[String, String]
         t.params foreach (e => p.put(e._1, e._2))
         val definition = new TypeDefinition(m, cls.classForName(t.clazz), null, p)
-        context.getMetadataCollector.getTypeDefinitionRegistry.register(definition)
+        metadata.getTypeDefinitionRegistry.register(definition)
     }
   }
 
@@ -369,7 +353,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     }
     //hibernate use a custom sqlType for instant type.
     if (typeName == "java.time.Instant") {
-      colHolder.columns foreach (c => c.sqlType = c.sqlType.copy(code = SqlTypes.TIMESTAMP_UTC))
+      colHolder.columns foreach (c => c.sqlType = c.sqlType.copy(code = org.hibernate.`type`.SqlTypes.TIMESTAMP_UTC))
     }
     bindColumns(colHolder.columns, value, name)
     value
@@ -439,7 +423,7 @@ class BindSourceProcessor(metadataSources: MetadataSources, context: MetadataBui
     val idgenerator = if (null != globalIdGenerator) globalIdGenerator else em.idGenerator
     val strategry = additionalIdGenerators.getOrElse(idgenerator.strategy, idgenerator.strategy)
     sv.setIdentifierGeneratorStrategy(strategry)
-    val params = new ju.HashMap[String,Object]
+    val params = new ju.HashMap[String, Object]
     params.put(IDENTIFIER_NORMALIZER, objectNameNormalizer)
 
     val name = metadata.getDatabase.getDefaultNamespace.getPhysicalName
