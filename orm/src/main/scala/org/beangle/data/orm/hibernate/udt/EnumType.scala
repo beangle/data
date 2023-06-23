@@ -19,6 +19,7 @@ package org.beangle.data.orm.hibernate.udt
 
 import org.beangle.commons.conversion.string.EnumConverters
 import org.beangle.commons.lang.Enums
+import org.beangle.data.orm.hibernate.jdbc.IntJdbcType
 import org.hibernate.`type`.descriptor.WrapperOptions
 import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
 import org.hibernate.`type`.descriptor.jdbc.{IntegerJdbcType, JdbcType, VarcharJdbcType}
@@ -27,12 +28,6 @@ class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
 
   var ordinal: Boolean = true
   private val converter = EnumConverters.getConverter(`type`).get
-  private val hasZero =
-    try {
-      null != converter.apply("0")
-    } catch {
-      case e: Throwable => false
-    }
 
   override def unwrap[X](value: Object, valueType: Class[X], options: WrapperOptions): X = {
     if (value eq null) null.asInstanceOf[X]
@@ -45,21 +40,24 @@ class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
     }
   }
 
+
+  /** wrap id/name/ordinal to Enum
+   *
+   * @param value cannot be null or not existed id/ordinal
+   * @param options
+   * @tparam X
+   * @return
+   */
   override def wrap[X](value: X, options: WrapperOptions): AnyRef = {
-    value match
-      case null => null
-      case id: Int =>
-        if id == 0 && !hasZero then null
-        else converter.apply(id.toString)
-      case _ => converter.apply(value.toString)
+    converter.apply(value.toString)
   }
 
   def toJdbcType(): JdbcType = {
-    if ordinal then IntegerJdbcType.INSTANCE else VarcharJdbcType.INSTANCE
+    if ordinal then IntJdbcType else VarcharJdbcType.INSTANCE
   }
 
   override def isWider(javaType: JavaType[_]): Boolean = {
     val jtc = javaType.getJavaTypeClass
-    if ordinal then jtc == classOf[Integer] else jtc == classOf[String]
+    if ordinal then (jtc == classOf[Integer] || jtc == classOf[Int]) else jtc == classOf[String]
   }
 }
