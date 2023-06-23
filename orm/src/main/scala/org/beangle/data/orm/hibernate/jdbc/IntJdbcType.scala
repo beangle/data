@@ -23,7 +23,7 @@ object IntJdbcType extends JdbcType {
     typeConfiguration.getJavaTypeRegistry.getDescriptor(classOf[Integer])
   }
 
-  override def getJdbcLiteralFormatter[T](javaType: JavaType[T]) = {
+  override def getJdbcLiteralFormatter[T](javaType: JavaType[T]): JdbcLiteralFormatter[T] = {
     new JdbcLiteralFormatterNumericData[T](javaType, classOf[Integer])
   }
 
