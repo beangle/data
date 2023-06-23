@@ -40,7 +40,6 @@ class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
     }
   }
 
-
   /** wrap id/name/ordinal to Enum
    *
    * @param value cannot be null or not existed id/ordinal
