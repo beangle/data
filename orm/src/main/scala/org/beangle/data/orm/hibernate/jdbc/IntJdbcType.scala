@@ -34,7 +34,7 @@ object IntJdbcType extends JdbcType {
   override def getBinder[X](javaType: JavaType[X]): ValueBinder[X] = {
     new BasicBinder[X](javaType, this) {
       override protected def doBind(st: PreparedStatement, value: X, index: Int, options: WrapperOptions): Unit = {
-        st.setInt(index, javaType.unwrap(value, classOf[Integer], options).intValue)
+        st.setInt(index, javaType.unwrap(value, classOf[Int], options))
       }
 
       override protected def doBind(st: CallableStatement, value: X, name: String, options: WrapperOptions): Unit = {

@@ -34,7 +34,7 @@ class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
     else {
       if value.getClass == valueType then value.asInstanceOf[X]
       else {
-        if (valueType == classOf[Integer]) then Enums.id(value).asInstanceOf[X]
+        if (valueType == classOf[Integer] ||valueType == classOf[Int]) then Enums.id(value).asInstanceOf[X]
         else value.toString.asInstanceOf[X]
       }
     }
