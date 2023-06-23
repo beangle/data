@@ -135,6 +135,7 @@ object UserCrudTest {
     // test object collections
     val course = new Course()
     course.name = "course 1"
+    //course.category = Some(CourseCategory.Practical)
     course.addLevel(1)
     course.addFeature("f1", "feature 1")
     course.addFeature("f2", "feature 2")
@@ -154,7 +155,12 @@ object UserCrudTest {
     //test bitand on weekstate
     val cquery = session.createQuery(s"from ${classOf[Course].getName} c where coalesce(c.weekstate,:weekstate)>0 or c.weekstate=:weekstate", classOf[Course])
     cquery.setParameter("weekstate", WeekState.of(1, 2, 3))
-    val clist = cquery.list();
+    val clist = cquery.list()
+
+    val allCoursesQuery = session.createQuery(s"from ${classOf[Course].getName}", classOf[Course])
+    val allCourses = allCoursesQuery.list()
+    assert(!allCourses.isEmpty)
+    assert(allCourses.get(0).category == None)
     session.close()
   }
 }

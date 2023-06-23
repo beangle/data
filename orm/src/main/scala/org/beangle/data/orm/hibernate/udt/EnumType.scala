@@ -27,6 +27,12 @@ class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
 
   var ordinal: Boolean = true
   private val converter = EnumConverters.getConverter(`type`).get
+  private val hasZero =
+    try {
+      null != converter.apply("0")
+    } catch {
+      case e: Throwable => false
+    }
 
   override def unwrap[X](value: Object, valueType: Class[X], options: WrapperOptions): X = {
     if (value eq null) null.asInstanceOf[X]
@@ -42,6 +48,9 @@ class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
   override def wrap[X](value: X, options: WrapperOptions): AnyRef = {
     value match
       case null => null
+      case id: Int =>
+        if id == 0 && !hasZero then null
+        else converter.apply(id.toString)
       case _ => converter.apply(value.toString)
   }
 

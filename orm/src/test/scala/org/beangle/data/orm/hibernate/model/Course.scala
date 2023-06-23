@@ -33,6 +33,10 @@ class Course extends LongId, Named {
 
   var weekstate: WeekState = WeekState.Zero
 
+  var category: Option[CourseCategory] = None
+
+  var credits: Option[Int] = None
+
   def addFeature(name: String, description: String): Unit = {
     features.find(x => x.name == name) match
       case None =>
@@ -71,4 +75,10 @@ class CourseFeature extends Component {
   var name: String = _
   var createdAt: Instant = _
   var description: String = _
+}
+
+enum CourseCategory(val id: Int) {
+  case Theoretical extends CourseCategory(1)
+  case Practical extends CourseCategory(2)
+
 }
