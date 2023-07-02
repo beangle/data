@@ -386,8 +386,11 @@ class PersistentBag(session: SharedSessionContractImplementor)
 
   final class SimpleAdd(value: Object, append: Boolean) extends AbstractValueDelayedOperation(value, null) {
     override def operate(): Unit = {
-      if append then bag.addOne(getAddedInstance())
-      else bag.prepend(getAddedInstance)
+      val added = getAddedInstance
+      if (!bag.contains(added)) {
+        if append then bag.addOne(added)
+        else bag.prepend(added)
+      }
     }
   }
 
