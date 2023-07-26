@@ -29,10 +29,7 @@ CREATE OR REPLACE FUNCTION bit_num(bitstr varchar2) RETURN NUMBER IS
 tmpVar NUMBER;
 BEGIN
    tmpVar := 0;
-   select sum(data1) into tmpVar
-  from (select substr(bitstr, rownum, 1) * power
-(2, length(bitstr) - rownum) data1
-          from dual
+   select sum(data1) into tmpVar from (select substr(bitstr, rownum, 1) * power(2, length(bitstr) - rownum) data1 from dual
         connect by rownum <= length(bitstr));
 
    RETURN tmpVar;
@@ -40,6 +37,7 @@ BEGIN
      WHEN NO_DATA_FOUND THEN
        NULL;
      WHEN OTHERS THEN
+       -- Consider logging the error and then re-raise
        RAISE;
 END bit_num;
 /
@@ -94,6 +92,7 @@ BEGIN
 END;
 /
 
+
 CREATE OR REPLACE FUNCTION weekstate_build(start_week NUMBER,weeks number,week_cycle number )
 RETURN NUMBER
 IS
@@ -102,7 +101,7 @@ BEGIN
 
   bin_str := rpad('0',start_week,'0');
 
-FOR i IN  0..weeks LOOP
+FOR i IN  0..weeks-1 LOOP
   IF week_cycle = 2 and mod((start_week + i),2)=1 THEN
     bin_str := '1'||bin_str;
   elsif week_cycle = 3 and mod((start_week + i),2)=0 THEN
