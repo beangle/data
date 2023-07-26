@@ -124,7 +124,7 @@ class ExportContext {
         titles += prop
       }
     }
-    if keys.length > 0 then this.attrs = keys.toArray
+    if keys.nonEmpty then this.attrs = keys.toArray
     this.titles = titles.toArray
     convertToString foreach { x => this.convertToString = x }
   }
