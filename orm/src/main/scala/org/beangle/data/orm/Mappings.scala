@@ -20,10 +20,10 @@ package org.beangle.data.orm
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.config.Resources
+import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, Reflections, TypeInfo}
-import org.beangle.commons.lang.{ClassLoaders, Objects, Primitives, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.jdbc.meta.{Column, Database, Table}
@@ -115,8 +115,13 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     messages = Messages(locale)
     profiles.modules foreach { m => m.configure(this) }
     classTypes.subtractAll(classTypes.filter(x => x._2.properties.isEmpty).keys)
-    //superclass first,merge bingdings
-    classTypes.keys.toList.sortWith { (a, b) => a.isAssignableFrom(b) } foreach (cls => merge(classTypes(cls)))
+    //superclass first,merge bindings
+    val typeList = classTypes.keys.toList.sortWith((a, b) =>
+      if a == b then false
+      else if a.isAssignableFrom(b) then true
+      else a.getName.compareTo(b.getName) < 0
+    )
+    typeList foreach (cls => merge(classTypes(cls)))
 
     //remove interface and abstract class binding
     val notEntities = entityTypes.filter {
