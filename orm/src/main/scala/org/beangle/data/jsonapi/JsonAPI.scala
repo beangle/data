@@ -21,19 +21,17 @@ import org.beangle.commons.collection.{Collections, Properties}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.commons.lang.reflect.TypeInfo.{IterableType, OptionType}
-import org.beangle.commons.text.escape.JavascriptEscaper
+import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.text.inflector.en.EnNounPluralizer
 import org.beangle.data.model.Entity
 import org.beangle.data.orm.Jpas
-import org.hibernate.proxy.HibernateProxy
 
 import java.time.*
-import java.time.format.DateTimeFormatter
 import scala.collection.mutable
 
 /**
  * Create JSON api
+ *
  * @see https://jsonapi.org/format/
  */
 @beta
@@ -41,7 +39,7 @@ object JsonAPI {
 
   def newJson(data: Resource)(using context: Context): Json = {
     val json = new Json
-    json.put("datas", data)
+    json.put("data", data)
     val included = context.includedSeq
     if included.nonEmpty then
       json.put("included", included)
@@ -50,7 +48,7 @@ object JsonAPI {
 
   def newJson(datas: Iterable[Resource])(using context: Context): Json = {
     val json = new Json
-    json.put("datas", datas)
+    json.put("data", datas)
     val included = context.includedSeq
     if included.nonEmpty then
       json.put("included", included)
