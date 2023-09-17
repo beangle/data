@@ -148,7 +148,7 @@ object Conditions extends Logging {
    *
    * @param attr
    * @param value
-   * @param isString
+   * @param clazz
    * @return
    */
   def parse(attr: String, value: String, clazz: Class[_]): Condition = {
@@ -161,7 +161,11 @@ object Conditions extends Logging {
       }
     } else {
       if (ops.size == 1) {
-        new Condition(s"$attr ${ops.head.op} :${attr.replace('.', '_')}", ops.head.value)
+        if (ops.head.value == null) {
+          new Condition(s"$attr ${ops.head.op}")
+        } else {
+          new Condition(s"$attr ${ops.head.op} :${attr.replace('.', '_')}", ops.head.value)
+        }
       } else {
         if (ops.forall(x => x.op == "like")) {
           if (ops.length < 4) {
@@ -208,7 +212,7 @@ object Conditions extends Logging {
         } else if (startsWith) {
           new Operator("like", s"$v%")
         } else if (endsWith) {
-          new Operator("like", "%$v")
+          new Operator("like", s"%$v")
         } else {
           if "null" == value then new Operator("is null", null)
           else new Operator("like", s"%$v%")

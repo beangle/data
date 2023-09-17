@@ -17,20 +17,19 @@
 
 package org.beangle.data.orm.hibernate
 
-import java.{util => ju}
-
+import java.util as ju
 import javax.sql.DataSource
 import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.jdbc.ds.DataSourceUtils
-import org.hibernate.cfg.AvailableSettings
+import org.hibernate.cfg.{AvailableSettings, JdbcSettings}
 import org.hibernate.dialect.H2Dialect
 
 object Tests {
 
   def buildProperties(): ju.Properties = {
     val properties = new ju.Properties
-    properties.put(AvailableSettings.DIALECT, classOf[H2Dialect].getName)
+    properties.put(JdbcSettings.DIALECT, classOf[H2Dialect].getName)
     properties.put("hibernate.cache.use_second_level_cache","true")
     properties.put("hibernate.javax.cache.provider","org.ehcache.jsr107.EhcacheCachingProvider")
     properties.put("hibernate.hbm2ddl.auto", "create")

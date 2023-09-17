@@ -26,8 +26,8 @@ import org.beangle.data.orm.Mappings
 import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
-import org.hibernate.cfg.AvailableSettings.*
 import org.hibernate.cfg.Configuration
+import org.hibernate.cfg.*
 import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
 
 import java.net.URL
@@ -66,36 +66,36 @@ class ConfigurationBuilder(val dataSource: DataSource,properties :ju.Properties 
   }
 
   protected def addDefaultProperties(): Unit = {
-    //properties.put("hibernate.type.preferred_instant_jdbc_type", "TIMESTAMP")
-    if (dataSource != null) properties.put(DATASOURCE, dataSource)
-    addDefault(CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
-    addDefault(CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.orm.hibernate.SpringSessionContext")
-    addDefault(SCANNER_DISCOVERY, "none")
-    addDefault(XML_MAPPING_ENABLED, "false")
+    if (dataSource != null) properties.put(JdbcSettings.DATASOURCE, dataSource)
+    addDefault(JdbcSettings.CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
+    addDefault(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.orm.hibernate.SpringSessionContext")
+    addDefault(PersistenceSettings.SCANNER_DISCOVERY, "none")
+    addDefault(MappingSettings.XML_MAPPING_ENABLED, "false")
 
-    addDefault(MAX_FETCH_DEPTH, "1")
-    addDefault(STATEMENT_BATCH_SIZE, "20")
-    addDefault(STATEMENT_FETCH_SIZE, "500")
-    addDefault(DEFAULT_BATCH_FETCH_SIZE, "100")
-    addDefault(USE_GET_GENERATED_KEYS, "true")
+    addDefault(FetchSettings.MAX_FETCH_DEPTH, "1")
+    addDefault(BatchSettings.STATEMENT_BATCH_SIZE, "20")
+    addDefault(JdbcSettings.STATEMENT_FETCH_SIZE, "500")
+    addDefault(FetchSettings.DEFAULT_BATCH_FETCH_SIZE, "100")
+    addDefault(JdbcSettings.USE_GET_GENERATED_KEYS, "true")
 
-    addDefault(USE_SECOND_LEVEL_CACHE, "true")
-    addDefault(USE_QUERY_CACHE, "true")
-    addDefault(CACHE_REGION_FACTORY, "jcache")
+    addDefault(CacheSettings.USE_SECOND_LEVEL_CACHE, "true")
+    addDefault(CacheSettings.USE_QUERY_CACHE, "true")
+    addDefault(CacheSettings.CACHE_REGION_FACTORY, "jcache")
 
     if (!properties.contains("hibernate.javax.cache.provider")) {
       addDefault("hibernate.javax.cache.missing_cache_strategy", "create")
+      //config caffeine within application.conf(typesafe config file)
       val caffeine = "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider"
       if ClassLoaders.get(caffeine).nonEmpty then addDefault("hibernate.javax.cache.provider", caffeine)
     }
 
-    addDefault(SHOW_SQL, "false")
-    addDefault(FORMAT_SQL, "false")
+    addDefault(JdbcSettings.SHOW_SQL, "false")
+    addDefault(JdbcSettings.FORMAT_SQL, "false")
   }
 
   def enableDevMode(): Unit = {
-    addDefault(SHOW_SQL, "true")
-    addDefault(LOG_SLOW_QUERY, "100") //100ms
+    addDefault(JdbcSettings.SHOW_SQL, "true")
+    addDefault(JdbcSettings.LOG_SLOW_QUERY, "100") //100ms
   }
 
   private def addDefault(name: String, value: Any): Unit = {

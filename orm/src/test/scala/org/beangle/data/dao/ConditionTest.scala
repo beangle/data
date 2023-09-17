@@ -66,11 +66,11 @@ class ConditionTest extends AnyFunSpec with Matchers {
       assert(c.params.head == "%admin,root,user1%")
       assert(c.params.last == "%user2%")
 
-      c = Conditions.parse("user.name", "role,^\"admin,root,user1\",^user2$", classOf[String])
-      assert(c.content == "user.name like :user_name_1 or user.name like :user_name_2 or user.name = :user_name_3")
+      c = Conditions.parse("user.name", "role,^\"admin,root,user1\",user2$", classOf[String])
+      assert(c.content == "user.name like :user_name_1 or user.name like :user_name_2 or user.name like :user_name_3")
       assert(c.params.head == "%role%")
       assert(c.params(1) == "admin,root,user1%")
-      assert(c.params.last == "user2")
+      assert(c.params.last == "%user2")
 
       c = Conditions.parse("user.name", "null,\" \",^user2$", classOf[String])
       assert(c.content == "user.name is null or user.name like :user_name_1 or user.name = :user_name_2")
@@ -81,6 +81,10 @@ class ConditionTest extends AnyFunSpec with Matchers {
       assert(c.content == "user.name is null or user.name like :user_name_1 or user.name = :user_name_2")
       assert(c.params.head == " admin%")
       assert(c.params.last == "user2")
+
+      c = Conditions.parse("user.name", " null ", classOf[String])
+      assert(c.content == "user.name is null")
+      assert(c.params.isEmpty)
     }
   }
 }
