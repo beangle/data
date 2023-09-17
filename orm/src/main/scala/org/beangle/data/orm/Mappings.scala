@@ -384,8 +384,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     if (key == comment) key + "?" else comment
   }
 
-  /** Support features inheritence
-   * <li> buildin primary type will be not null
+  /** Support features inheritance
+   * <li> builtin primary type will be not null
    */
   private def merge(entity: OrmEntityType): Unit = {
     val cls = entity.clazz
@@ -488,8 +488,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     property.keyColumn = keyColumn
     property.ownerColumn = newRefColumn(entity.clazz, entity.entityName)
     eleMeta match {
-      case oet: OrmEntityType =>
-        property.inverseColumn = Some(newRefColumn(oet.clazz, oet.entityName))
+      case oet: OrmEntityType => property.inverseColumn = Some(newRefColumn(oet.clazz, oet.entityName))
       case _ =>
     }
   }
@@ -503,8 +502,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     //may be a many2many,so generate owner column.
     property.ownerColumn = newRefColumn(entity.clazz, entity.entityName)
     typ match {
-      case _: OrmEntityType =>
-        property.inverseColumn = Some(newRefColumn(entityClazz, entityName))
+      case _: OrmEntityType => property.inverseColumn = Some(newRefColumn(entityClazz, entityName))
       case _ =>
     }
   }

@@ -62,9 +62,8 @@ object Operation {
 
 }
 
-case class Operation(val typ: OperationType, val data: Any)
+case class Operation(typ: OperationType, data: Any)
 
 enum OperationType {
   case SaveUpdate, Remove
-
 }

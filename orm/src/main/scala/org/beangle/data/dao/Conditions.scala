@@ -18,14 +18,18 @@
 package org.beangle.data.dao
 
 import org.beangle.commons.bean.Properties
+import org.beangle.commons.conversion.impl.DefaultConversion
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
-import org.beangle.data.model.{Component, Entity}
 import org.beangle.data.model.util.Id
+import org.beangle.data.model.{Component, Entity}
+
+import scala.collection.mutable
 
 /** 条件提取辅助类
-  * @author chaostone
-  */
+ *
+ * @author chaostone
+ */
 object Conditions extends Logging {
 
   def toQueryString(conditions: List[Condition]): String = {
@@ -40,12 +44,13 @@ object Conditions extends Logging {
   }
 
   /** 提取对象中的条件
-    *
-    * 提取的属性仅限"平面"属性(允许包括component)<br>
-    * 过滤掉属性:null,或者空Collection
-    * @param alias  对象别名
-    * @param entity 实体对象
-    */
+   *
+   * 提取的属性仅限"平面"属性(允许包括component)<br>
+   * 过滤掉属性:null,或者空Collection
+   *
+   * @param alias  对象别名
+   * @param entity 实体对象
+   */
   def extractConditions(alias: String, entity: Entity[_]): List[Condition] = {
     if (null == entity) return Nil
     val conditions = new collection.mutable.ListBuffer[Condition]
@@ -67,8 +72,8 @@ object Conditions extends Logging {
   }
 
   /**
-    * 获得条件的绑定参数映射
-    */
+   * 获得条件的绑定参数映射
+   */
   def getParamMap(conditions: Seq[Condition]): Map[String, Any] = {
     val params = new collection.mutable.HashMap[String, Any]
     for (con <- conditions) params ++= getParamMap(con)
@@ -76,8 +81,8 @@ object Conditions extends Logging {
   }
 
   /**
-    * 获得条件的绑定参数映射
-    */
+   * 获得条件的绑定参数映射
+   */
   def getParamMap(condition: Condition): Map[String, Any] = {
     val params = new collection.mutable.HashMap[String, Any]
     if (!Strings.contains(condition.content, "?")) {
@@ -92,8 +97,8 @@ object Conditions extends Logging {
   }
 
   /**
-    * 为extractConditions使用的私有方法<br>
-    */
+   * 为extractConditions使用的私有方法<br>
+   */
   def addAttrCondition(conditions: collection.mutable.ListBuffer[Condition], name: String, value: Any): Unit = {
     value match {
       case s: String =>
@@ -139,4 +144,144 @@ object Conditions extends Logging {
     conditions.toList
   }
 
+  /** Parse string based query value into conditions
+   *
+   * @param attr
+   * @param value
+   * @param clazz
+   * @return
+   */
+  def parse(attr: String, value: String, clazz: Class[_]): Condition = {
+    val ops = split(value, clazz).map(x => Operator(x, clazz))
+    if (ops.forall(x => x.op == "=")) {
+      if (ops.size == 1) {
+        new Condition(s"$attr = :${attr.replace('.', '_')}", ops.head.value)
+      } else {
+        new Condition(s"$attr in (:${attr.replace('.', '_')})", ops.map(_.value))
+      }
+    } else {
+      if (ops.size == 1) {
+        if (ops.head.value == null) {
+          new Condition(s"$attr ${ops.head.op}")
+        } else {
+          new Condition(s"$attr ${ops.head.op} :${attr.replace('.', '_')}", ops.head.value)
+        }
+      } else {
+        if (ops.forall(x => x.op == "like")) {
+          if (ops.length < 4) {
+            var i = 0
+            val content = ops.map { x => i += 1; s"$attr ${x.op} :${attr.replace('.', '_')}_$i"; }.mkString(" or ")
+            new Condition(content, ops.map(_.value).toSeq: _*)
+          } else {
+            new Condition(s"$attr in (:${attr.replace('.', '_')})", ops.map(x => Operator.unlike(x.value.toString)))
+          }
+        } else {
+          var i = 0
+          val content = ops.map { x =>
+            if x.value == null then s"$attr ${x.op}"
+            else {
+              i += 1
+              s"$attr ${x.op} :${attr.replace('.', '_')}_$i"
+            }
+          }.mkString(" or ")
+          new Condition(content, ops.map(_.value).toSeq.filter(_ != null): _*)
+        }
+      }
+    }
+  }
+
+  object Operator {
+    def apply(value: String, clazz: Class[_]): Operator = {
+      if (clazz == classOf[String]) {
+        var v = value
+        var op = "="
+        var startsWith = false
+        var endsWith = false
+        if (v.charAt(0) == '^') {
+          v = v.substring(1)
+          startsWith = true
+        }
+        if (v.charAt(v.length - 1) == '$') {
+          v = v.substring(0, v.length - 1)
+          endsWith = true
+        }
+        v = unquote(v)
+
+        if (startsWith && endsWith) {
+          new Operator("=", v)
+        } else if (startsWith) {
+          new Operator("like", s"$v%")
+        } else if (endsWith) {
+          new Operator("like", s"%$v")
+        } else {
+          if "null" == value then new Operator("is null", null)
+          else new Operator("like", s"%$v%")
+        }
+      } else {
+        if "null" == value then new Operator("is null", null)
+        else new Operator("=", DefaultConversion.Instance.convert(value, clazz))
+      }
+    }
+
+    def unlike(value: String): String = {
+      var v = value
+      if (v.charAt(0) == '%') v = v.substring(1)
+      if (v.charAt(v.length - 1) == '%') v = v.substring(0, v.length - 1)
+      v
+    }
+
+    def unquote(value: String): String = {
+      var v = value
+      if (v.charAt(0) == '\"') v = v.substring(1)
+      if (v.charAt(v.length - 1) == '\"') v = v.substring(0, v.length - 1)
+      v
+    }
+  }
+
+  case class Operator(op: String, value: Any)
+
+  protected[dao] def split(value: String, clazz: Class[_]): collection.Seq[String] = {
+    if (clazz == classOf[String]) {
+      var i = 0
+      val chars = value.toCharArray
+      val len = chars.length
+      var quotStarted = false
+      val commaIdxs = new mutable.ArrayBuffer[Int]
+      val commaOuterIdx = new mutable.ArrayBuffer[Int]
+      while (i < len) {
+        if (chars(i) == ',') commaIdxs.addOne(i)
+        if (chars(i) == '，') {
+          commaIdxs.addOne(i)
+          chars(i) = ','
+        } else {
+          if (chars(i) == '\"') {
+            if (quotStarted) {
+              commaIdxs.clear()
+              quotStarted = false
+            } else {
+              quotStarted = true
+              commaOuterIdx ++= commaIdxs
+              commaIdxs.clear()
+            }
+          }
+        }
+        i += 1
+      }
+      commaOuterIdx ++= commaIdxs
+      if (commaOuterIdx.isEmpty) {
+        List(value.trim())
+      } else {
+        var lastIdx = 0
+        val rs = new mutable.ArrayBuffer[String]
+        commaOuterIdx foreach { i =>
+          rs.addOne(new String(chars, lastIdx, i - lastIdx).trim())
+          lastIdx = i + 1
+        }
+        if (lastIdx < len) rs.addOne(new String(chars, lastIdx, len - lastIdx).trim())
+        rs
+      }
+    } else {
+      Strings.split(value)
+    }
+  }
 }
