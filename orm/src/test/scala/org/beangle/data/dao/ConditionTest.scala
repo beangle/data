@@ -17,8 +17,8 @@
 
 package org.beangle.data.dao
 
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 class ConditionTest extends AnyFunSpec with Matchers {
 
@@ -37,6 +37,50 @@ class ConditionTest extends AnyFunSpec with Matchers {
       assert(paramNames2.size == 2)
       assert(paramNames2.contains("beginOn"))
       assert(paramNames2.contains("name"))
+    }
+  }
+  describe("Conditions") {
+    it("split") {
+      val rs = Conditions.split("role, ^\"admin,root,user1\" ， ^user2$", classOf[String])
+      assert(rs.size == 3)
+      assert(rs(0) == "role")
+      assert(rs(1) == "^\"admin,root,user1\"")
+      assert(rs(2) == "^user2$")
+    }
+    it("parse") {
+      var c = Conditions.parse("user.name", " admin ", classOf[String])
+      assert(c.content == "user.name like :user_name")
+      assert(c.params.head == "%admin%")
+
+      c = Conditions.parse("user.name", "admin , root", classOf[String])
+      assert(c.content == "user.name like :user_name_1 or user.name like :user_name_2")
+      assert(c.params.head == "%admin%")
+      assert(c.params.last == "%root%")
+
+      c = Conditions.parse("user.name", "admin,root, user1, user2", classOf[String])
+      assert(c.content == "user.name in (:user_name)")
+      assert(c.params.head.asInstanceOf[Iterable[_]].toList == List("admin", "root", "user1", "user2"))
+
+      c = Conditions.parse("user.name", "\"admin,root,user1\",user2", classOf[String])
+      assert(c.content == "user.name like :user_name_1 or user.name like :user_name_2")
+      assert(c.params.head == "%admin,root,user1%")
+      assert(c.params.last == "%user2%")
+
+      c = Conditions.parse("user.name", "role,^\"admin,root,user1\",^user2$", classOf[String])
+      assert(c.content == "user.name like :user_name_1 or user.name like :user_name_2 or user.name = :user_name_3")
+      assert(c.params.head == "%role%")
+      assert(c.params(1) == "admin,root,user1%")
+      assert(c.params.last == "user2")
+
+      c = Conditions.parse("user.name", "null,\" \",^user2$", classOf[String])
+      assert(c.content == "user.name is null or user.name like :user_name_1 or user.name = :user_name_2")
+      assert(c.params.head == "% %")
+      assert(c.params.last == "user2")
+
+      c = Conditions.parse("user.name", "null,^ admin,^user2$", classOf[String])
+      assert(c.content == "user.name is null or user.name like :user_name_1 or user.name = :user_name_2")
+      assert(c.params.head == " admin%")
+      assert(c.params.last == "user2")
     }
   }
 }
