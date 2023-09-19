@@ -19,11 +19,12 @@ package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.lang.Throwables
 import org.beangle.commons.lang.reflect.BeanInfos
-import org.hibernate.engine.spi.{SessionFactoryImplementor, SessionImplementor, SharedSessionContractImplementor}
+import org.beangle.data.model.Entity
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.property.access.spi.{Getter, PropertyAccess, PropertyAccessStrategy, Setter}
 import org.hibernate.{PropertyAccessException, PropertyNotFoundException, PropertySetterAccessException}
 
-import java.lang.reflect.{Member, Method, Modifier, Type}
+import java.lang.reflect.{Member, Method, Type}
 import java.util as ju
 
 object ScalaPropertyAccessor {
@@ -47,11 +48,12 @@ object ScalaPropertyAccessor {
   final class BasicSetter(val clazz: Class[_], val method: Method, val propertyName: String, optional: Boolean) extends Setter {
     override def set(target: Object, value: Object): Unit = {
       try {
-        val arg = if (optional) {
-          if (value.isInstanceOf[Option[_]]) value else Option(value)
-        } else {
-          value
-        }
+        val arg =
+          if (optional) {
+            if (value.isInstanceOf[Option[_]]) value else Option(value)
+          } else {
+            value
+          }
         method.invoke(target, arg)
       } catch {
         case npe: NullPointerException =>
@@ -63,8 +65,9 @@ object ScalaPropertyAccessor {
 
         case iae: IllegalArgumentException =>
           if (value == null && method.getParameterTypes()(0).isPrimitive) {
-            throw new PropertyAccessException(iae,
-              "Null value was assigned to a property of primitive type", true, clazz, propertyName)
+            target match
+              case e: Entity[_] => throw new PropertyAccessException(iae, "Null value was assigned to primitive type of " + e.id, true, clazz, propertyName)
+              case _ => throw new PropertyAccessException(iae, "Null value was assigned to a property of primitive type", true, clazz, propertyName)
           } else {
             val expectedType = method.getParameterTypes()(0)
             throw new PropertySetterAccessException(iae, clazz, propertyName, expectedType, target, value.getClass)
