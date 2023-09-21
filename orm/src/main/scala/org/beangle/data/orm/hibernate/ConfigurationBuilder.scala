@@ -66,21 +66,21 @@ class ConfigurationBuilder(val dataSource: DataSource,properties :ju.Properties 
   }
 
   protected def addDefaultProperties(): Unit = {
-    if (dataSource != null) properties.put(JdbcSettings.DATASOURCE, dataSource)
-    addDefault(JdbcSettings.CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
+    if (dataSource != null) properties.put(AvailableSettings.DATASOURCE, dataSource)
+    addDefault(AvailableSettings.CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
     addDefault(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.orm.hibernate.SpringSessionContext")
-    addDefault(PersistenceSettings.SCANNER_DISCOVERY, "none")
-    addDefault(MappingSettings.XML_MAPPING_ENABLED, "false")
+    addDefault(AvailableSettings.SCANNER_DISCOVERY, "none")
+    addDefault(AvailableSettings.XML_MAPPING_ENABLED, "false")
 
-    addDefault(FetchSettings.MAX_FETCH_DEPTH, "1")
-    addDefault(BatchSettings.STATEMENT_BATCH_SIZE, "20")
-    addDefault(JdbcSettings.STATEMENT_FETCH_SIZE, "500")
-    addDefault(FetchSettings.DEFAULT_BATCH_FETCH_SIZE, "100")
-    addDefault(JdbcSettings.USE_GET_GENERATED_KEYS, "true")
+    addDefault(AvailableSettings.MAX_FETCH_DEPTH, "1")
+    addDefault(AvailableSettings.STATEMENT_BATCH_SIZE, "20")
+    addDefault(AvailableSettings.STATEMENT_FETCH_SIZE, "500")
+    addDefault(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE, "100")
+    addDefault(AvailableSettings.USE_GET_GENERATED_KEYS, "true")
 
-    addDefault(CacheSettings.USE_SECOND_LEVEL_CACHE, "true")
-    addDefault(CacheSettings.USE_QUERY_CACHE, "true")
-    addDefault(CacheSettings.CACHE_REGION_FACTORY, "jcache")
+    addDefault(AvailableSettings.USE_SECOND_LEVEL_CACHE, "true")
+    addDefault(AvailableSettings.USE_QUERY_CACHE, "true")
+    addDefault(AvailableSettings.CACHE_REGION_FACTORY, "jcache")
 
     if (!properties.contains("hibernate.javax.cache.provider")) {
       addDefault("hibernate.javax.cache.missing_cache_strategy", "create")
@@ -89,13 +89,13 @@ class ConfigurationBuilder(val dataSource: DataSource,properties :ju.Properties 
       if ClassLoaders.get(caffeine).nonEmpty then addDefault("hibernate.javax.cache.provider", caffeine)
     }
 
-    addDefault(JdbcSettings.SHOW_SQL, "false")
-    addDefault(JdbcSettings.FORMAT_SQL, "false")
+    addDefault(AvailableSettings.SHOW_SQL, "false")
+    addDefault(AvailableSettings.FORMAT_SQL, "false")
   }
 
   def enableDevMode(): Unit = {
-    addDefault(JdbcSettings.SHOW_SQL, "true")
-    addDefault(JdbcSettings.LOG_SLOW_QUERY, "100") //100ms
+    addDefault(AvailableSettings.SHOW_SQL, "true")
+    addDefault(AvailableSettings.LOG_SLOW_QUERY, "100") //100ms
   }
 
   private def addDefault(name: String, value: Any): Unit = {
