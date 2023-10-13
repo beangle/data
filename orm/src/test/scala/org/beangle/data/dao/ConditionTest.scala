@@ -41,11 +41,32 @@ class ConditionTest extends AnyFunSpec with Matchers {
   }
   describe("Conditions") {
     it("split") {
-      val rs = Conditions.split("role, ^\"admin,root,user1\" ， ^user2$", classOf[String])
-      assert(rs.size == 3)
+      var rs = Conditions.split("role, ^\"admin,root,user1\" ， ^user2$", classOf[String])
+      assert(rs.length == 3)
       assert(rs(0) == "role")
       assert(rs(1) == "^\"admin,root,user1\"")
       assert(rs(2) == "^user2$")
+
+      rs = Conditions.split("ro le, ^\"admin, root,user1\" ， ^user2$", classOf[String])
+      assert(rs.length == 4)
+      assert(rs(0) == "ro")
+      assert(rs(1) == "le")
+      assert(rs(2) == "^\"admin, root,user1\"")
+      assert(rs(3) == "^user2$")
+
+      rs = Conditions.split("ro le\t ^\"admin root\tuser1\" \n ^user2$", classOf[String])
+      assert(rs.length == 4)
+      assert(rs(0) == "ro")
+      assert(rs(1) == "le")
+      assert(rs(2) == "^\"admin root\tuser1\"")
+      assert(rs(3) == "^user2$")
+
+      rs = Conditions.split("ro le us er", classOf[String])
+      assert(rs.length == 4)
+      assert(rs(0) == "ro")
+      assert(rs(1) == "le")
+      assert(rs(2) == "us")
+      assert(rs(3) == "er")
     }
     it("parse") {
       var c = Conditions.parse("user.name", " admin ", classOf[String])
@@ -85,6 +106,10 @@ class ConditionTest extends AnyFunSpec with Matchers {
       c = Conditions.parse("user.name", " null ", classOf[String])
       assert(c.content == "user.name is null")
       assert(c.params.isEmpty)
+
+      c = Conditions.parse("user.name", "^admin", classOf[String])
+      assert(c.content == "user.name like :user_name")
+      assert(c.params.head == "admin%")
     }
   }
 }

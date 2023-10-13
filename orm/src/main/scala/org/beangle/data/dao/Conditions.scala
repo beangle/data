@@ -240,7 +240,7 @@ object Conditions extends Logging {
 
   case class Operator(op: String, value: Any)
 
-  protected[dao] def split(value: String, clazz: Class[_]): collection.Seq[String] = {
+  protected[dao] def split(value: String, clazz: Class[_]): Array[String] = {
     if (clazz == classOf[String]) {
       var i = 0
       val chars = value.toCharArray
@@ -249,10 +249,13 @@ object Conditions extends Logging {
       val commaIdxs = new mutable.ArrayBuffer[Int]
       val commaOuterIdx = new mutable.ArrayBuffer[Int]
       while (i < len) {
-        if (chars(i) == ',') commaIdxs.addOne(i)
-        if (chars(i) == '，') {
+        val ch = chars(i)
+        if (ch == ',') commaIdxs.addOne(i)
+        if ((ch == '，' || ch == '\t' || ch == '\n' || ch == ' ') && !quotStarted) {
           commaIdxs.addOne(i)
           chars(i) = ','
+        } else if (ch == '\r') {
+          chars(i) = ' '
         } else {
           if (chars(i) == '\"') {
             if (quotStarted) {
@@ -269,16 +272,18 @@ object Conditions extends Logging {
       }
       commaOuterIdx ++= commaIdxs
       if (commaOuterIdx.isEmpty) {
-        List(value.trim())
+        Strings.split(value)
       } else {
         var lastIdx = 0
         val rs = new mutable.ArrayBuffer[String]
         commaOuterIdx foreach { i =>
-          rs.addOne(new String(chars, lastIdx, i - lastIdx).trim())
+          Strings.addNonEmpty(rs, chars, lastIdx, i)
           lastIdx = i + 1
         }
-        if (lastIdx < len) rs.addOne(new String(chars, lastIdx, len - lastIdx).trim())
-        rs
+        if (lastIdx < len) {
+          Strings.addNonEmpty(rs, chars, lastIdx, len)
+        }
+        rs.toArray
       }
     } else {
       Strings.split(value)
