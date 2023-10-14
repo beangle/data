@@ -152,7 +152,7 @@ object Conditions extends Logging {
    * @return
    */
   def parse(attr: String, value: String, clazz: Class[_]): Condition = {
-    val ops = split(value, clazz).map(x => Operator(x, clazz))
+    val ops = split(value, clazz).toSeq.map(x => Operator(x, clazz))
     if (ops.forall(x => x.op == "=")) {
       if (ops.size == 1) {
         new Condition(s"$attr = :${attr.replace('.', '_')}", ops.head.value)
@@ -205,7 +205,7 @@ object Conditions extends Logging {
           v = v.substring(0, v.length - 1)
           endsWith = true
         }
-        v = unquote(v)
+        v = escape(unquote(v))
 
         if (startsWith && endsWith) {
           new Operator("=", v)
@@ -230,11 +230,22 @@ object Conditions extends Logging {
       v
     }
 
-    def unquote(value: String): String = {
-      var v = value
-      if (v.charAt(0) == '\"') v = v.substring(1)
-      if (v.charAt(v.length - 1) == '\"') v = v.substring(0, v.length - 1)
-      v
+    def unquote(v: String): String = {
+      if v.length > 1 && v.charAt(0) == '\"' && v.charAt(v.length - 1) == '\"' then
+        v.substring(1, v.length - 1)
+      else v
+    }
+
+    def escape(v: String): String = {
+      if (v.contains("\\")) {
+        var value = v
+        value = Strings.replace(value, "\\r", "\r")
+        value = Strings.replace(value, "\\t", "\t")
+        value = Strings.replace(value, "\\n", "\n")
+        value
+      } else {
+        v
+      }
     }
   }
 
@@ -257,7 +268,7 @@ object Conditions extends Logging {
         } else if (ch == '\r') {
           chars(i) = ' '
         } else {
-          if (chars(i) == '\"') {
+          if (ch == '\"') {
             if (quotStarted) {
               commaIdxs.clear()
               quotStarted = false
@@ -271,8 +282,8 @@ object Conditions extends Logging {
         i += 1
       }
       commaOuterIdx ++= commaIdxs
-      if (commaOuterIdx.isEmpty) {
-        Strings.split(value)
+      if (commaOuterIdx.isEmpty) { //without any separator
+        Array(value)
       } else {
         var lastIdx = 0
         val rs = new mutable.ArrayBuffer[String]
