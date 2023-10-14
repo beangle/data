@@ -114,7 +114,11 @@ abstract class AbstractImporter extends Importer with Logging {
     } else {
       curData = new collection.mutable.HashMap[String, Any]
       data.indices foreach { i =>
-        this.curData.put(attrs(i).name, data(i))
+        val di = data(i)
+        di match
+          case null => //ignore
+          case a: String => if (Strings.isNotBlank(a)) this.curData.put(attrs(i).name, a)
+          case _ => this.curData.put(attrs(i).name, di)
       }
       true
     }

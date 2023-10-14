@@ -41,32 +41,57 @@ class ConditionTest extends AnyFunSpec with Matchers {
   }
   describe("Conditions") {
     it("split") {
-      val rs = Conditions.split("role, ^\"admin,root,user1\" ， ^user2$", classOf[String])
-      assert(rs.size == 3)
+      var rs = Conditions.split("role, ^\"admin,root,user1\" ， ^user2$", classOf[String])
+      assert(rs.length == 3)
       assert(rs(0) == "role")
       assert(rs(1) == "^\"admin,root,user1\"")
       assert(rs(2) == "^user2$")
+
+      rs = Conditions.split("ro le, ^\"admin, root,user1\" ， ^user2$", classOf[String])
+      assert(rs.length == 4)
+      assert(rs(0) == "ro")
+      assert(rs(1) == "le")
+      assert(rs(2) == "^\"admin, root,user1\"")
+      assert(rs(3) == "^user2$")
+
+      rs = Conditions.split("ro le\t ^\"admin root\tuser1\" \n ^user2$", classOf[String])
+      assert(rs.length == 4)
+      assert(rs(0) == "ro")
+      assert(rs(1) == "le")
+      assert(rs(2) == "^\"admin root\tuser1\"")
+      assert(rs(3) == "^user2$")
+
+      rs = Conditions.split("ro le us er", classOf[String])
+      assert(rs.length == 4)
+      assert(rs(0) == "ro")
+      assert(rs(1) == "le")
+      assert(rs(2) == "us")
+      assert(rs(3) == "er")
     }
-    it("parse") {
-      var c = Conditions.parse("user.name", " admin ", classOf[String])
+    it("parse single with space") {
+      val c = Conditions.parse("user.name", " admin ", classOf[String])
       assert(c.content == "user.name like :user_name")
       assert(c.params.head == "%admin%")
-
-      c = Conditions.parse("user.name", "admin , root", classOf[String])
+    }
+    it("parse plan multiple with space") {
+      val c = Conditions.parse("user.name", "admin , root", classOf[String])
       assert(c.content == "user.name like :user_name_1 or user.name like :user_name_2")
       assert(c.params.head == "%admin%")
       assert(c.params.last == "%root%")
-
-      c = Conditions.parse("user.name", "admin,root, user1, user2", classOf[String])
+    }
+    it("parse four params") {
+      val c = Conditions.parse("user.name", "admin,root, user1, user2", classOf[String])
       assert(c.content == "user.name in (:user_name)")
       assert(c.params.head.asInstanceOf[Iterable[_]].toList == List("admin", "root", "user1", "user2"))
-
-      c = Conditions.parse("user.name", "\"admin,root,user1\",user2", classOf[String])
+    }
+    it("parse simple quote") {
+      val c = Conditions.parse("user.name", "\"admin,root,user1\",user2", classOf[String])
       assert(c.content == "user.name like :user_name_1 or user.name like :user_name_2")
       assert(c.params.head == "%admin,root,user1%")
       assert(c.params.last == "%user2%")
-
-      c = Conditions.parse("user.name", "role,^\"admin,root,user1\",user2$", classOf[String])
+    }
+    it("parse quote and starts") {
+      var c = Conditions.parse("user.name", "role,^\"admin,root,user1\",user2$", classOf[String])
       assert(c.content == "user.name like :user_name_1 or user.name like :user_name_2 or user.name like :user_name_3")
       assert(c.params.head == "%role%")
       assert(c.params(1) == "admin,root,user1%")
@@ -77,14 +102,26 @@ class ConditionTest extends AnyFunSpec with Matchers {
       assert(c.params.head == "% %")
       assert(c.params.last == "user2")
 
-      c = Conditions.parse("user.name", "null,^ admin,^user2$", classOf[String])
+      c = Conditions.parse("user.name", "null,^\" admin\",^user2$", classOf[String])
       assert(c.content == "user.name is null or user.name like :user_name_1 or user.name = :user_name_2")
       assert(c.params.head == " admin%")
       assert(c.params.last == "user2")
-
-      c = Conditions.parse("user.name", " null ", classOf[String])
+    }
+    it("parse null") {
+      val c = Conditions.parse("user.name", " null ", classOf[String])
       assert(c.content == "user.name is null")
       assert(c.params.isEmpty)
+    }
+    it("parse single quote"){
+      val c = Conditions.parse("user.name", "\"admin\n\" \"", classOf[String])
+      assert(c.content == "user.name like :user_name_1 or user.name like :user_name_2")
+      assert(c.params.head == "%admin\n%")
+      assert(c.params.last == "%\"%")
+    }
+    it("parse escape char") {
+      val c = Conditions.parse("user.name", "\\tad\"min\\n", classOf[String])
+      assert(c.content == "user.name like :user_name")
+      assert(c.params.head == "%\tad\"min\n%")
     }
   }
 }
