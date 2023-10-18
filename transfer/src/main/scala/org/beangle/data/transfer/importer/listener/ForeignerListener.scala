@@ -82,7 +82,7 @@ class ForeignerListener(entityDao: EntityDao) extends ImportListener {
     val iter = keyAttrs.iterator
     while (iter.hasNext) {
       val attri = iter.next()
-      val codeStr = transfer.curData(attri).asInstanceOf[String]
+      val codeStr = transfer.curData.getOrElse(attri,"").asInstanceOf[String]
       var foreigner: Object = null
       // 外键的代码不是空的
       if (isNotEmpty(codeStr)) {
