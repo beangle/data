@@ -191,7 +191,7 @@ object Diff {
         tdf.columns.newerList foreach { c =>
           val column = tdf.newer.column(c)
           columnDdl ++= alter.addColumn(column)
-          column.comment foreach { comment => commentDdl ++= engine.commentOnColumn(tdf.newer, column, comment) }
+          column.comment foreach { c => commentDdl ++= engine.commentOnColumn(tdf.newer, column, Some(c)) }
         }
         tdf.columns.renamed foreach { case (o, n) =>
           val oCol = tdf.older.column(o)
