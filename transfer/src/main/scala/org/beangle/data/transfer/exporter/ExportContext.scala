@@ -18,7 +18,6 @@
 package org.beangle.data.transfer.exporter
 
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.io.DataType
 import org.beangle.commons.lang.text.{Formatter, Formatters}
 import org.beangle.commons.lang.{Options, Strings}
 import org.beangle.data.transfer.Format

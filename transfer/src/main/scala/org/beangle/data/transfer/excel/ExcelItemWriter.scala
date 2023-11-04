@@ -36,19 +36,19 @@ import java.io.OutputStream
  */
 class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
 
-  private var workbook: SXSSFWorkbook = _ // 建立新XSSFWorkbook对象
+  protected var workbook: SXSSFWorkbook = _ // 建立新XSSFWorkbook对象
 
-  private var sheet: SXSSFSheet = _
+  protected var sheet: SXSSFSheet = _
 
   private implicit var registry: ExcelStyleRegistry = _
 
-  var title: Any = _
+  protected var title: Any = _
 
   var flushCount = 1000
 
   var countPerSheet = 100000
 
-  private var index = 0
+  protected var index = 0
 
   init()
 
@@ -79,27 +79,45 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     index += 1
   }
 
-  override def writeTitle(titleName: String, data: Any): Unit = {
-    if (null != titleName) {
-      sheet = workbook.createSheet(titleName)
-    } else {
-      sheet = workbook.createSheet()
+  def createScheet(name: String): SXSSFSheet = {
+    if (null == sheet || null != name && !(this.sheet.getSheetName == name)) {
+      this.sheet = if null != name then this.workbook.createSheet(name) else this.workbook.createSheet()
     }
+    this.sheet
+  }
+
+  override def writeTitle(sheetName: String, data: Any): Unit = {
+    writeTitle(data)
+  }
+
+  override def writeTitle(data: Any): Unit = {
+    createScheet(null)
     title = data
     index = 0
     writeItem(data)
     val titleRow = sheet.getRow(index)
     val titleStyle = buildTitleStyle()
-    val titles = data.asInstanceOf[Array[String]]
-    for (i <- 0 until titleRow.getLastCellNum()) {
+    val titles = data match
+      case cs: Array[String] => cs
+      case it: Iterable[Any] => it.toArray.map(_.toString)
+      case _ => throw new RuntimeException("cannot write title with " + String.valueOf(data))
+
+    val maxWith = 15 * 2 //max 15 chinese chars
+    var h = 0d // number rows
+    for (i <- titles.indices) {
       titleRow.getCell(i).setCellStyle(titleStyle)
-      var charLen = Chars.charLength(titles(i))
-      if (charLen < 10) charLen = 10 //min 10 characters
-      if (charLen > 30) charLen = 30
-      sheet.setColumnWidth(i, 256 * (2 + charLen)) // 2 is margin
+      val n = Chars.charLength(titles(i))
+      val w = Math.min(n, maxWith)
+      val r = n * 1.0 / maxWith
+      if (r > h) h = r
+      sheet.setColumnWidth(i.toShort, (w + 4) * 256) // 4 is margin
     }
+    var height = Math.ceil(h).toInt
+    if (height > 8) height = 8
+    titleRow.setHeight((height * 12 * 20).toShort)
+
     index += 1
-    sheet.createFreezePane(0, 1)
+    sheet.createFreezePane(0, index)
   }
 
   def format: Format = {
@@ -108,21 +126,20 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
 
   protected def writeItem(datas: Any): Unit = {
     val row = sheet.createRow(index) // 建立新行
-    if (datas != null) {
-      if (datas.getClass.isArray) {
-        val values = datas.asInstanceOf[Array[_]]
-        values.indices foreach { i =>
-          row.createCell(i).fillin(values(i))
-        }
-      } else {
+    datas match
+      case null =>
+      case a: Array[Any] =>
+        a.indices foreach { i => row.createCell(i).fillin(a(i)) }
+      case it: Iterable[Any] =>
+        var i = 0
+        it.foreach { obj => row.createCell(i).fillin(obj); i += 1 }
+      case n: Number =>
         val cell = row.createCell(0)
-        datas match {
-          case _: Number => cell.setCellType(CellType.NUMERIC)
-          case _ =>
-        }
-        cell.setCellValue(new XSSFRichTextString(datas.toString))
-      }
-    }
+        cell.setCellType(CellType.NUMERIC)
+        cell.setCellValue(new XSSFRichTextString(n.toString))
+      case a: Any =>
+        val cell = row.createCell(0)
+        cell.setCellValue(new XSSFRichTextString(a.toString))
   }
 
   protected def buildTitleStyle(): XSSFCellStyle = {
@@ -130,6 +147,8 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     style.setAlignment(HorizontalAlignment.CENTER) // 左右居中
     style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
     style.setFillPattern(FillPatternType.SOLID_FOREGROUND)
+    style.setWrapText(true) //auto wrap text
+
     val rgb = Array(221.toByte, 217.toByte, 196.toByte)
     style.setFillForegroundColor(new XSSFColor(rgb, new DefaultIndexedColorMap))
     style

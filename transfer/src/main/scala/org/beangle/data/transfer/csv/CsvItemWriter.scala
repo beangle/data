@@ -36,6 +36,10 @@ class CsvItemWriter(val context: ExportContext, val outputStream: OutputStream) 
     write(data)
   }
 
+  override def writeTitle(data: Any): Unit = {
+    write(data)
+  }
+
   override def format: Format = Format.Csv
 
   override def close(): Unit = csvw.close()
