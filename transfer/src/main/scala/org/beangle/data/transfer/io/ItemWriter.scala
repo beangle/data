@@ -26,6 +26,9 @@ trait ItemWriter extends Writer {
 
   def write(obj: Any): Unit
 
+
+  @deprecated("using writeTitle with one param")
   def writeTitle(titleName: String, data: Any): Unit
 
+  def writeTitle(titles: Any): Unit
 }
