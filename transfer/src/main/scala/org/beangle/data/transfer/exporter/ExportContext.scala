@@ -107,18 +107,21 @@ class ExportContext {
     val keys = new mutable.ArrayBuffer[String](props.length)
     val titles = new mutable.ArrayBuffer[String](props.length)
     for (prop <- props) {
+      //format1 property_path:title
+      //format2 blank.xxx:title:default_value
       if (prop.contains(":")) {
-        var key = Strings.substringBefore(prop, ":")
+        val key = Strings.substringBefore(prop, ":")
         var sharedValue = ""
-        if (key.contains("(")) {
-          sharedValue = Strings.substringBetween(key, "(", ")")
-          key = Strings.substringBefore(key, "(")
-          sharedValues.put(key, sharedValue)
-        } else if (key.startsWith("blank.")) {
+        var title = Strings.substringAfter(prop, ":")
+        if (key.startsWith("blank.")) {
+          if (title.contains(":")) {
+            sharedValue = Strings.substringAfter(title, ":")
+            title = Strings.substringBefore(title, ":")
+          }
           sharedValues.put(key, sharedValue)
         }
         keys += key
-        titles += Strings.substringAfter(prop, ":")
+        titles += title
       } else {
         titles += prop
       }
