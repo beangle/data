@@ -17,14 +17,12 @@
 
 package org.beangle.data.transfer.exporter
 
-import org.beangle.commons.lang.Strings
-
 class SimpleItemExporter extends AbstractItemExporter {
   /** 导出属性对应的标题 */
   protected var titles: Array[String] = _
 
   protected override def beforeExport(): Boolean = {
-    writer.writeTitle(null, titles)
+    writer.writeTitle(titles)
     true
   }
 
