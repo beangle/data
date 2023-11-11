@@ -187,7 +187,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
 
   private def copyValue(target: AnyRef, entityType: EntityType, attr: String, value: Any, result: Populator.CopyResult): Any = {
     val targetValue = properties.copy(target, BeanInfos.get(entityType.clazz), attr, value)
-    if (null == value && null != targetValue || null != value && null == targetValue) {
+    if (null == value && null != targetValue && None != targetValue || null != value && null == targetValue) {
       result.addFail(attr, "copied value" + targetValue)
     }
   }
