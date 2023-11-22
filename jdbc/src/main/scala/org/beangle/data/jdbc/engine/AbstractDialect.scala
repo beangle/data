@@ -19,7 +19,6 @@ package org.beangle.data.jdbc.engine
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings.{isEmpty, join, replace}
-import org.beangle.data.jdbc.engine.Options.AlterTableOption
 import org.beangle.data.jdbc.meta.*
 
 trait AbstractDialect extends Dialect {
@@ -253,7 +252,9 @@ class DefaultAlterTableDialect(table: Table, options: Options) extends AlterTabl
     }
     alterClause = replace(alterClause, "{column}", col.name.toLiteral(table.engine))
     var value = v.getOrElse("null")
-    if (col.sqlType.isStringType) value = s"'$value'"
+    if (col.sqlType.isStringType && !value.startsWith("'")) {
+      value = s"'$value'"
+    }
     alterClause = replace(alterClause, "{value}", value)
     s"alter table ${table.qualifiedName} $alterClause"
   }

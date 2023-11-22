@@ -17,7 +17,7 @@
 
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.engine.Engine
+import org.beangle.data.jdbc.engine.{Engine, StoreCase}
 
 object Identifier {
   val empty = Identifier("")
@@ -52,9 +52,23 @@ case class Identifier(value: String, quoted: Boolean = false) extends Ordered[Id
   }
 
   def attach(engine: Engine): Identifier = {
-    val needQuote = engine.needQuote(value)
-    if (needQuote != quoted) Identifier(value, needQuote)
-    else this
+    val v = engine.storeCase match
+      case StoreCase.Mixed => value
+      case StoreCase.Lower => if mixedCase then value else value.toLowerCase
+      case StoreCase.Upper => if mixedCase then value else value.toUpperCase
+
+    val needQuote = engine.needQuote(v)
+    if needQuote != quoted || v != value then Identifier(v, needQuote) else this
+  }
+
+  private def mixedCase: Boolean = {
+    var hasLower = false
+    var hasUpper = false
+    value.toCharArray foreach { c =>
+      if Character.isLowerCase(c) then hasLower = true
+      else if Character.isUpperCase(c) then hasUpper = true
+    }
+    hasLower && hasUpper
   }
 
   def toLiteral(engine: Engine): String = {

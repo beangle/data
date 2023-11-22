@@ -17,7 +17,7 @@
 
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.engine.{Engines, Oracle10g, PostgreSQL10}
+import org.beangle.data.jdbc.engine.{Oracle10g, PostgreSQL10}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -55,7 +55,18 @@ class TableTest extends AnyFlatSpec with Matchers {
       " \"ID\" bigint not null, \"ENABLED\" boolean not null, \"AGE\" integer not null)" == postgresql.createTable(table))
   }
 
-  "lowercase " should "corrent" in {
+  "postgresql " should " attach to oracle" in {
+    val pgDb = new Database(postgresql)
+    val public = pgDb.getOrCreateSchema("public")
+    val user = new Table(public, Identifier("USERS"))
+    val active = new Column("active", postgresql.toType(Types.BOOLEAN))
+    active.defaultValue = Some("false")
+    user.add(active)
+
+    assert(oracle.createTable(user.attach(oracle)) == """create table "public".USERS (ACTIVE number(1,0) default 0)""")
+  }
+
+  "lowercase " should "correct" in {
     val table = new Table(public, Identifier("USER"))
     val database = new Database(postgresql)
     val test = database.getOrCreateSchema("TEST")
