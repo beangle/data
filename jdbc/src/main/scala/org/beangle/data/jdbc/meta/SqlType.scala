@@ -87,7 +87,9 @@ case class SqlType(code: Int, name: String, precision: Option[Int], scale: Optio
 
   def isStringType: Boolean = SqlType.isStringType(code)
 
-  def isBooleanType: Boolean = code == BOOLEAN
+  def isBooleanType: Boolean = {
+    code == BOOLEAN || code == BIT
+  }
 
   def isTemporalType: Boolean = SqlType.isTemporalType(code)
 }

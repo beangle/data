@@ -171,7 +171,7 @@ object Conditions extends Logging {
           if (ops.length < 4) {
             var i = 0
             val content = ops.map { x => i += 1; s"$attr ${x.op} :${attr.replace('.', '_')}_$i"; }.mkString(" or ")
-            new Condition(content, ops.map(_.value).toSeq: _*)
+            new Condition(content, ops.map(_.value): _*)
           } else {
             new Condition(s"$attr in (:${attr.replace('.', '_')})", ops.map(x => Operator.unlike(x.value.toString)))
           }
