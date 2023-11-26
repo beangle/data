@@ -18,7 +18,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
-import org.beangle.data.jdbc.engine.{Engine, StoreCase}
+import org.beangle.data.jdbc.engine.Engine
 
 import scala.collection.mutable.ListBuffer
 
