@@ -22,8 +22,7 @@ import org.apache.poi.ss.usermodel.DataValidationConstraint.ValidationType.{DECI
 import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel.*
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.{Chars, Strings}
-import org.beangle.data.excel.schema.{Constraints, ExcelColumn, ExcelSchema}
+import org.beangle.commons.lang.Strings
 
 import java.io.OutputStream
 import scala.collection.mutable
@@ -96,6 +95,9 @@ object ExcelSchemaWriter {
             setDefaultStyle(sheet, defaultStyles, curColumnIdx, col.format.getOrElse("General"))
           } else if (col.isDate) {
             sheet.addValidationData(Constraints.asDate(dvHelper, col, rowIdx + 1, curColumnIdx))
+            setDefaultStyle(sheet, defaultStyles, curColumnIdx, col.format.get)
+          } else if (col.isTime) {
+            sheet.addValidationData(Constraints.asTime(dvHelper, col, rowIdx + 1, curColumnIdx))
             setDefaultStyle(sheet, defaultStyles, curColumnIdx, col.format.get)
           } else if (col.length.nonEmpty) {
             if (col.formular1 == "0" && col.required) {

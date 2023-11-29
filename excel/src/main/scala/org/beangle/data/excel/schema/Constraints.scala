@@ -24,6 +24,8 @@ import org.apache.poi.ss.util.CellRangeAddressList
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper
 
 import java.text.SimpleDateFormat
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 /** 构建Excel约束
  * 生成的约束需要添加到工作表中
@@ -79,6 +81,23 @@ object Constraints {
     createValidation(helper, col, startRowIdx, columnIdx, constraint, prompt)
   }
 
+  def asTime(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int, columnIdx: Int): DataValidation = {
+    var prompt: String = null
+    var constraint: DataValidationConstraint = null
+    val format = col.format.get
+
+    val cellContent = "时间"
+    col.formular2 match {
+      case None =>
+        constraint = helper.createTimeConstraint(GREATER_OR_EQUAL, toTimeFormula(col.formular1, format), null)
+        prompt = composeError(cellContent, col.formular1, None)
+      case Some(f2) =>
+        constraint = helper.createTimeConstraint(BETWEEN, toTimeFormula(col.formular1, format), toTimeFormula(f2, format))
+        prompt = composeError(cellContent, col.formular1, col.formular2)
+    }
+    createValidation(helper, col, startRowIdx, columnIdx, constraint, prompt)
+  }
+
   def asNumeric(helper: XSSFDataValidationHelper, col: ExcelColumn, validationType: Int, startRowIdx: Int, columnIdx: Int): DataValidation = {
     var prompt: String = null
     var constraint: DataValidationConstraint = null
@@ -125,6 +144,11 @@ object Constraints {
     validation
   }
 
+  private def toTimeFormula(formula: String, format: String): String = {
+    val t = LocalTime.parse(formula, DateTimeFormatter.ofPattern(format))
+    s"=TIME(${t.getHour},${t.getMinute},${t.getSecond})"
+  }
+
   private def createValidation(helper: XSSFDataValidationHelper, col: ExcelColumn, startRowIdx: Int,
                                columnIdx: Int, constraint: DataValidationConstraint, prompt: String): DataValidation = {
     //1048576 is max row in xlsx
@@ -137,7 +161,7 @@ object Constraints {
     validation
   }
 
-  def composeError(what: String, min: String, max: Option[String], quantifier: String = ""): String = {
+  private def composeError(what: String, min: String, max: Option[String], quantifier: String = ""): String = {
     max match {
       case None => "请输入" + quantifier + "大于等于" + min + "的" + what
       case Some(m) =>
