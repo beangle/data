@@ -32,7 +32,7 @@ class TableTest extends AnyFlatSpec with Matchers {
   val public = oracleDb.getOrCreateSchema("PUBLIC")
 
   "create sql" should "like this" in {
-    val table = new Table(test, Identifier("USER"))
+    val table = new Table(test, Identifier("user"))
     val column = new Column("NAME", oracle.toType(Types.VARCHAR, 30))
     column.comment = Some("login name")
     column.nullable = false
@@ -51,8 +51,9 @@ class TableTest extends AnyFlatSpec with Matchers {
     table.add(ageCol)
 
     table.attach(postgresql)
-    assert("create table TEST.\"USER\" (\"NAME\" varchar(30) not null," +
-      " \"ID\" bigint not null, \"ENABLED\" boolean not null, \"AGE\" integer not null)" == postgresql.createTable(table))
+    println(postgresql.createTable(table))
+    assert("create table TEST.\"user\" (name varchar(30) not null," +
+      " id bigint not null, enabled boolean not null, age integer not null)" == postgresql.createTable(table))
   }
 
   "postgresql " should " attach to oracle" in {

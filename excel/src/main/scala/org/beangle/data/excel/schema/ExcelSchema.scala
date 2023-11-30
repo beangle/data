@@ -107,8 +107,10 @@ class ExcelColumn(var name: String) {
 
   /** 数据类型 */
   var dataType: DataType = DataType.String
-  /** 是否日期 */
+  /** 是否是日期 */
   var isDate: Boolean = _
+  /** 是否是时间 */
+  var isTime: Boolean = _
   /** 是否整形 */
   var isInt: Boolean = _
   /** 是否浮点型 */
@@ -159,10 +161,32 @@ class ExcelColumn(var name: String) {
   def date(f: String = "YYYY-MM-DD"): this.type = {
     isDate = true
     dataType = DataType.Date
-
     this.format = Some(f)
-    val start = LocalDate.of(1900, 1, 1)
-    formular1 = start.format(DateTimeFormatter.ofPattern(f))
+    formular1 = "1900-01-01"
+    this
+  }
+
+  def yearMonth(): this.type = {
+    isDate = true
+    dataType = DataType.YearMonth
+    this.format = Some("yyyy-MM")
+    formular1 = "1900-01"
+    this
+  }
+
+  def datatime(): this.type = {
+    isDate = true
+    this.dataType = DataType.DateTime
+    this.format = Some("yyyy-MM-dd HH:mm:ss")
+    formular1 = "1900-01-01 00:00:01"
+    this
+  }
+
+  def time(): this.type = {
+    isTime = true
+    this.dataType = DataType.Time
+    this.format = Some("HH:mm:ss")
+    formular1 = "00:00:01"
     this
   }
 
