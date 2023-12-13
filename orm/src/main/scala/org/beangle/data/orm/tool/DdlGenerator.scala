@@ -142,7 +142,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
     scripts.sequences = sequences.sorted.toList
     scripts.constraints = constraints.sorted.toList
     val auxiliaries = Collections.newBuffer[String]
-    val dialectShortName = engine.getClass.getSimpleName.toLowerCase
+    val dialectShortName = engine.name.toLowerCase
     ResourcePatternResolver.getResources(s"classpath*:META-INF/beangle/ddl/$dialectShortName/*.sql") foreach { r =>
       auxiliaries += IOs.readString(r.openStream())
     }
