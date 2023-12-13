@@ -199,6 +199,8 @@ final class CellOps(private val cell: Cell) extends AnyVal {
       case DataType.Time => d.toInstant.atZone(ZoneId.systemDefault).toLocalTime
       case DataType.YearMonth => YearMonth.from(new java.sql.Date(d.getTime).toLocalDate)
       case DataType.MonthDay => MonthDay.from(new java.sql.Date(d.getTime).toLocalDate)
+      case DataType.Instant => d.toInstant
+      case DataType.OffsetDateTime => d.toInstant.atOffset(ZoneOffset.UTC)
       case _ => throw new RuntimeException("Cannot convert date to  " + dataType)
     }
   }

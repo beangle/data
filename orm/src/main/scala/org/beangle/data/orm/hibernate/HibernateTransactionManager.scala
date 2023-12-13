@@ -20,7 +20,7 @@ package org.beangle.data.orm.hibernate
 import jakarta.persistence.{EntityManager, EntityManagerFactory, PersistenceException, RollbackException}
 import org.beangle.data.orm.hibernate.HibernateTransactionManager.*
 import org.hibernate.{Session, SessionFactory}
-import org.springframework.jdbc.datasource.{ConnectionHolder, DataSourceUtils, JdbcTransactionObjectSupport}
+import org.springframework.jdbc.datasource.{ConnectionHolder, JdbcTransactionObjectSupport}
 import org.springframework.transaction.*
 import org.springframework.transaction.support.*
 import org.springframework.transaction.support.TransactionSynchronizationManager.{bindResource, getResource, hasResource, unbindResource}
@@ -31,6 +31,7 @@ object HibernateTransactionManager {
   class SessionHolder(val session: Session) extends ResourceHolderSupport {
     var savepointManager: SavepointManager = _
     var transactionActive: Boolean = _
+
     override def clear(): Unit = {
       super.clear()
       this.savepointManager = null
@@ -40,9 +41,11 @@ object HibernateTransactionManager {
   }
 
   class SuspendedResourcesHolder(val sessionHolder: SessionHolder, val connectionHolder: ConnectionHolder)
+
   class JpaTransactionDefinition(targetDefinition: TransactionDefinition, val timeout: Int, val localResource: Boolean)
     extends DelegatingTransactionDefinition(targetDefinition), ResourceTransactionDefinition {
     override def isLocalResource: Boolean = localResource
+
     override def getTimeout: Int = timeout
   }
 
@@ -66,7 +69,7 @@ class HibernateTransactionManager(val sessionFactory: EntityManagerFactory)
     val emHolder = TransactionSynchronizationManager.getResource(sessionFactory).asInstanceOf[SessionHolder]
     if (emHolder != null) {
       txObject.update(emHolder, false)
-    }else{
+    } else {
       // BEANGLE ADD. for avoid openSession in view explicitly.
       txObject.sessionHolder = SessionHelper.openSession(sessionFactory.asInstanceOf[SessionFactory])
     }
