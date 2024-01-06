@@ -26,7 +26,6 @@ import org.beangle.data.orm.Mappings
 import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
-import org.hibernate.cfg.Configuration
 import org.hibernate.cfg.*
 import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
 
@@ -44,7 +43,7 @@ object ConfigurationBuilder {
   }
 }
 
-class ConfigurationBuilder(val dataSource: DataSource,properties :ju.Properties = new Properties()) extends Logging {
+class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties = new Properties()) extends Logging {
 
   var ormLocations: Seq[URL] = _
 
@@ -58,29 +57,44 @@ class ConfigurationBuilder(val dataSource: DataSource,properties :ju.Properties 
       val key = keys.nextElement.asInstanceOf[String]
       if (key.startsWith("hibernate.")) {
         val value = sysProps.getProperty(key)
-        val overrided = properties.containsKey(key)
+        val overridden = properties.containsKey(key)
         properties.put(key, value)
-        if (overrided) logger.info(s"Override hibernate property $key=$value")
+        if (overridden) logger.info(s"Override hibernate property $key=$value")
       }
     }
   }
 
   protected def addDefaultProperties(): Unit = {
-    if (dataSource != null) properties.put(AvailableSettings.DATASOURCE, dataSource)
-    addDefault(AvailableSettings.CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
     addDefault(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.orm.hibernate.SpringSessionContext")
-    addDefault(AvailableSettings.SCANNER_DISCOVERY, "none")
-    addDefault(AvailableSettings.XML_MAPPING_ENABLED, "false")
 
-    addDefault(AvailableSettings.MAX_FETCH_DEPTH, "1")
-    addDefault(AvailableSettings.STATEMENT_BATCH_SIZE, "20")
-    addDefault(AvailableSettings.STATEMENT_FETCH_SIZE, "500")
-    addDefault(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE, "100")
-    addDefault(AvailableSettings.USE_GET_GENERATED_KEYS, "true")
+    //JdbcSettings
+    if (dataSource != null) {
+      properties.put(JdbcSettings.JAKARTA_JTA_DATASOURCE, dataSource)
+      properties.put(JdbcSettings.DATASOURCE, dataSource)
+    }
+    addDefault(JdbcSettings.CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
+    addDefault(JdbcSettings.STATEMENT_FETCH_SIZE, "500")
+    addDefault(JdbcSettings.USE_GET_GENERATED_KEYS, "true")
+    addDefault(JdbcSettings.SHOW_SQL, "false")
+    addDefault(JdbcSettings.FORMAT_SQL, "false")
 
-    addDefault(AvailableSettings.USE_SECOND_LEVEL_CACHE, "true")
-    addDefault(AvailableSettings.USE_QUERY_CACHE, "true")
-    addDefault(AvailableSettings.CACHE_REGION_FACTORY, "jcache")
+    //MappingSettings
+    addDefault(MappingSettings.XML_MAPPING_ENABLED, "false")
+
+    //BatchSettings
+    addDefault(BatchSettings.STATEMENT_BATCH_SIZE, "20")
+
+    //FetchSettings
+    addDefault(FetchSettings.MAX_FETCH_DEPTH, "1")
+    addDefault(FetchSettings.DEFAULT_BATCH_FETCH_SIZE, "100")
+
+    //CacheSettings
+    addDefault(CacheSettings.USE_SECOND_LEVEL_CACHE, "true")
+    addDefault(CacheSettings.USE_QUERY_CACHE, "true")
+    addDefault(CacheSettings.CACHE_REGION_FACTORY, "jcache")
+
+    //PersistenceSettings
+    addDefault(PersistenceSettings.SCANNER_DISCOVERY, "none")
 
     if (!properties.contains("hibernate.javax.cache.provider")) {
       addDefault("hibernate.javax.cache.missing_cache_strategy", "create")
@@ -88,14 +102,11 @@ class ConfigurationBuilder(val dataSource: DataSource,properties :ju.Properties 
       val caffeine = "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider"
       if ClassLoaders.get(caffeine).nonEmpty then addDefault("hibernate.javax.cache.provider", caffeine)
     }
-
-    addDefault(AvailableSettings.SHOW_SQL, "false")
-    addDefault(AvailableSettings.FORMAT_SQL, "false")
   }
 
   def enableDevMode(): Unit = {
-    addDefault(AvailableSettings.SHOW_SQL, "true")
-    addDefault(AvailableSettings.LOG_SLOW_QUERY, "100") //100ms
+    addDefault(JdbcSettings.SHOW_SQL, "true")
+    addDefault(JdbcSettings.LOG_SLOW_QUERY, "100") //100ms
   }
 
   private def addDefault(name: String, value: Any): Unit = {
