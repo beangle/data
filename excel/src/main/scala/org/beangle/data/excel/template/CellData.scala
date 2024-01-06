@@ -19,22 +19,19 @@ package org.beangle.data.excel.template
 
 import org.apache.poi.ss.formula.FormulaParseException
 import org.apache.poi.ss.usermodel.*
-import org.apache.poi.ss.util.CellReference
-import org.apache.poi.xssf.usermodel.XSSFCell
 import org.beangle.commons.io.DataType
-import org.beangle.commons.lang.{Objects, Strings}
+import org.beangle.commons.lang.Objects
 import org.beangle.data.excel.CellOps.*
 import org.beangle.data.excel.template.CellData.*
 import org.beangle.data.excel.template.Notation.*
-import org.beangle.data.excel.{AreaRef, CellRef, ExcelStyleRegistry, Sheets}
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTCell
-import org.slf4j.{Logger, LoggerFactory}
+import org.beangle.data.excel.{AreaRef, CellRef}
+import org.slf4j.LoggerFactory
 
 import java.sql.Timestamp
 import java.time.*
 import java.util
+import java.util.Date
 import java.util.regex.{Matcher, Pattern}
-import java.util.{Date, Map}
 import scala.collection.mutable
 
 object CellData {

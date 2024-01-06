@@ -17,15 +17,22 @@
 
 package org.beangle.data.excel.template
 
-import org.beangle.commons.script.ExpressionEvaluator
+import org.apache.commons.jexl3.introspection.JexlPermissions
+import org.apache.commons.jexl3.scripting.JexlScriptEngine
 import org.beangle.commons.script.JSR223ExpressionEvaluator
+
 import scala.collection.mutable
+
 /**
  * Map bean context
  */
 class Context {
   protected var varMap = new mutable.HashMap[String, Any]
-  var evaluator = new JSR223ExpressionEvaluator("jexl3")
+
+  var evaluator = {
+    JexlScriptEngine.setPermissions(JexlPermissions.UNRESTRICTED)
+    JSR223ExpressionEvaluator("jexl3")
+  }
 
   /**
    * Evaluates if the passed condition is true
@@ -37,7 +44,7 @@ class Context {
     }
   }
 
-  def toMap:collection.Map[String,Any]={
+  def toMap: collection.Map[String, Any] = {
     varMap
   }
 
