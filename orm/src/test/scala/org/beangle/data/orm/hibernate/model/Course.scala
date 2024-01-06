@@ -37,6 +37,8 @@ class Course extends LongId, Named {
 
   var credits: Option[Int] = None
 
+  var hours: CreditHours = CreditHours.Empty
+
   def addFeature(name: String, description: String): Unit = {
     features.find(x => x.name == name) match
       case None =>

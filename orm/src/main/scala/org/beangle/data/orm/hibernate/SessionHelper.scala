@@ -139,7 +139,7 @@ object SessionHelper extends Logging {
   def getDataSource(factory: SessionFactory): DataSource = {
     val factoryImpl = factory.asInstanceOf[SessionFactoryImplementor]
     if (factoryImpl.getSessionFactoryOptions.isMultiTenancyEnabled) {
-      factoryImpl.getServiceRegistry.getService(classOf[MultiTenantConnectionProvider]).unwrap(classOf[DataSource])
+      factoryImpl.getServiceRegistry.getService(classOf[MultiTenantConnectionProvider[_]]).unwrap(classOf[DataSource])
     } else {
       factoryImpl.getServiceRegistry.getService(classOf[ConnectionProvider]).unwrap(classOf[DataSource])
     }

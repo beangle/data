@@ -24,7 +24,7 @@ import org.beangle.commons.net.http.HttpUtils
 import org.beangle.data.jdbc.ds.DataSourceUtils.parseXml
 
 import java.io.{ByteArrayInputStream, InputStream}
-import java.net.URL
+import java.net.{URI, URL}
 import javax.sql.DataSource
 
 object DataSourceFactory {
@@ -76,7 +76,7 @@ class DataSourceFactory extends Factory[DataSource] with Initializing with Dispo
           else throw RuntimeException(s"access error :$url")
         } else {
           val f = new java.io.File(url)
-          val urlAddr = if (f.exists) f.toURI.toURL else new URL(url)
+          val urlAddr = if (f.exists) f.toURI.toURL else URI.create(url).toURL
           merge(readConf(urlAddr.openStream()))
         }
       }

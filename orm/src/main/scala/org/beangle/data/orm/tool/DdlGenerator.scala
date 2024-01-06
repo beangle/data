@@ -41,7 +41,7 @@ object DdlGenerator {
     var dir = SystemInfo.tmpDir
     if (args.length > 1) dir = args(1)
     var locale = Locale.getDefault
-    if (args.length > 2) locale = Locales.toLocale(args(2))
+    if (args.length > 2) locale = Locales.of(args(2))
 
     val dialectName = args(0)
     val warnings = new collection.mutable.ListBuffer[String]

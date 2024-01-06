@@ -298,7 +298,7 @@ class HibernateTransactionManager(val sessionFactory: EntityManagerFactory)
       if hasConnectionHolder then getConnectionHolder.setRollbackOnly()
     }
 
-    def isRollbackOnly: Boolean = session.getTransaction.getRollbackOnly
+    override def isRollbackOnly: Boolean = session.getTransaction.getRollbackOnly
 
     override def flush(): Unit = session.flush()
 

@@ -50,7 +50,7 @@ class ValueType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) 
   override def wrap[X](value: X, options: WrapperOptions): AnyRef = {
     value match
       case null => null
-      case _ => constructor.newInstance(value)
+      case _ => if `type` == value.getClass then value.asInstanceOf[AnyRef] else constructor.newInstance(value)
   }
 
   def toJdbcType(): JdbcType = {
