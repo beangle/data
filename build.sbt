@@ -1,9 +1,9 @@
-import org.beangle.parent.Dependencies._
-import org.beangle.parent.Settings._
+import org.beangle.parent.Dependencies.*
+import org.beangle.parent.Settings.*
 import sbt.Keys.libraryDependencies
 
 ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.7.11"
+ThisBuild / version := "5.7.12"
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/beangle/data"),
@@ -71,7 +71,7 @@ lazy val excel = (project in file("excel"))
     name := "beangle-data-excel",
     common,
     libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml)),
-    libraryDependencies += jexl3
+    libraryDependencies ++= Seq(jexl3, jcl_over_slf4j)
   )
 
 lazy val transfer = (project in file("transfer"))
