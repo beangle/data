@@ -18,6 +18,7 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
+import org.beangle.commons.regex.AntPathPattern
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -120,26 +121,29 @@ class Schema(var database: Database, var name: Identifier) {
   }
 
   class NameFilter(lowercase: Boolean = true) {
-    val excludes = new collection.mutable.ListBuffer[String]
-    val includes = new collection.mutable.ListBuffer[String]
+    val excludes = new collection.mutable.ListBuffer[AntPathPattern]
+    val includes = new collection.mutable.ListBuffer[AntPathPattern]
 
     def filter(tables: Iterable[Identifier]): List[Identifier] = {
       val results = new collection.mutable.ListBuffer[Identifier]
       for (tabId <- tables) {
         val tabame = if (lowercase) tabId.value.toLowerCase else tabId.value
         val tableName = if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame
-        if (includes.exists(p => p == "*" || tableName.startsWith(p) && !excludes.contains(tableName)))
-          results += tabId
+        if isMatched(tableName) then results += tabId
       }
       results.toList
     }
 
+    def isMatched(name: String): Boolean = {
+      includes.exists(_.matches(name)) && !excludes.exists(_.matches(name))
+    }
+
     def exclude(table: String): Unit = {
-      excludes += (if (lowercase) table.toLowerCase else table)
+      excludes += new AntPathPattern(if lowercase then table.toLowerCase else table)
     }
 
     def include(table: String): Unit = {
-      includes += (if (lowercase) table.toLowerCase else table)
+      includes += new AntPathPattern(if lowercase then table.toLowerCase else table)
     }
   }
 

@@ -29,8 +29,8 @@ class DatasourceConfig(val driver: String) {
   var password: String = _
 
   var props = new collection.mutable.HashMap[String, String]
-  var schema: Identifier = _
-  var catalog: Identifier = _
+  var schema: Option[Identifier] = None
+  var catalog: Option[Identifier] = None
 
   def this(data: collection.Map[String, String]) = {
     this(data("driver"))
@@ -39,8 +39,8 @@ class DatasourceConfig(val driver: String) {
         k match {
           case "user" => this.user = v
           case "password" => this.password = v
-          case "schema" => this.schema = Identifier(v)
-          case "catalog" => this.catalog = Identifier(v)
+          case "schema" => this.schema = Some(Identifier(v))
+          case "catalog" => this.catalog = Some(Identifier(v))
           case "name" => this.name = v
           case "driver" =>
           case _ => props.put(k, v)

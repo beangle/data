@@ -20,9 +20,9 @@ package org.beangle.data.jdbc.ds
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty, substringBetween}
-import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
+import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.engine.{DriverInfo, Drivers, Engine}
+import org.beangle.data.jdbc.engine.{DriverInfo, Drivers}
 import org.beangle.data.jdbc.meta.Identifier
 
 import java.io.InputStream
@@ -103,9 +103,12 @@ object DataSourceUtils extends Logging {
     if ((xml \ "@name").nonEmpty) dbconf.name = (xml \ "@name").text.trim
     dbconf.user = (xml \\ "user").text.trim
     dbconf.password = (xml \\ "password").text.trim
-    dbconf.catalog = Identifier((xml \\ "catalog").text.trim)
-    dbconf.schema = Identifier((xml \\ "schema").text.trim)
-
+    (xml \\ "catalog") foreach { e =>
+      if (e.text.trim.nonEmpty) dbconf.catalog = Some(Identifier(e.text.trim))
+    }
+    (xml \\ "schema") foreach { e =>
+      if (e.text.trim.nonEmpty) dbconf.schema = Some(Identifier(e.text.trim))
+    }
     (xml \\ "props" \\ "prop").foreach { ele =>
       dbconf.props.put((ele \ "@name").text, (ele \ "@value").text)
     }
