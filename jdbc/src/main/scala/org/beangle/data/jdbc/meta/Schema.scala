@@ -19,12 +19,37 @@ package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.regex.AntPathPattern
-import org.slf4j.LoggerFactory
+import org.beangle.data.jdbc.meta.Schema.NameFilter
 
 import scala.collection.mutable
 
 object Schema {
-  private val logger = LoggerFactory.getLogger(classOf[Schema])
+  class NameFilter(lowercase: Boolean = true) {
+    val excludes = new collection.mutable.ListBuffer[AntPathPattern]
+    val includes = new collection.mutable.ListBuffer[AntPathPattern]
+
+    def filter(tables: Iterable[Identifier]): List[Identifier] = {
+      val results = new collection.mutable.ListBuffer[Identifier]
+      for (tabId <- tables) {
+        val tabame = if (lowercase) tabId.value.toLowerCase else tabId.value
+        val tableName = if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame
+        if isMatched(tableName) then results += tabId
+      }
+      results.toList
+    }
+
+    def isMatched(name: String): Boolean = {
+      includes.exists(_.matches(name)) && !excludes.exists(_.matches(name))
+    }
+
+    def exclude(table: String): Unit = {
+      excludes += new AntPathPattern(if lowercase then table.toLowerCase else table)
+    }
+
+    def include(table: String): Unit = {
+      includes += new AntPathPattern(if lowercase then table.toLowerCase else table)
+    }
+  }
 }
 
 class Schema(var database: Database, var name: Identifier) {
@@ -92,13 +117,8 @@ class Schema(var database: Database, var name: Identifier) {
 
   def filterTables(includes: Seq[String], excludes: Seq[String]): Seq[Table] = {
     val filter = new NameFilter()
-    val engine = database.engine
-    if (null != includes) {
-      for (include <- includes) filter.include(engine.toIdentifier(include).value)
-    }
-    if (null != excludes) {
-      for (exclude <- excludes) filter.exclude(engine.toIdentifier(exclude).value)
-    }
+    for (include <- includes) filter.include(include)
+    for (exclude <- excludes) filter.exclude(exclude)
 
     filter.filter(tables.keySet).map { t => tables(t) }
   }
@@ -106,12 +126,8 @@ class Schema(var database: Database, var name: Identifier) {
   def filterSequences(includes: Seq[String], excludes: Seq[String]): Seq[Sequence] = {
     val engine = database.engine
     val filter = new NameFilter()
-    if (null != includes) {
-      for (include <- includes) filter.include(engine.toIdentifier(include).value)
-    }
-    if (null != excludes) {
-      for (exclude <- excludes) filter.exclude(engine.toIdentifier(exclude).value)
-    }
+    for (include <- includes) filter.include(include)
+    for (exclude <- excludes) filter.exclude(exclude)
     val seqMap = sequences.map(f => (f.name, f)).toMap
     filter.filter(seqMap.keys).map { s => seqMap(s) }
   }
@@ -119,32 +135,4 @@ class Schema(var database: Database, var name: Identifier) {
   override def toString: String = {
     "Schema " + name
   }
-
-  class NameFilter(lowercase: Boolean = true) {
-    val excludes = new collection.mutable.ListBuffer[AntPathPattern]
-    val includes = new collection.mutable.ListBuffer[AntPathPattern]
-
-    def filter(tables: Iterable[Identifier]): List[Identifier] = {
-      val results = new collection.mutable.ListBuffer[Identifier]
-      for (tabId <- tables) {
-        val tabame = if (lowercase) tabId.value.toLowerCase else tabId.value
-        val tableName = if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame
-        if isMatched(tableName) then results += tabId
-      }
-      results.toList
-    }
-
-    def isMatched(name: String): Boolean = {
-      includes.exists(_.matches(name)) && !excludes.exists(_.matches(name))
-    }
-
-    def exclude(table: String): Unit = {
-      excludes += new AntPathPattern(if lowercase then table.toLowerCase else table)
-    }
-
-    def include(table: String): Unit = {
-      includes += new AntPathPattern(if lowercase then table.toLowerCase else table)
-    }
-  }
-
 }
