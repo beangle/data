@@ -23,8 +23,9 @@ import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.lang.{Strings, ThreadTasks}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.Engine
+import org.beangle.data.jdbc.meta.Schema.NameFilter
 
-import java.sql.{DatabaseMetaData, JDBCType, ResultSet, Statement}
+import java.sql.{DatabaseMetaData, ResultSet, Statement}
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
@@ -66,7 +67,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
   def schemas(): Set[String] = {
     val names = Collections.newBuffer[String]
     if (engine.catalogAsSchema) {
-      val rs = meta.getCatalogs()
+      val rs = meta.getCatalogs
       while (rs.next()) {
         names.addOne(rs.getString("TABLE_CAT"))
       }
@@ -82,6 +83,12 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
   }
 
   def loadTables(schema: Schema, extras: Boolean): Unit = {
+    val filter = new NameFilter
+    filter.include("*")
+    loadTables(schema, filter, extras)
+  }
+
+  def loadTables(schema: Schema, filter: NameFilter, extras: Boolean): Unit = {
     val TYPES = Array("TABLE")
     var catalogName = if (null == schema.catalog || schema.catalog.isEmpty) null else schema.catalog.get.value
     var schemaPattern = schema.name.value
@@ -99,7 +106,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     val tables = new mutable.HashMap[String, Table]
     while (rs.next()) {
       val tableName = rs.getString(TableName)
-      if (!tableName.contains("$")) {
+      if (!tableName.contains("$") && filter.isMatched(tableName)) {
         val table = schema.database.addTable(getTableSchema(rs), rs.getString(TableName))
         table.updateCommentAndModule(rs.getString(Remarks))
         tables.put(Table.qualify(table.schema, table.name), table)

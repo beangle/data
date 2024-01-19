@@ -17,9 +17,9 @@
 
 package org.beangle.data.jdbc.meta
 
-import org.beangle.data.jdbc.engine.{Engines, Oracle10g}
-import org.scalatest.matchers.should.Matchers
+import org.beangle.data.jdbc.engine.Oracle10g
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 class SchemaTest extends AnyFunSpec with Matchers {
   val oracle = new Oracle10g
@@ -33,6 +33,21 @@ class SchemaTest extends AnyFunSpec with Matchers {
       assert(db.getTable("\"t 1\"").isDefined)
       assert(db.getTable("Test.\"t 1\"").isDefined)
       assert(db.getTable("TEST.\"t 1\"").isDefined)
+    }
+    it("filter names") {
+      val filter = new Schema.NameFilter()
+      filter.include("*")
+      filter.exclude("*{[0-9]+}")
+      filter.exclude("*tmp*")
+      filter.exclude("*bak*")
+      assert(filter.isMatched("peoples"))
+      assert(!filter.isMatched("people_2023"))
+      val o = new Oracle10g
+      val tables = List(o.toIdentifier("peoples"), o.toIdentifier("people_2023"),
+        o.toIdentifier("people2332"), o.toIdentifier("people_bak"), o.toIdentifier("tmp_2023_grades"))
+      val results = filter.filter(tables)
+      assert(results.size == 1)
+      assert(results.head.value == "PEOPLES")
     }
   }
 }
