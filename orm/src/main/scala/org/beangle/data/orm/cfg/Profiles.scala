@@ -40,49 +40,11 @@ class Profiles(resources: Resources) extends Logging {
   init()
 
   def getSchema(clazz: Class[_]): Option[String] = {
-    val profile = getProfile(clazz)
-    var schema = profile.schema
-    val anno = profile.annotations find { ann =>
-      clazz.getAnnotations exists { annon =>
-        if (ann.clazz.isAssignableFrom(annon.getClass)) {
-          if (isNotEmpty(ann.value)) {
-            try {
-              val method = annon.getClass.getMethod("value")
-              String.valueOf(method.invoke(annon)) == ann.value
-            } catch {
-              case _: Throwable =>
-                Console.err.print("Annotation value needed:", ann.value, annon.getClass)
-                false
-            }
-          } else true
-        } else false
-      }
-    }
-    anno foreach (an => if (isNotEmpty(an.schema)) schema = Some(an.schema))
-    schema
+    getProfile(clazz).getSchema(clazz)
   }
 
   def getPrefix(clazz: Class[_]): String = {
-    val profile = getProfile(clazz)
-    var prefix = profile.prefix
-    val anno = profile.annotations find { ann =>
-      clazz.getAnnotations exists { annon =>
-        if (ann.clazz.isAssignableFrom(annon.getClass)) {
-          if (isNotEmpty(ann.value)) {
-            try {
-              val method = annon.getClass.getMethod("value")
-              String.valueOf(method.invoke(annon)) == ann.value
-            } catch {
-              case _: Exception =>
-                Console.err.print("Annotation value needed:", ann.value, annon.getClass)
-                false
-            }
-          } else true
-        } else false
-      }
-    }
-    anno foreach (an => if (isNotEmpty(an.prefix)) prefix = an.prefix)
-    if (isEmpty(prefix)) "" else prefix
+    getProfile(clazz).getPrefix(clazz)
   }
 
   def getProfile(clazz: Class[_]): MappingProfile = {
@@ -208,6 +170,10 @@ class Profiles(resources: Resources) extends Logging {
     if ((melem \ "@schema").nonEmpty) {
       profile._schema = Some(parseSchema((melem \ "@schema").text))
     }
+    if ((melem \ "@abbrs").nonEmpty) {
+      profile.abbrs = parseAbbreviations((melem \ "@abbrs").text)
+    }
+
     if ((melem \ "@prefix").nonEmpty) profile._prefix = Some((melem \ "@prefix").text)
     val naming = if ((melem \ "@naming").nonEmpty) (melem \ "@naming").text else "rails"
     if (namings.contains(naming)) {
@@ -237,5 +203,19 @@ class Profiles(resources: Resources) extends Logging {
         replace(newName, "{" + propertyName + "}", if (pv == null) "" else pv)
       case Some(n) => n
     }
+  }
+
+  private def parseAbbreviations(text: String): Map[String, String] = {
+    val map = new mutable.HashMap[String, String]
+    val abbrs = Strings.split(text)
+    for (abbr <- abbrs) {
+      val abbrPair = Strings.split(abbr, "=")
+      if (abbrPair.length == 1) {
+        map.put(abbrPair(0).trim(), "")
+      } else {
+        map.put(abbrPair(0).trim(), abbrPair(1).trim)
+      }
+    }
+    map.toMap
   }
 }

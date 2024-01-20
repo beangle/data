@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.cfg
 
+import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.{substringBeforeLast, unCamel}
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.inflector.Pluralizer
@@ -33,30 +34,30 @@ class RailsNamingPolicy(profiles: Profiles) extends NamingPolicy with Logging {
   private val pluralizer: Pluralizer = EnNounPluralizer
 
   override def classToTableName(clazz: Class[_], entityName: String): Name = {
-    val className = if (clazz.getName.endsWith("Bean")) substringBeforeLast(clazz.getName, "Bean") else clazz.getName
-    var tableName = addUnderscores(unqualify(className))
-    tableName = pluralizer.pluralize(tableName)
-    tableName = profiles.getPrefix(clazz) + tableName
-    //      if (tableName.length() > entityTableMaxLength) {
-    //        for ((k, v) <- p.abbreviations)
-    //          tableName = replace(tableName, k, v)
-    //      }
-    Name(profiles.getSchema(clazz), tableName)
+    var className = if (clazz.getName.endsWith("Bean")) substringBeforeLast(clazz.getName, "Bean") else clazz.getName
+    val p = profiles.getProfile(clazz)
+    for ((k, v) <- p.abbrs) className = Strings.replace(className, k, v)
+    val tableName = addUnderscores(unqualify(className))
+    Name(p.getSchema(clazz), p.getPrefix(clazz) + pluralizer.pluralize(tableName))
   }
 
   override def collectionToTableName(clazz: Class[_], entityName: String, tableName: String, collectionName: String): Name = {
-    val collectionTableName = tableName + "_" + addUnderscores(unqualify(collectionName))
-    //    getModule(ClassLoaders.load(className)) foreach { p =>
-    //      if ((collectionTableName.length() > relationTableMaxLength)) {
-    //        for ((k, v) <- p.abbreviations)
-    //          collectionTableName = replace(collectionTableName, k, v)
-    //      }
-    //    }
-    Name(profiles.getSchema(clazz), collectionTableName)
+    var simpleName = unqualify(collectionName)
+    val p = profiles.getProfile(clazz)
+    for ((k, v) <- p.abbrs) simpleName = Strings.replace(simpleName, k, v)
+    val collectionTableName = tableName + "_" + addUnderscores(simpleName)
+    Name(p.getSchema(clazz), collectionTableName)
   }
 
   override def propertyToColumnName(clazz: Class[_], property: String): String = {
-    addUnderscores(property)
+    if (property.charAt(0).isUpper) {
+      val p = profiles.getProfile(clazz)
+      var pName = property
+      for ((k, v) <- p.abbrs) pName = Strings.replace(pName, k, v)
+      addUnderscores(pName)
+    } else {
+      addUnderscores(property)
+    }
   }
 
   private def unqualify(qualifiedName: String): String = {
