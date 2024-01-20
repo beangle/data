@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.cfg
 
+import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty}
 import org.beangle.data.orm.NamingPolicy
 
 class MappingProfile {
@@ -25,6 +26,7 @@ class MappingProfile {
   var _schema: Option[String] = None
   var _prefix: Option[String] = None
   var parent: Option[MappingProfile] = None
+  var abbrs: Map[String, String] = Map.empty
 
   def schema: Option[String] = {
     if (_schema.nonEmpty) _schema
@@ -43,6 +45,51 @@ class MappingProfile {
   def annotations: collection.Seq[AnnotationModule] = {
     if (_annotations.isEmpty && parent.nonEmpty) parent.get._annotations
     else _annotations
+  }
+
+  def getSchema(clazz: Class[?]): Option[String] = {
+    val anno = this.annotations find { ann =>
+      clazz.getAnnotations exists { annon =>
+        if (ann.clazz.isAssignableFrom(annon.getClass)) {
+          if (isNotEmpty(ann.value)) {
+            try {
+              val method = annon.getClass.getMethod("value")
+              String.valueOf(method.invoke(annon)) == ann.value
+            } catch {
+              case _: Throwable =>
+                Console.err.print("Annotation value needed:", ann.value, annon.getClass)
+                false
+            }
+          } else true
+        } else false
+      }
+    }
+    anno match {
+      case None => this.schema
+      case Some(a) => if (isNotEmpty(a.schema)) Some(a.schema) else this.schema
+    }
+  }
+
+  def getPrefix(clazz: Class[_]): String = {
+    var prefix = this.prefix
+    val anno = this.annotations find { ann =>
+      clazz.getAnnotations exists { annon =>
+        if (ann.clazz.isAssignableFrom(annon.getClass)) {
+          if (isNotEmpty(ann.value)) {
+            try {
+              val method = annon.getClass.getMethod("value")
+              String.valueOf(method.invoke(annon)) == ann.value
+            } catch {
+              case _: Exception =>
+                Console.err.print("Annotation value needed:", ann.value, annon.getClass)
+                false
+            }
+          } else true
+        } else false
+      }
+    }
+    anno foreach (an => if (isNotEmpty(an.prefix)) prefix = an.prefix)
+    if (isEmpty(prefix)) "" else prefix
   }
 
   override def toString: String = {
