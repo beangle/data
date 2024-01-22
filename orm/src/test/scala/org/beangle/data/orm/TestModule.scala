@@ -49,6 +49,10 @@ class TestModule extends MappingModule {
     bind[Named].declare { c =>
       c.name is length(13)
     }
-    all.cacheAll()
+    bind[AccessLog].declare { e =>
+      e.updatedAt is partitionKey
+      index("", true, e.username, e.ip)
+    }
+    all.except(classOf[AccessLog]).cacheAll()
   }
 }

@@ -60,7 +60,7 @@ class HibernateConfigTest extends AnyFunSpec with Matchers {
   it("populate to option entity") {
     val populator = new ConvertPopulator()
     val roleMeta = roleMetaOption.get
-    val role = new Role();
+    val role = new Role()
 
     populator.populate(role, roleMeta, "parent.id", "1");
     assert(role.parent != null)
