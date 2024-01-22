@@ -57,7 +57,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   /** Buildin value types */
   val valueTypes = new mutable.HashSet[Class[_]]
 
-  /** Buildin enum types */
+  /** Builtin enum types */
   val enumTypes = new mutable.HashSet[String]
 
   /** Classname.property -> Collection */
@@ -211,7 +211,18 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val idName = pm.name
     val column = pm.asInstanceOf[OrmSingularProperty].columns.head
     column.comment = Some(getComment(clazz, idName) + (":" + etm.idGenerator.strategy))
-    etm.table.createPrimaryKey("", column.name.toLiteral(etm.table.engine))
+
+    var columnNames = List(column.name.toLiteral(etm.table.engine))
+    if (etm.partitionKeys.nonEmpty) {
+      etm.partitionKeys foreach { x =>
+        etm.property(x).asInstanceOf[ColumnHolder].columns foreach { column =>
+          val columnName = column.name.toLiteral(etm.table.engine)
+          if !columnNames.contains(columnName) then
+            columnNames = columnNames ::: List(columnName)
+        }
+      }
+    }
+    etm.table.createPrimaryKey("", columnNames: _*)
     etm.table.comment = Some(getComment(clazz, clazz.getSimpleName))
     etm.table.module = etm.module
   }

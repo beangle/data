@@ -18,8 +18,6 @@
 package org.beangle.data.orm.hibernate.cfg
 
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.lang.reflect.BeanInfos
-import org.beangle.commons.lang.reflect.TypeInfo.{GeneralType, OptionType}
 import org.beangle.data.jdbc.meta.{Column, SqlType}
 import org.beangle.data.model.meta.{BasicType, EntityType}
 import org.beangle.data.orm.*
@@ -38,12 +36,11 @@ import org.hibernate.engine.OptimisticLockStyle
 import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, IDENTIFIER_NORMALIZER, SCHEMA}
 import org.hibernate.mapping.Collection.{DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_KEY_COLUMN_NAME}
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
-import org.hibernate.mapping.{Backref, BasicValue, DependantValue, Index, IndexBackref, KeyValue, PersistentClass, RootClass, SimpleValue, ToOne, UniqueKey, Value, Bag as HBag, Collection as HCollection, Column as HColumn, Component as HComponent, Fetchable as HFetchable, List as HList, ManyToOne as HManyToOne, Map as HMap, OneToMany as HOneToMany, Property as HProperty, Set as HSet}
+import org.hibernate.mapping.{Backref, BasicValue, DependantValue, Index, IndexBackref, KeyValue, PersistentClass, PrimaryKey, RootClass, SimpleValue, ToOne, UniqueKey, Value, Bag as HBag, Collection as HCollection, Column as HColumn, Component as HComponent, Fetchable as HFetchable, List as HList, ManyToOne as HManyToOne, Map as HMap, OneToMany as HOneToMany, Property as HProperty, Set as HSet}
 import org.hibernate.property.access.spi.PropertyAccessStrategy
 import org.hibernate.{FetchMode, MappingException}
 
 import java.lang.reflect.Modifier
-import java.time.YearMonth
 import java.util as ju
 
 /** Beangle Model Bind Metadadta processor.
@@ -184,7 +181,9 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
                   bindSimpleId(em, entity, propertyName, spm)
                   entity.createPrimaryKey()
                 } else {
-                  value = bindSimpleValue(new BasicValue(context, table), propertyName, spm, btm.clazz.getName)
+                  val bv = new BasicValue(context, table)
+                  bv.setPartitionKey(spm.partitionKey)
+                  value = bindSimpleValue(bv, propertyName, spm, btm.clazz.getName)
                 }
               case etm: OrmEmbeddableType =>
                 val subpath = qualify(em.entityName, propertyName)
@@ -207,6 +206,15 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       entity.setDynamicUpdate(true)
     }
 
+    //set primary key
+    em.table.primaryKey foreach { primaryKey =>
+      val pk = new PrimaryKey(table)
+      pk.setName(primaryKey.name.toString)
+      primaryKey.columns foreach { c =>
+        pk.addColumn(table.getColumn(Identifier.toIdentifier(c.toString)))
+      }
+      table.setPrimaryKey(pk)
+    }
     // add unique key
     em.table.uniqueKeys foreach { uniqueKey =>
       val uk = new UniqueKey()

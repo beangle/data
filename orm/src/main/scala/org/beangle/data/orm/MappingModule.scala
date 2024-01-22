@@ -20,7 +20,7 @@ package org.beangle.data.orm
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
-import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfoDigger, BeanInfos}
+import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.Engine
 import org.beangle.data.jdbc.meta.*
@@ -28,7 +28,7 @@ import org.beangle.data.jdbc.meta.*
 import java.sql.{Blob, Clob, Types}
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asScala
-import scala.quoted.{Expr, Quotes, Type}
+import scala.quoted.{Quotes, Type}
 import scala.reflect.ClassTag
 
 object MappingModule {
@@ -41,9 +41,9 @@ object MappingModule {
 
   /** 创建索引
    *
-   * 针对唯一索引，目前不支持空列
+   * 针对唯一索引，目前不支持允许为空的列
    *
-   * @param name   indexname
+   * @param name   index name
    * @param unique unique index
    */
   class IndexDeclaration(name: String, unique: Boolean) {
@@ -58,6 +58,14 @@ object MappingModule {
             throw new RuntimeException(s"Cannot create unique index $name on ${holder.mapping.table.name},nullable column ${nullCol.name} finded!")
           }
           ch.columns.foreach(e => uk.addColumn(e.name))
+        }
+        if (holder.mapping.partitionKeys.nonEmpty) {
+          val existedNames = uk.columnNames.toSet
+          holder.mapping.partitionKeys foreach { k =>
+            holder.mapping.property(k).asInstanceOf[ColumnHolder].columns.foreach { c =>
+              if (!existedNames.contains(c.name.value)) uk.addColumn(c.name)
+            }
+          }
         }
         if Strings.isBlank(name) then uk.name = Identifier(Constraint.autoname(uk))
         holder.mapping.table.add(uk)
@@ -193,10 +201,18 @@ object MappingModule {
 
   class JoinColumn(name: String) extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
-      val mp = cast[OrmPluralProperty](pm, holder, "element column should used on PluralProperty")
+      val mp = cast[OrmPluralProperty](pm, holder, "element column should be used on PluralProperty")
       if (null != mp.ownerColumn) {
         mp.ownerColumn.name = Identifier(name)
       }
+    }
+  }
+
+  class PartitionKey extends PropertyDeclaration {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val p = cast[OrmSingularProperty](pm, holder, "element should be used on SingularProperty")
+      p.partitionKey = true
+      holder.mapping.partitionKeys = pm.name :: holder.mapping.partitionKeys
     }
   }
 
@@ -518,6 +534,8 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
 
   protected def joinColumn(name: String): JoinColumn = new JoinColumn(name)
 
+  protected def partitionKey: PartitionKey = new PartitionKey
+
   protected inline def bind[T: ClassTag]: EntityHolder[T] = ${ MappingMacro.bind[T]('{ "" }, 'this) }
 
   protected inline def bind[T: ClassTag](entityName: String): EntityHolder[T] = ${ MappingMacro.bind[T]('entityName, 'this) }
@@ -526,7 +544,7 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
     val mapping = mappings.autobind(cls, entityName, bi)
 
     if (null == mapping.idGenerator) {
-      //find superclass's id generator
+      //find superclasses id generator
       var superCls: Class[_] = cls.getSuperclass
       while (null != superCls && superCls != classOf[Object] && null == mapping.idGenerator) {
         if (entityMappings.contains(superCls.getName)) {
@@ -537,7 +555,7 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
       }
     }
 
-    if (null == mapping.idGenerator) { //find id genertor by id type
+    if (null == mapping.idGenerator) { //find id generator by id type
       bi.getPropertyType("id") foreach { idtype =>
         val unsaved = if (idtype.isPrimitive) "0" else "null"
         mapping.idGenerator = defaultIdGenerators.get(idtype) match {
