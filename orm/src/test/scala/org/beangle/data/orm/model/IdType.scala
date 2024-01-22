@@ -15,23 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm
+package org.beangle.data.orm.model
 
-import org.beangle.data.model.LongId
-import org.beangle.data.model.pojo.Hierarchical
+import org.beangle.data.model.IntId
+import org.beangle.data.model.annotation.code
 import org.beangle.data.model.pojo.Named
-import org.beangle.data.model.Entity
-import org.beangle.data.model.LongIdEntity
 
-trait Menu extends Named with LongIdEntity{
-  var parent: Option[Menu] = None
-}
+@code("school")
+class IdType extends IntId with Coded with Named {
 
-abstract class AbstractMenu extends LongId with Menu {
-  @transient var someVar: String = _
-  var title: String = _
-}
-
-class UrlMenu extends AbstractMenu {
-  var url: String = _
 }

@@ -18,9 +18,9 @@
 package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.orm.hibernate.model.{ExtendRole, Role, User}
 import org.beangle.data.model.meta.SingularProperty
 import org.beangle.data.model.util.ConvertPopulator
+import org.beangle.data.orm.model.{ExtendRole, Role, User}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 import org.springframework.core.io.UrlResource

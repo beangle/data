@@ -15,10 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm
+package org.beangle.data.orm.model
 
-import org.beangle.commons.lang.time.WeekTime
-import org.beangle.commons.lang.time.WeekDay
+import org.beangle.commons.lang.time.{WeekDay, WeekTime}
 import org.beangle.data.model.pojo.Updated
 import org.beangle.data.model.{Component, LongId}
 

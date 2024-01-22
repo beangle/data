@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm
+package org.beangle.data.orm.model
 
 import org.beangle.data.model.LongId
 import org.beangle.data.model.pojo.Named

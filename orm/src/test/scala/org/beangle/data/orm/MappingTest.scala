@@ -21,6 +21,7 @@ import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.jdbc.engine.{Engines, PostgreSQL10}
 import org.beangle.data.jdbc.meta.Database
+import org.beangle.data.orm.model.UserProperty
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 

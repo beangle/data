@@ -182,7 +182,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
                   entity.createPrimaryKey()
                 } else {
                   val bv = new BasicValue(context, table)
-                  bv.setPartitionKey(spm.partitionKey)
+                  bv.setPartitionKey(em.partitionKey.contains(spm.name))
                   value = bindSimpleValue(bv, propertyName, spm, btm.clazz.getName)
                 }
               case etm: OrmEmbeddableType =>

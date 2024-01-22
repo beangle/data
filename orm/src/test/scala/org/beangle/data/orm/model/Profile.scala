@@ -15,12 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate.naming
+package org.beangle.data.orm.model
 
-import org.beangle.data.model.annotation.code
+import org.beangle.data.model.LongId
+import org.beangle.data.model.pojo.Named
 
-@code("nation")
-class NationBean {
+/**
+ * @author chaostone
+ */
+class Profile extends LongId with Named {
 
-  var name: String = _
+  var user: User = _
+
 }

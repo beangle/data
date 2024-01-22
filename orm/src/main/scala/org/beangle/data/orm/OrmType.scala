@@ -82,7 +82,7 @@ final class OrmEntityType(val entityName: String, var clazz: Class[_], var table
   var optimisticLockStyle: String = "NONE"
   var idGenerator: IdGenerator = _
   var module: Option[String] = None
-  var partitionKeys: List[String] = List.empty
+  var partitionKey: Option[String] = None
 
   def cacheable: Boolean = {
     Strings.isNotBlank(cacheUsage)

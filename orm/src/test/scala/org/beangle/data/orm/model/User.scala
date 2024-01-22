@@ -15,12 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate.model
+package org.beangle.data.orm.model
 
-import org.beangle.commons.lang.time.WeekDay
-import org.beangle.commons.lang.time.{WeekState, WeekTime}
-import org.beangle.data.model.{Component, Entity, LongId, StringId}
+import org.beangle.commons.lang.time.{WeekDay, WeekState, WeekTime}
 import org.beangle.data.model.pojo.{Hierarchical, Named, Remark}
+import org.beangle.data.model.{Component, Entity, LongId, StringId}
 
 class User(var id: Long) extends Entity[Long] {
   def this() = this(0)
@@ -72,6 +71,6 @@ abstract class CodedEntity extends StringId with Coded
 
 abstract class StringIdCodedEntity extends CodedEntity
 
-class Menu extends StringIdCodedEntity
+class MenuItem extends StringIdCodedEntity
 
 class Department extends LongId with Hierarchical[Department] with Named with Remark

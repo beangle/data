@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm
 
+import org.beangle.data.orm.model.TestUser
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 

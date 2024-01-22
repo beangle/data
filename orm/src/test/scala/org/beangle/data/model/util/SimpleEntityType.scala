@@ -26,6 +26,8 @@ final class SimpleEntityType(val clazz: Class[_]) extends EntityType {
 
   var properties: collection.mutable.Map[String, Property] = Collections.newMap
 
+  override def partitionKey: Option[String] = None
+
   def id: Property = {
     properties("id")
   }

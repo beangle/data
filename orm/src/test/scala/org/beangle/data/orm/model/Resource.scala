@@ -15,10 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate.naming
+package org.beangle.data.orm.model
 
-import org.beangle.data.model.annotation.code
-@code("school")
-class SchoolBean {
+import org.beangle.data.model.pojo.Named
+import org.beangle.data.model.{IntId, LongId}
 
+class LongIdResource extends LongId {
+
+}
+
+class LongDateIdResource extends LongId with Named {
+
+  var year: Int = _
+}
+
+class IntIdResource extends IntId with Named {
+
+  var year: Int = _
 }

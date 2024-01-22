@@ -19,8 +19,8 @@ package org.beangle.data.orm.hibernate.dao
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
-import org.beangle.data.orm.hibernate.naming.NationBean
 import org.beangle.data.dao.OqlBuilder
+import org.beangle.data.orm.model.code.NationBean
 
 class OqlBuilderTest extends AnyFunSpec with Matchers {
 

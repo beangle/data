@@ -15,12 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate.naming
+package org.beangle.data.orm.cfg
 
 import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.orm.hibernate.model.IdType
 import org.beangle.data.orm.cfg.Profiles
+import org.beangle.data.orm.model.code.{NationBean, SchoolBean}
+import org.beangle.data.orm.model.IdType
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -31,12 +32,12 @@ class RailsNamingPolicyTest extends AnyFunSpec with Matchers {
       System.setProperty("jpa_prefix", "public")
       val profiles = new Profiles(new Resources(None, ClassLoaders.getResources("META-INF/beangle/orm.xml"), None))
       val module = profiles.getProfile(classOf[NationBean])
-      assert(module.schema.contains("public_naming"))
+      assert(module.schema.contains("public_code"))
       assert(profiles.getPrefix(classOf[NationBean]) == "gb_")
 
       val daoModule = profiles.getProfile(classOf[SchoolBean])
       assert(daoModule.parent.nonEmpty)
-      assert(daoModule.parent.get.packageName == "org.beangle.data.orm.hibernate")
+      assert(daoModule.parent.get.packageName == "org.beangle.data.orm.model")
 
       assert(profiles.getSchema(classOf[IdType]).contains("school"))
     }

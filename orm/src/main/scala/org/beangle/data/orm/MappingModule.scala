@@ -59,9 +59,9 @@ object MappingModule {
           }
           ch.columns.foreach(e => uk.addColumn(e.name))
         }
-        if (holder.mapping.partitionKeys.nonEmpty) {
+        if (holder.mapping.partitionKey.nonEmpty) {
           val existedNames = uk.columnNames.toSet
-          holder.mapping.partitionKeys foreach { k =>
+          holder.mapping.partitionKey foreach { k =>
             holder.mapping.property(k).asInstanceOf[ColumnHolder].columns.foreach { c =>
               if (!existedNames.contains(c.name.value)) uk.addColumn(c.name)
             }
@@ -211,8 +211,7 @@ object MappingModule {
   class PartitionKey extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val p = cast[OrmSingularProperty](pm, holder, "element should be used on SingularProperty")
-      p.partitionKey = true
-      holder.mapping.partitionKeys = pm.name :: holder.mapping.partitionKeys
+      holder.mapping.partitionKey = Some(pm.name)
     }
   }
 

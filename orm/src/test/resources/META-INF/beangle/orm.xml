@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <orm>
-  <mapping class="org.beangle.data.orm.hibernate.model.TestMapping1"/>
-  <mapping class="org.beangle.data.orm.hibernate.model.TestMapping2"/>
-  <mapping class="org.beangle.data.orm.TestModule"/>
+  <mapping class="org.beangle.data.orm.model.TestMapping1"/>
+  <mapping class="org.beangle.data.orm.model.TestMapping2"/>
+  <mapping class="org.beangle.data.orm.model.TestMapping3"/>
   <naming>
-    <profile package = "org.beangle.data.orm.hibernate" pluralize="true" schema="${jpa_prefix}">
+    <profile package = "org.beangle.data.orm.model" pluralize="true" schema="${jpa_prefix}">
       <annotation class= "org.beangle.data.model.annotation.code" prefix="gb_" value="nation" />
       <annotation class = "org.beangle.data.model.annotation.code" prefix="jb_" value="ministry" />
       <annotation class = "org.beangle.data.model.annotation.code" prefix="xb_" value="school" schema="school"/>
 
-      <profile package = "naming" plau="true" schema="${jpa_prefix}_naming"/>
+      <profile package = "code" plau="true" schema="${jpa_prefix}_code"/>
     </profile>
 
     <profile package = "org.beangle.data.orm.hibernate.dao" pluralize="true" schema="${jpa_prefix}"/>

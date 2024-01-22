@@ -41,7 +41,6 @@ abstract class OrmProperty(val name: String, val clazz: Class[_], var optional: 
 final class OrmSingularProperty(name: String, clazz: Class[_], optional: Boolean, var propertyType: OrmType)
   extends OrmProperty(name, clazz, optional) with Fetchable with ColumnHolder with Cloneable with SingularProperty {
 
-  var partitionKey: Boolean = false
   var joinColumn: Option[Column] = None
 
   def copy(): OrmSingularProperty = {

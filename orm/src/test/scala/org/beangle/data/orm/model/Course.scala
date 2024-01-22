@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate.model
+package org.beangle.data.orm.model
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.time.WeekState

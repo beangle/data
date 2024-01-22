@@ -43,6 +43,8 @@ trait EntityType extends StructType {
   def id: Property
 
   def entityName: String
+
+  def partitionKey: Option[String]
 }
 
 trait Property {

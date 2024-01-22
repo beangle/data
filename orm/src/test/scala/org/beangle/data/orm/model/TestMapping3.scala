@@ -15,11 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm
+package org.beangle.data.orm.model
 
 import org.beangle.data.model.pojo.Named
+import org.beangle.data.orm.*
 
-class TestModule extends MappingModule {
+class TestMapping3 extends MappingModule {
 
   override def binding(): Unit = {
     autoIncrement()
@@ -49,10 +50,12 @@ class TestModule extends MappingModule {
     bind[Named].declare { c =>
       c.name is length(13)
     }
+
     bind[AccessLog].declare { e =>
-      e.updatedAt is partitionKey
+      e.ip is partitionKey
       index("", true, e.username, e.ip)
-    }
+    }.generator(IdGenerator.Native)
+
     all.except(classOf[AccessLog]).cacheAll()
   }
 }

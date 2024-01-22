@@ -15,13 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate.model
+package org.beangle.data.orm.model
 
+import org.beangle.commons.lang.time.{HourMinute, WeekDay, WeekState}
 import org.beangle.data.model.IntId
-import org.beangle.data.model.annotation.code
-import org.beangle.data.model.pojo.Named
 
-@code("school")
-class IdType extends IntId with Coded with Named {
+class TimeBean extends IntId {
+
+  var time: HourMinute = _
+
+  var weekday: WeekDay = _
+
+  var state: WeekState = _
 
 }

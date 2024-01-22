@@ -213,13 +213,11 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     column.comment = Some(getComment(clazz, idName) + (":" + etm.idGenerator.strategy))
 
     var columnNames = List(column.name.toLiteral(etm.table.engine))
-    if (etm.partitionKeys.nonEmpty) {
-      etm.partitionKeys foreach { x =>
-        etm.property(x).asInstanceOf[ColumnHolder].columns foreach { column =>
-          val columnName = column.name.toLiteral(etm.table.engine)
-          if !columnNames.contains(columnName) then
-            columnNames = columnNames ::: List(columnName)
-        }
+    etm.partitionKey foreach { x =>
+      etm.property(x).asInstanceOf[ColumnHolder].columns foreach { column =>
+        val columnName = column.name.toLiteral(etm.table.engine)
+        if !columnNames.contains(columnName) then
+          columnNames = columnNames ::: List(columnName)
       }
     }
     etm.table.createPrimaryKey("", columnNames: _*)
@@ -411,16 +409,32 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     }
 
     val inheris = Collections.newMap[String, OrmProperty]
+    var partitionKey: Option[String] = None
     supers.reverse foreach { e =>
       inheris ++= e.properties.filter(!_._2.mergeable) // filter not mergeable
       if (entity.idGenerator == null) entity.idGenerator = e.idGenerator
       if (null == entity.cacheRegion && null == entity.cacheUsage) entity.cache(e.cacheRegion, e.cacheUsage)
+      if (e.partitionKey.nonEmpty) partitionKey = e.partitionKey
     }
 
     val inherited = Collections.newMap[String, OrmProperty]
     inheris foreach { case (name, p) =>
       if entity.properties(name).mergeable then inherited.put(name, p.copy())
     }
+    if entity.partitionKey.isEmpty && partitionKey.nonEmpty then {
+      entity.partitionKey = partitionKey
+      entity.table.uniqueKeys foreach { uk =>
+        val ukColumnNames = uk.columnNames.map(_.toLowerCase).toSet
+        partitionKey foreach { key =>
+          entity.property(key).asInstanceOf[ColumnHolder].columns foreach { column =>
+            if (!ukColumnNames.contains(column.name.value.toLowerCase())) {
+              uk.addColumn(column.name)
+            }
+          }
+        }
+      }
+    }
+
     entity.addProperties(inherited)
   }
 

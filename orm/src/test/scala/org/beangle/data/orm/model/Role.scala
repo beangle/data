@@ -15,12 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate.model
+package org.beangle.data.orm.model
 
-import org.beangle.data.model.Entity
 import org.beangle.commons.collection.Collections
-import java.time.YearMonth
-import java.time.LocalDate
+import org.beangle.data.model.Entity
+
+import java.time.{LocalDate, YearMonth}
 
 class Role(var id: Int) extends Entity[Int] with Coded {
   this.code = String.valueOf(System.identityHashCode(this))

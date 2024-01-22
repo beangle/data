@@ -15,18 +15,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.hibernate.model
+package org.beangle.data.orm.model
 
-import org.beangle.commons.lang.annotation.value
+import org.beangle.commons.collection.Collections
+import org.beangle.data.model.LongId
+import org.beangle.data.model.pojo.Named
 
-object CreditHours {
-  val Empty = CreditHours(0)
-}
+import java.time.LocalDate
+import scala.collection.mutable
 
-// 由于AnyVal的类型擦除的原因，使用CreditHours的类中生成的set方法中参数的实际类型是Int,
-// 而且AnyVal不能进行运行时类型检测，所以，不容易通过反射进行设置
-// 所以不要使用继承AnyVal
-@value
-class CreditHours(val hours: Int) extends Serializable {
-
+class TestRole extends LongId with Named {
+  var rootUser: Boolean = true
+  var properties = Collections.newMap[Int, String]
+  var vocations = Collections.newSet[LocalDate]
+  var users: mutable.Buffer[TestUser] = _
 }

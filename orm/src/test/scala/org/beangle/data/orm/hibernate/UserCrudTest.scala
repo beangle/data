@@ -19,10 +19,11 @@ package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.lang.time.{HourMinute, WeekState, WeekTime}
 import org.beangle.data.dao.OqlBuilder
-import org.beangle.data.orm.hibernate.model.*
+import org.beangle.data.orm.AccessLog
+import org.beangle.data.orm.model.*
 import org.hibernate.SessionFactory
 
-import java.time.{LocalDate, YearMonth}
+import java.time.{Instant, LocalDate, YearMonth}
 import scala.collection.mutable.ListBuffer
 
 object UserCrudTest {
@@ -150,6 +151,18 @@ object UserCrudTest {
     val c = session.get(classOf[Course], courseId)
     assert(c.features.size == 2)
     assert(c.hasFeature("f1", "feature 1 rename"))
+
+    val accessLog = new AccessLog()
+    accessLog.username = "admin"
+    accessLog.action = "update"
+    accessLog.resource = "user management"
+    accessLog.ip = "localhost"
+    accessLog.userAgent = "firefox"
+    accessLog.updatedAt = Instant.now
+    entityDao.saveOrUpdate(accessLog)
+
+    accessLog.resource = "user-management"
+    entityDao.saveOrUpdate(accessLog)
     transaction.commit()
 
     //test bitand on weekstate
@@ -160,7 +173,9 @@ object UserCrudTest {
     val allCoursesQuery = session.createQuery(s"from ${classOf[Course].getName}", classOf[Course])
     val allCourses = allCoursesQuery.list()
     assert(!allCourses.isEmpty)
-    assert(allCourses.get(0).category == None)
+    assert(allCourses.get(0).category.isEmpty)
+
     session.close()
+
   }
 }
