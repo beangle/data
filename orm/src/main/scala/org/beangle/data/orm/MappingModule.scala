@@ -215,6 +215,13 @@ object MappingModule {
     }
   }
 
+  class Version extends PropertyDeclaration {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val p = cast[OrmSingularProperty](pm, holder, "element should be used on SingularProperty")
+      pm.optimisticLocked = true
+    }
+  }
+
   class Cache(val cacheholder: CacheHolder) extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       cacheholder.add(List(new Collection(holder.clazz, pm.name)))
@@ -534,6 +541,8 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
   protected def joinColumn(name: String): JoinColumn = new JoinColumn(name)
 
   protected def partitionKey: PartitionKey = new PartitionKey
+
+  protected def version: Version = new Version
 
   protected inline def bind[T: ClassTag]: EntityHolder[T] = ${ MappingMacro.bind[T]('{ "" }, 'this) }
 

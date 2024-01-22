@@ -19,8 +19,8 @@ package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.collection.Wrappers
 import org.beangle.commons.collection.page.{Page, PageLimit, SinglePage}
+import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.description
-import org.beangle.commons.lang.{Assert, Strings}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, OperationType, OqlBuilder, QueryBuilder, Query as BQuery}
 import org.beangle.data.model.Entity
@@ -33,7 +33,7 @@ import org.hibernate.{Hibernate, Session, SessionFactory}
 
 import java.io.{ByteArrayOutputStream, InputStream, Serializable}
 import java.sql.{Blob, Clob}
-import scala.collection.immutable.{ArraySeq, Seq}
+import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.{asJava, asScala}
 
@@ -216,7 +216,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   override def find[T <: Entity[ID], ID](clazz: Class[T], id: ID): Option[T] = {
-    find[T, ID](clazz.getName, id)
+    find[T, ID](entityNameOf(clazz), id)
   }
 
   override def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T] = {

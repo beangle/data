@@ -31,8 +31,7 @@ import scala.collection.immutable.Seq
  * @author chaostone
  */
 trait EntityDao {
-  /**
-   * 查询指定id的对象
+  /** 查询指定id的对象
    *
    * @param clazz 类型
    * @param id    唯一标识
@@ -41,8 +40,7 @@ trait EntityDao {
 
   def getAll[T <: Entity[_]](clazz: Class[T]): Seq[T]
 
-  /**
-   * find T by id.
+  /** find T by id.
    */
   def find[T <: Entity[ID], ID](clazz: Class[T], id: ID): Option[T]
 
@@ -50,7 +48,7 @@ trait EntityDao {
 
   def findBy[T <: Entity[_]](clazz: Class[T], key: String, value: Any): Seq[T]
 
-  def findBy[T <: Entity[_]](clazz: Class[T], kv: Tuple2[String, Any]*): Seq[T]
+  def findBy[T <: Entity[_]](clazz: Class[T], kv: (String, Any)*): Seq[T]
 
   def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T]
 
