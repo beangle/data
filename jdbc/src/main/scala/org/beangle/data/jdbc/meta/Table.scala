@@ -248,7 +248,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     refTable.primaryKey match {
       case Some(pk) =>
         val fk = new ForeignKey(this, Identifier("fk_temp"), eng.toIdentifier(columnName))
-        fk.refer(refTable, pk.columns.head)
+        fk.refer(refTable, pk.columns.toSeq: _*)
         if (Strings.isBlank(keyName)) {
           fk.name = eng.toIdentifier(Constraint.autoname(fk))
         } else {

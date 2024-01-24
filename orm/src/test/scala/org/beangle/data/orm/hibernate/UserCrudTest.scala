@@ -19,11 +19,11 @@ package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.lang.time.{HourMinute, WeekState, WeekTime}
 import org.beangle.data.dao.OqlBuilder
-import org.beangle.data.orm.AccessLog
 import org.beangle.data.orm.model.*
+import org.beangle.data.orm.{AccessLog, AccessParam}
 import org.hibernate.SessionFactory
 
-import java.time.{Instant, LocalDate, YearMonth}
+import java.time.{LocalDate, YearMonth}
 import scala.collection.mutable.ListBuffer
 
 object UserCrudTest {
@@ -158,12 +158,15 @@ object UserCrudTest {
     accessLog.resource = "user management"
     accessLog.ip = "localhost"
     accessLog.userAgent = "firefox"
-    accessLog.updatedAt = Instant.now
+    accessLog.updatedOn = LocalDate.now()
+    accessLog.addParam(1L, "id", "1")
+    accessLog.id = 1L
     entityDao.saveOrUpdate(accessLog)
 
     accessLog.resource = "user-management"
     entityDao.saveOrUpdate(accessLog)
     transaction.commit()
+    session.clear()
 
     //test bitand on weekstate
     val cquery = session.createQuery(s"from ${classOf[Course].getName} c where coalesce(c.weekstate,:weekstate)>0 or c.weekstate=:weekstate", classOf[Course])
@@ -175,6 +178,10 @@ object UserCrudTest {
     assert(!allCourses.isEmpty)
     assert(allCourses.get(0).category.isEmpty)
 
+    val logParams = entityDao.getAll(classOf[AccessParam])
+    assert(logParams.head.log.username == "admin")
+    //    assert(logs.head.params.size == 1)
+    //    assert(logs.head.params.head.name == "id")
     session.close()
 
   }

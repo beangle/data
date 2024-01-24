@@ -17,15 +17,37 @@
 
 package org.beangle.data.orm
 
+import org.beangle.commons.collection.Collections
 import org.beangle.data.model.LongId
 import org.beangle.data.model.pojo.Updated
 
-class AccessLog extends LongId, Updated {
+import java.time.LocalDate
+import scala.collection.mutable
+
+class AccessLog extends LongId {
 
   var resource: String = _
   var username: String = _
   var action: String = _
   var ip: String = _
-  var params: Option[String] = None
+  var updatedOn: LocalDate = _
+  var params: mutable.Buffer[AccessParam] = Collections.newBuffer[AccessParam]
   var userAgent: String = _
+
+  def addParam(id: Long, name: String, value: String): Unit = {
+    val param = new AccessParam
+    param.id = id
+    param.log = this
+    param.name = name
+    param.value = value
+    param.updatedOn = this.updatedOn
+    params += param
+  }
+}
+
+class AccessParam extends LongId {
+  var log: AccessLog = _
+  var updatedOn: LocalDate = _
+  var name: String = _
+  var value: String = _
 }

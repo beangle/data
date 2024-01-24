@@ -52,9 +52,14 @@ class TestMapping3 extends MappingModule {
     }
 
     bind[AccessLog].declare { e =>
-      e.ip is partitionKey
+      e.updatedOn is partitionKey
+      e.params is depends("log")
       index("", true, e.username, e.ip)
-    }.generator(IdGenerator.Native)
+    }.generator(IdGenerator.Assigned)
+
+    bind[AccessParam].declare { e =>
+      e.updatedOn is partitionKey
+    }.generator(IdGenerator.Assigned)
 
     all.except(classOf[AccessLog]).cacheAll()
   }

@@ -28,6 +28,7 @@ import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.jdbc.meta.{Column, Database, Table}
 import org.beangle.data.jdbc.{DefaultSqlTypeMapping, SqlTypeMapping}
+import org.beangle.data.model.annotation.archive
 import org.beangle.data.model.meta.*
 import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity}
 import org.beangle.data.orm.Jpas.*
@@ -36,6 +37,7 @@ import org.beangle.data.orm.cfg.Profiles
 import java.lang.reflect.Modifier
 import java.net.URL
 import java.util.Locale
+import scala.collection.immutable.Seq
 import scala.collection.mutable
 
 final class Mappings(val database: Database, val profiles: Profiles) extends Logging {
@@ -200,27 +202,33 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   /** 查找实体主键
    * */
   private def firstPass(etm: OrmEntityType): Unit = {
-    val clazz = etm.clazz
-    if (null == etm.idGenerator) {
-      throw new RuntimeException(s"Cannot find id generator for entity ${etm.entityName}")
-    }
-    if (null == etm.id) {
-      throw new RuntimeException(s"Cannot find id for entity ${etm.entityName}")
-    }
-    val pm = etm.id
-    val idName = pm.name
-    val column = pm.asInstanceOf[OrmSingularProperty].columns.head
-    column.comment = Some(getComment(clazz, idName) + (":" + etm.idGenerator.strategy))
+    if null == etm.idGenerator then throw new RuntimeException(s"Cannot find id generator for entity ${etm.entityName}")
+    if null == etm.id then throw new RuntimeException(s"Cannot find id for entity ${etm.entityName}")
 
-    var columnNames = List(column.name.toLiteral(etm.table.engine))
-    etm.partitionKey foreach { x =>
-      etm.property(x).asInstanceOf[ColumnHolder].columns foreach { column =>
-        val columnName = column.name.toLiteral(etm.table.engine)
-        if !columnNames.contains(columnName) then
-          columnNames = columnNames ::: List(columnName)
+    val clazz = etm.clazz
+    val column = etm.id.asInstanceOf[OrmSingularProperty].columns.head
+    column.comment = Some(getComment(clazz, etm.id.name) + (":" + etm.idGenerator.strategy))
+
+    etm.table.createPrimaryKey("", column.name.toLiteral(etm.table.engine))
+    // if it has a partition key,so update unique keys,primary key and constraints.
+    // for it lack partition column.
+    etm.partitionKey foreach { partKey =>
+      val partCol = etm.property(partKey).asInstanceOf[ColumnHolder].columns.head
+      val partColName = partCol.name
+      val table = etm.table
+
+      //add partition column to primary key
+      table.primaryKey foreach { pk =>
+        val existedNames = pk.columnNames.toSet
+        if !existedNames.contains(partColName.toLiteral(table.engine)) then pk.addColumn(partColName)
+      }
+
+      // add partition column to unique keys
+      table.uniqueKeys foreach { uk =>
+        val existedNames = uk.columnNames.toSet
+        if !existedNames.contains(partColName.toLiteral(table.engine)) then uk.addColumn(partColName)
       }
     }
-    etm.table.createPrimaryKey("", columnNames: _*)
     etm.table.comment = Some(getComment(clazz, clazz.getSimpleName))
     etm.table.module = etm.module
   }
@@ -270,7 +278,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
               case btm: OrmBasicType =>
                 addBasicTypeMapping(ost.clazz, property.name, btm, btm.column, table)
               case btm: OrmEntityType =>
-                addBasicTypeMapping(ost.clazz, property.name, btm, spm.joinColumn.get, table)
+                addRefTypeMapping(ost.clazz, property.name, btm, spm.joinColumns.head, table)
               case etm: OrmEmbeddableType =>
                 processProperties(oet, etm, table)
             }
@@ -324,7 +332,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                     case btm: OrmBasicType =>
                       addBasicTypeMapping(ost.clazz, property.name, ppm.element, btm.column, collectTable)
                     case oet: OrmEntityType =>
-                      addBasicTypeMapping(ost.clazz, property.name, ppm.element, ppm.inverseColumn.get, collectTable)
+                      addRefTypeMapping(ost.clazz, property.name, oet, ppm.inverseColumn.get, collectTable)
                     case etm: OrmEmbeddableType =>
                       etm.properties foreach { case (p, pm) =>
                         pm match {
@@ -335,7 +343,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
                               case oet: OrmEntityType =>
                                 val idType = idTypeOf(oet.clazz)
                                 val column = newColumn(columnName(spm.clazz, spm.name, true), idType, spm.optional)
-                                addBasicTypeMapping(etm.clazz, property.name, oet, column, collectTable)
+                                addRefTypeMapping(etm.clazz, property.name, oet, column, collectTable)
                               case ost: OrmStructType =>
                                 processProperties(oet, ost, collectTable)
                             }
@@ -363,25 +371,26 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     column.comment = Some(getComment(clazz, clazz.getSimpleName) + "ID")
   }
 
-  private def addBasicTypeMapping(clazz: Class[_], propertyName: String, typ: Type, elec: Column, table: Table): Unit = {
+  private def addBasicTypeMapping(clazz: Class[_], propertyName: String, typ: Type, column: Column, table: Table): Unit = {
     detectValueType(typ.clazz)
-    typ match {
-      case et: EntityType =>
-        createForeignKey(table, List(elec), entityTypes(et.entityName).table)
-        if (elec.comment.isEmpty) {
-          val fkcomment = getComment(clazz, propertyName)
-          if (fkcomment == propertyName + "?") { //not found
-            addRefComment(elec, et.clazz, et.clazz.getSimpleName)
-          } else {
-            elec.comment = Some(fkcomment + "ID")
-          }
-        }
-      case _ =>
-        if (elec.comment.isEmpty) elec.comment = Some(getComment(clazz, propertyName))
+    if (column.comment.isEmpty) column.comment = Some(getComment(clazz, propertyName))
+    if !table.columnExits(column.name) then table.add(column)
+  }
+
+  private def addRefTypeMapping(clazz: Class[_], propertyName: String, refType: EntityType, column: Column, table: Table): Unit = {
+    //we ignore ref to a partition table or a archive table
+    if refType.partitionKey.isEmpty && !clazz.isAnnotationPresent(classOf[archive]) then
+      createForeignKey(table, List(column), entityTypes(refType.entityName).table)
+
+    if (column.comment.isEmpty && column.name.value.toLowerCase.endsWith("id")) {
+      val fkc = getComment(clazz, propertyName)
+      if (fkc == propertyName + "?") { //not found
+        addRefComment(column, refType.clazz, refType.clazz.getSimpleName)
+      } else {
+        column.comment = Some(fkc + "ID")
+      }
     }
-    if (!table.columnExits(elec.name)) {
-      table.add(elec)
-    }
+    if !table.columnExits(column.name) then table.add(column)
   }
 
   private def createForeignKey(table: Table, columns: Iterable[Column], refTable: Table): Unit = {
@@ -410,6 +419,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
 
     val inheris = Collections.newMap[String, OrmProperty]
     var partitionKey: Option[String] = None
+    // collect inherited properties,not-null id generator and partition key.
     supers.reverse foreach { e =>
       inheris ++= e.properties.filter(!_._2.mergeable) // filter not mergeable
       if (entity.idGenerator == null) entity.idGenerator = e.idGenerator
@@ -421,19 +431,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     inheris foreach { case (name, p) =>
       if entity.properties(name).mergeable then inherited.put(name, p.copy())
     }
-    if entity.partitionKey.isEmpty && partitionKey.nonEmpty then {
-      entity.partitionKey = partitionKey
-      entity.table.uniqueKeys foreach { uk =>
-        val ukColumnNames = uk.columnNames.map(_.toLowerCase).toSet
-        partitionKey foreach { key =>
-          entity.property(key).asInstanceOf[ColumnHolder].columns foreach { column =>
-            if (!ukColumnNames.contains(column.name.value.toLowerCase())) {
-              uk.addColumn(column.name)
-            }
-          }
-        }
-      }
-    }
+    if entity.partitionKey.isEmpty && partitionKey.nonEmpty then entity.partitionKey = partitionKey
 
     entity.addProperties(inherited)
   }
@@ -551,7 +549,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
             val column = newColumn(columnName(propType, name, true), idType, optional)
             addRefComment(column, ormType.clazz, ormType.entityName)
             val sp = new OrmSingularProperty(name, propType, optional, ormType)
-            sp.joinColumn = Some(column)
+            sp.joinColumns = Seq(column)
             property = sp
           } else if (isComponent(propType)) {
             property = new OrmSingularProperty(name, propType, optional, buildElement(propType, null))
@@ -594,7 +592,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     val idType = idTypeOf(clazz)
     val column = newColumn(columnName(c.clazz, name, true), idType, typeInfo.isOptional)
     val property = new OrmSingularProperty(name, clazz, typeInfo.isOptional, typ)
-    property.joinColumn = Some(column)
+    property.joinColumns = Seq(column)
     c.addProperty(property)
     entity.table.add(column)
   }

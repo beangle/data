@@ -59,14 +59,6 @@ object MappingModule {
           }
           ch.columns.foreach(e => uk.addColumn(e.name))
         }
-        if (holder.mapping.partitionKey.nonEmpty) {
-          val existedNames = uk.columnNames.toSet
-          holder.mapping.partitionKey foreach { k =>
-            holder.mapping.property(k).asInstanceOf[ColumnHolder].columns.foreach { c =>
-              if (!existedNames.contains(c.name.value)) uk.addColumn(c.name)
-            }
-          }
-        }
         if Strings.isBlank(name) then uk.name = Identifier(Constraint.autoname(uk))
         holder.mapping.table.add(uk)
       } else {
@@ -329,6 +321,7 @@ object MappingModule {
       lasts foreach { name =>
         val pm = holder.mapping.property(name)
         declarations foreach (d => d(holder, pm))
+        //if the property is declared explicitly, don't change it
         pm.mergeable = false
       }
       lasts.clear()

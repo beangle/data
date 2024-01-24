@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.hibernate.cfg
 
+import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.jdbc.meta.{Column, SqlType}
 import org.beangle.data.model.meta.{BasicType, EntityType}
@@ -36,7 +37,7 @@ import org.hibernate.engine.OptimisticLockStyle
 import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, IDENTIFIER_NORMALIZER, SCHEMA}
 import org.hibernate.mapping.Collection.{DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_KEY_COLUMN_NAME}
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
-import org.hibernate.mapping.{Backref, BasicValue, DependantValue, Index, IndexBackref, KeyValue, PersistentClass, PrimaryKey, RootClass, SimpleValue, ToOne, UniqueKey, Value, Bag as HBag, Collection as HCollection, Column as HColumn, Component as HComponent, Fetchable as HFetchable, List as HList, ManyToOne as HManyToOne, Map as HMap, OneToMany as HOneToMany, Property as HProperty, Set as HSet}
+import org.hibernate.mapping.{Backref, BasicValue, DependantValue, IndexBackref, KeyValue, PersistentClass, PrimaryKey, RootClass, SimpleValue, ToOne, Value, Bag as HBag, Collection as HCollection, Column as HColumn, Component as HComponent, Fetchable as HFetchable, List as HList, ManyToOne as HManyToOne, Map as HMap, OneToMany as HOneToMany, Property as HProperty, Set as HSet}
 import org.hibernate.property.access.spi.PropertyAccessStrategy
 import org.hibernate.{FetchMode, MappingException}
 
@@ -168,44 +169,20 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
 
     val table = metadata.addTable(em.table.schema.name.value, null, em.table.name.value, null, em.isAbstract, context)
     entity.setTable(table)
-    em.properties foreach {
-      case (propertyName, p) =>
-        var value: Value = null
-        p match {
-          case spm: OrmSingularProperty =>
-            spm.propertyType match {
-              case et: EntityType =>
-                value = bindManyToOne(new HManyToOne(context, table), propertyName, et.entityName, spm.joinColumn.get, spm)
-              case btm: OrmBasicType =>
-                if (spm.name == "id") {
-                  bindSimpleId(em, entity, propertyName, spm)
-                  entity.createPrimaryKey()
-                } else {
-                  val bv = new BasicValue(context, table)
-                  bv.setPartitionKey(em.partitionKey.contains(spm.name))
-                  value = bindSimpleValue(bv, propertyName, spm, btm.clazz.getName)
-                }
-              case etm: OrmEmbeddableType =>
-                val subpath = qualify(em.entityName, propertyName)
-                value = bindComponent(new HComponent(context, entity), etm, subpath, false)
-            }
-          case colp: OrmPluralProperty =>
-            val hcol = createCollection(colp, entity)
-            metadata.addCollectionBinding(bindCollection(entity, em.entityName + "." + propertyName, colp, hcol))
-            value = hcol
-        }
-
-        if (value != null) {
-          val property = createProperty(value, propertyName, entity.getMappedClass, p)
-          entity.addProperty(property)
-        }
+    val ahead = Collections.newSet[String]
+    ahead.addOne(em.id.name)
+    // bind id
+    bindSimpleId(em, entity, em.id.name, em.id.asInstanceOf[OrmSingularProperty])
+    // bind partition key
+    em.partitionKey foreach { partKey =>
+      val bv = new BasicValue(context, table)
+      bv.setPartitionKey(true)
+      val osp = em.properties(partKey).asInstanceOf[OrmSingularProperty]
+      val value = bindSimpleValue(bv, partKey, osp, osp.propertyType.asInstanceOf[OrmBasicType].clazz.getName)
+      val property = createProperty(value, partKey, entity.getMappedClass, osp)
+      entity.addProperty(property)
+      ahead.addOne(partKey)
     }
-
-    // trigger dynamic update
-    if (!entity.useDynamicUpdate && entity.getTable.getColumnSpan >= minColumnEnableDynaUpdate) {
-      entity.setDynamicUpdate(true)
-    }
-
     //set primary key
     em.table.primaryKey foreach { primaryKey =>
       val pk = new PrimaryKey(table)
@@ -215,26 +192,34 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       }
       table.setPrimaryKey(pk)
     }
-    // add unique key
-    em.table.uniqueKeys foreach { uniqueKey =>
-      val uk = new UniqueKey()
-      uk.setTable(table)
-      uk.setName(uniqueKey.name.toString)
-      uniqueKey.columns foreach { c =>
-        uk.addColumn(table.getColumn(Identifier.toIdentifier(c.toString)))
+
+    em.properties.filter(x => !ahead.contains(x._1)) foreach { case (propertyName, p) =>
+      val value: Value = p match {
+        case spm: OrmSingularProperty =>
+          spm.propertyType match {
+            case et: EntityType =>
+              bindManyToOne(new HManyToOne(context, table), propertyName, et.entityName, spm.joinColumns, spm)
+            case btm: OrmBasicType =>
+              val bv = new BasicValue(context, table)
+              bindSimpleValue(bv, propertyName, spm, btm.clazz.getName)
+            case etm: OrmEmbeddableType =>
+              val subpath = qualify(em.entityName, propertyName)
+              bindComponent(new HComponent(context, entity), etm, subpath, false)
+          }
+        case colp: OrmPluralProperty =>
+          val hcol = createCollection(colp, entity)
+          metadata.addCollectionBinding(bindCollection(entity, em.entityName + "." + propertyName, colp, hcol))
+          hcol
       }
-      table.addUniqueKey(uk)
+      val property = createProperty(value, propertyName, entity.getMappedClass, p)
+      entity.addProperty(property)
     }
-    //add indexes
-    em.table.indexes foreach { idx =>
-      val index = new Index()
-      index.setTable(table)
-      index.setName(idx.name.toString)
-      idx.columns foreach { c =>
-        index.addColumn(table.getColumn(Identifier.toIdentifier(c.toString)))
-      }
-      table.addIndex(index)
+
+    // trigger dynamic update
+    if (!entity.useDynamicUpdate && entity.getTable.getColumnSpan >= minColumnEnableDynaUpdate) {
+      entity.setDynamicUpdate(true)
     }
+
     assert(null != entity.getIdentifier, s"${entity.getEntityName} requires identifier.")
     metadata.addEntityBinding(entity)
     entity
@@ -267,7 +252,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
           collection.setInverse(true)
         } else {
           val element = bindManyToOne(new HManyToOne(context, collection.getCollectionTable), DEFAULT_ELEMENT_COLUMN_NAME,
-            et.entityName, colp.inverseColumn.get)
+            et.entityName, colp.inverseColumn.toSeq)
           collection.setElement(element)
           //        bindManyToManySubelements( collection, subnode )
         }
@@ -291,6 +276,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       else collection.getOwner.getRecursiveProperty(propRef).getValue.asInstanceOf[KeyValue]
 
     val key = new DependantValue(context, collection.getCollectionTable, keyVal)
+    key.disableForeignKey()
     key.setOnDeleteAction(OnDeleteAction.NO_ACTION)
     bindSimpleValue(key, DEFAULT_KEY_COLUMN_NAME, keyElem, collection.getOwner.getIdentifier.getType.getName)
     collection.setKey(key)
@@ -326,7 +312,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
         map.setIndex(bindSimpleValue(new BasicValue(context, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME,
           new SimpleColumn(mapp.keyColumn), bt.clazz.getName))
       case kt: EntityType =>
-        map.setIndex(bindManyToOne(new HManyToOne(context, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, kt.entityName, mapp.keyColumn))
+        map.setIndex(bindManyToOne(new HManyToOne(context, map.getCollectionTable), DEFAULT_INDEX_COLUMN_NAME, kt.entityName, Seq(mapp.keyColumn)))
       case ck: OrmEmbeddableType =>
         map.setIndex(bindComponent(new HComponent(context, map), ck, map.getRole + ".index", map.isOneToMany))
     }
@@ -402,16 +388,19 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
 
     column.setScale(sqlType.scale.getOrElse(0))
     column.setNullable(cm.nullable)
-    column.setUnique(cm.unique)
+    //hibernate not need know column unique
+    //column.setUnique(cm.unique)
     cm.defaultValue foreach (v => column.setDefaultValue(v))
   }
 
-  private def bindManyToOne(manyToOne: HManyToOne, name: String, entityName: String, col: Column, fetchable: Fetchable = null): HManyToOne = {
-    bindColumns(List(col), manyToOne, name)
+  private def bindManyToOne(manyToOne: HManyToOne, name: String, entityName: String, cols: Seq[Column], fetchable: Fetchable = null): HManyToOne = {
+    bindColumns(cols, manyToOne, name)
     if (null != fetchable) initOuterJoinFetchSetting(manyToOne, fetchable)
     manyToOne.setReferencedEntityName(entityName)
     manyToOne.setReferenceToPrimaryKey(true)
     manyToOne.setLazy(true)
+    manyToOne.disableForeignKey() //hibernate no need to know foreign key constraints。
+
     mappings.entityTypes.get(entityName).foreach { et =>
       manyToOne.setTypeName(et.id.clazz.getName)
     }
@@ -428,27 +417,27 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
 
   private def makeIdentifier(em: OrmEntityType, sv: SimpleValue): Unit = {
     if (null == globalIdGenerator && em.idGenerator == null) throw new RuntimeException("Cannot find id generator for entity " + em.entityName)
-    val idgenerator = if (null != globalIdGenerator) globalIdGenerator else em.idGenerator
-    val strategry = additionalIdGenerators.getOrElse(idgenerator.strategy, idgenerator.strategy)
-    sv.setIdentifierGeneratorStrategy(strategry)
+    val generator = if (null != globalIdGenerator) globalIdGenerator else em.idGenerator
+    val strategy = additionalIdGenerators.getOrElse(generator.strategy, generator.strategy)
+    sv.setIdentifierGeneratorStrategy(strategy)
     val params = new ju.HashMap[String, Object]
     params.put(IDENTIFIER_NORMALIZER, objectNameNormalizer)
 
     val name = metadata.getDatabase.getDefaultNamespace.getPhysicalName
     val database = metadata.getDatabase
     if (null != name && null != name.getSchema) {
-      params.put(SCHEMA, database.getDefaultNamespace().getPhysicalName.getSchema.render(database.getDialect))
+      params.put(SCHEMA, database.getDefaultNamespace.getPhysicalName.getSchema.render(database.getDialect))
     }
     if (null != name && null != name.getCatalog) {
-      params.put(CATALOG, database.getDefaultNamespace().getPhysicalName.getCatalog.render(database.getDialect))
+      params.put(CATALOG, database.getDefaultNamespace.getPhysicalName.getCatalog.render(database.getDialect))
     }
 
-    idgenerator.params foreach {
+    generator.params foreach {
       case (k, v) => params.put(k, v)
     }
     sv.setIdentifierGeneratorParameters(params)
     sv.getTable.setIdentifierValue(sv)
-    idgenerator.nullValue match {
+    generator.nullValue match {
       case Some(v) => sv.setNullValue(v)
       case None => sv.setNullValue(if ("assigned" == sv.getIdentifierGeneratorStrategy) "undefined" else null)
     }
@@ -499,7 +488,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
               case btm: OrmBasicType =>
                 value = bindSimpleValue(new BasicValue(context, component.getTable), relativePath, sm, btm.clazz.getName)
               case et: EntityType =>
-                value = bindManyToOne(new HManyToOne(context, component.getTable), propertyName, et.entityName, sm.joinColumn.get, sm)
+                value = bindManyToOne(new HManyToOne(context, component.getTable), propertyName, et.entityName, sm.joinColumns, sm)
               case etm: OrmEmbeddableType =>
                 value = bindComponent(new HComponent(context, component), etm, subpath, isEmbedded)
             }

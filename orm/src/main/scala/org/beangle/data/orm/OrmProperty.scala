@@ -38,22 +38,30 @@ abstract class OrmProperty(val name: String, val clazz: Class[_], var optional: 
   def copy(): OrmProperty
 }
 
+/** 单值属性
+ *
+ * @param name
+ * @param clazz
+ * @param optional
+ * @param propertyType
+ */
 final class OrmSingularProperty(name: String, clazz: Class[_], optional: Boolean, var propertyType: OrmType)
   extends OrmProperty(name, clazz, optional) with Fetchable with ColumnHolder with Cloneable with SingularProperty {
 
-  var joinColumn: Option[Column] = None
+  /** 本实体中，参与连接外表的列，一般只有一列，如foreign_table_id */
+  var joinColumns: Seq[Column] = List.empty
 
   def copy(): OrmSingularProperty = {
     val cloned = super.clone().asInstanceOf[OrmSingularProperty]
     cloned.propertyType = this.propertyType.copy()
-    cloned.joinColumn = joinColumn.map(_.clone())
+    cloned.joinColumns = joinColumns.map(_.clone())
     cloned
   }
 
   def columns: Iterable[Column] = {
     propertyType match {
       case b: OrmBasicType => List(b.column)
-      case _: OrmEntityType => joinColumn
+      case _: OrmEntityType => joinColumns
       case _ => throw new RuntimeException("Cannot support iterable column over Embedded")
     }
   }
