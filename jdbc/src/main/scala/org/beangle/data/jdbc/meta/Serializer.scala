@@ -89,7 +89,7 @@ object Serializer {
             if (schema.tables.nonEmpty) {
               val tablesNode = schemaNode.createChild("tables")
               schema.tables.values.toBuffer.sorted foreach { table =>
-                appendXml(table, tablesNode)
+                appendXml(table.asInstanceOf[Table], tablesNode)
               }
             }
           }

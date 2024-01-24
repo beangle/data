@@ -69,13 +69,13 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     if (engine.catalogAsSchema) {
       val rs = meta.getCatalogs
       while (rs.next()) {
-        names.addOne(rs.getString("TABLE_CAT"))
+        names.addOne(rs.getString(TableCat))
       }
       rs.close()
     } else {
       val rs = meta.getSchemas()
       while (rs.next()) {
-        names.addOne(rs.getString("TABLE_SCHEM"))
+        names.addOne(rs.getString(TableSchema))
       }
       rs.close()
     }
@@ -88,21 +88,40 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     loadTables(schema, filter, extras)
   }
 
-  def loadTables(schema: Schema, filter: NameFilter, extras: Boolean): Unit = {
-    val TYPES = Array("TABLE")
-    var catalogName = if (null == schema.catalog || schema.catalog.isEmpty) null else schema.catalog.get.value
-    var schemaPattern = schema.name.value
-    if Strings.isBlank(catalogName) then catalogName = null
-    if Strings.isBlank(schemaPattern) then schemaPattern = null
+  def loadViews(schema: Schema): Unit = {
+    val filter = new NameFilter
+    filter.include("*")
+    loadViews(schema, filter)
+  }
 
-    if (null == catalogName && null != schemaPattern && engine.catalogAsSchema) {
-      val t = catalogName
-      catalogName = schemaPattern
-      schemaPattern = t
-    }
-
+  def loadViews(schema: Schema, filter: NameFilter): Unit = {
+    val pattern = processCatalogSchema(schema)
+    val catalogName = pattern._1
+    val schemaPattern = pattern._2
     val sw = new Stopwatch(true)
-    var rs = meta.getTables(catalogName, schemaPattern, null, TYPES)
+    val rs = meta.getTables(catalogName, schemaPattern, null, Array("VIEW"))
+    val views = new mutable.HashMap[String, View]
+    while (rs.next()) {
+      val tableName = rs.getString(TableName)
+      if (!tableName.contains("$") && filter.isMatched(tableName)) {
+        val view = schema.database.addView(getTableSchema(rs), rs.getString(TableName))
+        view.updateCommentAndModule(rs.getString(Remarks))
+        views.put(Table.qualify(view.schema, view.name), view)
+      }
+    }
+    rs.close()
+    logger.info(s"Load ${views.size} views in ${sw.toString}")
+    if (views.isEmpty) return
+    val cols = loadColumns(schema.database, false, catalogName, schemaPattern)
+    logger.info(s"Load $cols columns in $sw")
+  }
+
+  def loadTables(schema: Schema, filter: NameFilter, extras: Boolean): Unit = {
+    val pattern = processCatalogSchema(schema)
+    val catalogName = pattern._1
+    val schemaPattern = pattern._2
+    val sw = new Stopwatch(true)
+    val rs = meta.getTables(catalogName, schemaPattern, null, Array("TABLE"))
     val tables = new mutable.HashMap[String, Table]
     while (rs.next()) {
       val tableName = rs.getString(TableName)
@@ -115,17 +134,44 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     rs.close()
     logger.info(s"Load ${tables.size} tables in ${sw.toString}")
 
+    if (tables.isEmpty) return
+
+    val cols = loadColumns(schema.database, true, catalogName, schemaPattern)
+    //evict empty column tables
+    val origTabCount = tables.size
+    schema.cleanEmptyTables()
+    tables.filterInPlace((_, table) => table.columns.nonEmpty)
+    if (tables.size == origTabCount) logger.info(s"Load $cols columns in $sw")
+    else logger.info(s"Load $cols columns and evict empty ${origTabCount - tables.size} tables in $sw.")
+
+    if (extras) {
+      if (engine.metadataLoadSql.supportsTableExtra) {
+        batchLoadExtra(schema, engine.metadataLoadSql)
+      } else {
+        logger.debug("Loading primary key,foreign key and index.")
+        val tableNames = new ConcurrentLinkedQueue[String]
+        tableNames.addAll(asJava(tables.keySet.toList.sortWith(_ < _)))
+        ThreadTasks.start(new ExtraMetaLoadTask(tableNames, tables), 5, "meta-loader")
+      }
+    }
+  }
+
+  private def loadColumns(database: Database, isTable: Boolean, catalogName: String, schemaPattern: String): Int = {
     // Loading columns
-    sw.reset().start()
-    rs = meta.getColumns(catalogName, schemaPattern, "%", "%")
+    val sw = new Stopwatch(true)
+    val rs = meta.getColumns(catalogName, schemaPattern, "%", "%")
     var cols = 0
     val types = Collections.newMap[String, SqlType]
     import java.util.StringTokenizer
     while (rs.next()) {
-      val defaultValue = rs.getString(ColumnDef) //read first in oracle,my be it's long type
+      val defaultValue = rs.getString(ColumnDef) //should read first in oracle,my be it's long type
       val colName = rs.getString(ColumnName)
       if (null != colName) {
-        getTable(schema.database, getTableSchema(rs), rs.getString(TableName)) foreach { table =>
+        val relation =
+          if isTable then database.getTable(getTableSchema(rs), rs.getString(TableName))
+          else database.getView(getTableSchema(rs), rs.getString(TableName))
+
+        relation foreach { r =>
           val typename = new StringTokenizer(rs.getString(TypeName), "() ").nextToken()
           val typecode = engine.resolveCode(rs.getInt(DataType), typename)
           val length = rs.getInt(ColumnSize)
@@ -142,34 +188,31 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
             }
             if dv.nonEmpty && dv != "null" then col.defaultValue = Option(dv)
           }
-          table.add(col)
+          r.add(col)
           cols += 1
         }
       }
     }
     rs.close()
-
-    //evict empty column tables
-    val origTabCount = tables.size
-    schema.cleanEmptyTables()
-    tables.filterInPlace((_, table) => table.columns.nonEmpty)
-    if (tables.size == origTabCount) logger.info(s"Load $cols columns in $sw")
-    else logger.info(s"Load $cols columns and evict empty ${origTabCount - tables.size} tables in $sw.")
-
-    if (extras) {
-      if (engine.metadataLoadSql.supportsTableExtra) {
-        batchLoadExtra(schema, engine.metadataLoadSql)
-      } else {
-        logger.debug("Loading primary key,foreign key and index.")
-        val tableNames = new ConcurrentLinkedQueue[String]
-        tableNames.addAll(asJava(tables.keySet.toList.sortWith(_ < _)))
-        ThreadTasks.start(new MetaLoadTask(tableNames, tables), 5, "meta-loader")
-      }
-    }
+    cols
   }
 
   private def getTableSchema(rs: ResultSet): String = {
     rs.getString(if engine.catalogAsSchema then TableCat else TableSchema)
+  }
+
+  private def processCatalogSchema(schema: Schema): (String, String) = {
+    var catalogName = if (null == schema.catalog || schema.catalog.isEmpty) null else schema.catalog.get.value
+    var schemaPattern = schema.name.value
+    if Strings.isBlank(catalogName) then catalogName = null
+    if Strings.isBlank(schemaPattern) then schemaPattern = null
+
+    if (null == catalogName && null != schemaPattern && engine.catalogAsSchema) {
+      val t = catalogName
+      catalogName = schemaPattern
+      schemaPattern = t
+    }
+    (catalogName, schemaPattern)
   }
 
   private def batchLoadExtra(schema: Schema, sql: MetadataLoadSql): Unit = {
@@ -179,7 +222,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     // load primary key
     rs = meta.getConnection.createStatement().executeQuery(sql.primaryKeySql.replace(":schema", schemaName))
     while (rs.next()) {
-      getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach {
+      schema.database.getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach {
         table =>
           val colname = rs.getString(ColumnName)
           val pkName = getIdentifier(rs, PKName)
@@ -193,7 +236,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     // load imported key
     rs = meta.getConnection.createStatement().executeQuery(sql.importedKeySql.replace(":schema", schemaName))
     while (rs.next()) {
-      getTable(schema.database, rs.getString(FKTabkeSchem), rs.getString(FKTableName)) foreach {
+      schema.database.getTable(rs.getString(FKTabkeSchem), rs.getString(FKTableName)) foreach {
         table =>
           val fkName = getIdentifier(rs, FKName)
           val column = table.column(rs.getString(FKColumnName))
@@ -210,7 +253,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     // load index
     rs = meta.getConnection.createStatement().executeQuery(sql.indexInfoSql.replace(":schema", schemaName))
     while (rs.next()) {
-      getTable(schema.database, rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
+      schema.database.getTable(rs.getString(TableSchema), rs.getString(TableName)) foreach { table =>
         val indexName = rs.getString(IndexName)
         if (!table.primaryKey.exists(_.name.value == indexName)) {
           val idx = table.getIndex(indexName) match {
@@ -232,7 +275,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     logger.info(s"Load constraint and index in $sw.")
   }
 
-  private class MetaLoadTask(val buffer: ConcurrentLinkedQueue[String], val tables: mutable.HashMap[String, Table])
+  private class ExtraMetaLoadTask(val buffer: ConcurrentLinkedQueue[String], val tables: mutable.HashMap[String, Table])
     extends Runnable {
     def run(): Unit = {
       var completed = 0
@@ -342,7 +385,4 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
     Identifier(rs.getString(columnName))
   }
 
-  private def getTable(database: Database, schemaName: String, name: String): Option[Table] = {
-    database.getTable(schemaName, name)
-  }
 }

@@ -30,7 +30,7 @@ trait Dialect {
 
   def dropTable(table: String): String
 
-  def query(table: Table): String
+  def query(table: Relation): String
 
   def insert(table: Table): String
 

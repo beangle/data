@@ -39,26 +39,19 @@ object Table {
   }
 }
 
-class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] with Cloneable with Comment {
+class Table(s: Schema, n: Identifier) extends Relation(s, n) {
   /** 虚拟表 */
   var phantom: Boolean = _
   var primaryKey: Option[PrimaryKey] = None
-  val columns = new ListBuffer[Column]
   val uniqueKeys = new ListBuffer[UniqueKey]
   val foreignKeys = new ListBuffer[ForeignKey]
   val indexes = new ListBuffer[Index]
-
-  var module: Option[String] = None
-
-  def engine: Engine = {
-    schema.database.engine
-  }
 
   /** has quoted identifier
    *
    * @return
    */
-  def hasQuotedIdentifier: Boolean = {
+  override def hasQuotedIdentifier: Boolean = {
     name.quoted ||
       columns.exists(_.name.quoted) ||
       indexes.exists(_.name.quoted) ||
@@ -66,23 +59,8 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
       foreignKeys.exists(_.name.quoted)
   }
 
-  def quotedColumnNames: List[String] = {
-    val e = engine
-    columns.result().map(_.name.toLiteral(e))
-  }
-
-  def qualifiedName: String = {
-    Table.qualify(schema, name)
-  }
-
-  def attach(engine: Engine): this.type = {
-    columns foreach { col =>
-      val st = col.sqlType
-      col.sqlType = engine.toType(st.code, st.precision.getOrElse(0), st.scale.getOrElse(0))
-      col.defaultValue foreach { v => col.defaultValue = engine.convert(col.sqlType, v) }
-      col.name = col.name.attach(engine)
-    }
-    this.name = this.name.attach(engine)
+  override def attach(engine: Engine): this.type = {
+    super.attach(engine)
     primaryKey foreach (pk => pk.attach(engine))
     for (fk <- foreignKeys) fk.attach(engine)
     for (uk <- uniqueKeys) uk.attach(engine)
@@ -90,7 +68,7 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     this
   }
 
-  def clone(newschema: Schema): Table = {
+  override def clone(newschema: Schema): Table = {
     val t = this.clone()
     val oldSchema = t.schema
     for (fk <- t.foreignKeys) {
@@ -148,28 +126,8 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     for (idx <- indexes) idx.toCase(lower)
   }
 
-  override def compare(o: Table): Int = {
-    this.qualifiedName.compareTo(o.qualifiedName)
-  }
-
   private def hasPrimaryKey: Boolean = {
     primaryKey.isDefined
-  }
-
-  override def toString: String = {
-    Table.qualify(schema, name)
-  }
-
-  def column(columnName: String): Column = {
-    columns.find(f => f.name.toLiteral(engine) == columnName).get
-  }
-
-  def getColumn(columnName: String): Option[Column] = {
-    columns.find(f => f.name.toLiteral(engine) == columnName)
-  }
-
-  def columnExits(columnName: Identifier): Boolean = {
-    columns.exists(f => f.name == columnName)
   }
 
   def getForeignKey(keyName: String): Option[ForeignKey] = {
@@ -274,31 +232,6 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     key
   }
 
-  def remove(column: Column): Unit = {
-    columns.find(_.name == column.name) foreach { c =>
-      columns -= c
-      uniqueKeys --= uniqueKeys.filter { uk => uk.columns.size == 1 && uk.columns.contains(c.name) }
-    }
-  }
-
-  def rename(column: Column, newName: Identifier): Unit = {
-    remove(column)
-    column.name = newName
-    add(column)
-  }
-
-  def add(column: Column): Column = {
-    val ukName = uniqueKeys.find { uk => uk.columns.size == 1 && uk.columns.contains(column.name) }.map(_.name.value)
-    remove(column)
-    columns += column
-    if column.unique then this.createUniqueKey(ukName.getOrElse(this.name.value + "_" + column.name.value + "_key"), column.name.value)
-    column
-  }
-
-  def add(cols: Column*): Unit = {
-    cols foreach { col => add(col) }
-  }
-
   def add(index: Index): Index = {
     index.table = this
     this.indexes.dropWhileInPlace(_.name == index.name)
@@ -306,57 +239,32 @@ class Table(var schema: Schema, var name: Identifier) extends Ordered[Table] wit
     index
   }
 
-  def createColumn(name: String, sqlType: SqlType): Column = {
-    val egn = engine
-    val col = new Column(egn.toIdentifier(name), sqlType)
-    this.add(col)
-    col
+  override def add(column: Column): Column = {
+    val ukName = uniqueKeys.find { uk => uk.columns.size == 1 && uk.columns.contains(column.name) }.map(_.name.value)
+    remove(column)
+    columns += column
+    if column.unique then this.createUniqueKey(ukName.getOrElse(this.name.value + "_" + column.name.value + "_key"), column.name.value)
+    column
   }
 
-  def createColumn(name: String, typeName: String): Column = {
-    val egn = engine
-    val col = new Column(egn.toIdentifier(name), egn.toType(typeName))
-    this.add(col)
-    col
+  override def remove(column: Column): Unit = {
+    columns.find(_.name == column.name) foreach { c =>
+      columns -= c
+      uniqueKeys --= uniqueKeys.filter { uk => uk.columns.size == 1 && uk.columns.contains(c.name) }
+    }
   }
 
   def getIndex(indexName: String): Option[Index] = {
     indexes.find(f => f.name.value == indexName)
   }
 
-  def updateSchema(newSchema: Schema): Unit = {
+  override def updateSchema(newSchema: Schema): Unit = {
     val oldSchema = this.schema
     this.schema = newSchema
     this.foreignKeys foreach { fk =>
       if (null != fk.referencedTable) {
         if (fk.referencedTable.schema == oldSchema) fk.referencedTable.schema = newSchema
       }
-    }
-  }
-
-  def updateCommentAndModule(newComment: String): Unit = {
-    if (Strings.isBlank(newComment)) {
-      comment = None
-      module = None
-    } else {
-      if (newComment.contains("@")) {
-        comment = Some(Strings.substringBefore(newComment, "@"))
-        module = Some(Strings.substringAfter(newComment, "@"))
-      } else {
-        comment = Some(newComment)
-        module = None
-      }
-    }
-  }
-
-  def commentAndModule: Option[String] = {
-    comment match {
-      case Some(c) =>
-        module match {
-          case Some(m) => Some(s"$c@$m")
-          case None => comment
-        }
-      case None => comment
     }
   }
 

@@ -49,11 +49,25 @@ class Database(val engine: Engine) {
     }
   }
 
+  def getView(schema: String, name: String): Option[View] = {
+    getSchema(schema) match {
+      case Some(s) => s.getView(name)
+      case None => None
+    }
+  }
+
   def addTable(schemaName: String, tableName: String): Table = {
     val schema = getOrCreateSchema(schemaName)
     val table = new Table(schema, engine.toIdentifier(tableName))
     schema.addTable(table)
     table
+  }
+
+  def addView(schemaName: String, viewName: String): View = {
+    val schema = getOrCreateSchema(schemaName)
+    val view = new View(schema, engine.toIdentifier(viewName))
+    schema.addView(view)
+    view
   }
 
   def addTable(schema: String, table: Table): Table = {

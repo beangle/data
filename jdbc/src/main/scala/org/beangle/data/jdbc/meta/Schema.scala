@@ -60,6 +60,8 @@ class Schema(var database: Database, var name: Identifier) {
 
   val tables = new mutable.HashMap[Identifier, Table]
 
+  val views = new mutable.HashMap[Identifier, View]
+
   val sequences = new mutable.HashSet[Sequence]
 
   def hasQuotedIdentifier: Boolean = {
@@ -70,8 +72,17 @@ class Schema(var database: Database, var name: Identifier) {
     tables.filterInPlace((_, table) => table.columns.nonEmpty)
   }
 
+  def cleanEmptyViews(): Unit = {
+    views.filterInPlace((_, v) => v.columns.nonEmpty)
+  }
+
   def addTable(table: Table): this.type = {
     tables.put(table.name, table)
+    this
+  }
+
+  def addView(view: View): this.type = {
+    views.put(view.name, view)
     this
   }
 
@@ -115,12 +126,30 @@ class Schema(var database: Database, var name: Identifier) {
     }
   }
 
+  def getView(tbname: String): Option[View] = {
+    val engine = database.engine
+    if (tbname.contains(".")) {
+      if (name != engine.toIdentifier(Strings.substringBefore(tbname, "."))) None
+      else views.get(engine.toIdentifier(Strings.substringAfter(tbname, ".")))
+    } else {
+      views.get(engine.toIdentifier(tbname))
+    }
+  }
+
   def filterTables(includes: Seq[String], excludes: Seq[String]): Seq[Table] = {
     val filter = new NameFilter()
     for (include <- includes) filter.include(include)
     for (exclude <- excludes) filter.exclude(exclude)
 
     filter.filter(tables.keySet).map { t => tables(t) }
+  }
+
+  def filterViews(includes: Seq[String], excludes: Seq[String]): Seq[View] = {
+    val filter = new NameFilter()
+    for (include <- includes) filter.include(include)
+    for (exclude <- excludes) filter.exclude(exclude)
+
+    filter.filter(views.keySet).map { t => views(t) }
   }
 
   def filterSequences(includes: Seq[String], excludes: Seq[String]): Seq[Sequence] = {

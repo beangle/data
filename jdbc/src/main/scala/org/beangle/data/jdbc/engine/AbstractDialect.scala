@@ -175,7 +175,7 @@ trait AbstractDialect extends Dialect {
     sb.mkString
   }
 
-  override def query(table: Table): String = {
+  override def query(table: Relation): String = {
     val sb: StringBuilder = new StringBuilder()
     sb.append("select ")
     for (columnName <- table.quotedColumnNames) {
