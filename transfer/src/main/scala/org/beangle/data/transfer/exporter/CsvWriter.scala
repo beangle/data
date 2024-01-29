@@ -15,29 +15,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.csv
+package org.beangle.data.transfer.exporter
 
-import org.beangle.data.csv.{CsvFormat, CsvWriter}
+import org.beangle.data.csv.{CsvFormat, CsvWriter as CSVWriter}
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.exporter.ExportContext
-import org.beangle.data.transfer.io.ItemWriter
 
 import java.io.{OutputStream, OutputStreamWriter}
 
-class CsvItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
-  val csvw = new CsvWriter(new OutputStreamWriter(outputStream, "utf-8"),
-    new CsvFormat.Builder().escape(CsvWriter.NoEscapeChar).build())
+class CsvWriter(val os: OutputStream) extends Writer {
+  val csvw = new CSVWriter(new OutputStreamWriter(os, "utf-8"),
+    new CsvFormat.Builder().escape(CSVWriter.NoEscapeChar).build())
 
   override def write(obj: Any): Unit = {
     csvw.write(obj.asInstanceOf[Array[Any]])
   }
 
-  override def writeTitle(titleName: String, data: Any): Unit = {
-    write(data)
-  }
-
-  override def writeTitle(data: Any): Unit = {
-    write(data)
+  override def writeHeader(caption: Option[String], titles: Array[String]): Unit = {
+    write(titles)
   }
 
   override def format: Format = Format.Csv

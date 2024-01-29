@@ -18,8 +18,9 @@
 package org.beangle.data.transfer.exporter
 
 import org.beangle.commons.io.DataType
-import org.beangle.data.transfer.io.Writer
+
+import java.io.OutputStream
 
 trait Exporter {
-  def exportData(context: ExportContext, writer: Writer): Unit
+  def exportData(os: OutputStream, context: ExportContext): Unit
 }

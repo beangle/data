@@ -15,17 +15,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.io
+package org.beangle.data.transfer.importer
 
 import org.beangle.data.transfer.Format
 
 /**
- * 数据读取类
- *
- * @author chaostone
- */
+  * ItemReader interface.
+  *
+  * @author chaostone
+  */
 trait Reader {
 
+  def readAttributes(): List[Attribute]
   /**
    * 读取数据
    */

@@ -15,13 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.excel
+package org.beangle.data.excel.schema
+
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 import java.io.{File, FileOutputStream}
 import java.time.YearMonth
-import org.beangle.data.excel.schema.ExcelSchema
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.funspec.AnyFunSpec
 
 class ExcelSchemaTest extends AnyFunSpec with Matchers {
 

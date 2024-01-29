@@ -18,7 +18,6 @@
 package org.beangle.data.transfer.importer
 
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.{Attribute, Reader}
 
 import java.util.Locale
 
@@ -71,7 +70,7 @@ trait Importer {
   /**
    * 查询正在转换的对象的次序号,从1开始
    */
-  def transferIndex: Int
+  def index: Int
 
   /**
    * 返回方前正在转换成的对象

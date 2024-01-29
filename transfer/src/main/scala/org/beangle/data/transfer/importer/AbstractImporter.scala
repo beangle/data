@@ -20,7 +20,6 @@ package org.beangle.data.transfer.importer
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.Attribute
 
 import java.util.Locale
 import scala.collection.mutable.ListBuffer
@@ -30,18 +29,18 @@ import scala.collection.mutable.ListBuffer
  * @author chaostone
  */
 abstract class AbstractImporter extends Importer with Logging {
-  protected var transferResult: ImportResult = _
+  protected var result: ImportResult = _
   protected val listeners = new ListBuffer[ImportListener]
   var success, fail = 0
   this.prepare = new AttributePrepare()
-  protected var index = 0
+  var index = 0
 
   /**
    * 进行转换
    */
   def transfer(tr: ImportResult): Unit = {
-    this.transferResult = tr
-    this.transferResult.transfer = this
+    this.result = tr
+    this.result.transfer = this
     val transferStartAt = System.currentTimeMillis()
     try {
       prepare.prepare(this)
@@ -84,8 +83,6 @@ abstract class AbstractImporter extends Importer with Logging {
   override def locale: Locale = Locale.getDefault()
 
   override def format: Format = reader.format
-
-  override def transferIndex: Int = index
 
   override def dataLocation: String = if null != reader then reader.location else "-1"
 
@@ -135,6 +132,15 @@ abstract class AbstractImporter extends Importer with Logging {
 
   def setAttrs(attrs: List[Attribute]): Unit = {
     this.attrs = attrs.toArray
+  }
+
+}
+
+class AttributePrepare extends ImportPrepare {
+
+  def prepare(importer: Importer) : Unit = {
+    val reader = importer.reader
+    importer.asInstanceOf[AbstractImporter].setAttrs(reader.readAttributes())
   }
 
 }

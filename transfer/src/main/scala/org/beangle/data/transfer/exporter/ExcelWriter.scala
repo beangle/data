@@ -15,17 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.excel
+package org.beangle.data.transfer.exporter
 
-import org.apache.poi.ss.usermodel.{CellType, FillPatternType, HorizontalAlignment, VerticalAlignment}
+import org.apache.poi.ss.usermodel.*
+import org.apache.poi.ss.util.{CellRangeAddress, RegionUtil}
 import org.apache.poi.xssf.streaming.{SXSSFSheet, SXSSFWorkbook}
 import org.apache.poi.xssf.usermodel.*
-import org.beangle.commons.lang.{Chars, Numbers}
+import org.beangle.commons.lang.Chars
 import org.beangle.data.excel.CellOps.*
 import org.beangle.data.excel.ExcelStyleRegistry
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.exporter.ExportContext
-import org.beangle.data.transfer.io.ItemWriter
 
 import java.io.OutputStream
 
@@ -34,7 +33,7 @@ import java.io.OutputStream
  *
  * @author chaostone
  */
-class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream) extends ItemWriter {
+class ExcelWriter(val outputStream: OutputStream) extends Writer {
 
   protected var workbook: SXSSFWorkbook = _ // 建立新XSSFWorkbook对象
 
@@ -42,7 +41,9 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
 
   private implicit var registry: ExcelStyleRegistry = _
 
-  protected var title: Any = _
+  protected var titles: Array[String] = _
+
+  protected var caption: Option[String] = None
 
   var flushCount = 1000
 
@@ -53,13 +54,6 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
   init()
 
   def init(): Unit = {
-    if (null != context) {
-      val count = context.datas.getOrElse("countPerSheet", "")
-      if (null != count && Numbers.isDigits(count.toString)) {
-        val countParam = Numbers.toInt(count.toString)
-        if (countParam > 0) this.countPerSheet = countParam
-      }
-    }
     workbook = new SXSSFWorkbook(flushCount)
     registry = new ExcelStyleRegistry(workbook)
   }
@@ -73,7 +67,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
 
   override def write(obj: Any): Unit = {
     if (index + 1 >= countPerSheet) {
-      writeTitle(null, title)
+      writeHeader(caption, titles)
     }
     writeItem(obj)
     index += 1
@@ -86,21 +80,28 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     this.sheet
   }
 
-  override def writeTitle(sheetName: String, data: Any): Unit = {
-    writeTitle(data)
+  private def writeCaption(caption: Option[String]): Unit = {
+    caption foreach { c =>
+      val row = sheet.createRow(index) // 建立新行
+      val cell = row.createCell(0)
+      cell.fillin(c)
+      cell.setCellStyle(buildCaptionStyle())
+      val region = new CellRangeAddress(index, index, 0, titles.length - 1)
+      sheet.addMergedRegion(region)
+      RegionUtil.setBorderBottom(BorderStyle.THIN, region, sheet)
+    }
+    this.index += 1
   }
 
-  override def writeTitle(data: Any): Unit = {
+  override def writeHeader(caption: Option[String], titles: Array[String]): Unit = {
     createScheet(null)
-    title = data
-    index = 0
-    writeItem(data)
+    this.titles = titles
+    this.caption = caption
+    this.index = 0
+    writeCaption(caption)
+    writeItem(titles)
     val titleRow = sheet.getRow(index)
     val titleStyle = buildTitleStyle()
-    val titles = data match
-      case cs: Array[String] => cs
-      case it: Iterable[Any] => it.toArray.map(_.toString)
-      case _ => throw new RuntimeException("cannot write title with " + String.valueOf(data))
 
     val maxWith = 15 * 2 //max 15 chinese chars
     var h = 0d // number rows
@@ -120,9 +121,7 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     sheet.createFreezePane(0, index)
   }
 
-  def format: Format = {
-    Format.Xlsx
-  }
+  final def format: Format = Format.Xlsx
 
   protected def writeItem(datas: Any): Unit = {
     val row = sheet.createRow(index) // 建立新行
@@ -148,9 +147,25 @@ class ExcelItemWriter(val context: ExportContext, val outputStream: OutputStream
     style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
     style.setFillPattern(FillPatternType.SOLID_FOREGROUND)
     style.setWrapText(true) //auto wrap text
-
-    val rgb = Array(221.toByte, 217.toByte, 196.toByte)
-    style.setFillForegroundColor(new XSSFColor(rgb, new DefaultIndexedColorMap))
+    style.setFillForegroundColor(getHeaderForegroundColor())
     style
   }
+
+  protected def buildCaptionStyle(): XSSFCellStyle = {
+    val style = workbook.createCellStyle().asInstanceOf[XSSFCellStyle]
+    style.setAlignment(HorizontalAlignment.CENTER) // 左右居中
+    style.setVerticalAlignment(VerticalAlignment.CENTER) // 上下居中
+    style.setFillPattern(FillPatternType.SOLID_FOREGROUND)
+    style.setFillForegroundColor(getHeaderForegroundColor())
+    val font = workbook.createFont()
+    font.setBold(true)
+    style.setFont(font)
+    style
+  }
+
+  protected def getHeaderForegroundColor(): XSSFColor = {
+    val rgb = Array(221.toByte, 217.toByte, 196.toByte)
+    new XSSFColor(rgb, new DefaultIndexedColorMap)
+  }
+
 }

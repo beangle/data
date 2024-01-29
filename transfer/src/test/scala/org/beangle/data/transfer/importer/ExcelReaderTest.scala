@@ -15,33 +15,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.excel
+package org.beangle.data.transfer.importer
 
+import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.exporter.ExportContext
-import org.beangle.data.transfer.io.Writer
-import org.beangle.data.excel.template.TransformHelper
+import org.beangle.data.transfer.importer.ExcelReader
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-import java.io.OutputStream
-import java.net.URL
-
-class ExcelTemplateWriter(val template: URL, val context: ExportContext, val outputStream: OutputStream)
-  extends Writer {
-
-  val transformHelper = new TransformHelper(template.openStream())
-
-  /**
-   * write.
-   */
-  def write(): Unit = {
-    transformHelper.transform(outputStream, context.datas)
+class ExcelReaderTest extends AnyFunSpec with Matchers {
+  describe("ExcelReader") {
+    it("reader") {
+      val template = ClassLoaders.getResource("data.xlsx").get
+      val reader = new ExcelReader(template.openStream(),0,Format.Xlsx)
+      val title = reader.readAttributes()
+      val data = reader.read()
+      println(title)
+      println(data.toSeq)
+    }
   }
 
-  override def format: Format = {
-    Format.Xls
-  }
-
-  override def close(): Unit = {
-
-  }
 }

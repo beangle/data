@@ -15,19 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.io
+package org.beangle.data.transfer.exporter
 
-import java.io.OutputStream
 import org.beangle.data.transfer.Format
 
 /**
- * Writer interface.
+ * ItemWriter interface.
  *
  * @author chaostone
  */
 trait Writer {
-
   def format: Format
 
   def close(): Unit
+
+  def write(obj: Any): Unit
+
+  def writeHeader(caption: Option[String], data: Array[String]): Unit
 }

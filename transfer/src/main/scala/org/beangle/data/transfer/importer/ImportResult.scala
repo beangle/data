@@ -33,11 +33,11 @@ class ImportResult {
   var transfer: Importer = _
 
   def addFailure(message: String, value: Any): Unit = {
-    errs += new ImportMessage(transfer.transferIndex, transfer.dataLocation, message, value)
+    errs += new ImportMessage(transfer.index, transfer.dataLocation, message, value)
   }
 
   def addMessage(message: String, value: Any): Unit = {
-    msgs += new ImportMessage(transfer.transferIndex, transfer.dataLocation, message, value)
+    msgs += new ImportMessage(transfer.index, transfer.dataLocation, message, value)
   }
 
   def hasErrors: Boolean = {

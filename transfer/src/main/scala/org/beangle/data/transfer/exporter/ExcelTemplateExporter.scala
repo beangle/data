@@ -15,14 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.excel
-import org.beangle.data.transfer.exporter.{ Exporter, ExportContext }
-import org.beangle.data.transfer.io.Writer
+package org.beangle.data.transfer.exporter
+
+import org.beangle.data.excel.template.TransformHelper
+
+import java.io.OutputStream
 
 class ExcelTemplateExporter extends Exporter {
 
-  override def exportData(context: ExportContext, writer: Writer): Unit = {
-    val templateWriter = writer.asInstanceOf[ExcelTemplateWriter]
-    templateWriter.write()
+  override def exportData(os: OutputStream, context: ExportContext): Unit = {
+    val helper = new TransformHelper(context.template.openStream())
+    helper.transform(os, context.datas)
   }
 }

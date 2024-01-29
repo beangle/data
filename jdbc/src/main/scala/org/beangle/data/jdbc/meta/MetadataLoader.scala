@@ -18,9 +18,10 @@
 package org.beangle.data.jdbc.meta
 
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.concurrent.Tasks
+import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.replace
 import org.beangle.commons.lang.time.Stopwatch
-import org.beangle.commons.lang.{Strings, ThreadTasks}
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.Engine
 import org.beangle.data.jdbc.meta.Schema.NameFilter
@@ -151,7 +152,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
         logger.debug("Loading primary key,foreign key and index.")
         val tableNames = new ConcurrentLinkedQueue[String]
         tableNames.addAll(asJava(tables.keySet.toList.sortWith(_ < _)))
-        ThreadTasks.start(new ExtraMetaLoadTask(tableNames, tables), 5, "meta-loader")
+        Tasks.start(new ExtraMetaLoadTask(tableNames, tables), 5)
       }
     }
   }

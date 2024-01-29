@@ -45,21 +45,23 @@ object Serializer {
           colElem.get("comment").foreach(n => col.comment = Some(n))
           colElem.get("defaultValue").foreach(n => col.defaultValue = Some(n))
         }
-        (tableElem \ "primary-key") foreach { pkElem =>
-          table.createPrimaryKey(pkElem.name, split(pkElem.attr("columns")).toSeq: _*)
-        }
-        (tableElem \ "foreign-keys" \ "foreign-key") foreach { fkElem =>
-          val name = fkElem.name
-          val column = fkElem.attr("column")
-          val referTable = fkElem.attr("referenced-table")
-          val referColumn = fkElem.attr("referenced-column")
-          val fk = table.createForeignKey(name, column, database.refTable(referTable), referColumn)
-          fkElem.get("enabled").foreach(n => fk.enabled = n.toBoolean)
-          fkElem.get("cascadeDelete").foreach(n => fk.cascadeDelete = n.toBoolean)
-        }
-        (tableElem \ "unique-keys" \ "unique-key") foreach { ukElem =>
-          val uk = table.createUniqueKey(ukElem.name, split(ukElem.attr("columns")).toSeq: _*)
-          ukElem.get("enabled").foreach(n => uk.enabled = n.toBoolean)
+        (tableElem \ "constraints") foreach { constraintsElem =>
+          (constraintsElem \ "primary-key") foreach { pkElem =>
+            table.createPrimaryKey(pkElem.name, split(pkElem.attr("columns")).toSeq: _*)
+          }
+          (constraintsElem \ "foreign-key") foreach { fkElem =>
+            val name = fkElem.name
+            val column = fkElem.attr("column")
+            val referTable = fkElem.attr("referenced-table")
+            val referColumn = fkElem.attr("referenced-column")
+            val fk = table.createForeignKey(name, column, database.refTable(referTable), referColumn)
+            fkElem.get("enabled").foreach(n => fk.enabled = n.toBoolean)
+            fkElem.get("cascadeDelete").foreach(n => fk.cascadeDelete = n.toBoolean)
+          }
+          (constraintsElem \ "unique-key") foreach { ukElem =>
+            val uk = table.createUniqueKey(ukElem.name, split(ukElem.attr("columns")).toSeq: _*)
+            ukElem.get("enabled").foreach(n => uk.enabled = n.toBoolean)
+          }
         }
         (tableElem \ "indexes" \ "index") foreach { idxElem =>
           var unique = false
@@ -117,17 +119,15 @@ object Serializer {
         colNode.attr("defaultValue", col.defaultValue)
         colNode.attr("comment", col.comment)
       }
-      table.primaryKey foreach { pk =>
-        val pkNode = tableNode.createChild("primary-key")
-        if (null != pk.name && !pk.name.value.isBlank) {
-          pkNode.attr("name", pk.name)
+      if (table.primaryKey.isDefined || table.foreignKeys.nonEmpty || table.uniqueKeys.nonEmpty) {
+        val constraintNode = tableNode.createChild("constraints")
+        table.primaryKey foreach { pk =>
+          val pkNode = constraintNode.createChild("primary-key")
+          if null != pk.name && !pk.name.value.isBlank then pkNode.attr("name", pk.name)
+          pkNode.attr("columns", collectNames(pk.columns))
         }
-        pkNode.attr("columns", collectNames(pk.columns))
-      }
-      if (table.foreignKeys.nonEmpty) {
-        val fkNodes = tableNode.createChild("foreign-keys")
         table.foreignKeys foreach { fk =>
-          val fkNode = fkNodes.createChild("foreign-key", "name" -> fk.name)
+          val fkNode = constraintNode.createChild("foreign-key", "name" -> fk.name)
           fkNode.attr("column", collectNames(fk.columns))
           fkNode.attr("referenced-table", fk.referencedTable.qualifiedName)
           fkNode.attr("referenced-column", collectNames(fk.referencedColumns))
@@ -138,11 +138,8 @@ object Serializer {
             fkNode.attr("enabled", "false")
           }
         }
-      }
-      if (table.uniqueKeys.nonEmpty) {
-        val ukNodes = tableNode.createChild("unique-keys")
         table.uniqueKeys foreach { uk =>
-          val ukNode = ukNodes.createChild("unique-key", "name" -> uk.name)
+          val ukNode = constraintNode.createChild("unique-key", "name" -> uk.name)
           ukNode.attr("columns", collectNames(uk.columns))
           if !uk.enabled then ukNode.attr("enabled", uk.enabled.toString)
         }

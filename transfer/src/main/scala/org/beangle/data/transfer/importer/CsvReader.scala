@@ -15,13 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.csv
+package org.beangle.data.transfer.importer
 
 import org.beangle.commons.io.{DataType, IOs}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
 import org.beangle.data.transfer.Format
-import org.beangle.data.transfer.io.{Attribute, ItemReader}
+import org.beangle.data.transfer.importer.{Attribute, Reader}
 
 import java.io.LineNumberReader
 
@@ -30,7 +30,7 @@ import java.io.LineNumberReader
  *
  * @author chaostone
  */
-class CsvItemReader(reader: LineNumberReader) extends ItemReader with Logging {
+class CsvReader(reader: LineNumberReader) extends Reader with Logging {
 
   private var headIndex = 0
   private var indexInCsv = 1

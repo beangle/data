@@ -37,6 +37,18 @@ trait EntityImporter extends Importer {
 
 }
 
+object EntityPrepare extends ImportPrepare {
+
+  def prepare(importer: Importer): Unit = {
+    val entityImporter = importer.asInstanceOf[DefaultEntityImporter]
+    entityImporter.addEntity(entityImporter.entityClass)
+
+    val reader = importer.reader.asInstanceOf[Reader]
+    importer.asInstanceOf[AbstractImporter].setAttrs(reader.readAttributes())
+  }
+
+}
+
 /**
  * MultiEntityImporter class.
  *
@@ -109,7 +121,7 @@ class MultiEntityImporter extends AbstractImporter with EntityImporter with Logg
     }
 
     if (!populator.populate(entity, etype, attr, value)) {
-      transferResult.addFailure(description(attr) + " data format error.", value)
+      result.addFailure(description(attr) + " data format error.", value)
     }
   }
 

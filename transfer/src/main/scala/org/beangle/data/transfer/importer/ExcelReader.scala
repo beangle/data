@@ -15,26 +15,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.excel
-
-import java.io.InputStream
+package org.beangle.data.transfer.importer
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
-import org.apache.poi.ss.usermodel._
+import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.beangle.commons.io.DataType
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
-import org.beangle.commons.io.DataType
+import org.beangle.data.excel.CellOps.*
 import org.beangle.data.transfer.Format
-import org.beangle.data.excel.CellOps._
-import org.beangle.data.transfer.io.{Attribute, ItemReader}
+import org.beangle.data.transfer.importer.{Attribute, Reader}
+
+import java.io.InputStream
 
 /**
   * Excel的每行一条数据的读取器
   *
   * @author chaostone
   */
-class ExcelItemReader(is: InputStream, sheetNum: Int = 0, val format: Format = Format.Xlsx) extends ItemReader with Logging {
+class ExcelReader(is: InputStream, sheetNum: Int = 0, val format: Format = Format.Xlsx) extends Reader with Logging {
 
   /** 读取的工作表 */
   private val sheet = buildSheet(is, sheetNum)

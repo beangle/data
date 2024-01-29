@@ -17,27 +17,51 @@
 
 package org.beangle.data.transfer.exporter
 
-import org.beangle.commons.lang.Strings
 import org.beangle.commons.logging.Logging
+import org.beangle.data.transfer.Format
 
-import scala.collection.mutable.ArrayBuffer
+import java.io.OutputStream
 
-class SimpleEntityExporter extends SimpleItemExporter with Logging {
-
+class SimpleExporter extends Exporter with Logging {
+  var current: Any = _
+  var context: ExportContext = _
   var attrs: Array[String] = _
+  var writer: Writer = _
 
-  protected override def beforeExport(): Boolean = {
-    this.attrs = context.attrs
-    this.titles = context.titles
-    super.beforeExport()
+  override def exportData(os: OutputStream, context: ExportContext): Unit = {
+    this.context = context
+    if null == this.writer then this.writer = buildWriter(os, context)
+    var index = -1
+    var iter: Iterator[Any] = null
+    val items = context.getItems()
+    if (null != items) {
+      iter = items.iterator
+    }
+    if (null != iter && !beforeExport()) return
+    while (iter.hasNext) {
+      index += 1
+      current = iter.next()
+      exportItem()
+    }
+    writer.close()
   }
 
-  /**
-   * 转换单个实体
-   */
-  override def exportItem(): Unit = {
+  def buildWriter(os: OutputStream, context: ExportContext): Writer = {
+    val format = context.format
+    if format == Format.Xlsx then new ExcelWriter(os)
+    else if format == Format.Csv then new CsvWriter(os)
+    else throw new RuntimeException("Cannot export to other formats, csv/xlsx supported only!")
+  }
+
+  def beforeExport(): Boolean = {
+    this.attrs = context.attrs
+    writer.writeHeader(context.caption, context.titles)
+    true
+  }
+
+  def exportItem(): Unit = {
     if (null == attrs || attrs.length == 0) {
-      super.exportItem()
+      if (null != current) writer.write(current)
     } else {
       val values = new Array[Any](attrs.length)
       values.indices foreach { i =>
@@ -50,5 +74,4 @@ class SimpleEntityExporter extends SimpleItemExporter with Logging {
       writer.write(values)
     }
   }
-
 }

@@ -15,7 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.transfer.excel
+package org.beangle.data.transfer.importer
 
-case class User(id: Int, name: String) {
+import org.beangle.commons.io.DataType
+
+case class Attribute(idx: Int, name: String, dataType: DataType, description: String) {
+
 }

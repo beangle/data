@@ -3,7 +3,7 @@ import org.beangle.parent.Settings.*
 import sbt.Keys.libraryDependencies
 
 ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.7.17-SNAPSHOT"
+ThisBuild / version := "5.8.0"
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/beangle/data"),
@@ -23,13 +23,11 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Data Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
 
-val beangle_common_ver = "5.6.9"
+val beangle_common_ver = "5.6.10"
 
 val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % beangle_common_ver
 val beangle_commons_text = "org.beangle.commons" %% "beangle-commons-text" % beangle_common_ver
 val commonDeps = Seq(beangle_commons_core, logback_classic % "test", logback_core % "test", scalatest)
-val hibernate_core = "org.beangle.hibernate" % "beangle-hibernate-core" % "6.4.2.Final"
-val hibernate_jcache = "org.hibernate.orm" % "hibernate-jcache" % "6.4.2.Final" exclude("org.hibernate.orm", "hibernate-core")
 
 lazy val root = (project in file("."))
   .settings()
