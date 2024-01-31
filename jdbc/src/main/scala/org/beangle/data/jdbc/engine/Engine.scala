@@ -99,7 +99,7 @@ trait Engine extends Dialect {
 
   def toIdentifier(literal: String): Identifier = {
     if (Strings.isEmpty(literal)) return Identifier.empty
-    if (literal.charAt(0) == quoteChars._1) {
+    if (literal.charAt(0) == quoteChars._1 || literal.charAt(0) == '`') {
       val content = literal.substring(1, literal.length - 1)
       storeCase match {
         case StoreCase.Lower => Identifier(content, content == content.toLowerCase())

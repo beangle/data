@@ -41,10 +41,14 @@ object Engines {
 
   def forDataSource(ds: DataSource): Engine = {
     val connection = ds.getConnection
-    val meta = connection.getMetaData
+    val engine = forMetadata(connection.getMetaData)
+    connection.close()
+    engine
+  }
+
+  def forMetadata(meta: java.sql.DatabaseMetaData): Engine = {
     val name = meta.getDatabaseProductName
     val version = s"${meta.getDatabaseMajorVersion}.${meta.getDatabaseMinorVersion}"
-    connection.close()
     forName(name, version)
   }
 
@@ -63,7 +67,7 @@ object Engines {
     if version == "last" then
       engineList.last
     else
-      val engine = engineList.find(e => e.version.contains(version))
+      val engine = engineList.findLast(e => e.version.contains(version))
       if engine.isEmpty then throw new RuntimeException(s"Cannot find engine for database $dbname")
       else engine.head
   }

@@ -17,12 +17,12 @@
 
 package org.beangle.data.jdbc.meta
 
-import java.io.File
-
 import org.beangle.commons.io.Files
-import org.beangle.data.jdbc.engine.{Engines, PostgreSQL10}
-import org.scalatest.matchers.should.Matchers
+import org.beangle.data.jdbc.engine.PostgreSQL10
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
+
+import java.io.File
 
 class SerializerTest extends AnyFunSpec with Matchers {
 
@@ -34,7 +34,7 @@ class SerializerTest extends AnyFunSpec with Matchers {
 
       val category = Table(security, "user-categories")
       category.createColumn("id", "integer")
-      category.createPrimaryKey("","id")
+      category.createPrimaryKey("", "id")
       security.addTable(category)
 
       val user = Table(security, "users")
@@ -50,16 +50,23 @@ class SerializerTest extends AnyFunSpec with Matchers {
       user.createColumn("category_id", "integer")
       user.createColumn("\"key\"", "integer").comment = Some("""RSA key <expired="2019-09-09">""")
 
-      user.createPrimaryKey(null,"id")
-      user.createForeignKey(null,"category_id", category)
-      user.createUniqueKey(null,"\"key\"")
-      user.createIndex(null,true, "code")
+      user.createPrimaryKey(null, "id")
+      user.createForeignKey(null, "category_id", category)
+      user.createUniqueKey(null, "\"key\"")
+      user.createIndex(null, true, "code")
       user.convertIndexToUniqueKeys()
       security.addTable(user)
+
+      val account = security.createView("accounts")
+      account.createColumn("id", "bigint")
+      account.createColumn("code", "varchar(20)")
+      account.createColumn("enabled", "boolean")
+      account.definition = Some("select id,code,enabled from security.users")
+
       val xml = Serializer.toXml(db)
       val file = File.createTempFile("database", ".xml")
       Files.writeString(file, xml)
-      println("db xml is writted in " + file.getAbsolutePath)
+      println("db xml is written in " + file.getAbsolutePath)
       val db2 = Serializer.fromXml(xml)
       val xml2 = Serializer.toXml(db2)
       assert(xml == xml2)

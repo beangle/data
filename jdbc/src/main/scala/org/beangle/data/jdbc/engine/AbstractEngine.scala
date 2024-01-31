@@ -104,6 +104,6 @@ abstract class AbstractEngine extends Engine with AbstractDialect {
 
   override def catalogAsSchema: Boolean = false
 
-  override def systemSchemas: Seq[String] = List.empty
+  override def systemSchemas: Seq[String] = List("information_schema")
 
 }

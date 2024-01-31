@@ -37,14 +37,15 @@ object TypeNames {
   case class TypeInfo(name: String, category: String, precision: Option[String], scale: Option[String]) {
     def precisionValue: Int = {
       precision match {
-        case Some(p) => if (Numbers.isDigits(p)) Numbers.toInt(p) else throw new RuntimeException("Cannot parse precision $p")
+        case Some(p) => if (Numbers.isDigits(p)) Numbers.toInt(p) else throw new RuntimeException(s"Cannot parse precision $p")
         case None => 0
       }
     }
 
     def scaleValue: Int = {
       scale match {
-        case Some(p) => if (Numbers.isDigits(p)) Numbers.toInt(p) else throw new RuntimeException("Cannot parse scale $p")
+        case Some(p) =>
+          if Numbers.isDigits(p) then Numbers.toInt(p) else throw new RuntimeException(s"Cannot parse scale $p")
         case None => 0
       }
     }
@@ -100,18 +101,18 @@ object TypeNames {
     var scale = ""
     val category = if (pattern.contains("(")) {
       if (pattern.contains(",")) {
-        precision = Strings.substringBetween(pattern, "(", ",")
+        precision = Strings.substringBetween(pattern, "(", ",").trim()
         if (pattern.contains(")")) {
-          scale = Strings.substringBetween(pattern, ",", ")")
+          scale = Strings.substringBetween(pattern, ",", ")").trim()
         } else {
           throw new RuntimeException(s"Unrecognized sql type $pattern")
         }
       } else if (pattern.contains(")")) {
-        precision = Strings.substringBetween(pattern, "(", ")")
+        precision = Strings.substringBetween(pattern, "(", ")").trim()
       } else {
         throw new RuntimeException(s"Unrecognized sql type $pattern")
       }
-      Strings.substringBefore(pattern, "(").toLowerCase
+      Strings.substringBefore(pattern, "(").toLowerCase.trim()
     } else {
       pattern.toLowerCase()
     }

@@ -24,9 +24,26 @@ import org.beangle.data.jdbc.meta.Schema.NameFilter
 import scala.collection.mutable
 
 object Schema {
+  object NameFilter {
+    def apply(includes: String, excludes: String = ""): NameFilter = {
+      val filter = new NameFilter(true)
+      if (Strings.isNotBlank(includes)) {
+        Strings.split(includes.trim.toLowerCase()) foreach { p =>
+          filter.include(p)
+        }
+      }
+      if (Strings.isNotBlank(excludes)) {
+        Strings.split(excludes.trim.toLowerCase()) foreach { p =>
+          filter.exclude(p)
+        }
+      }
+      filter
+    }
+  }
+
   class NameFilter(lowercase: Boolean = true) {
-    val excludes = new collection.mutable.ListBuffer[AntPathPattern]
     val includes = new collection.mutable.ListBuffer[AntPathPattern]
+    val excludes = new collection.mutable.ListBuffer[AntPathPattern]
 
     def filter(tables: Iterable[Identifier]): List[Identifier] = {
       val results = new collection.mutable.ListBuffer[Identifier]
@@ -113,6 +130,18 @@ class Schema(var database: Database, var name: Identifier) {
     }
   }
 
+  def createView(vName: String): View = {
+    val viewId = database.engine.toIdentifier(vName)
+    views.get(viewId) match {
+      case Some(v) =>
+        throw new RuntimeException("View " + v.qualifiedName + s" is existed,creation aborted.")
+      case None =>
+        val nv = new View(this, viewId)
+        views.put(viewId, nv)
+        nv
+    }
+  }
+
   /**
    * Using table literal (with or without schema) search table
    */
@@ -159,6 +188,11 @@ class Schema(var database: Database, var name: Identifier) {
     for (exclude <- excludes) filter.exclude(exclude)
     val seqMap = sequences.map(f => (f.name, f)).toMap
     filter.filter(seqMap.keys).map { s => seqMap(s) }
+  }
+
+  def findTables(name: String): Seq[Table] = {
+    val filter = NameFilter(name)
+    filter.filter(tables.keySet).map { t => tables(t) }
   }
 
   override def toString: String = {

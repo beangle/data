@@ -17,7 +17,15 @@
 
 package org.beangle.data.jdbc.meta
 
+object View {
+  def apply(schema: Schema, name: String): View = {
+    new View(schema, Identifier(name))
+  }
+}
+
 class View(s: Schema, n: Identifier) extends Relation(s, n) {
+
+  var definition: Option[String] = None
 
   override def clone(newschema: Schema): View = {
     val t = this.clone()

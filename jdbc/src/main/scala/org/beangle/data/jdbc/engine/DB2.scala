@@ -88,7 +88,6 @@ class DB2V8 extends AbstractEngine {
 
   override def name: String = "DB2"
 
-  override def systemSchemas: Seq[String] = List.empty
-
+  override def systemSchemas: Seq[String] = List("SYS","SYSIBM","SYSTOOLS","SYSCAT", "SYSSTAT")
   override def supportBoolean: Boolean = false
 }

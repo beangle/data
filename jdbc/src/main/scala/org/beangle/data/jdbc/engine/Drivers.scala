@@ -45,7 +45,7 @@ object Drivers {
     driver("mariadb", "org.mariadb.jdbc.MySQLDataSource",
       "org.mariadb.jdbc.Driver", "//<host>:<port>/<database_name>"),
     driver("h2", "org.h2.jdbcx.JdbcDataSource",
-      "org.h2.Driver", "[<path>]<database_name>", "mem:<database_name>",
+      "org.h2.Driver", "[file:][<path>]<database_name>", "mem:<database_name>",
       "tcp://<server>[:<port>]/[<path>]<database_name>"),
     driver("db2", "com.ibm.db2.jcc.DB2SimpleDataSource",
       "com.ibm.db2.jcc.DB2Driver", "//<host>[:<port>]/<database_name>", "<database_name>"),

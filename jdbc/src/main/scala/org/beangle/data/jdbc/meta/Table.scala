@@ -25,7 +25,7 @@ import scala.collection.mutable.ListBuffer
 object Table {
   def qualify(schema: Schema, name: Identifier): String = {
     val engine = schema.database.engine
-    qualify(schema.name.toLiteral(engine), name.toLiteral(engine))
+    qualify(schema.name.value, name.toLiteral(engine))
   }
 
   def qualify(schema: String, name: String): String = {

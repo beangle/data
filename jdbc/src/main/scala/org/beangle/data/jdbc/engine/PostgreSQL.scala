@@ -83,6 +83,8 @@ class PostgreSQL10 extends AbstractEngine {
   metadataLoadSql.sequenceSql = "select sequence_name,start_value,increment increment_by,cycle_option cycle_flag" +
     " from information_schema.sequences where sequence_schema=':schema'"
 
+  metadataLoadSql.viewDefSql = "select pg_get_viewdef(':schema.:view_name', true) as dfn"
+
   override def maxIdentifierLength: Int = 63
 
   override def storeCase: StoreCase = StoreCase.Lower
@@ -111,4 +113,6 @@ class PostgreSQL10 extends AbstractEngine {
       case _ => typeCode
     }
   }
+
+  override def systemSchemas: Seq[String] = List("information_schema", "pg_catalog")
 }

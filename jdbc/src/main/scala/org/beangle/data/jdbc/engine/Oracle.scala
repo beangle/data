@@ -17,8 +17,6 @@
 
 package org.beangle.data.jdbc.engine
 
-import org.beangle.data.jdbc.meta.SqlType
-
 import java.sql.Types
 import java.sql.Types.*
 import scala.collection.mutable
@@ -101,6 +99,8 @@ class Oracle10g extends AbstractEngine {
       " and idx.table_owner=':schema'" +
       " order by idx.table_name,col.column_position"
 
+  metadataLoadSql.viewDefSql = "select text_vc from all_views where owner=':schema' and view_name=':view_name'"
+
   /** limit offset
    * FIXME distinguish sql with order by or not
    *
@@ -153,6 +153,14 @@ class Oracle10g extends AbstractEngine {
     f.localTimestamp = "localtimestamp"
     f.currentTimestamp = "current_timestamp"
   }
+
+  override def systemSchemas: Seq[String] = {
+    List("OUTLN", "SYS", "SYSTEM", "SI_INFORMTN_SCHEMA", "DIP", "ANONYMOUS", "AUDSYS",
+      "SPATIAL_CSW_ADMIN_USR", "SPATIAL_WFS_ADMIN_USR", "GSMADMIN_INTERNAL", "GSMCATUSER",
+      "GSMUSER", "ORACLE_OCM", "MDDATA", "DBSFWUSER", "DBSNMP", "DVF", "ORDDATA", "ORDPLUGINS",
+      "REMOTE_SCHEDULER_AGENT", "XDB","BACKMAN")
+  }
+
 }
 
 class Oracle12c extends Oracle10g {

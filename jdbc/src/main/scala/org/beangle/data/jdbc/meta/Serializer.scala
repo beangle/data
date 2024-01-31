@@ -17,6 +17,7 @@
 
 package org.beangle.data.jdbc.meta
 
+import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.split
 import org.beangle.commons.xml.NodeOps.given
 import org.beangle.commons.xml.XmlNode
@@ -70,6 +71,22 @@ object Serializer {
         }
         table.convertIndexToUniqueKeys()
       }
+
+      (schemaElem \ "views" \ "view") foreach { viewElem =>
+        val view = schema.createView(viewElem.name)
+        viewElem.get("comment").foreach(n => view.updateCommentAndModule(n))
+        (viewElem \ "columns" \ "column") foreach { colElem =>
+          val col = view.createColumn(colElem.name, colElem.attr("type"))
+          colElem.get("nullable").foreach(n => col.nullable = n.toBoolean)
+          colElem.get("unique").foreach(n => col.unique = n.toBoolean)
+          colElem.get("check").foreach(n => col.check = Some(n))
+          colElem.get("comment").foreach(n => col.comment = Some(n))
+          colElem.get("defaultValue").foreach(n => col.defaultValue = Some(n))
+        }
+        (viewElem \ "definition") foreach { dfnElem =>
+          if Strings.isNotBlank(dfnElem.text) then view.definition = Some(dfnElem.text.trim)
+        }
+      }
     }
     database
   }
@@ -92,6 +109,12 @@ object Serializer {
               val tablesNode = schemaNode.createChild("tables")
               schema.tables.values.toBuffer.sorted foreach { table =>
                 appendXml(table.asInstanceOf[Table], tablesNode)
+              }
+            }
+            if (schema.views.nonEmpty) {
+              val viewsNode = schemaNode.createChild("views")
+              schema.views.values.toBuffer.sorted foreach { view =>
+                appendXml(view.asInstanceOf[View], viewsNode)
               }
             }
           }
@@ -153,6 +176,30 @@ object Serializer {
             idxNode.attr("unique", idx.unique.toString)
           }
         }
+      }
+    }
+
+    private def appendXml(view: View, viewsNode: XmlNode): Unit = {
+      val viewNode = viewsNode.createChild("view", "name" -> view.name)
+      viewNode.attr("comment", view.commentAndModule)
+      val columnsNode = viewNode.createChild("columns")
+      val columns = view.columns.sortWith((c1, c2) => if (c1.name.value == "id") true else if (c2.name.value == "id") false else c1.name.value.compareTo(c2.name.value) < 0)
+      columns foreach { col =>
+        val colNode = columnsNode.createChild("column")
+        colNode.attr("name", col.name)
+        colNode.attr("type", col.sqlType.name)
+        if (!col.nullable) {
+          colNode.attr("nullable", col.nullable.toString)
+        }
+        if (col.unique) {
+          colNode.attr("unique", col.unique.toString)
+        }
+        colNode.attr("check", col.check)
+        colNode.attr("defaultValue", col.defaultValue)
+        colNode.attr("comment", col.comment)
+      }
+      view.definition foreach { dfn =>
+        viewNode.createChild("definition").inner(dfn)
       }
     }
 

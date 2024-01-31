@@ -64,7 +64,7 @@ class TableTest extends AnyFlatSpec with Matchers {
     active.defaultValue = Some("false")
     user.add(active)
 
-    assert(oracle.createTable(user.attach(oracle)) == """create table "public".USERS (ACTIVE number(1,0) default 0)""")
+    assert(oracle.createTable(user.attach(oracle)) == """create table public.USERS (ACTIVE number(1,0) default 0)""")
   }
 
   "lowercase " should "correct" in {

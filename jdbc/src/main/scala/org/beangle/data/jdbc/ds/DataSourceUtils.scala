@@ -18,12 +18,15 @@
 package org.beangle.data.jdbc.ds
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import org.beangle.commons.collection.Collections
+import org.beangle.commons.io.IOs
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty, substringBetween}
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.logging.Logging
-import org.beangle.data.jdbc.engine.{DriverInfo, Drivers}
-import org.beangle.data.jdbc.meta.Identifier
+import org.beangle.data.jdbc.engine.{DriverInfo, Drivers, Engines}
+import org.beangle.data.jdbc.meta.Schema.NameFilter
+import org.beangle.data.jdbc.meta.{Database, Identifier, MetadataLoader}
 
 import java.io.InputStream
 import java.sql.Connection
@@ -32,6 +35,29 @@ import javax.sql.DataSource
 import scala.language.existentials
 
 object DataSourceUtils extends Logging {
+
+  def build(dbconf: DatasourceConfig): DataSource = {
+    DataSourceFactory.build(dbconf.driver, dbconf.user, dbconf.password, dbconf.props)
+  }
+
+  def test(dbconf: DatasourceConfig): (Boolean, String) = {
+    try {
+      val ds = build(dbconf)
+      val conn = ds.getConnection
+      val msg = Collections.newBuffer[String]
+      val meta = conn.getMetaData
+      val version = s"${meta.getDatabaseMajorVersion}.${meta.getDatabaseMinorVersion}"
+      msg.append("DatabaseProductName:" + meta.getDatabaseProductName)
+      msg.append("DatabaseProductVersion:" + meta.getDatabaseProductVersion)
+      msg.append("DatabaseVersion:" + version)
+      val engine = Engines.forName(meta.getDatabaseProductName, version)
+      msg.append("Supported Engine:" + (if null == engine then "NULL" else s"${engine.name} ${engine.version}"))
+      DataSourceUtils.close(ds)
+      (true, msg.mkString("\n"))
+    } catch {
+      case e: Exception => (false, e.getMessage)
+    }
+  }
 
   def build(driver: String, username: String, password: String, props: collection.Map[String, String]): DataSource = {
     new HikariDataSource(new HikariConfig(buildProperties(driver, username, password, props)))
@@ -129,4 +155,5 @@ object DataSourceUtils extends Logging {
       case ex: Throwable =>
     }
   }
+
 }

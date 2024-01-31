@@ -29,7 +29,14 @@ class MetadataLoadSql {
 
   var sequenceSql: String = _
 
+  var viewDefSql: String = _
+
   def supportsTableExtra: Boolean = {
     Strings.isNotBlank(primaryKeySql) && Strings.isNotBlank(importedKeySql) && Strings.isNotBlank(indexInfoSql)
   }
+
+  def supportViewExtra: Boolean = {
+    Strings.isNotBlank(viewDefSql)
+  }
+
 }
