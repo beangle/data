@@ -61,6 +61,18 @@ class Database(val engine: Engine) {
     }
   }
 
+  def findViews(name: String): Seq[View] = {
+    if (name.contains(".")) {
+      val schemaName = Strings.substringBefore(name, ".")
+      getSchema(schemaName) match {
+        case Some(s) => s.findViews(Strings.substringAfter(name, "."))
+        case None => List.empty
+      }
+    } else {
+      schemas.values.flatten(_.findViews(name)).toSeq
+    }
+  }
+
   def getView(schema: String, name: String): Option[View] = {
     getSchema(schema) match {
       case Some(s) => s.getView(name)

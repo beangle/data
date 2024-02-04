@@ -26,6 +26,7 @@ import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
 import org.beangle.data.jdbc.engine.{Engine, Engines}
 import org.beangle.data.jdbc.meta.Schema.NameFilter
+import org.beangle.data.jdbc.query.JdbcExecutor
 
 import java.sql.{Connection, DatabaseMetaData, ResultSet, Statement}
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -337,7 +338,12 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
       try {
         statement = meta.getConnection.createStatement()
         rs = statement.executeQuery(sql)
-        if rs.next() then v.definition = Some(rs.getString(1))
+        if (rs.next()) {
+          val values = JdbcExecutor.convert(rs, JdbcExecutor.getTypes(rs, engine))
+          if (values.nonEmpty && null != values(0)) {
+            v.definition = Some(values(0).toString.trim())
+          }
+        }
       } finally {
         if (rs != null) rs.close()
         if (statement != null) statement.close()

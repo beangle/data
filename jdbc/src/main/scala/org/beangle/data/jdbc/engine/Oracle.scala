@@ -99,7 +99,7 @@ class Oracle10g extends AbstractEngine {
       " and idx.table_owner=':schema'" +
       " order by idx.table_name,col.column_position"
 
-  metadataLoadSql.viewDefSql = "select text_vc from all_views where owner=':schema' and view_name=':view_name'"
+  metadataLoadSql.viewDefSql = "select text from all_views where owner=':schema' and view_name=':view_name'"
 
   /** limit offset
    * FIXME distinguish sql with order by or not

@@ -28,7 +28,7 @@ class ResultSetIterator(rs: ResultSet, engine: Engine) extends Iterator[Array[An
 
   var nextRecord: Array[Any] = _
 
-  private val types = getTypes(rs)
+  private val types = JdbcExecutor.getTypes(rs, engine)
 
   readNext()
 
@@ -49,21 +49,6 @@ class ResultSetIterator(rs: ResultSet, engine: Engine) extends Iterator[Array[An
     val previous = nextRecord
     readNext()
     previous
-  }
-
-  private def getTypes(rs: ResultSet): Array[Int] = {
-    val meta = rs.getMetaData
-    val cols =
-      if (meta.getColumnName(meta.getColumnCount) == "_rownum_") {
-        meta.getColumnCount - 1
-      } else {
-        meta.getColumnCount
-      }
-    val typ = Array.ofDim[Int](cols)
-    (0 until cols) foreach { i =>
-      typ(i) = engine.resolveCode(meta.getColumnType(i + 1), meta.getColumnTypeName(i + 1))
-    }
-    typ
   }
 
   @throws[Exception]

@@ -192,7 +192,12 @@ class Schema(var database: Database, var name: Identifier) {
 
   def findTables(name: String): Seq[Table] = {
     val filter = NameFilter(name)
-    filter.filter(tables.keySet).map { t => tables(t) }
+    filter.filter(tables.keySet).sorted.map { t => tables(t) }
+  }
+
+  def findViews(name: String): Seq[View] = {
+    val filter = NameFilter(name)
+    filter.filter(views.keySet).sorted.map { t => views(t) }
   }
 
   override def toString: String = {
