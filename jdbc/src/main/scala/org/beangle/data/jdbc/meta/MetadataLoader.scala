@@ -341,7 +341,10 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
         if (rs.next()) {
           val values = JdbcExecutor.convert(rs, JdbcExecutor.getColumnTypes(rs, engine))
           if (values.nonEmpty && null != values(0)) {
-            v.definition = Some(values(0).toString.trim())
+            var dfn = values(0).toString.trim()
+            if !dfn.toLowerCase.startsWith("create ") then
+              dfn = s"create view ${v.qualifiedName} as " + dfn
+            v.definition = Some(dfn)
           }
         }
       } finally {
