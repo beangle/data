@@ -339,7 +339,7 @@ class MetadataLoader(meta: DatabaseMetaData, engine: Engine) extends Logging {
         statement = meta.getConnection.createStatement()
         rs = statement.executeQuery(sql)
         if (rs.next()) {
-          val values = JdbcExecutor.convert(rs, JdbcExecutor.getTypes(rs, engine))
+          val values = JdbcExecutor.convert(rs, JdbcExecutor.getColumnTypes(rs, engine))
           if (values.nonEmpty && null != values(0)) {
             v.definition = Some(values(0).toString.trim())
           }

@@ -43,12 +43,12 @@ object JdbcExecutor {
         case CLOB =>
           val clob = rs.getClob(i + 1)
           if null == clob then null else clob.getSubString(1, clob.length.toInt)
-        case LONGVARCHAR=>
-          val r = rs.getCharacterStream(i+1)
+        case LONGVARCHAR =>
+          val r = rs.getCharacterStream(i + 1)
           if null == r then null
           else
             val sw = new StringBuilderWriter(16)
-            IOs.copy(r,sw)
+            IOs.copy(r, sw)
             sw.toString
         case _ => rs.getObject(i + 1)
       }
@@ -56,7 +56,7 @@ object JdbcExecutor {
     objs
   }
 
-  def getTypes(rs: ResultSet, engine: Engine): Array[Int] = {
+  def getColumnTypes(rs: ResultSet, engine: Engine): Array[Int] = {
     val meta = rs.getMetaData
     val cols =
       if (meta.getColumnName(meta.getColumnCount) == "_rownum_") {
@@ -69,6 +69,36 @@ object JdbcExecutor {
       typ(i) = engine.resolveCode(meta.getColumnType(i + 1), meta.getColumnTypeName(i + 1))
     }
     typ
+  }
+
+  def getColumnNames(rs: ResultSet): Array[String] = {
+    val meta = rs.getMetaData
+    val cols =
+      if (meta.getColumnName(meta.getColumnCount) == "_rownum_") {
+        meta.getColumnCount - 1
+      } else {
+        meta.getColumnCount
+      }
+    val columnNames = Array.ofDim[String](cols)
+    (0 until cols) foreach { i =>
+      columnNames(i) = meta.getColumnName(i + 1)
+    }
+    columnNames
+  }
+
+  def getColumnDisplaySizes(rs: ResultSet): Array[Int] = {
+    val meta = rs.getMetaData
+    val cols =
+      if (meta.getColumnName(meta.getColumnCount) == "_rownum_") {
+        meta.getColumnCount - 1
+      } else {
+        meta.getColumnCount
+      }
+    val displaySizes = Array.ofDim[Int](cols)
+    (0 until cols) foreach { i =>
+      displaySizes(i) = meta.getColumnDisplaySize(i + 1)
+    }
+    displaySizes
   }
 }
 
