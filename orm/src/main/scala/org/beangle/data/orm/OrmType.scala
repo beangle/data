@@ -84,7 +84,7 @@ final class OrmEntityType(val entityName: String, var clazz: Class[_], var table
   var module: Option[String] = None
   var partitionKey: Option[String] = None
 
-  def cacheable: Boolean = {
+  override def cacheable: Boolean = {
     Strings.isNotBlank(cacheUsage)
   }
 

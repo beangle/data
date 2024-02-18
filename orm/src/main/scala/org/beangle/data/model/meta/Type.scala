@@ -45,6 +45,8 @@ trait EntityType extends StructType {
   def entityName: String
 
   def partitionKey: Option[String]
+
+  def cacheable: Boolean
 }
 
 trait Property {
