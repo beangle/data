@@ -26,7 +26,7 @@ import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, Operat
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.Domain
 import org.hibernate.collection.spi.PersistentCollection
-import org.hibernate.engine.spi.SessionImplementor
+import org.hibernate.engine.spi.{SessionFactoryImplementor, SessionImplementor}
 import org.hibernate.proxy.HibernateProxy
 import org.hibernate.query.{NativeQuery, Query}
 import org.hibernate.{Hibernate, Session, SessionFactory}
@@ -405,7 +405,15 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   override def evict[A <: Entity[_]](clazz: Class[A]): Unit = {
-    sessionFactory.getCache.evict(clazz)
+    val sf = sessionFactory.asInstanceOf[SessionFactoryImplementor]
+    //1. evict entity cache
+    sf.getCache.evict(clazz)
+
+    //2. evict query cache according to entity table
+    val entityName = entityNameOf(clazz)
+    val entityDescriptor = sf.getRuntimeMetamodels.getMappingMetamodel.getEntityDescriptor(entityName)
+    sf.getCache.getTimestampsCache.invalidate(entityDescriptor.getPropertySpaces,
+      this.currentSession.asInstanceOf[SessionImplementor])
   }
 
   override def refresh[T](entity: T): T = {

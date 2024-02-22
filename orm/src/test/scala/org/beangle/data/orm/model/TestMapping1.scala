@@ -42,8 +42,8 @@ object TestMapping1 extends MappingModule {
       e.properties is(table("users_props"), eleColumn("value2"), eleLength(200))
     }.generator(IdGenerator.Assigned)
 
-    bind[SkillType]
-    bind[Skill].table("skill_list")
+    bind[SkillType].cacheable().generator(IdGenerator.Native)
+    bind[Skill].cacheable().table("skill_list").generator(IdGenerator.Native)
 
     bind[Course].declare { e =>
       e.levels is depends("course")

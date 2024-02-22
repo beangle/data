@@ -21,8 +21,8 @@ import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.model.meta.SingularProperty
 import org.beangle.data.model.util.ConvertPopulator
 import org.beangle.data.orm.model.{ExtendRole, Role, User}
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import org.springframework.core.io.UrlResource
 
 class HibernateConfigTest extends AnyFunSpec with Matchers {
@@ -46,7 +46,11 @@ class HibernateConfigTest extends AnyFunSpec with Matchers {
   val userMetaOption = domain.getEntity(classOf[User])
 
   it("Should support option and collection") {
-      UserCrudTest.testCrud(sf)
+    UserCrudTest.testCrud(sf)
+  }
+
+  it("test cache") {
+    CacheTest.test(sf)
   }
 
   it("Role's parent is entityType") {

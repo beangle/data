@@ -92,6 +92,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
     addDefault(CacheSettings.USE_SECOND_LEVEL_CACHE, "true")
     addDefault(CacheSettings.USE_QUERY_CACHE, "true")
     addDefault(CacheSettings.CACHE_REGION_FACTORY, "jcache")
+    addDefault(CacheSettings.AUTO_EVICT_COLLECTION_CACHE, "true")
 
     //PersistenceSettings
     addDefault(PersistenceSettings.SCANNER_DISCOVERY, "none")
