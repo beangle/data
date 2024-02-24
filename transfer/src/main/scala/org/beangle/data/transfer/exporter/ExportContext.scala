@@ -83,6 +83,8 @@ class ExportContext(val format: Format) {
 
   var template: URL = _
 
+  var fileName: String = _
+
   def registerFormatter(clazz: Class[_], formatter: Formatter): ExportContext = {
     typeFormatters += (clazz -> formatter)
     this
@@ -102,10 +104,11 @@ class ExportContext(val format: Format) {
 
   def buildFileName(suggest: Option[String]): String = {
     val ext = "." + Strings.uncapitalize(this.format.toString)
-    suggest match {
+    this.fileName = suggest match {
       case Some(f) => if (!f.endsWith(ext)) f + ext else f
       case None => "exportFile" + ext
     }
+    this.fileName
   }
 
   def header(caption: Option[String], props: Seq[String]): this.type = {
@@ -169,7 +172,7 @@ class ExportContext(val format: Format) {
           }
   }
 
-  def exportAsString(converted:Boolean): this.type = {
+  def exportAsString(converted: Boolean): this.type = {
     convertToString = converted
     this
   }
