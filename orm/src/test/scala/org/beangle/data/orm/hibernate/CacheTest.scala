@@ -25,7 +25,7 @@ object CacheTest {
 
   def test(sf: SessionFactory): Unit = {
     val entityDao = new HibernateEntityDao(sf)
-    val session = sf.getCurrentSession()
+    val session = sf.getCurrentSession
     val transaction = session.beginTransaction()
     val skillType = new SkillType
     skillType.name = "play basketball"
@@ -39,11 +39,9 @@ object CacheTest {
     q.cacheable(true)
     val skills = entityDao.search(q)
     assert(skills.size == 1)
-
     entityDao.evict(classOf[Skill])
     entityDao.search(q)
+    session.flush()
     transaction.commit()
-    session.clear()
-    session.close()
   }
 }

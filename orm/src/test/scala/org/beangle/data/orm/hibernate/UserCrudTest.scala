@@ -182,7 +182,5 @@ object UserCrudTest {
     assert(logParams.head.log.username == "admin")
     //    assert(logs.head.params.size == 1)
     //    assert(logs.head.params.head.name == "id")
-    session.close()
-
   }
 }
