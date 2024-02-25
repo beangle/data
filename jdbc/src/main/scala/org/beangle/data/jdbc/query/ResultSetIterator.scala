@@ -28,11 +28,11 @@ class ResultSetIterator(rs: ResultSet, engine: Engine) extends Iterator[Array[An
 
   var nextRecord: Array[Any] = _
 
-  val types = JdbcExecutor.getColumnTypes(rs, engine)
+  val types: Array[Int] = JdbcExecutor.getColumnTypes(rs, engine)
 
-  def columnNames: Array[String] = JdbcExecutor.getColumnNames(rs)
+  val columnNames: Array[String] = JdbcExecutor.getColumnNames(rs)
 
-  def columnDisplaySizes: Array[Int] = JdbcExecutor.getColumnDisplaySizes(rs)
+  val columnDisplaySizes: Array[Int] = JdbcExecutor.getColumnDisplaySizes(rs)
 
   readNext()
 
