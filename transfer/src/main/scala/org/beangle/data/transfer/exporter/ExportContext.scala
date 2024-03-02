@@ -17,6 +17,7 @@
 
 package org.beangle.data.transfer.exporter
 
+import org.beangle.commons.bean.{DefaultPropertyExtractor, PropertyExtractor}
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.text.{Formatter, Formatters}
 import org.beangle.commons.lang.{Options, Strings}
@@ -65,7 +66,7 @@ class ExportContext(val format: Format) {
 
   val datas: collection.mutable.Map[String, Any] = Collections.newMap[String, Any]
 
-  var extractor: PropertyExtractor = new DefaultPropertyExtractor
+  var extractor: PropertyExtractor = DefaultPropertyExtractor
   /** Convert all property to string before export */
   var convertToString: Boolean = false
 
@@ -163,7 +164,7 @@ class ExportContext(val format: Format) {
     sharedValues.get(property) match
       case Some(v) => v
       case None =>
-        val value = Options.unwrap(extractor.getPropertyValue(target, property))
+        val value = Options.unwrap(extractor.get(target, property))
         if value == null then ""
         else
           getFormatter(property, value) match {
