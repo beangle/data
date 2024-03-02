@@ -17,11 +17,9 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import org.beangle.commons.conversion.string.EnumConverters
-import org.beangle.commons.lang.Enums
 import org.hibernate.`type`.descriptor.WrapperOptions
-import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType, LocalDateJavaType}
-import org.hibernate.`type`.descriptor.jdbc.{DateJdbcType, IntegerJdbcType, JdbcType, VarcharJdbcType}
+import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
+import org.hibernate.`type`.descriptor.jdbc.{DateJdbcType, JdbcType}
 
 import java.time.{LocalDate, YearMonth}
 
@@ -44,6 +42,7 @@ class YearMonthType extends AbstractClassJavaType[YearMonth](classOf[YearMonth])
   override def wrap[X](value: X, options: WrapperOptions): YearMonth = {
     value match {
       case null => null
+      case ym: YearMonth => ym
       case s: String => YearMonth.parse(s)
       case d: java.sql.Date => YearMonth.from(d.toLocalDate)
       case _ => throw new RuntimeException(s"Cannot support convert from ${value.getClass} to yearMonth")
