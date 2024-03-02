@@ -66,7 +66,7 @@ class ExportContext(val format: Format) {
 
   val datas: collection.mutable.Map[String, Any] = Collections.newMap[String, Any]
 
-  var extractor: PropertyExtractor = DefaultPropertyExtractor
+  var extractor: PropertyExtractor = new DefaultPropertyExtractor
   /** Convert all property to string before export */
   var convertToString: Boolean = false
 
