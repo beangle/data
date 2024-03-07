@@ -89,8 +89,8 @@ class ExcelWriter(val outputStream: OutputStream) extends Writer {
       val region = new CellRangeAddress(index, index, 0, titles.length - 1)
       sheet.addMergedRegion(region)
       RegionUtil.setBorderBottom(BorderStyle.THIN, region, sheet)
+      this.index += 1
     }
-    this.index += 1
   }
 
   override def writeHeader(caption: Option[String], titles: Array[String]): Unit = {
