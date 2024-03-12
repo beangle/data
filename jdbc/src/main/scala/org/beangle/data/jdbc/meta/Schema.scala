@@ -48,15 +48,15 @@ object Schema {
     def filter(tables: Iterable[Identifier]): List[Identifier] = {
       val results = new collection.mutable.ListBuffer[Identifier]
       for (tabId <- tables) {
-        val tabame = if (lowercase) tabId.value.toLowerCase else tabId.value
-        val tableName = if (tabame.contains(".")) Strings.substringAfter(tabame, ".") else tabame
-        if isMatched(tableName) then results += tabId
+        if isMatched(tabId.value) then results += tabId
       }
       results.toList
     }
 
     def isMatched(name: String): Boolean = {
-      includes.exists(_.matches(name)) && !excludes.exists(_.matches(name))
+      val lname = if (lowercase) name.toLowerCase else name
+      val shortName = if (lname.contains(".")) Strings.substringAfter(lname, ".") else lname
+      includes.exists(_.matches(shortName)) && !excludes.exists(_.matches(shortName))
     }
 
     def exclude(table: String): Unit = {
