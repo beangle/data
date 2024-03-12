@@ -27,7 +27,28 @@ import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.*
 
 object ConvertPopulator extends Logging {
-  val TrimStr = true
+  private val zero = '\u0000'
+
+  /** trim and remove zero
+   *
+   * @param s
+   * @return
+   */
+  def sanitize(s: String): String = {
+    if Strings.isEmpty(s) then null
+    else
+      var zidx = s.indexOf(zero)
+      if (zidx > -1) {
+        val sb = new StringBuilder(s.trim())
+        while (zidx > -1) {
+          sb.deleteCharAt(zidx)
+          zidx = sb.indexOf(zero)
+        }
+        sb.toString
+      } else {
+        s.trim()
+      }
+  }
 }
 
 /**
@@ -115,9 +136,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
       case (attr, v) =>
         var value = v
         value match {
-          case s: String =>
-            if (Strings.isEmpty(s)) value = null
-            else if (TrimStr) value = s.trim()
+          case s: String => value = sanitize(s)
           case _ =>
         }
         if (-1 == attr.indexOf('.')) {
