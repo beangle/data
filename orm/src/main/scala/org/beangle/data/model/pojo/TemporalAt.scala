@@ -20,20 +20,23 @@ package org.beangle.data.model.pojo
 import java.time.Instant
 
 /** 有时效性的实体
-  *
-  * 指有具体生效时间和失效时间的实体。一般生效时间不能为空，失效时间可以为空。
-  * 具体时间采用时间时间格式便于比对。
-  * @author chaostone
-  */
+ *
+ * 指有具体生效时间和失效时间的实体。一般生效时间不能为空，失效时间可以为空。
+ * 具体时间采用时间时间格式便于比对。
+ *
+ * @author chaostone
+ */
 trait TemporalAt {
 
   /** 获得生效时间 */
   var beginAt: Instant = _
 
-  /** 获得失效时间    */
+  /** 获得失效时间 */
   var endAt: Option[Instant] = None
 
   def within(time: Instant): Boolean = {
     !(beginAt.isAfter(time) || endAt.exists(_.isBefore(time)))
   }
+
+  def active: Boolean = within(Instant.now)
 }

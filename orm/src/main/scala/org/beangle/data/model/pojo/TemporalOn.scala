@@ -20,11 +20,12 @@ package org.beangle.data.model.pojo
 import java.time.LocalDate
 
 /** 有时效性的实体
-  *
-  * 指有具体生效时间和失效时间的实体。一般生效时间不能为空，失效时间可以为空。
-  * 具体时间采用时间时间格式便于比对。
-  * @author chaostone
-  */
+ *
+ * 指有具体生效时间和失效时间的实体。一般生效时间不能为空，失效时间可以为空。
+ * 具体时间采用时间时间格式便于比对。
+ *
+ * @author chaostone
+ */
 trait TemporalOn {
 
   /** 起始日期 */
@@ -36,4 +37,6 @@ trait TemporalOn {
   def within(date: LocalDate): Boolean = {
     !(beginOn.isAfter(date) || endOn.exists(_.isBefore(date)))
   }
+
+  def active: Boolean = within(LocalDate.now)
 }

@@ -33,4 +33,6 @@ trait InstantRange {
   def within(time: Instant): Boolean = {
     !(beginAt.isAfter(time) || endAt.isBefore(time))
   }
+
+  def active: Boolean = within(Instant.now)
 }
