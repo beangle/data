@@ -2,6 +2,7 @@ Coded.code=代码
 Enabled.enabled=是否启用
 Hierarchical.indexno=顺序号
 Named.name=名称
+EnNamed.enName=英文名
 NumId.id=非业务主键
 StringId.id=非业务主键
 TemporalAt.beginAt=生效时间

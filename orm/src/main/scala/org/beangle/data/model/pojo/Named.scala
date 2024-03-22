@@ -21,3 +21,7 @@ trait Named {
 
   var name: String = _
 }
+
+trait EnNamed {
+  var enName: Option[String] = None
+}
