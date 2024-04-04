@@ -3,7 +3,7 @@ import org.beangle.parent.Settings.*
 import sbt.Keys.libraryDependencies
 
 ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.8.9-SNAPSHOT"
+ThisBuild / version := "5.8.9"
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/beangle/data"),
@@ -23,62 +23,18 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Data Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
 
-val beangle_common_ver = "5.6.14"
-
-val beangle_commons_core = "org.beangle.commons" %% "beangle-commons-core" % beangle_common_ver
-val beangle_commons_text = "org.beangle.commons" %% "beangle-commons-text" % beangle_common_ver
-val commonDeps = Seq(beangle_commons_core, logback_classic % "test", logback_core % "test", scalatest)
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.15"
+val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.0.0"
 
 lazy val root = (project in file("."))
-  .settings()
-  .aggregate(jdbc, orm, excel, csv, dbf, transfer)
-
-lazy val jdbc = (project in file("jdbc"))
   .settings(
-    name := "beangle-data-jdbc",
+    name := "beangle-model",
     common,
-    libraryDependencies ++= (commonDeps ++ Seq(scalaxml, HikariCP % "optional", h2 % "test"))
-  )
-
-lazy val orm = (project in file("orm"))
-  .settings(
-    name := "beangle-data-orm",
-    common,
-    libraryDependencies ++= commonDeps,
-    libraryDependencies ++= Seq(beangle_commons_text, javassist, jpa),
-    libraryDependencies ++= Seq(hibernate_core, spring_tx, spring_aop, spring_jdbc),
-    libraryDependencies ++= Seq(hibernate_jcache % "optional", ehcache % "optional"),
+    libraryDependencies ++= Seq(beangle_commons, logback_classic % "test", logback_core % "test", scalatest),
+    libraryDependencies ++= Seq(beangle_jdbc, javassist, jpa),
+    libraryDependencies ++= Seq(spring_tx % "optional", spring_aop % "optional", spring_jdbc % "optional"),
+    libraryDependencies ++= Seq(hibernate_jcache % "optional", hibernate_core % "optional", ehcache % "optional"),
     libraryDependencies ++= Seq(h2 % "test", HikariCP % "test", postgresql % "test")
-  ).dependsOn(jdbc)
-
-lazy val csv = (project in file("csv"))
-  .settings(
-    name := "beangle-data-csv",
-    common,
-    libraryDependencies ++= commonDeps
   )
 
-lazy val dbf = (project in file("dbf"))
-  .settings(
-    name := "beangle-data-dbf",
-    common,
-    libraryDependencies ++= commonDeps
-  )
-
-lazy val excel = (project in file("excel"))
-  .settings(
-    name := "beangle-data-excel",
-    common,
-    libraryDependencies ++= (commonDeps ++ Seq(poi_ooxml)),
-    libraryDependencies ++= Seq(jexl3, jcl_over_slf4j)
-  )
-
-lazy val transfer = (project in file("transfer"))
-  .settings(
-    name := "beangle-data-transfer",
-    common,
-    libraryDependencies ++= commonDeps
-  ).dependsOn(orm, excel, csv)
-
-publish / skip := true
-orm / Test / parallelExecution := false
+Test / parallelExecution := false

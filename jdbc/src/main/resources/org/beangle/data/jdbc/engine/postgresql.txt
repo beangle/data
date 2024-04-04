@@ -1,1 +1,0 @@
-analyse, analyze, concurrently, do, freeze, ilike, isnull, notnull, placing, returning, variadic, verbose
