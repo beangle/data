@@ -1,6 +1,6 @@
 import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
-import sbt.Keys.libraryDependencies
+import sbt.Keys.*
 
 ThisBuild / organization := "org.beangle.data"
 ThisBuild / version := "5.8.9"
