@@ -19,7 +19,7 @@ package org.beangle.data.dao
 
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.Strings._
-import org.beangle.data.dao.Jpas
+import org.beangle.data.orm.Jpas
 
 object OqlBuilder {
 

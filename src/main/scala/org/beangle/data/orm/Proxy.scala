@@ -25,7 +25,6 @@ import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.lang.{ClassLoaders, Primitives}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.dao.Jpas
 
 /**
   * @author chaostone

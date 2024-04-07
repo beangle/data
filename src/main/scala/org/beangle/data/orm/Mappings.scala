@@ -26,8 +26,7 @@ import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, Reflections, TypeInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
-import org.beangle.data.dao.Jpas
-import org.beangle.data.dao.Jpas.*
+import Jpas.*
 import org.beangle.data.model.annotation.archive
 import org.beangle.data.model.meta.*
 import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity}

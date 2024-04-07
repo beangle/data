@@ -17,14 +17,14 @@
 
 package org.beangle.data.orm.hibernate
 
-import org.beangle.commons.collection.Wrappers
 import org.beangle.commons.collection.page.{Page, PageLimit, SinglePage}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.description
 import org.beangle.commons.logging.Logging
-import org.beangle.data.dao.{Condition, EntityDao, LimitQuery, Operation, OperationType, OqlBuilder, QueryBuilder, Query as BQuery}
+import org.beangle.data.dao.{EntityDao, LimitQuery, Operation, OperationType, OqlBuilder, QueryBuilder, Query as BQuery}
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.Domain
+import org.beangle.data.orm.Jpas
 import org.hibernate.collection.spi.PersistentCollection
 import org.hibernate.engine.spi.{SessionFactoryImplementor, SessionImplementor}
 import org.hibernate.proxy.HibernateProxy
@@ -35,137 +35,8 @@ import java.io.{ByteArrayOutputStream, InputStream, Serializable}
 import java.sql.{Blob, Clob}
 import scala.collection.immutable.Seq
 import scala.collection.mutable
-import scala.jdk.javaapi.CollectionConverters.{asJava, asScala}
+import scala.jdk.javaapi.CollectionConverters.asScala
 
-object QuerySupport {
-
-  def list[T](query: Query[T]): Seq[T] = {
-    Wrappers.ImmutableJList(query.list())
-  }
-
-  private def buildHibernateQuery[T](bquery: BQuery[T], session: Session): Query[T] = {
-    val query =
-      if (bquery.lang == BQuery.Lang.SQL) {
-        //FIXME native query cannot enable cache
-        session.createNativeQuery(bquery.statement).asInstanceOf[Query[T]]
-      } else {
-        val q = session.createQuery(bquery.statement, null).asInstanceOf[Query[T]]
-        if (bquery.cacheable) q.setCacheable(bquery.cacheable)
-        q
-      }
-    setParameters(query, bquery.params)
-  }
-
-  /**
-   * 统计该查询的记录数
-   */
-  def doCount(limitQuery: LimitQuery[_], hibernateSession: Session): Int = {
-    val cntQuery = limitQuery.countQuery
-    if (null == cntQuery) {
-      buildHibernateQuery(limitQuery, hibernateSession).list().size()
-    } else {
-      val count = buildHibernateQuery(cntQuery, hibernateSession).uniqueResult().asInstanceOf[Number]
-      if (null == count) 0 else count.intValue()
-    }
-  }
-
-  /**
-   * 查询结果集
-   */
-  def doFind[T](query: BQuery[T], session: Session): Seq[T] = {
-    val hQuery = query match {
-      case limitQuery: LimitQuery[_] =>
-        val hibernateQuery = buildHibernateQuery(limitQuery, session)
-        if (null != limitQuery.limit) {
-          val limit = limitQuery.limit
-          hibernateQuery.setFirstResult((limit.pageIndex - 1) * limit.pageSize).setMaxResults(limit.pageSize)
-        }
-        hibernateQuery
-      case _ => buildHibernateQuery(query, session)
-    }
-    list[T](hQuery)
-  }
-
-  /**
-   * 为query设置JPA style参数
-   */
-  def setParameters[T](query: Query[T], argument: Iterable[_]): Query[T] = {
-    if (argument != null && argument.nonEmpty) {
-      var i = 1
-      val iter = argument.iterator
-      while (iter.hasNext) {
-        setParameter(query, i, iter.next().asInstanceOf[AnyRef])
-        i += 1
-      }
-    }
-    query
-  }
-
-  /**
-   * 为query设置参数
-   */
-  def setParameters[T](query: Query[T], parameterMap: collection.Map[String, _]): Query[T] = {
-    if (parameterMap != null && parameterMap.nonEmpty) {
-      for ((k, v) <- parameterMap; if null != k) setParameter(query, k, v)
-    }
-    query
-  }
-
-  def setParameter[T](query: Query[T], idx: Int, value: Any): Query[T] = {
-    value match {
-      case null => query.setParameter(idx, null.asInstanceOf[AnyRef])
-      case av: Array[AnyRef] => query.setParameterList(idx, av)
-      case col: java.util.Collection[_] => query.setParameterList(idx, col)
-      case iter: Iterable[_] => query.setParameterList(idx, asJava(iter.toList))
-      case _ => query.setParameter(idx, value)
-    }
-    query
-  }
-
-  def setParameter[T](query: Query[T], param: String, value: Any): Query[T] = {
-    value match {
-      case null => query.setParameter(param, null.asInstanceOf[AnyRef])
-      case av: Array[AnyRef] => query.setParameterList(param, av)
-      case col: java.util.Collection[_] => query.setParameterList(param, col)
-      case Some(v) => setParameter(query, param, v)
-      case None => query.setParameter(param, null.asInstanceOf[AnyRef])
-      case iter: Iterable[_] => query.setParameterList(param, asJava(iter.toList))
-      case _ => query.setParameter(param, value)
-    }
-    query
-  }
-
-  def isMultiValue(value: Any): Boolean = {
-    value match {
-      case null => false
-      case av: Array[AnyRef] => true
-      case col: java.util.Collection[_] => true
-      case iter: Iterable[_] => true
-      case _ => false
-    }
-  }
-
-  /**
-   * 针对查询条件绑定查询的值
-   */
-  def bindValues(query: Query[_], conditions: List[Condition]): Unit = {
-    var position = 0
-    var hasInterrogation = false // 含有问号
-    for (condition <- conditions) {
-      if (Strings.contains(condition.content, "?")) hasInterrogation = true
-      if (hasInterrogation) {
-        for (o <- condition.params) {
-          query.setParameter(position, o)
-          position += 1
-        }
-      } else {
-        val paramNames = condition.paramNames
-        for (i <- 0 until paramNames.size)
-          setParameter(query, paramNames(i), condition.params.apply(i))
-      }
-    }
-  }
-}
 
 /**
  * @author chaostone
@@ -173,6 +44,8 @@ object QuerySupport {
 @description("基于Hibernate提供的通用实体DAO")
 class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao with Logging {
   val domain: Domain = DomainFactory.build(sessionFactory)
+
+  Jpas.proxyResolver = HibernateProxyResolver
 
   import QuerySupport.*
 
@@ -227,14 +100,14 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     findBy(clazz, Map(key -> value))
   }
 
-  override def findBy[T <: Entity[_]](clazz: Class[T], kvs: Tuple2[String, Any]*): Seq[T] = {
+  override def findBy[T <: Entity[_]](clazz: Class[T], kvs: (String, Any)*): Seq[T] = {
     findBy(clazz, kvs.toMap)
   }
 
   override def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T] = {
     if (clazz == null || params == null || params.isEmpty) return List.empty
     val entityName = entityNameOf(clazz)
-    val hql = new StringBuilder(s"from ${entityName}  where ")
+    val hql = new StringBuilder(s"from $entityName where ")
     val where = buildWhere(params)
     hql.append(where._1)
     search[T](hql.toString(), where._2)
@@ -242,7 +115,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
 
   private def findByMulti[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T] = {
     if (values.isEmpty) return List.empty
-    val hql = s"from ${entityName} as entity where entity.${keyName} in (:values)"
+    val hql = s"from $entityName as entity where entity.$keyName in (:values)"
     val parameterMap = new mutable.HashMap[String, Any]
     if (values.size < 500) {
       parameterMap.put("values", values)
@@ -273,18 +146,18 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
       val name = tempName(tempName.length - 1) + i
       if QuerySupport.isMultiValue(v) then
         parameterMap.put(name, v)
-        conditions += s"${prefix}${k} in (:${name})"
+        conditions += s"$prefix$k in (:$name)"
       else if v == null || v == None then
-        conditions += s"${prefix}${k} is null"
+        conditions += s"$prefix$k is null"
       else
         parameterMap.put(name, v)
-        conditions += s"${prefix}${k} = :${name}"
+        conditions += s"$prefix$k = :$name"
       end if
     }
     (conditions.mkString(" and "), parameterMap)
   }
 
-  override def count(clazz: Class[_], kvs: Tuple2[String, Any]*): Int = {
+  override def count(clazz: Class[_], kvs: (String, Any)*): Int = {
     count(clazz, kvs.toMap)
   }
 
@@ -292,14 +165,14 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
     val entityName = entityNameOf(clazz)
     val where = buildWhere(params)
     val hql =
-      if Strings.isEmpty(where._1) then s"select count(*) from ${entityName}"
-      else s"select count(*) from ${entityName} where " + where._1
+      if Strings.isEmpty(where._1) then s"select count(*) from $entityName"
+      else s"select count(*) from $entityName where " + where._1
 
     val rs = search[Number](hql, where._2)
     if (rs.isEmpty) 0 else rs.head.intValue()
   }
 
-  override def exists(clazz: Class[_], kvs: Tuple2[String, Any]*): Boolean = {
+  override def exists(clazz: Class[_], kvs: (String, Any)*): Boolean = {
     count(clazz, kvs.toMap) > 0
   }
 
@@ -310,7 +183,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   override def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, params: collection.Map[String, _]): Boolean = {
     val entityName = entityNameOf(clazz)
     val where = buildWhere(params)
-    val hql = s"from ${entityName} where " + where._1
+    val hql = s"from $entityName where " + where._1
     val list = search[T](hql, where._2)
     if (list.isEmpty) {
       false

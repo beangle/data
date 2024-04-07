@@ -17,7 +17,6 @@
 
 package org.beangle.data.jsonapi
 
-import org.beangle.commons.bean.ProxyResolver
 import org.beangle.commons.collection.{Collections, Properties}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
@@ -25,6 +24,7 @@ import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.text.inflector.en.EnNounPluralizer
 import org.beangle.data.model.Entity
+import org.beangle.data.orm.Jpas
 
 import scala.collection.mutable
 
@@ -35,8 +35,6 @@ import scala.collection.mutable
  */
 @beta
 object JsonAPI {
-
-  var proxyResolver: ProxyResolver = ProxyResolver.Null
 
   def newJson(data: Resource)(using context: Context): Json = {
     val json = new Json
@@ -69,7 +67,7 @@ object JsonAPI {
   }
 
   def create(entity: Entity[_], path: String)(using context: Context): Resource = {
-    val clazz = proxyResolver.targetClass(entity)
+    val clazz = Jpas.entityClass(entity)
     val entityType = typeName(clazz)
     val id = entity.id.toString
     if Strings.isEmpty(path) then context.primaryResourceTypes.addOne(entityType)
@@ -227,7 +225,7 @@ object JsonAPI {
 
       if entities.nonEmpty then
         val first = entities.head
-        this.filters.include(proxyResolver.targetClass(first), properties: _*)
+        this.filters.include(Jpas.entityClass(first), properties: _*)
       end if
       val resources = entities.map { g => JsonAPI.create(g, "") }
       JsonAPI.newJson(resources)
@@ -266,7 +264,7 @@ object JsonAPI {
 
     def ref(name: String, value: Entity[_])(using context: JsonAPI.Context): Resource = {
       val pJson = new Json
-      val typ = typeName(proxyResolver.targetClass(value))
+      val typ = typeName(Jpas.entityClass(value))
       val id = value.id.toString
       val refer = Identifier(id, typ)
       pJson.put("data", refer)
@@ -283,7 +281,7 @@ object JsonAPI {
     def refs(name: String, pValues: Iterable[Entity[_]])(using context: JsonAPI.Context): Resource = {
       if pValues.nonEmpty then
         val pJson = new Json
-        val typ = typeName(proxyResolver.targetClass(pValues.head))
+        val typ = typeName(Jpas.entityClass(pValues.head))
         val ids = pValues.map(x => Identifier(x.id.toString, typ))
         pJson.put("data", ids)
         if (null == relationships) relationships = new Properties

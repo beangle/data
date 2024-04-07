@@ -19,7 +19,6 @@ package org.beangle.data.orm.hibernate.cfg
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.dao.Jpas
 import org.beangle.jdbc.meta.{Column, SqlType}
 import org.beangle.data.model.meta.{BasicType, EntityType}
 import org.beangle.data.orm.*

@@ -15,14 +15,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.dao
+package org.beangle.data.orm
 
+import org.beangle.commons.bean.ProxyResolver
 import org.beangle.commons.lang.Strings
 import org.beangle.data.model.{Component, Entity}
 
 import java.lang.annotation.Annotation
 
 object Jpas {
+
+  var proxyResolver: ProxyResolver = ProxyResolver.Null
+
   val JpaEntityAnn = Class.forName("jakarta.persistence.Entity").asInstanceOf[Class[Annotation]]
 
   val JpaComponentAnn = Class.forName("jakarta.persistence.Embeddable").asInstanceOf[Class[Annotation]]
@@ -59,5 +63,9 @@ object Jpas {
     classOf[Component].isAssignableFrom(clazz) ||
       null != clazz.getAnnotation(classOf[org.beangle.commons.bean.component]) ||
       null != clazz.getAnnotation(JpaComponentAnn)
+  }
+
+  def entityClass(entity: AnyRef): Class[_] = {
+    proxyResolver.targetClass(entity)
   }
 }
