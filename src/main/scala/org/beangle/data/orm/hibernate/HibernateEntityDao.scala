@@ -240,7 +240,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao w
   }
 
   override def first[T](builder: QueryBuilder[T]): Option[T] = {
-    search(builder.build()).headOption
+    topN(1, builder).headOption
   }
 
   override def topN[T](limit: Int, builder: QueryBuilder[T]): Seq[T] = {

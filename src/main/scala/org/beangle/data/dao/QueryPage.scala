@@ -17,10 +17,16 @@
 
 package org.beangle.data.dao
 
-import org.beangle.commons.collection.page.Page
-import org.beangle.commons.collection.page.PageLimit
-import org.beangle.commons.collection.page.SinglePage
+import org.beangle.commons.collection.page.{Page, PageLimit, SinglePage}
 import org.beangle.data.model.Entity
+
+object QueryPage {
+  def apply[T <: Entity[_]](query: OqlBuilder[T], entityDao: EntityDao): QueryPage[T] = {
+    if null == query.limit then query.limit(1, 100)
+    val q = query.build().asInstanceOf[LimitQuery[T]]
+    new QueryPage[T](q, entityDao)
+  }
+}
 
 /**
  * QueryPage class.
