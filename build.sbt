@@ -3,7 +3,7 @@ import org.beangle.parent.Settings.*
 import sbt.Keys.*
 
 ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.8.10-SNAPSHOT"
+ThisBuild / version := "5.8.10"
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/beangle/data"),
@@ -23,8 +23,8 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Data Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.15"
-val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.0.0"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.16"
+val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.0.1"
 
 lazy val root = (project in file("."))
   .settings(
@@ -33,7 +33,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(beangle_commons, logback_classic % "test", logback_core % "test", scalatest),
     libraryDependencies ++= Seq(beangle_jdbc, javassist, jpa),
     libraryDependencies ++= Seq(spring_tx % "optional", spring_aop % "optional", spring_jdbc % "optional"),
-    libraryDependencies ++= Seq(hibernate_jcache % "optional", hibernate_core % "optional", ehcache % "optional"),
+    libraryDependencies ++= Seq(hibernate_jcache % "optional", hibernate_core % "optional", ehcache % "test"),
     libraryDependencies ++= Seq(h2 % "test", HikariCP % "test", postgresql % "test")
   )
 
