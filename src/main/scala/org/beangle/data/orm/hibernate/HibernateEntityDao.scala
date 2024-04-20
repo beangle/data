@@ -45,6 +45,7 @@ import scala.jdk.javaapi.CollectionConverters.asScala
 class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao with Logging {
   val domain: Domain = DomainFactory.build(sessionFactory)
 
+  //Writer Jpas static member
   Jpas.proxyResolver = HibernateProxyResolver
 
   import QuerySupport.*
