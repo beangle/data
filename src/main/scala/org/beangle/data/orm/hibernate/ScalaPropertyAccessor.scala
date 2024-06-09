@@ -31,20 +31,6 @@ object ScalaPropertyAccessor {
 
   def name: String = "scala"
 
-  def createSetter(theClass: Class[_], propertyName: String): Setter = {
-    BeanInfos.get(theClass).properties.get(propertyName) match {
-      case Some(p) => new BasicSetter(theClass, p.setter.get, propertyName, p.typeinfo.isOptional)
-      case None => throw new PropertyNotFoundException("Could not find a setter for " + propertyName + " in class " + theClass.getName())
-    }
-  }
-
-  def createGetter(theClass: Class[_], propertyName: String): Getter = {
-    BeanInfos.get(theClass).properties.get(propertyName) match {
-      case Some(p) => new BasicGetter(theClass, p.getter.get, p.clazz, propertyName, p.typeinfo.isOptional)
-      case None => throw new PropertyNotFoundException("Could not find a getter for " + propertyName + " in class " + theClass.getName())
-    }
-  }
-
   final class BasicSetter(val clazz: Class[_], val method: Method, val propertyName: String, optional: Boolean) extends Setter {
     override def set(target: Object, value: Object): Unit = {
       try {
@@ -76,7 +62,7 @@ object ScalaPropertyAccessor {
       }
     }
 
-    override def getMethod = method
+    override def getMethod: Method = method
 
     override def getMethodName: String = method.getName
 
@@ -125,18 +111,21 @@ object ScalaPropertyAccessor {
 
 class ScalaPropertyAccessStrategy extends PropertyAccessStrategy {
 
-  override def buildPropertyAccess(theClass: Class[_], propertyName: String, setterRequired: Boolean): PropertyAccess = {
-    new ScalaPropertyAccessBasicImpl(this, ScalaPropertyAccessor.createGetter(theClass, propertyName),
-      ScalaPropertyAccessor.createSetter(theClass, propertyName))
-  }
+  import ScalaPropertyAccessor.*
 
+  override def buildPropertyAccess(theClass: Class[_], propertyName: String, setterRequired: Boolean): PropertyAccess = {
+    BeanInfos.get(theClass).properties.get(propertyName) match {
+      case Some(p) =>
+        new ScalaPropertyAccessBasicImpl(this, new BasicGetter(theClass, p.getter.get, p.clazz, propertyName, p.typeinfo.isOptional),
+          new BasicSetter(theClass, p.setter.get, propertyName, p.typeinfo.isOptional))
+
+      case None => throw new PropertyNotFoundException("Could not find a setter for " + propertyName + " in class " + theClass.getName())
+    }
+  }
 }
 
-class ScalaPropertyAccessBasicImpl(strategy: PropertyAccessStrategy, getter: Getter, setter: Setter)
-  extends PropertyAccess {
-  override def getPropertyAccessStrategy(): PropertyAccessStrategy = {
-    strategy
-  }
+class ScalaPropertyAccessBasicImpl(strategy: PropertyAccessStrategy, getter: Getter, setter: Setter) extends PropertyAccess {
+  override def getPropertyAccessStrategy: PropertyAccessStrategy = strategy
 
   override def getGetter: Getter = getter
 
