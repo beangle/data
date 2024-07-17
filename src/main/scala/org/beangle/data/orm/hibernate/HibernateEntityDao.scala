@@ -37,7 +37,6 @@ import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asScala
 
-
 /**
  * @author chaostone
  */
