@@ -138,7 +138,7 @@ object MappingModule {
       ch.columns foreach { c =>
         c.unique = true
         val table = holder.mapping.table
-        table.createUniqueKey(table.name.value + "_" + c.name.value + "_key", c.name.value)
+        table.createUniqueKey("", c.name.value)
       }
     }
   }
