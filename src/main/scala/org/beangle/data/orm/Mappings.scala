@@ -26,10 +26,10 @@ import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, Reflections, TypeInfo}
 import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
-import Jpas.*
 import org.beangle.data.model.annotation.archive
 import org.beangle.data.model.meta.*
 import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity}
+import org.beangle.data.orm.Jpas.*
 import org.beangle.data.orm.cfg.Profiles
 import org.beangle.jdbc.meta.{Column, Database, Table}
 import org.beangle.jdbc.{DefaultSqlTypeMapping, SqlTypeMapping}
@@ -79,7 +79,7 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     classTypes.put(cls, mapping)
     if (!cls.isInterface && !Modifier.isAbstract(cls.getModifiers)) {
       //replace super entity with same entityName
-      //It's very strange,hibnerate ClassMetadata has same entityName and mappedClass in type overriding,
+      //It's very strange,Hibernate ClassMetadata has same entityName and mappedClass in type overriding,
       //So, we leave hibernate a clean world.
       entityTypes.get(mapping.entityName) match {
         case Some(o) => if (o.clazz.isAssignableFrom(mapping.clazz)) entityTypes.put(mapping.entityName, mapping)
@@ -600,7 +600,8 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
   private def findDefaultValue(sample: Any, propertyName: String, propertyClazz: Class[_], optional: Boolean): Option[String] = {
     if propertyClazz.isPrimitive && !optional && null != sample then
       val sqlType = sqlTypeMapping.sqlType(propertyClazz)
-      val value = Properties.get[Any](sample, propertyName).toString
+      var value = Properties.get[Any](sample, propertyName).toString
+      if (value == "0.0") value = "0"
       database.engine.convert(sqlType, value)
     else None
   }
