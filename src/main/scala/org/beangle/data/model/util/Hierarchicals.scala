@@ -27,10 +27,11 @@ import scala.collection.mutable
 object Hierarchicals {
 
   /**
-    * 得到给定节点的所有家族结点，包括自身
-    * @param root 指定根节点
-    * @return 包含自身的家族节点集合
-    */
+   * 得到给定节点的所有家族结点，包括自身
+   *
+   * @param root 指定根节点
+   * @return 包含自身的家族节点集合
+   */
   def getFamily[T <: Hierarchical[T]](root: T): Set[T] = {
     val nodes = new mutable.HashSet[T]
     nodes += root
@@ -39,9 +40,10 @@ object Hierarchicals {
   }
 
   /** 加载子节点到指定集合
-    * @param node   节点
-    * @param result 结果集
-    */
+   *
+   * @param node   节点
+   * @param result 结果集
+   */
   private def loadChildren[T <: Hierarchical[T]](node: T, result: mutable.Set[T]): Unit = {
     if (null == node.children) return
     node.children foreach { one =>
@@ -51,18 +53,20 @@ object Hierarchicals {
   }
 
   /** 按照上下关系排序
-    * @param datas a { @link java.util.List} object.
-    * @return a { @link java.util.Map} object.
-    */
+   *
+   * @param datas a { @link java.util.List} object.
+   * @return a { @link java.util.Map} object.
+   */
   def sort[T <: Hierarchical[T]](datas: mutable.Seq[T]): collection.Map[T, String] = {
     sort(datas, "id")
   }
 
   /** 按照上下关系和指定属性排序
-    * @param datas    a { @link java.util.List} object.
-    * @param property a String object.
-    * @return a { @link java.util.Map} object.
-    */
+   *
+   * @param datas    a { @link java.util.List} object.
+   * @param property a String object.
+   * @return a { @link java.util.Map} object.
+   */
   def sort[T <: Hierarchical[T]](datas: mutable.Seq[T], property: String): collection.Map[T, String] = {
     val sortedMap = tag(datas, property)
     datas.sortWith((f1, f2) => sortedMap(f1).compareTo(sortedMap(f2)) <= 0)
@@ -70,10 +74,11 @@ object Hierarchicals {
   }
 
   /** Tag
-    * @param datas    a { @link java.util.List} object.
-    * @param property a String object.
-    * @return a { @link java.util.Map} object.
-    */
+   *
+   * @param datas    a { @link java.util.List} object.
+   * @param property a String object.
+   * @return a { @link java.util.Map} object.
+   */
   def tag[T <: Hierarchical[T]](datas: collection.Seq[T], property: String): Map[T, String] = {
     val sortedMap = new mutable.HashMap[T, String]
     for (de <- datas) {
@@ -106,7 +111,7 @@ object Hierarchicals {
   }
 
   /** getRoots.
-    */
+   */
   def getRoots[T <: Hierarchical[T]](nodes: Seq[T]): collection.Seq[T] = {
     val roots = new mutable.ListBuffer[T]
     for (m <- nodes)
@@ -115,8 +120,9 @@ object Hierarchicals {
   }
 
   /** Get the path from current node to root. First element is current and last is root.
-    * @param node current node
-    */
+   *
+   * @param node current node
+   */
   def getPath[T <: Hierarchical[T]](node: T): collection.Seq[T] = {
     var path = List.empty[T]
     var curNode = node
@@ -128,13 +134,13 @@ object Hierarchicals {
   }
 
   /** addParent
-    */
+   */
   def addParent[T <: Hierarchical[T]](nodes: mutable.Set[T]): Unit = {
     addParent(nodes, null.asInstanceOf[T])
   }
 
   /** addParent
-    */
+   */
   def addParent[T <: Hierarchical[T]](nodes: mutable.Set[T], toRoot: T): Unit = {
     val parents = new mutable.HashSet[T]
     for (n <- nodes) {
@@ -149,22 +155,30 @@ object Hierarchicals {
   }
 
   /** 将节点移动到给定位置
-    *
-    * implementation:
-    * 由于级联保存的原因，不要更改原有上级节点和目标上级节点的children属性
-    */
+   *
+   * implementation:
+   * 由于级联保存的原因，不要更改原有上级节点和目标上级节点的children属性
+   */
   def move[T <: Hierarchical[T]](node: T, parentNode: T, index: Int): Iterable[T] = {
-    if (node.parent == Option(parentNode)) {
+    require(null != parentNode)
+    if (node.parent.contains(parentNode)) {
       if (node.lastindex != index) shiftCode(node, parentNode.children, index)
       else Seq.empty
     } else {
-      node.parent = Option(parentNode)
+      node.parent = Some(parentNode)
       shiftCode(node, parentNode.children, index)
     }
   }
 
-  def move[T <: Hierarchical[T]](node: T, sibling: mutable.Buffer[T], index: Int): Iterable[T] = {
-    if (node.parent == null) {
+  /** 在顶层节点之间移动
+   * @param node
+   * @param sibling
+   * @param index
+   * @tparam T
+   * @return
+   */
+  def move[T <: Hierarchical[T]](node: T, sibling: collection.Seq[T], index: Int): Iterable[T] = {
+    if (node.parent == null || node.parent.isEmpty) {
       if (node.lastindex != index) shiftCode(node, sibling, index)
       else Seq.empty
     } else {
@@ -174,9 +188,9 @@ object Hierarchicals {
     }
   }
 
-  private def shiftCode[T <: Hierarchical[T]](node: T, sibling: mutable.Buffer[T], idx: Int): Iterable[T] = {
+  private def shiftCode[T <: Hierarchical[T]](node: T, sibling: collection.Seq[T], idx: Int): Iterable[T] = {
     var index = idx - 1
-    val sorted = sibling.sorted
+    val sorted = sibling.sorted.toBuffer
     sorted -= node
     if (index > sorted.size) index = sorted.size
     sorted.insert(index, node)

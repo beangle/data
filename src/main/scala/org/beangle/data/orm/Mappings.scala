@@ -176,9 +176,11 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
       case None =>
         val naming = profiles.getNamingPolicy(clazz).classToTableName(clazz, entityName)
         val schema = database.getOrCreateSchema(naming.schema.orNull)
-        val table = schema.createTable(naming.text)
+        val virtualTable = clazz.isInterface || Modifier.isAbstract(clazz.getModifiers)
+        val tableName = if virtualTable then s"v_${naming.text}" else naming.text
+        val table = schema.createTable(tableName)
         val e = new OrmEntityType(entityName, clazz, table)
-        if (clazz.isInterface || Modifier.isAbstract(clazz.getModifiers)) {
+        if (virtualTable) {
           e.isAbstract = true
           table.phantom = true
         }
