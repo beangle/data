@@ -308,6 +308,7 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val sp = pm.asInstanceOf[OrmSingularProperty]
       sp.propertyType = holder.mappings.refEntity(clazz, clazz.getName)
+      sp.clazz = clazz
     }
   }
 

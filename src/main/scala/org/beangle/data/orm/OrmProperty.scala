@@ -24,7 +24,7 @@ trait Fetchable {
   var fetch: Option[String] = None
 }
 
-abstract class OrmProperty(val name: String, val clazz: Class[_], var optional: Boolean) extends Property {
+abstract class OrmProperty(val name: String, var clazz: Class[_], val optional: Boolean) extends Property {
   var cascade: Option[String] = None
   var mergeable: Boolean = true
 
