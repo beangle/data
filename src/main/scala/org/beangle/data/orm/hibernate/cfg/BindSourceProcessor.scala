@@ -277,6 +277,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
 
     val key = new DependantValue(context, collection.getCollectionTable, keyVal)
     key.disableForeignKey()
+    key.setUpdateable(true)
     key.setOnDeleteAction(OnDeleteAction.NO_ACTION)
     bindSimpleValue(key, DEFAULT_KEY_COLUMN_NAME, keyElem, collection.getOwner.getIdentifier.getType.getName)
     collection.setKey(key)
@@ -423,8 +424,8 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
     val params = new ju.HashMap[String, Object]
     params.put(IDENTIFIER_NORMALIZER, objectNameNormalizer)
 
-    val name = metadata.getDatabase.getDefaultNamespace.getPhysicalName
     val database = metadata.getDatabase
+    val name = database.getDefaultNamespace.getPhysicalName
     if (null != name && null != name.getSchema) {
       params.put(SCHEMA, database.getDefaultNamespace.getPhysicalName.getSchema.render(database.getDialect))
     }
@@ -436,10 +437,9 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       case (k, v) => params.put(k, v)
     }
     sv.setIdentifierGeneratorParameters(params)
-    sv.getTable.setIdentifierValue(sv)
     generator.nullValue match {
       case Some(v) => sv.setNullValue(v)
-      case None => sv.setNullValue(if ("assigned" == sv.getIdentifierGeneratorStrategy) "undefined" else null)
+      case None => sv.setNullValue(if "assigned" == sv.getIdentifierGeneratorStrategy then "undefined" else null)
     }
   }
 

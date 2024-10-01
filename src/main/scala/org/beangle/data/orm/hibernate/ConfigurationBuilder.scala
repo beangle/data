@@ -80,6 +80,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
 
     //MappingSettings
     addDefault(MappingSettings.XML_MAPPING_ENABLED, "false")
+    //addDefault(MappingSettings.JAVA_TIME_USE_DIRECT_JDBC, "true")
 
     //BatchSettings
     addDefault(BatchSettings.STATEMENT_BATCH_SIZE, "20")
