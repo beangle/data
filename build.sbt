@@ -3,7 +3,7 @@ import org.beangle.parent.Settings.*
 import sbt.Keys.*
 
 ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.8.16"
+ThisBuild / version := "5.8.17-SNAPSHOT"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
