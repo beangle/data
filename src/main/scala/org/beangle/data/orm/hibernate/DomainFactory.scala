@@ -20,9 +20,13 @@ package org.beangle.data.orm.hibernate
 import org.beangle.commons.bean.Factory
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.annotation.description
-import org.beangle.data.orm.hibernate.cfg.MappingService
+import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
 import org.beangle.data.model.meta.{Domain, EntityType, ImmutableDomain}
+import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.hibernate.SessionFactory
+import org.hibernate.engine.spi.SessionFactoryImplementor
+
+import java.lang.reflect.Field
 
 object DomainFactory {
 
@@ -33,9 +37,20 @@ object DomainFactory {
   def build(factories: Iterable[SessionFactory]): Domain = {
     val entities = Collections.newSet[EntityType]
     factories foreach { f =>
+      val rm = f.asInstanceOf[SessionFactoryImplementor].getRuntimeMetamodels
+
       val ms = f.getSessionFactoryOptions.getServiceRegistry.getService(classOf[MappingService])
+      var field: Option[Field] = null
       if (null != ms) {
-        entities ++= ms.mappings.entityTypes.values
+        val newEntities = ms.mappings.entityTypes.values
+        newEntities foreach { entity =>
+          val pf = rm.getMappingMetamodel.getEntityDescriptor(entity.clazz).getRepresentationStrategy.getProxyFactory
+          if null == field then field = Reflections.getField(pf.getClass, "proxyClass")
+          field foreach { f =>
+            BeanInfos.cache.update(f.get(pf).asInstanceOf[Class[_]], BeanInfos.get(entity.clazz))
+          }
+        }
+        entities ++= newEntities
       }
     }
     ImmutableDomain(entities)
