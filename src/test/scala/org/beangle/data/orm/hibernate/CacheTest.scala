@@ -25,6 +25,7 @@ object CacheTest {
 
   def test(sf: SessionFactory): Unit = {
     val entityDao = new HibernateEntityDao(sf)
+    entityDao.init()
     val session = sf.getCurrentSession
     val transaction = session.beginTransaction()
     val skillType = new SkillType

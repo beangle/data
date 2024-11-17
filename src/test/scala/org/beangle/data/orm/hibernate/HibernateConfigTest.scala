@@ -39,6 +39,7 @@ class HibernateConfigTest extends AnyFunSpec with Matchers {
   val sf = builder.result
 
   val entityDao = new HibernateEntityDao(sf)
+  entityDao.init()
   val domain = entityDao.domain
   SessionHelper.openSession(sf)
 
