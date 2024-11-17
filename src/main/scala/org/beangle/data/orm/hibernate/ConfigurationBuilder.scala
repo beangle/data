@@ -20,10 +20,10 @@ package org.beangle.data.orm.hibernate
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.logging.Logging
-import org.beangle.jdbc.engine.Engines
-import org.beangle.jdbc.meta.Database
 import org.beangle.data.orm.Mappings
 import org.beangle.data.orm.hibernate.cfg.MappingService
+import org.beangle.jdbc.engine.Engines
+import org.beangle.jdbc.meta.Database
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.*
@@ -61,6 +61,9 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
         properties.put(key, value)
         if (overridden) logger.info(s"Override hibernate property $key=$value")
       }
+    }
+    if (!sysProps.contains("org.jboss.logging.provider")) {
+      System.setProperty("org.jboss.logging.provider", "slf4j")
     }
   }
 
