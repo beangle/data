@@ -42,8 +42,6 @@ private[orm] object Proxy extends Logging {
   }
 
   private val proxies = new collection.mutable.HashMap[String, Class[_]]
-  private val pool = ClassPool.getDefault
-  pool.appendClassPath(new LoaderClassPath(ClassLoaders.defaultClassLoader))
 
   def generate(clazz: Class[_]): EntityProxy = {
     val proxyClassName = clazz.getSimpleName + "_proxy"
@@ -60,6 +58,7 @@ private[orm] object Proxy extends Logging {
 
   private def generateProxyClass(proxyClassName:String,classFullName:String,clazz:Class[_]):Class[_]={
     val watch = new Stopwatch(true)
+    val pool = newPool(clazz, classOf[EntityProxy])
     val cct = pool.makeClass(classFullName)
     if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
     else cct.setSuperclass(pool.get(clazz.getName))
@@ -119,6 +118,7 @@ private[orm] object Proxy extends Logging {
     val exised = proxies.getOrElse(classFullName, null)
     if (null != exised) return exised
 
+    val pool = newPool(clazz, classOf[ComponentProxy])
     val cct = pool.makeClass(classFullName)
     if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
     else cct.setSuperclass(pool.get(clazz.getName))
@@ -192,4 +192,14 @@ private[orm] object Proxy extends Logging {
       }
     }
   }
+
+  private def newPool(clazzes: Class[_]*): ClassPool = {
+    val pool = new ClassPool(true)
+    pool.appendClassPath(new LoaderClassPath(ClassLoaders.defaultClassLoader))
+    clazzes foreach { clazz =>
+      pool.appendClassPath(new ClassClassPath(clazz))
+    }
+    pool
+  }
+
 }
