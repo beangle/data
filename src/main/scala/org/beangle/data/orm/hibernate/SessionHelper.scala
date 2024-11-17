@@ -21,11 +21,9 @@ import jakarta.persistence.{EntityManager, PersistenceException}
 import org.beangle.commons.logging.Logging
 import org.beangle.jdbc.ds.DataSourceUtils
 import org.beangle.data.orm.hibernate.HibernateTransactionManager.SessionHolder
-import org.beangle.data.orm.hibernate.SessionHelper.HibernateConnectionHandle
 import org.hibernate.*
 import org.hibernate.engine.jdbc.connections.spi.{ConnectionProvider, MultiTenantConnectionProvider}
 import org.hibernate.engine.spi.{SessionFactoryImplementor, SessionImplementor}
-import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
 import org.springframework.jdbc.datasource.ConnectionHandle
 import org.springframework.transaction.support.ResourceTransactionDefinition
 import org.springframework.transaction.support.TransactionSynchronizationManager.{bindResource, getResource, unbindResource}
