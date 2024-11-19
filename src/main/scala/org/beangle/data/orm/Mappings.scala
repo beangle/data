@@ -138,8 +138,6 @@ final class Mappings(val database: Database, val profiles: Profiles) extends Log
     //create primary/foreign keys and cache
     entityTypes.values foreach (em => firstPass(em))
     entityTypes.values foreach (em => secondPass(em))
-    //clean proxy metaclass
-    Proxy.cleanup()
   }
 
   def autobind(cls: Class[_], entityName: String, manifest: BeanInfo): OrmEntityType = {
