@@ -17,8 +17,8 @@
 
 package org.beangle.data.orm
 
-import javassist.compiler.Javac
 import javassist.*
+import javassist.compiler.Javac
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.reflect.BeanInfo.PropertyInfo
 import org.beangle.commons.lang.reflect.{BeanInfos, Reflections}
@@ -27,8 +27,8 @@ import org.beangle.commons.lang.{ClassLoaders, Primitives}
 import org.beangle.commons.logging.Logging
 
 /**
-  * @author chaostone
-  */
+ * @author chaostone
+ */
 private[orm] object Proxy extends Logging {
 
   trait ModelProxy {
@@ -41,24 +41,38 @@ private[orm] object Proxy extends Logging {
     def setParent(proxy: ModelProxy, path: String): Unit
   }
 
-  private val proxies = new collection.mutable.HashMap[String, Class[_]]
+  private var pool: ClassPool = _
+
+  private var proxies: collection.mutable.HashMap[String, Class[_]] = _
+
+  init()
+
+  def init(): Unit = {
+    if (null == pool) {
+      pool = new ClassPool(true)
+      pool.appendClassPath(new LoaderClassPath(ClassLoaders.defaultClassLoader))
+    }
+    if (null == proxies) {
+      proxies = new collection.mutable.HashMap[String, Class[_]]
+    }
+  }
 
   def generate(clazz: Class[_]): EntityProxy = {
+    init()
     val proxyClassName = clazz.getSimpleName + "_proxy"
     val classFullName = clazz.getName + "_proxy"
     var exised = proxies.getOrElse(classFullName, null)
     if (null == exised) {
       proxies.synchronized {
         exised = proxies.getOrElse(classFullName, null)
-        if(null==exised) exised = generateProxyClass(proxyClassName,classFullName,clazz)
+        if (null == exised) exised = generateProxyClass(proxyClassName, classFullName, clazz)
       }
     }
     Reflections.newInstance(exised).asInstanceOf[EntityProxy]
   }
 
-  private def generateProxyClass(proxyClassName:String,classFullName:String,clazz:Class[_]):Class[_]={
+  private def generateProxyClass(proxyClassName: String, classFullName: String, clazz: Class[_]): Class[_] = {
     val watch = new Stopwatch(true)
-    val pool = newPool(clazz, classOf[EntityProxy])
     val cct = pool.makeClass(classFullName)
     if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
     else cct.setSuperclass(pool.get(clazz.getName))
@@ -92,7 +106,7 @@ private[orm] object Proxy extends Logging {
       case (name, componentClass) =>
         val p = manifest.properties(name)
         val setName = p.setter.get.getName
-        //User component variale instead call get method,otherwise with add name into _lastAccessed.
+        //User component variable instead call get method,otherwise with add name into _lastAccessed.
         val componentVariable = "comp" + componentIdx
         ctorBody ++= componentClass.getName + " " + componentVariable + " = new " + componentClass.getName + "();"
         ctorBody ++= (setName + "(" + componentVariable + ");" + componentVariable + ".setParent(this," + "\"" + name + ".\");")
@@ -118,7 +132,6 @@ private[orm] object Proxy extends Logging {
     val exised = proxies.getOrElse(classFullName, null)
     if (null != exised) return exised
 
-    val pool = newPool(clazz, classOf[ComponentProxy])
     val cct = pool.makeClass(classFullName)
     if (clazz.isInterface) cct.addInterface(pool.get(clazz.getName))
     else cct.setSuperclass(pool.get(clazz.getName))
@@ -181,7 +194,7 @@ private[orm] object Proxy extends Logging {
     maked
   }
 
-  def toJavaType(p: PropertyInfo): String = {
+  private def toJavaType(p: PropertyInfo): String = {
     if (p.typeinfo.isOptional) {
       "scala.Option"
     } else {
@@ -193,13 +206,9 @@ private[orm] object Proxy extends Logging {
     }
   }
 
-  private def newPool(clazzes: Class[_]*): ClassPool = {
-    val pool = new ClassPool(true)
-    pool.appendClassPath(new LoaderClassPath(ClassLoaders.defaultClassLoader))
-    clazzes foreach { clazz =>
-      pool.appendClassPath(new ClassClassPath(clazz))
-    }
-    pool
+  def cleanup(): Unit = {
+    proxies.clear()
+    proxies = null
+    pool = null
   }
-
 }
