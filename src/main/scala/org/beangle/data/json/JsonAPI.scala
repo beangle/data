@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.jsonapi
+package org.beangle.data.json
 
 import org.beangle.commons.collection.{Collections, Properties}
 import org.beangle.commons.lang.Strings
@@ -33,7 +33,6 @@ import scala.collection.mutable
  *
  * @see https://jsonapi.org/format/
  */
-@deprecated("using json.JsonAPI")
 object JsonAPI {
 
   def newJson(data: Resource)(using context: Context): Json = {
@@ -200,11 +199,11 @@ object JsonAPI {
 
     val filters: Filters = new Filters
 
-    private[jsonapi] val includes = Collections.newSet[String]
+    private[json] val includes = Collections.newSet[String]
 
-    private[jsonapi] val primaryResourceTypes = Collections.newSet[String]
+    private[json] val primaryResourceTypes = Collections.newSet[String]
     //type -> {id:resources}*
-    private[jsonapi] val includedResources = Collections.newMap[String, mutable.Map[String, Any]]
+    private[json] val includedResources = Collections.newMap[String, mutable.Map[String, Any]]
 
     def shouldInclude(path: String): Boolean = {
       if includes.isEmpty then true else includes.contains(path)
