@@ -18,8 +18,8 @@
 package org.beangle.data.json
 
 import org.beangle.commons.collection.{Collections, Properties}
+import org.beangle.commons.json.{JsonArray, JsonObject, JsonParser}
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.text.inflector.en.EnNounPluralizer
@@ -63,6 +63,46 @@ object JsonAPI {
         ctx.includes ++= Strings.split(value.toString)
     }
     ctx
+  }
+
+  def parse(str: String): Seq[JsonObject] = {
+    val r = JsonParser.parseObject(str)
+    val included = Collections.newMap[String, mutable.Map[String, JsonObject]]
+    r.get("included").get.asInstanceOf[JsonArray] foreach {
+      case o: JsonObject =>
+        val typeDatas = included.getOrElseUpdate(o.getString("type"), Collections.newMap[String, JsonObject])
+        typeDatas.put(o.getString("id"), o)
+    }
+    val datas = r.get("data").get.asInstanceOf[JsonArray].map { fj =>
+      val f = fj.asInstanceOf[JsonObject]
+      val fdata = included.getOrElseUpdate(f.getString("type"), Collections.newMap[String, JsonObject])
+      fdata.put(f.getString("id"), f)
+      f
+    }.toSeq
+
+    included.values foreach { ilist =>
+      ilist.values foreach { i =>
+        i.get("attributes") foreach { a =>
+          val ja = a.asInstanceOf[JsonObject]
+          i.addAll(ja).remove("attributes")
+        }
+        i.get("relationships") foreach { rs =>
+          val ships = rs.asInstanceOf[JsonObject]
+          ships.keys foreach { key =>
+            ships.query(key + ".data").get match
+              case jo: JsonObject =>
+                i.add(key, included(jo.getString("type"))(jo.getString("id")))
+              case ja: JsonArray =>
+                val ja2 = ja.map { x =>
+                  val o = x.asInstanceOf[JsonObject]; included(o.getString("type"))(o.getString("id"))
+                }
+                i.add(key, new JsonArray(ja2))
+          }
+          i.remove("relationships")
+        }
+      }
+    }
+    datas
   }
 
   def create(entity: Entity[_], path: String)(using context: Context): Resource = {
