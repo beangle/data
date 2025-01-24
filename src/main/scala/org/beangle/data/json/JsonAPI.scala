@@ -18,7 +18,7 @@
 package org.beangle.data.json
 
 import org.beangle.commons.collection.{Collections, Properties}
-import org.beangle.commons.json.{JsonArray, JsonObject, JsonParser}
+import org.beangle.commons.json.{Json, JsonArray, JsonObject}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.lang.reflect.TypeInfo.IterableType
@@ -35,21 +35,21 @@ import scala.collection.mutable
  */
 object JsonAPI {
 
-  def newJson(data: Resource)(using context: Context): Json = {
-    val json = new Json
-    json.put("data", data)
+  def newJson(data: Resource)(using context: Context): JsonObject = {
+    val json = new JsonObject
+    json.add("data", data)
     val included = context.includedSeq
     if included.nonEmpty then
-      json.put("included", included)
+      json.add("included", included)
     json
   }
 
-  def newJson(datas: Iterable[Resource])(using context: Context): Json = {
-    val json = new Json
-    json.put("data", datas)
+  def newJson(datas: Iterable[Resource])(using context: Context): JsonObject = {
+    val json = new JsonObject
+    json.add("data", datas)
     val included = context.includedSeq
     if included.nonEmpty then
-      json.put("included", included)
+      json.add("included", included)
     json
   }
 
@@ -66,9 +66,9 @@ object JsonAPI {
   }
 
   def parse(str: String): Seq[JsonObject] = {
-    val r = JsonParser.parseObject(str)
+    val r = Json.parseObject(str)
     val included = Collections.newMap[String, mutable.Map[String, JsonObject]]
-    r.get("included").get.asInstanceOf[JsonArray] foreach {
+    r.getArray("included") foreach {
       case o: JsonObject =>
         val typeDatas = included.getOrElseUpdate(o.getString("type"), Collections.newMap[String, JsonObject])
         typeDatas.put(o.getString("id"), o)
@@ -155,9 +155,6 @@ object JsonAPI {
       case o: Option[Any] => o.orNull.asInstanceOf[AnyRef]
       case _ => item
     }
-  }
-
-  class Json extends org.beangle.commons.collection.Properties {
   }
 
   class Filter(val includes: Set[String], val excludes: Set[String]) {
@@ -259,7 +256,7 @@ object JsonAPI {
       included
     }
 
-    def mkJson(entities: Iterable[Entity[_]], properties: String*): Json = {
+    def mkJson(entities: Iterable[Entity[_]], properties: String*): JsonObject = {
       given context: Context = this
 
       if entities.nonEmpty then
@@ -302,11 +299,11 @@ object JsonAPI {
     }
 
     def ref(name: String, value: Entity[_])(using context: JsonAPI.Context): Resource = {
-      val pJson = new Json
+      val pJson = new JsonObject
       val typ = typeName(Jpas.entityClass(value))
       val id = value.id.toString
       val refer = Identifier(id, typ)
-      pJson.put("data", refer)
+      pJson.add("data", refer)
       if (null == relationships) relationships = new Properties
       this.relationships.put(name, pJson)
       val refPath = pathFor(name)
@@ -319,10 +316,10 @@ object JsonAPI {
 
     def refs(name: String, pValues: Iterable[Entity[_]])(using context: JsonAPI.Context): Resource = {
       if pValues.nonEmpty then
-        val pJson = new Json
+        val pJson = new JsonObject
         val typ = typeName(Jpas.entityClass(pValues.head))
         val ids = pValues.map(x => Identifier(x.id.toString, typ))
-        pJson.put("data", ids)
+        pJson.add("data", ids)
         if (null == relationships) relationships = new Properties
         this.relationships.put(name, pJson)
 
