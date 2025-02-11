@@ -76,7 +76,8 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
       properties.put(JdbcSettings.DATASOURCE, dataSource)
     }
     addDefault(JdbcSettings.CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
-    addDefault(JdbcSettings.STATEMENT_FETCH_SIZE, "500")
+    //@see https://in.relation.to/2025/01/24/jdbc-fetch-size/
+    addDefault(JdbcSettings.STATEMENT_FETCH_SIZE, "1000")
     addDefault(JdbcSettings.USE_GET_GENERATED_KEYS, "true")
     addDefault(JdbcSettings.SHOW_SQL, "false")
     addDefault(JdbcSettings.FORMAT_SQL, "false")
