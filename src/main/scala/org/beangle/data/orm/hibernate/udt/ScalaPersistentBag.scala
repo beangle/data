@@ -18,6 +18,7 @@
 package org.beangle.data.orm.hibernate.udt
 
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.annotation.value
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.collection.spi.AbstractPersistentCollection.DelayedOperation
@@ -30,7 +31,7 @@ import java.util as ju
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
-class PersistentBag(session: SharedSessionContractImplementor)
+class ScalaPersistentBag(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection[Object](session) with mutable.Buffer[Object] {
 
   protected var bag: mutable.Buffer[Object] = _
@@ -384,7 +385,7 @@ class PersistentBag(session: SharedSessionContractImplementor)
     }
   }
 
-  final class SimpleAdd(value: Object, append: Boolean) extends AbstractValueDelayedOperation(value, null) {
+  final class SimpleAdd(value: Object, append: Boolean) extends SeqHelper.Delayed(value, null, session, getOwner) {
     override def operate(): Unit = {
       val added = getAddedInstance
       if (!bag.contains(added)) {
@@ -394,9 +395,9 @@ class PersistentBag(session: SharedSessionContractImplementor)
     }
   }
 
-  final class SimpleRemove(orphan: Object) extends AbstractValueDelayedOperation(null, orphan) {
+  final class SimpleRemove(orphan: Object) extends SeqHelper.Delayed(null, orphan, session, getOwner) {
     override def operate(): Unit = {
-      bag.subtractOne(getOrphan())
+      bag.subtractOne(getOrphan)
     }
   }
 

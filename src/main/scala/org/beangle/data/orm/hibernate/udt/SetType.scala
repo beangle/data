@@ -34,11 +34,11 @@ class SetType extends UserCollectionType {
   type MSet = mutable.Set[Object]
 
   override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
-    new PersistentSet(session)
+    new ScalaPersistentSet(session)
   }
 
   override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[_] = {
-    new PersistentSet(session, collection.asInstanceOf[MSet])
+    new ScalaPersistentSet(session, collection.asInstanceOf[MSet])
   }
 
   override def getElementsIterator(collection: Object): ju.Iterator[Object] = {

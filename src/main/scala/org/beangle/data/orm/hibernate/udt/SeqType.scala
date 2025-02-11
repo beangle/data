@@ -33,11 +33,11 @@ import scala.jdk.javaapi.CollectionConverters.asJava
 class SeqType extends UserCollectionType {
 
   override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
-    new PersistentSeq(session)
+    new ScalaPersistentSeq(session)
   }
 
   override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[_]= {
-    new PersistentSeq(session, collection.asInstanceOf[mutable.Buffer[Object]])
+    new ScalaPersistentSeq(session, collection.asInstanceOf[mutable.Buffer[Object]])
   }
 
   override def getElementsIterator(collection: Object): ju.Iterator[Any] = {

@@ -32,11 +32,11 @@ import scala.jdk.javaapi.CollectionConverters.asJava
  */
 class BagType extends UserCollectionType {
   override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
-    new PersistentBag(session)
+    new ScalaPersistentBag(session)
   }
 
   override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[_] = {
-    new PersistentBag(session, collection.asInstanceOf[mutable.Buffer[Object]])
+    new ScalaPersistentBag(session, collection.asInstanceOf[mutable.Buffer[Object]])
   }
 
   override def getElementsIterator(collection: Object): ju.Iterator[Any] = {

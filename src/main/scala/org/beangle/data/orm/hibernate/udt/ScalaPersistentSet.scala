@@ -31,7 +31,7 @@ import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, HashMap as MHashMap, HashSet as MHashSet, Set as MSet}
 import scala.jdk.javaapi.CollectionConverters.asJava
 
-class PersistentSet(session: SharedSessionContractImplementor)
+class ScalaPersistentSet(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection[Object](session) with MSet[Object] {
 
   protected var set: MSet[Object] = _
@@ -223,13 +223,13 @@ class PersistentSet(session: SharedSessionContractImplementor)
     set eq collection
   }
 
-  final class SimpleAdd(value: Object) extends AbstractValueDelayedOperation(value, null) {
+  final class SimpleAdd(value: Object) extends SeqHelper.Delayed(value, null, session, getOwner) {
     override def operate(): Unit = {
       set.add(getAddedInstance())
     }
   }
 
-  final class SimpleRemove(orphan: Object) extends AbstractValueDelayedOperation(null, orphan) {
+  final class SimpleRemove(orphan: Object) extends SeqHelper.Delayed(null, orphan, session, getOwner) {
     override def operate(): Unit = {
       set.remove(orphan)
     }

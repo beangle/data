@@ -31,7 +31,7 @@ import java.util as ju
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
-class PersistentMap(session: SharedSessionContractImplementor)
+class ScalaPersistentMap(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection[Object](session) with mutable.Map[Object, Object] {
   type MM = mutable.Map[Object, Object]
   type MHashMap = mutable.HashMap[Object, Object]

@@ -20,17 +20,16 @@ package org.beangle.data.orm.hibernate.udt
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.collection.spi.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
-import org.hibernate.engine.spi.{CollectionEntry, SharedSessionContractImplementor}
+import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.metamodel.mapping.PluralAttributeMapping
 import org.hibernate.persister.collection.CollectionPersister
 
 import java.io.Serializable as JSerializable
-import java.sql.ResultSet
 import java.util as ju
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
-class PersistentSeq(session: SharedSessionContractImplementor)
+class ScalaPersistentSeq(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection[Object](session) with mutable.Buffer[Object] {
 
   protected var list: mutable.Buffer[Object] = _
@@ -300,14 +299,14 @@ class PersistentSeq(session: SharedSessionContractImplementor)
     }
   }
 
-  final class SimpleAdd(value: Object, append: Boolean) extends AbstractValueDelayedOperation(value, null) {
+  final class SimpleAdd(value: Object, append: Boolean) extends SeqHelper.Delayed(value, null, session, getOwner) {
     override def operate(): Unit = {
       if append then list.addOne(getAddedInstance)
       else list.prepend(getAddedInstance)
     }
   }
 
-  final class SimpleRemove(orphan: Object) extends AbstractValueDelayedOperation(null, orphan) {
+  final class SimpleRemove(orphan: Object) extends SeqHelper.Delayed(null, orphan, session, getOwner) {
     override def operate(): Unit = {
       list.subtractOne(getOrphan)
     }

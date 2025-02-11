@@ -34,11 +34,11 @@ class MapType extends UserCollectionType {
   type MMap = mutable.Map[Object, Object]
 
   override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
-    new PersistentMap(session)
+    new ScalaPersistentMap(session)
   }
 
   override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[_] = {
-    new PersistentMap(session, collection.asInstanceOf[MMap])
+    new ScalaPersistentMap(session, collection.asInstanceOf[MMap])
   }
 
   override def getElementsIterator(collection: Object): ju.Iterator[Object] = {

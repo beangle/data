@@ -17,9 +17,11 @@
 
 package org.beangle.data.orm.hibernate.udt
 
+import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.engine.internal.ForeignKeys
 import org.hibernate.engine.spi.{SharedSessionContractImplementor, Status, TypedValue}
 import org.hibernate.internal.util.collections.IdentitySet
+import org.hibernate.persister.collection.CollectionPersister
 
 import java.util as ju
 import scala.jdk.javaapi.CollectionConverters.asJava
@@ -63,5 +65,28 @@ private[udt] object SeqHelper {
     }
 
     res
+  }
+
+  /**
+   * Rewrite of AbstractPersistentCollection.AbstractValueDelayedOperation
+   * For scala cannot access java protected constructor(since 3.3.5),so just rewrite it
+   *
+   * @param addedValue
+   * @param orphan
+   */
+  abstract class Delayed[E](private var addedValue: E, private val orphan: E,
+                            session: SharedSessionContractImplementor,
+                            owner: Object)
+    extends AbstractPersistentCollection.ValueDelayedOperation[E] {
+    override def replace(persister: CollectionPersister, copyCache: java.util.Map[AnyRef, AnyRef]): Unit = {
+      if (addedValue != null) addedValue = getReplacement(persister.getElementType, addedValue, copyCache)
+    }
+
+    private def getReplacement(`type`: org.hibernate.`type`.Type, current: Any, copyCache: java.util.Map[AnyRef, AnyRef]): E =
+      `type`.replace(current, null, session, owner, copyCache).asInstanceOf[E]
+
+    override final def getAddedInstance: E = addedValue
+
+    override final def getOrphan: E = orphan
   }
 }
