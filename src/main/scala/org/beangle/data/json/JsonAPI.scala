@@ -73,12 +73,20 @@ object JsonAPI {
         val typeDatas = included.getOrElseUpdate(o.getString("type"), Collections.newMap[String, JsonObject])
         typeDatas.put(o.getString("id"), o)
     }
-    val datas = r.get("data").get.asInstanceOf[JsonArray].map { fj =>
-      val f = fj.asInstanceOf[JsonObject]
-      val fdata = included.getOrElseUpdate(f.getString("type"), Collections.newMap[String, JsonObject])
-      fdata.put(f.getString("id"), f)
-      f
-    }.toSeq
+    val datas = Collections.newBuffer[JsonObject]
+    r.get("data") foreach {
+      case jo: JsonObject =>
+        val fdata = included.getOrElseUpdate(jo.getString("type"), Collections.newMap[String, JsonObject])
+        fdata.put(jo.getString("id"), jo)
+        datas.addOne(jo)
+      case ja: JsonArray =>
+        ja foreach { fj =>
+          val f = fj.asInstanceOf[JsonObject]
+          val fdata = included.getOrElseUpdate(f.getString("type"), Collections.newMap[String, JsonObject])
+          fdata.put(f.getString("id"), f)
+          datas.addOne(f)
+        }
+    }
 
     included.values foreach { ilist =>
       ilist.values foreach { i =>
@@ -102,7 +110,7 @@ object JsonAPI {
         }
       }
     }
-    datas
+    datas.toSeq
   }
 
   def create(entity: Entity[_], path: String)(using context: Context): Resource = {
