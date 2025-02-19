@@ -65,7 +65,7 @@ object JsonAPI {
     ctx
   }
 
-  def parse(str: String): Seq[JsonObject] = {
+  def parse(str: String): Result = {
     val r = Json.parseObject(str)
     val included = Collections.newMap[String, mutable.Map[String, JsonObject]]
     r.getArray("included") foreach {
@@ -73,18 +73,16 @@ object JsonAPI {
         val typeDatas = included.getOrElseUpdate(o.getString("type"), Collections.newMap[String, JsonObject])
         typeDatas.put(o.getString("id"), o)
     }
-    val datas = Collections.newBuffer[JsonObject]
+    val data = r.get("data")
     r.get("data") foreach {
       case jo: JsonObject =>
         val fdata = included.getOrElseUpdate(jo.getString("type"), Collections.newMap[String, JsonObject])
         fdata.put(jo.getString("id"), jo)
-        datas.addOne(jo)
       case ja: JsonArray =>
         ja foreach { fj =>
           val f = fj.asInstanceOf[JsonObject]
           val fdata = included.getOrElseUpdate(f.getString("type"), Collections.newMap[String, JsonObject])
           fdata.put(f.getString("id"), f)
-          datas.addOne(f)
         }
     }
 
@@ -110,7 +108,7 @@ object JsonAPI {
         }
       }
     }
-    datas.toSeq
+    Result(data, List.empty, included)
   }
 
   def create(entity: Entity[_], path: String)(using context: Context): Resource = {
@@ -360,5 +358,21 @@ object JsonAPI {
   class Links(val self: String) {
     var related: Option[String] = None
   }
+
+  case class Result(data: Option[Any], errors: Iterable[Any], included: collection.Map[String, collection.Map[String, Any]]) {
+    def resources: collection.Seq[JsonObject] = {
+      data match {
+        case None => List.empty
+        case Some(x) =>
+          x match {
+            case jo: JsonObject => List(jo)
+            case ja: JsonArray => ja.map(_.asInstanceOf[JsonObject])
+          }
+      }
+    }
+
+    def resource: JsonObject = resources.head
+  }
+
 
 }

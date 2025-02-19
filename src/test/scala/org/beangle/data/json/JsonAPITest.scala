@@ -122,10 +122,10 @@ class JsonAPITest extends AnyFunSpec, Matchers {
           |}
           |""".stripMargin
 
-      val datas = JsonAPI.parse(json)
-      assert(datas.size == 1)
-      val data = datas.head
-      assert(data.getArray("tasks").size==3)
+      val r = JsonAPI.parse(json)
+      assert(r.resources.size == 1)
+      val data = r.resource
+      assert(data.getArray("tasks").size == 3)
       assert(!data.contains("attributes"))
       assert(!data.contains("relationships"))
     }
