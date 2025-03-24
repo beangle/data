@@ -374,5 +374,4 @@ object JsonAPI {
     def resource: JsonObject = resources.head
   }
 
-
 }
