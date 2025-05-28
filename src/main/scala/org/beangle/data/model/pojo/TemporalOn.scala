@@ -17,7 +17,10 @@
 
 package org.beangle.data.model.pojo
 
+import org.beangle.commons.collection.Collections
+
 import java.time.LocalDate
+import scala.collection.mutable
 
 /** 有时效性的实体
  *
@@ -39,4 +42,26 @@ trait TemporalOn {
   }
 
   def active: Boolean = within(LocalDate.now)
+}
+
+object TemporalOn {
+  def fillinEndOn[T <: TemporalOn](journals: Iterable[T]): collection.Seq[T] = {
+    if (journals.size > 1) {
+      val dateMap = journals.groupBy(_.beginOn)
+      val dates: mutable.Buffer[LocalDate] = dateMap.keys.toBuffer.sorted
+      val rs = Collections.newBuffer[T]
+      var i = 0
+      while (i < dates.length - 1) { //最后一个不处理
+        val ds = dateMap(dates(i))
+        val jNext = dates(i + 1)
+        ds.foreach { j => j.endOn = Some(jNext.minusDays(1)) }
+        rs.addAll(ds)
+        i += 1
+      }
+      rs.addAll(dateMap(dates.last))
+      rs
+    } else {
+      journals.toSeq
+    }
+  }
 }
