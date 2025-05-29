@@ -17,7 +17,10 @@
 
 package org.beangle.data.model.pojo
 
+import org.beangle.commons.collection.Collections
+
 import java.time.LocalDate
+import scala.collection.mutable
 
 /** 具有日期范围的实体
  *
@@ -35,4 +38,32 @@ trait DateRange {
   }
 
   def active: Boolean = within(LocalDate.now)
+}
+
+object DateRange {
+  /** calc end on
+   *
+   * @param ranges ranges
+   * @tparam T
+   * @return
+   */
+  def calcEndOn[T <: DateRange](ranges: Iterable[T]): collection.Seq[T] = {
+    if (ranges.size > 1) {
+      val dateMap = ranges.groupBy(_.beginOn)
+      val dates: mutable.Buffer[LocalDate] = dateMap.keys.toBuffer.sorted
+      val rs = Collections.newBuffer[T]
+      var i = 0
+      while (i < dates.length - 1) { //最后一个不处理
+        val ds = dateMap(dates(i))
+        val jNext = dates(i + 1)
+        ds.foreach { j => j.endOn = jNext.minusDays(1) }
+        rs.addAll(ds)
+        i += 1
+      }
+      rs.addAll(dateMap(dates.last))
+      rs
+    } else {
+      ranges.toSeq
+    }
+  }
 }

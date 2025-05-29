@@ -45,7 +45,8 @@ trait TemporalOn {
 }
 
 object TemporalOn {
-  def fillinEndOn[T <: TemporalOn](journals: Iterable[T]): collection.Seq[T] = {
+
+  def calcEndOn[T <: TemporalOn](journals: Iterable[T]): collection.Seq[T] = {
     if (journals.size > 1) {
       val dateMap = journals.groupBy(_.beginOn)
       val dates: mutable.Buffer[LocalDate] = dateMap.keys.toBuffer.sorted

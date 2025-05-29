@@ -17,7 +17,7 @@ class TemporalOnTest extends AnyFunSpec with Matchers {
         new TitleJournal("2003-07-06", "研究员"),
       )
 
-      val sorted = TemporalOn.fillinEndOn(datas)
+      val sorted = TemporalOn.calcEndOn(datas)
       val d0 = sorted.head
       val d1 = sorted(1)
       val d2 = sorted(2)
