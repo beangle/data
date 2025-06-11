@@ -15,3 +15,7 @@ DateRange.beginOn=开始日期
 DateRange.endOn=结束日期
 InstantRange.beginAt=开始时间
 InstantRange.endAt=结束时间
+TemporalIn.beginIn=起始年月
+TemporalIn.endIn=结束年月
+YearMonthRange.beginIn=起始年月
+YearMonthRange.endIn=结束年月
