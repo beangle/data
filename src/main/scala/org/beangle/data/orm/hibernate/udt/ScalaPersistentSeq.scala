@@ -53,6 +53,11 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     SeqHelper.getOrphans(snapshot.asInstanceOf[mutable.ArrayBuffer[Object]], list, entityName, getSession)
   }
 
+  override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
+    list = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Buffer[Object]]
+    endRead()
+  }
+
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
     val elementType = persister.getElementType
     val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[_]]
@@ -60,12 +65,18 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     (sn.size == list.size) && !sn.exists { ele => elementType.isDirty(itr.next(), ele, getSession) }
   }
 
-  override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
-    list = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Buffer[Object]]
-    endRead()
+  override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
+    snapshot.asInstanceOf[collection.Seq[_]].isEmpty
+  }
+
+  override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
+    val array = disassembled.asInstanceOf[Array[JSerializable]]
+    this.list = persister.getCollectionType.instantiate(array.length).asInstanceOf[mutable.Buffer[Object]]
+    array foreach { ele => list += persister.getElementType.assemble(ele, getSession, owner) }
   }
 
   override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
+    assert(isInitializing())
     val collectionDescriptor = attributeMapping.getCollectionDescriptor
     val size = if null == loadingStateList then 0 else loadingStateList.size
     this.list = collectionDescriptor.getCollectionSemantics
@@ -73,10 +84,6 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     if null != loadingStateList then
       import scala.jdk.javaapi.CollectionConverters.asScala
       list.addAll(asScala(loadingStateList))
-  }
-
-  override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
-    snapshot.asInstanceOf[collection.Seq[_]].isEmpty
   }
 
   override def isWrapper(collection: Object): Boolean = {
@@ -214,12 +221,6 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
 
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
     asJava(list.iterator)
-  }
-
-  override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
-    val array = disassembled.asInstanceOf[Array[JSerializable]]
-    this.list = persister.getCollectionType.instantiate(array.length).asInstanceOf[mutable.Buffer[Object]]
-    array foreach { ele => list += persister.getElementType.assemble(ele, getSession, owner) }
   }
 
   override def disassemble(persister: CollectionPersister): Object = {

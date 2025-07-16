@@ -397,7 +397,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao, 
     if (null == entity) return
     val session = currentSession
     entity match {
-      case hp: HibernateProxy => session.update(hp)
+      case hp: HibernateProxy => session.merge(hp)
       case e: Entity[_] =>
         val en = if (null == entityName) entityNameOf(entity.getClass) else entityName
         if (null == e.id) {
@@ -407,7 +407,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao, 
           if (si.getContextEntityIdentifier(entity) == null) {
             session.persist(en, entity)
           } else {
-            session.update(en, entity)
+            session.merge(en, entity)
           }
         }
       case _ =>
