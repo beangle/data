@@ -19,10 +19,10 @@ package org.beangle.data.orm.hibernate.udt
 
 import org.beangle.commons.conversion.string.EnumConverters
 import org.beangle.commons.lang.Enums
-import org.beangle.data.orm.hibernate.jdbc.IntJdbcType
+import org.beangle.data.orm.hibernate.jdbc.NullableIntJdbcType
 import org.hibernate.`type`.descriptor.WrapperOptions
 import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
-import org.hibernate.`type`.descriptor.jdbc.{IntegerJdbcType, JdbcType, VarcharJdbcType}
+import org.hibernate.`type`.descriptor.jdbc.{JdbcType, VarcharJdbcType}
 
 class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
 
@@ -34,7 +34,7 @@ class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
     else {
       if value.getClass == valueType then value.asInstanceOf[X]
       else {
-        if (valueType == classOf[Integer] ||valueType == classOf[Int]) then Enums.id(value).asInstanceOf[X]
+        if valueType == classOf[Integer] || valueType == classOf[Int] then Enums.id(value).asInstanceOf[X]
         else value.toString.asInstanceOf[X]
       }
     }
@@ -51,12 +51,13 @@ class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
     converter.apply(value.toString)
   }
 
-  def toJdbcType(): JdbcType = {
-    if ordinal then IntJdbcType else VarcharJdbcType.INSTANCE
+  def toJdbcType: JdbcType = {
+    if ordinal then NullableIntJdbcType else VarcharJdbcType.INSTANCE
   }
 
   override def isWider(javaType: JavaType[_]): Boolean = {
     val jtc = javaType.getJavaTypeClass
-    if ordinal then (jtc == classOf[Integer] || jtc == classOf[Int]) else jtc == classOf[String]
+    if ordinal then jtc == classOf[Integer] || jtc == classOf[Int]
+    else jtc == classOf[String]
   }
 }

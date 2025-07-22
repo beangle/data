@@ -128,7 +128,7 @@ object BindMetadataBuilderFactory {
 
     mappings.enumTypes foreach { enumTypeName =>
       val javaType = new EnumType(Class.forName(enumTypeName))
-      val jdbcType = javaType.toJdbcType()
+      val jdbcType = javaType.toJdbcType
       val vt = new ImmutableNamedBasicTypeImpl(javaType, jdbcType, enumTypeName)
       registrations.add(new BasicTypeRegistration(vt, Array(enumTypeName)))
     }

@@ -27,7 +27,7 @@ import java.sql.*
 
 /** Same as hibernate IntegerJdbcType,but invoke wasNull before javaType.wrap
  */
-object IntJdbcType extends JdbcType {
+object NullableIntJdbcType extends JdbcType {
 
   override def getJdbcTypeCode: Int = Types.INTEGER
 
@@ -60,7 +60,7 @@ object IntJdbcType extends JdbcType {
     }
   }
 
-  /** Extract null value before javatype.wrap method
+  /** Different from Hibernate:Extract null value before javatype.wrap method
    *
    * @param javaType
    * @tparam X
