@@ -46,7 +46,7 @@ abstract class AbstractSqlStyleGenerator extends IdentifierGenerator {
   protected def sql: String
 
   override def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {
-    session.getTransactionCoordinator().createIsolationDelegate().delegateWork(
+    session.getTransactionCoordinator.createIsolationDelegate().delegateWork(
       new AbstractReturningWork[Number]() {
         def execute(connection: Connection): Number = {
           val st = connection.prepareCall(sql)

@@ -23,7 +23,7 @@ import org.hibernate.`type`.BasicTypeRegistry
 import org.hibernate.`type`.internal.ImmutableNamedBasicTypeImpl
 import org.hibernate.`type`.spi.TypeConfiguration
 import org.hibernate.boot.MetadataSources
-import org.hibernate.boot.internal.{InFlightMetadataCollectorImpl, MetadataBuilderImpl, MetadataBuildingContextRootImpl}
+import org.hibernate.boot.internal.{InFlightMetadataCollectorImpl, MetadataBuilderImpl, MetadataBuildingContextRootImpl, RootMappingDefaults}
 import org.hibernate.boot.model.process.internal.{ManagedResourcesImpl, ScanningCoordinator}
 import org.hibernate.boot.model.process.spi.ManagedResources
 import org.hibernate.boot.model.{TypeContributions, TypeContributor}
@@ -82,7 +82,9 @@ object BindMetadataBuilderFactory {
     addMappingTypes(mappings, options)
     handleTypes(context, options)
 
-    val rootContext = new MetadataBuildingContextRootImpl("beangle", context, options, metadataCollector)
+    val rootMappingDefaults = new RootMappingDefaults(options.getMappingDefaults, metadataCollector.getPersistenceUnitMetadata)
+
+    val rootContext = new MetadataBuildingContextRootImpl("beangle", context, options, metadataCollector, rootMappingDefaults)
 
     for (converterDescriptor <- asScala(managedResources.getAttributeConverterDescriptors)) {
       metadataCollector.addAttributeConverter(converterDescriptor)

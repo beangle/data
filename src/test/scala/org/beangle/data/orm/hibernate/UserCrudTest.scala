@@ -149,7 +149,7 @@ object UserCrudTest {
     val courseId = course.id
     session.flush()
     session.clear()
-    val c = session.get(classOf[Course], courseId)
+    val c = session.find(classOf[Course], courseId)
     assert(c.features.size == 2)
     assert(c.hasFeature("f1", "feature 1 rename"))
 
