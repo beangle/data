@@ -23,7 +23,6 @@ import org.hibernate.{Session, SessionFactory}
 import org.springframework.jdbc.datasource.{ConnectionHolder, JdbcTransactionObjectSupport}
 import org.springframework.transaction.*
 import org.springframework.transaction.support.*
-import org.springframework.transaction.support.TransactionSynchronizationManager.{bindResource, getResource, hasResource, unbindResource}
 
 import javax.sql.DataSource
 

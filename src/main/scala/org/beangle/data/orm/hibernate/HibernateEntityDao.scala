@@ -63,7 +63,7 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao, 
     currentSession.createQuery(hql, null).asInstanceOf[Query[_]]
   }
 
-  protected def entityNameOf(clazz: Class[_]): String = {
+  private def entityNameOf(clazz: Class[_]): String = {
     domain.getEntity(clazz) match {
       case Some(e) => e.entityName
       case None => clazz.getName
