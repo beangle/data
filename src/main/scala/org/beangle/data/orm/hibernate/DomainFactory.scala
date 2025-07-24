@@ -37,9 +37,10 @@ object DomainFactory {
   def build(factories: Iterable[SessionFactory]): Domain = {
     val entities = Collections.newSet[EntityType]
     factories foreach { f =>
-      val rm = f.asInstanceOf[SessionFactoryImplementor].getRuntimeMetamodels
+      val sf = f.asInstanceOf[SessionFactoryImplementor]
+      val rm = sf.getRuntimeMetamodels
 
-      val ms = f.getSessionFactoryOptions.getServiceRegistry.getService(classOf[MappingService])
+      val ms = sf.getServiceRegistry.getService(classOf[MappingService])
       var field: Option[Field] = null
       if (null != ms) {
         val newEntities = ms.mappings.entityTypes.values

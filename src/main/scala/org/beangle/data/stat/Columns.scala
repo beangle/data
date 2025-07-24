@@ -50,7 +50,7 @@ class Columns(entityDao: EntityDao) {
     idx += 1
   }
 
-  def add(name: String, title: String, datas: collection.Seq[Matrix.Row], values: Map[Any, String]): Unit = {
+  def add(name: String, title: String, datas: collection.Seq[Matrix.Row], values: Map[Any, Any]): Unit = {
     val keys = datas.map(_.keys(idx)).toSet
     val selected = keys.map(x => (convertNull(x), values.getOrElse(x, "??"))).toMap
     val result = Matrix.Column(name, title, selected)
@@ -59,11 +59,11 @@ class Columns(entityDao: EntityDao) {
   }
 
   def add[T <: Entity[_]](name: String, title: String, datas: collection.Seq[Matrix.Row],
-                          entityClazz: Class[T], nameProperty: String = "name"): Unit = {
+                          entityClazz: Class[T]): Unit = {
     val keys = datas.map(_.keys(idx)).toSet
     val goodKeys = keys.filter(x => x != null)
     val q = OqlBuilder.from[Entity[_]](entityClazz.getName, "t").where("t.id in (:ids)", goodKeys)
-    val values = entityDao.search(q).map(x => (x.id, String.valueOf(Properties.get[Any](x, nameProperty)))).toMap
+    val values = entityDao.search(q).map(x => (x.id, x)).toMap
     val result =
       if (keys.size > goodKeys.size) {
         Matrix.Column(name, title, values.updated("", "")) //null key as empty string
@@ -76,5 +76,14 @@ class Columns(entityDao: EntityDao) {
 
   def build(): Seq[Matrix.Column] = {
     results.toSeq
+  }
+}
+
+object Columns {
+  def cleanup(columns: Seq[Matrix.Column], datas: collection.Seq[Matrix.Row]): Seq[Matrix.Column] = {
+    columns.indices map { idx =>
+      val keys = datas.map(_.keys(idx)).toSet
+      columns(idx).keep(keys)
+    }
   }
 }

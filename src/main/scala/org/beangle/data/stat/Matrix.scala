@@ -26,12 +26,16 @@ object Matrix {
 
   case class Row(keys: Seq[Any], counters: Array[Double])
 
-  case class Column(name: String, title: String, values: Map[Any, String]) {
+  case class Column(name: String, title: String, values: Map[Any, Any]) {
     def keys: Iterable[Any] = {
       values.keys
     }
 
-    def get(key: Any): Option[String] = values.get(key)
+    def get(key: Any): Option[Any] = values.get(key)
+
+    def keep(keys: Set[Any]): Column = {
+      Column(name, title, values.filter(x => keys.contains(x._1)))
+    }
   }
 }
 
@@ -72,7 +76,7 @@ class Matrix(val columns: Seq[Matrix.Column], val datas: collection.Seq[Matrix.R
     val dimension = getColumn(columnName)
     val dIdx = columns.indexOf(dimension)
     datas.groupBy(d => d.keys(dIdx)).map { d =>
-      (d._1, new Matrix(this.columns, d._2))
+      (d._1, new Matrix(Columns.cleanup(this.columns, d._2), d._2))
     }
   }
 
