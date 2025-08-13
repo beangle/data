@@ -84,15 +84,13 @@ object UserCrud {
     entityDao.saveOrUpdate(user)
     session.flush()
     entityDao.refresh(user)
+    //test add profiles
     assert(user.profiles.isEmpty)
-    println("=====================" + user.profiles.size)
     user.profiles.add(new Profile(user, "p1", "v1"))
     user.profiles.add(new Profile(user, "p2", "v2"))
     entityDao.saveOrUpdate(user)
     session.flush()
-    println("=====================" + user.profiles.size)
     entityDao.refresh(user)
-    println("=====================" + user.profiles.size)
     assert(user.profiles.size == 2)
 
     val query = OqlBuilder.from(classOf[Role], "r").where("r.parent = :parent", role1)

@@ -173,7 +173,8 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
     this.set.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
   }
 
-  override def hasDeletes(persister: CollectionPersister): Boolean = {
+  // used by hibernate 7
+  def hasDeletes(persister: CollectionPersister): Boolean = {
     val elementType = persister.getElementType
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
     var itr = sn.keySet.iterator

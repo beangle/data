@@ -198,7 +198,8 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     deletes.iterator()
   }
 
-  override def hasDeletes(persister: CollectionPersister): Boolean = {
+  //used by hibernate 7
+  def hasDeletes(persister: CollectionPersister): Boolean = {
     val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
     val elementType = persister.getElementType
     if (sn == null) {

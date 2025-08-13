@@ -174,7 +174,8 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
     result
   }
 
-  override def hasDeletes(persister: CollectionPersister): Boolean = {
+  // used by hibernate 7
+  def hasDeletes(persister: CollectionPersister): Boolean = {
     val sn = getSnapshot().asInstanceOf[MM]
     sn.exists(e => null != e._2 && !map.contains(e._1))
   }

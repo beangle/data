@@ -25,6 +25,7 @@ import scala.collection.mutable
 
 class User(var id: Long) extends Entity[Long] {
   def this() = this(0)
+
   var name: Name = _
   var roleSet: java.util.Set[Role] = new java.util.HashSet[Role]
   var age: Option[Int] = None
@@ -39,9 +40,9 @@ class User(var id: Long) extends Entity[Long] {
   var member: Member = _
   var skills: mutable.Map[SkillType, Skill] = _
 
-//  var profiles: mutable.Set[Profile] = new mutable.HashSet[Profile]
-  var profiles: java.util.Set[Profile] = new java.util.HashSet[Profile]
-  var times: mutable.Map[Int,WeekTime] = new mutable.HashMap[Int,WeekTime]
+  var profiles: mutable.Set[Profile] = new mutable.HashSet[Profile]
+  //  var profiles: java.util.Set[Profile] = new java.util.HashSet[Profile]
+  var times: mutable.Map[Int, WeekTime] = new mutable.HashMap[Int, WeekTime]
 }
 
 class SkillType extends LongId {

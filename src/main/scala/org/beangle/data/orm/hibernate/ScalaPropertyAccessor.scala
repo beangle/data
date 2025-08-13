@@ -85,7 +85,7 @@ object ScalaPropertyAccessor {
       else result
     }
 
-    override def getForInsert(target: Object, mergeMap: ju.Map[Object, Object], session: SharedSessionContractImplementor): Object = {
+    override def getForInsert(target: Object, mergeMap: ju.Map[_, _], session: SharedSessionContractImplementor): Object = {
       get(target)
     }
 

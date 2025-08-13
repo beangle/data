@@ -20,9 +20,9 @@ package org.beangle.data.orm.hibernate.id
 import org.beangle.commons.lang.Primitives
 import org.hibernate.`type`.*
 import org.hibernate.engine.spi.SharedSessionContractImplementor
-import org.hibernate.generator.GeneratorCreationContext
 import org.hibernate.id.IdentifierGenerator
 import org.hibernate.jdbc.AbstractReturningWork
+import org.hibernate.service.ServiceRegistry
 
 import java.sql.Connection
 import java.util as ju
@@ -32,9 +32,9 @@ class AutoIncrementGenerator extends IdentifierGenerator {
   val sql = "{? = call next_id(?)}"
   var tableName: String = _
 
-  override def configure(ctx: GeneratorCreationContext, params: ju.Properties): Unit = {
-    this.identifierType = Primitives.unwrap(ctx.getType.asInstanceOf[BasicType[_]].getJavaType)
-    tableName = IdHelper.getTableQualifiedName(params, ctx.getServiceRegistry)
+  override def configure(t: Type, params: ju.Properties, serviceRegistry: ServiceRegistry): Unit = {
+    this.identifierType = Primitives.unwrap(t.asInstanceOf[BasicType[_]].getJavaType)
+    tableName = IdHelper.getTableQualifiedName(params, serviceRegistry)
   }
 
   override def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {

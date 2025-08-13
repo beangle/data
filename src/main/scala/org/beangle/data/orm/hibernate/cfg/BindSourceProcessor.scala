@@ -28,14 +28,14 @@ import org.beangle.jdbc.meta.{Column, SqlType}
 import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.model.internal.GeneratorBinder
-import org.hibernate.boot.model.naming.Identifier
+import org.hibernate.boot.model.naming.{Identifier, ObjectNameNormalizer}
 import org.hibernate.boot.model.source.spi.MetadataSourceProcessor
 import org.hibernate.boot.model.{IdentifierGeneratorDefinition, TypeDefinition}
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService
 import org.hibernate.boot.registry.selector.spi.StrategySelector
 import org.hibernate.boot.spi.{InFlightMetadataCollector, MetadataBuildingContext, SecondPass}
 import org.hibernate.engine.OptimisticLockStyle
-import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, SCHEMA}
+import org.hibernate.id.PersistentIdentifierGenerator.{CATALOG, IDENTIFIER_NORMALIZER, SCHEMA}
 import org.hibernate.mapping.Collection.{DEFAULT_ELEMENT_COLUMN_NAME, DEFAULT_KEY_COLUMN_NAME}
 import org.hibernate.mapping.IndexedCollection.DEFAULT_INDEX_COLUMN_NAME
 import org.hibernate.mapping.{Backref, BasicValue, DependantValue, IndexBackref, KeyValue, PersistentClass, PrimaryKey, RootClass, SimpleValue, ToOne, Value, Bag as HBag, Collection as HCollection, Column as HColumn, Component as HComponent, Fetchable as HFetchable, List as HList, ManyToOne as HManyToOne, Map as HMap, OneToMany as HOneToMany, Property as HProperty, Set as HSet}
@@ -59,6 +59,12 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
     IdGenerator.DateTime -> classOf[DateTimeStyleGenerator].getName,
     IdGenerator.Code -> classOf[CodeStyleGenerator].getName
   )
+
+  private val objectNameNormalizer = new ObjectNameNormalizer() {
+    protected override def getBuildingContext: MetadataBuildingContext = {
+      context
+    }
+  }
 
   private var minColumnEnableDynaUpdate = 7
 
@@ -291,7 +297,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       val referenced = metadata.getEntityBinding(entityName)
       val prop = new Backref
       prop.setName("_" + collection.getOwnerEntityName + "." + colp.name + "Backref")
-      prop.setUpdatable(false)
+      prop.setUpdateable(false)
       prop.setSelectable(false)
       prop.setCollectionRole(collection.getRole)
       prop.setEntityName(collection.getOwner.getEntityName)
@@ -318,7 +324,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       val referenced = metadata.getEntityBinding(entityName)
       val ib = new IndexBackref
       ib.setName("_" + map.getOwnerEntityName + "." + mapp.name + "IndexBackref")
-      ib.setUpdatable(false)
+      ib.setUpdateable(false)
       ib.setSelectable(false)
       ib.setCollectionRole(map.getRole)
       ib.setEntityName(map.getOwner.getEntityName)
@@ -415,26 +421,28 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
     if (null == globalIdGenerator && em.idGenerator == null) throw new RuntimeException("Cannot find id generator for entity " + em.entityName)
     val generator = if (null != globalIdGenerator) globalIdGenerator else em.idGenerator
     val strategy = additionalIdGenerators.getOrElse(generator.strategy, generator.strategy)
-    generator.nullValue match {
-      case Some(v) => sv.setNullValue(v)
-      case None => sv.setNullValue(if "assigned" == strategy then "undefined" else "null")
-    }
-
-    val params = new ju.HashMap[String, String]
+    sv.setIdentifierGeneratorStrategy(strategy)
+    val params = new ju.HashMap[String, Object]
+    params.put(IDENTIFIER_NORMALIZER, objectNameNormalizer)
 
     val database = metadata.getDatabase
     val name = database.getDefaultNamespace.getPhysicalName
-    if (null != name && null != name.schema) {
-      params.put(SCHEMA, database.getDefaultNamespace.getPhysicalName.schema.render(database.getDialect))
+    if (null != name && null != name.getSchema) {
+      params.put(SCHEMA, database.getDefaultNamespace.getPhysicalName.getSchema.render(database.getDialect))
     }
-    if (null != name && null != name.catalog) {
-      params.put(CATALOG, database.getDefaultNamespace.getPhysicalName.catalog.render(database.getDialect))
+    if (null != name && null != name.getCatalog) {
+      params.put(CATALOG, database.getDefaultNamespace.getPhysicalName.getCatalog.render(database.getDialect))
     }
     generator.params foreach {
       case (k, v) => params.put(k, v)
     }
-    val gd = new IdentifierGeneratorDefinition(strategy, strategy, params)
-    GeneratorBinder.createGeneratorFrom(gd, sv, context)
+    sv.setIdentifierGeneratorParameters(params)
+    generator.nullValue match {
+      case Some(v) => sv.setNullValue(v)
+      case None => sv.setNullValue(if "assigned" == sv.getIdentifierGeneratorStrategy then "undefined" else null)
+    }
+    //val gd = new IdentifierGeneratorDefinition(strategy, strategy, params)
+    //GeneratorBinder.createGeneratorFrom(gd, sv, context)
   }
 
   private def qualify(first: String, second: String): String = {
@@ -570,9 +578,10 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
   private def bindProperty(propertyName: String, pm: OrmProperty, property: HProperty): Unit = {
     property.setName(propertyName)
     property.setPropertyAccessorName(ScalaPropertyAccessor.name)
-    val cascade = pm.cascade.getOrElse(context.getBuildingOptions.getMappingDefaults.getImplicitCascadeStyleName)
+    // val cascade = pm.cascade.getOrElse(context.getBuildingOptions.getMappingDefaults.getImplicitCascadeStyleName)
+    val cascade = pm.cascade.getOrElse(context.getMappingDefaults.getImplicitCascadeStyleName)
     property.setCascade(cascade)
-    property.setUpdatable(pm.updatable)
+    property.setUpdateable(pm.updatable)
     property.setInsertable(pm.insertable)
     property.setOptional(pm.optional)
     property.setOptimisticLocked(pm.optimisticLocked)

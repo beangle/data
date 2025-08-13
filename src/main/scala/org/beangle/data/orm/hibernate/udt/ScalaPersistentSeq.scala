@@ -76,7 +76,6 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
-    assert(isInitializing())
     val collectionDescriptor = attributeMapping.getCollectionDescriptor
     val size = if null == loadingStateList then 0 else loadingStateList.size
     this.list = collectionDescriptor.getCollectionSemantics
@@ -227,7 +226,8 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     list.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
   }
 
-  override def hasDeletes(persister: CollectionPersister): Boolean = {
+  // used by hibernate 7
+  def hasDeletes(persister: CollectionPersister): Boolean = {
     val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
     val snSize = sn.size
     if (snSize > list.size) return true
