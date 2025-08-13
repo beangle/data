@@ -18,7 +18,6 @@
 package org.beangle.data.orm.hibernate.udt
 
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.lang.annotation.value
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.collection.spi.AbstractPersistentCollection.DelayedOperation
@@ -32,14 +31,12 @@ import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
 class ScalaPersistentBag(session: SharedSessionContractImplementor)
-  extends AbstractPersistentCollection[Object](session) with mutable.Buffer[Object] {
+  extends AbstractPersistentCollection[Object](session), mutable.Buffer[Object] {
 
   protected var bag: mutable.Buffer[Object] = _
-  private var providedCollection: Iterable[Object] = null
 
   def this(session: SharedSessionContractImplementor, data: Iterable[Object]) = {
     this(session)
-    providedCollection = data
     data match {
       case d: mutable.Buffer[Object] => bag = d
       case _ => bag = Collections.newBuffer[Object](data)
@@ -48,14 +45,16 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     setDirectlyAccessible(true)
   }
 
-  override def getSnapshot(persister: CollectionPersister): JSerializable = {
-    val clonedList = new mutable.ArrayBuffer[Object]
-    bag.foreach { ele => clonedList += persister.getElementType.deepCopy(ele, persister.getFactory) }
-    clonedList
-  }
+  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingState: ju.List[_]): Unit = {
+    val collectionDescriptor = attributeMapping.getCollectionDescriptor
+    val collectionSemantics = collectionDescriptor.getCollectionSemantics
 
-  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[Object] = {
-    SeqHelper.getOrphans(snapshot.asInstanceOf[mutable.ArrayBuffer[Object]], bag, entityName, getSession)
+    val elementCount = if null == loadingState then 0 else loadingState.size
+
+    this.bag = collectionSemantics.instantiateRaw(elementCount, collectionDescriptor).asInstanceOf[mutable.Buffer[Object]]
+    if null != loadingState then
+      import scala.jdk.javaapi.CollectionConverters.asScala
+      bag.addAll(asScala(loadingState))
   }
 
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
@@ -107,14 +106,6 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     true
   }
 
-  private def countOccurrences(element: Object, list: mutable.Buffer[Object], elementType: Type): Int = {
-    list.count(x => elementType.isSame(element, x))
-  }
-
-  private def expectOccurrences(element: Object, list: mutable.Buffer[Object], elementType: Type, expected: Int): Boolean = {
-    list.count(x => elementType.isSame(element, x)) == expected
-  }
-
   /**
    * Groups items in searchedBag according to persistence "equality" as defined in Type.isSame and Type.getHashCode
    *
@@ -132,23 +123,6 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     if o == null then Integer.valueOf(0) else elementType.getHashCode(o)
   }
 
-  override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
-    bag = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Buffer[Object]]
-    endRead()
-  }
-
-  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingState: ju.List[_]): Unit = {
-    val collectionDescriptor = attributeMapping.getCollectionDescriptor
-    val collectionSemantics = collectionDescriptor.getCollectionSemantics
-
-    val elementCount = if null == loadingState then 0 else loadingState.size
-
-    this.bag = collectionSemantics.instantiateRaw(elementCount, collectionDescriptor).asInstanceOf[mutable.Buffer[Object]]
-    if null != loadingState then
-      import scala.jdk.javaapi.CollectionConverters.asScala
-      bag.addAll(asScala(loadingState))
-  }
-
   override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
     snapshot.asInstanceOf[collection.Seq[_]].isEmpty
   }
@@ -156,6 +130,127 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
   override def isWrapper(collection: Object): Boolean = {
     bag eq collection
   }
+
+  private def countOccurrences(element: Object, list: mutable.Buffer[Object], elementType: Type): Int = {
+    list.count(x => elementType.isSame(element, x))
+  }
+
+  private def expectOccurrences(element: Object, list: mutable.Buffer[Object], elementType: Type, expected: Int): Boolean = {
+    list.count(x => elementType.isSame(element, x)) == expected
+  }
+
+  override def getSnapshot(persister: CollectionPersister): JSerializable = {
+    val clonedList = new mutable.ArrayBuffer[Object]
+    bag.foreach { ele => clonedList += persister.getElementType.deepCopy(ele, persister.getFactory) }
+    clonedList
+  }
+
+  override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[Object] = {
+    SeqHelper.getOrphans(snapshot.asInstanceOf[mutable.ArrayBuffer[Object]], bag, entityName, getSession)
+  }
+
+  override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
+    bag = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Buffer[Object]]
+    endRead()
+  }
+
+  override def disassemble(persister: CollectionPersister): Object = {
+    bag.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
+  }
+
+  override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
+    val array = disassembled.asInstanceOf[Array[JSerializable]]
+    this.bag = persister.getCollectionSemantics.instantiateRaw(array.length, persister).asInstanceOf[mutable.Buffer[Object]]
+    array foreach { ele =>
+      val item = persister.getElementType.assemble(ele, getSession, owner)
+      if (null != item) bag.addOne(item)
+    }
+  }
+
+  override def needsRecreate(persister: CollectionPersister): Boolean = {
+    !persister.isOneToMany
+  }
+
+  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
+    val deletes = new ju.ArrayList[Object]()
+    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
+    val elementType = persister.getElementType
+    val olditer = sn.iterator
+    var i = 0;
+    while (olditer.hasNext) {
+      val old = olditer.next();
+      val newiter = bag.iterator
+      var found = false
+      if (bag.size > i && elementType.isSame(old, bag(i))) {
+        //a shortcut if its location didn't change!
+        found = true
+      } else {
+        //search for it note that this code is incorrect for other than one-to-many
+        while (newiter.hasNext && !found) {
+          if (elementType.isSame(old, newiter.next())) {
+            found = true
+          }
+        }
+      }
+      i += 1
+      if (!found) deletes.add(old)
+    }
+    deletes.iterator()
+  }
+
+  override def hasDeletes(persister: CollectionPersister): Boolean = {
+    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
+    val elementType = persister.getElementType
+    if (sn == null) {
+      return false
+    }
+    val olditer = sn.iterator
+    var i: Int = 0
+    val bagiter = bag.iterator
+    while (olditer.hasNext) {
+      val old: AnyRef = olditer.next
+      val newiter = bag.iterator
+      var found: Boolean = false
+      if (bag.size > i && {
+        i += 1;
+        i - 1
+      } > 0 && elementType.isSame(old, bagiter.next)) {
+        //a shortcut if its location didn't change!
+        found = true
+      }
+      else {
+        //search for it
+        //note that this code is incorrect for other than one-to-many
+        while (newiter.hasNext && !found) {
+          if (elementType.isSame(old, newiter.next)) {
+            found = true
+          }
+        }
+      }
+      if (!found) {
+        return true
+      }
+    }
+    false
+  }
+
+  override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
+    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
+    if (sn.size > i && elemType.isSame(sn(i), entry)) {
+      false
+    } else {
+      val iter = sn.iterator
+      while (iter.hasNext) {
+        val old = iter.next()
+        if elemType.isSame(old, entry) then return false
+      }
+      true
+    }
+  }
+
+  override def needsUpdating(entry: AnyRef, i: Int, elemType: Type) = false
+
+  override def isRowUpdatePossible = false
 
   override def length: Int = {
     if (readSize()) getCachedSize else bag.size
@@ -167,7 +262,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
 
   override def contains[A1 >: Object](elem: A1): Boolean = {
     val exists = readElementExistence(elem)
-    if (exists == null) bag.contains(elem) else exists.booleanValue
+    if (exists == null) bag.contains(elem) else exists
   }
 
   override def iterator: Iterator[Object] = {
@@ -206,18 +301,6 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     this
   }
 
-  override def clear(): Unit = {
-    if (isClearQueueEnabled) {
-      queueOperation(new Clear())
-    } else {
-      initialize(true)
-      if (bag.nonEmpty) {
-        bag.clear()
-        dirty()
-      }
-    }
-  }
-
   override def apply(index: Int): Object = {
     read()
     bag(index)
@@ -240,6 +323,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
 
   override def remove(idx: Int): Object = {
     write()
+    this.elementRemoved = true
     bag.remove(idx)
   }
 
@@ -273,64 +357,20 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     asJava(bag.iterator)
   }
 
-  override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
-    val array = disassembled.asInstanceOf[Array[JSerializable]]
-    this.bag = persister.getCollectionSemantics.instantiateRaw(array.length, persister).asInstanceOf[mutable.Buffer[Object]]
-    array foreach { ele =>
-      val item = persister.getElementType.assemble(ele, getSession, owner)
-      if (null != item) bag.addOne(item)
-    }
-  }
-
-  override def disassemble(persister: CollectionPersister): Object = {
-    bag.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
-  }
-
-  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
-    val deletes = new ju.ArrayList[Object]()
-    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
-    val elementType = persister.getElementType
-    val olditer = sn.iterator
-    var i = 0;
-    while (olditer.hasNext) {
-      val old = olditer.next();
-      val newiter = bag.iterator
-      var found = false
-      if (bag.size > i && elementType.isSame(old, bag(i))) {
-        //a shortcut if its location didn't change!
-        found = true
-      } else {
-        //search for it note that this code is incorrect for other than one-to-many
-        while (newiter.hasNext && !found) {
-          if (elementType.isSame(old, newiter.next())) {
-            found = true
-          }
-        }
-      }
-      i += 1
-      if (!found) deletes.add(old)
-    }
-    deletes.iterator()
-  }
-
-  override def needsInserting(entry: Object, i: Int, elemType: Type): Boolean = {
-    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
-    if (sn.size > i && elemType.isSame(sn(i), entry)) {
-      false
+  override def clear(): Unit = {
+    if (isClearQueueEnabled) {
+      queueOperation(new Clear())
     } else {
-      val iter = sn.iterator
-      while (iter.hasNext) {
-        val old = iter.next()
-        if elemType.isSame(old, entry) then return false
+      initialize(true)
+      if (bag.nonEmpty) {
+        bag.clear()
+        dirty()
       }
-      true
     }
   }
-
-  override def needsUpdating(entry: AnyRef, i: Int, elemType: Type) = false
 
   override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = {
-    throw new UnsupportedOperationException("Bags don't have indexes : " + persister.getRole());
+    throw new UnsupportedOperationException("Bags don't have indexes : " + persister.getRole)
   }
 
   override def getElement(entry: Object): Object = {
@@ -345,15 +385,10 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     entry != null
   }
 
-  override def isDirectlyProvidedCollection(collection: AnyRef): Boolean = {
-    isDirectlyAccessible && (providedCollection eq collection)
+  override def toString: String = {
+    read()
+    bag.toString()
   }
-
-  override def needsRecreate(persister: CollectionPersister): Boolean = {
-    !persister.isOneToMany
-  }
-
-  override def isRowUpdatePossible = false
 
   /** Bag does not respect the collection API
    *
@@ -366,11 +401,6 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
 
   override def hashCode(): Int = {
     super.hashCode()
-  }
-
-  override def toString: String = {
-    read()
-    bag.toString()
   }
 
   final class Clear extends DelayedOperation[Object] {

@@ -17,7 +17,6 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import org.hibernate.Internal
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.collection.spi.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
@@ -26,13 +25,12 @@ import org.hibernate.metamodel.mapping.PluralAttributeMapping
 import org.hibernate.persister.collection.CollectionPersister
 
 import java.io.Serializable as JSerializable
-import java.sql.ResultSet
 import java.util as ju
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
 class ScalaPersistentMap(session: SharedSessionContractImplementor)
-  extends AbstractPersistentCollection[Object](session) with mutable.Map[Object, Object] {
+  extends AbstractPersistentCollection[Object](session), mutable.Map[Object, Object] {
   type MM = mutable.Map[Object, Object]
   type MHashMap = mutable.HashMap[Object, Object]
 
@@ -174,6 +172,11 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
       i += 2
     }
     result
+  }
+
+  override def hasDeletes(persister: CollectionPersister): Boolean = {
+    val sn = getSnapshot().asInstanceOf[MM]
+    sn.exists(e => null != e._2 && !map.contains(e._1))
   }
 
   override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {

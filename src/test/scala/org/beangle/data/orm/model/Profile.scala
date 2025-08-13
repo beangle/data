@@ -26,5 +26,12 @@ import org.beangle.data.model.pojo.Named
 class Profile extends LongId with Named {
 
   var user: User = _
+  var contents: String = _
 
+  def this(user: User, name: String, contents: String) = {
+    this()
+    this.user = user
+    this.name = name
+    this.contents = contents
+  }
 }

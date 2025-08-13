@@ -78,6 +78,7 @@ private[udt] object SeqHelper {
                             session: SharedSessionContractImplementor,
                             owner: Object)
     extends AbstractPersistentCollection.ValueDelayedOperation[E] {
+
     override def replace(persister: CollectionPersister, copyCache: java.util.Map[AnyRef, AnyRef]): Unit = {
       if (addedValue != null) addedValue = getReplacement(persister.getElementType, addedValue, copyCache)
     }
@@ -89,4 +90,5 @@ private[udt] object SeqHelper {
 
     override final def getOrphan: E = orphan
   }
+
 }

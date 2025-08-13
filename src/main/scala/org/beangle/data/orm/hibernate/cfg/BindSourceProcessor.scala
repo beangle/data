@@ -291,7 +291,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       val referenced = metadata.getEntityBinding(entityName)
       val prop = new Backref
       prop.setName("_" + collection.getOwnerEntityName + "." + colp.name + "Backref")
-      prop.setUpdateable(false)
+      prop.setUpdatable(false)
       prop.setSelectable(false)
       prop.setCollectionRole(collection.getRole)
       prop.setEntityName(collection.getOwner.getEntityName)
@@ -318,7 +318,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       val referenced = metadata.getEntityBinding(entityName)
       val ib = new IndexBackref
       ib.setName("_" + map.getOwnerEntityName + "." + mapp.name + "IndexBackref")
-      ib.setUpdateable(false)
+      ib.setUpdatable(false)
       ib.setSelectable(false)
       ib.setCollectionRole(map.getRole)
       ib.setEntityName(map.getOwner.getEntityName)
@@ -570,8 +570,9 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
   private def bindProperty(propertyName: String, pm: OrmProperty, property: HProperty): Unit = {
     property.setName(propertyName)
     property.setPropertyAccessorName(ScalaPropertyAccessor.name)
-    property.setCascade(pm.cascade.getOrElse(context.getBuildingOptions.getMappingDefaults.getImplicitCascadeStyleName))
-    property.setUpdateable(pm.updatable)
+    val cascade = pm.cascade.getOrElse(context.getBuildingOptions.getMappingDefaults.getImplicitCascadeStyleName)
+    property.setCascade(cascade)
+    property.setUpdatable(pm.updatable)
     property.setInsertable(pm.insertable)
     property.setOptional(pm.optional)
     property.setOptimisticLocked(pm.optimisticLocked)

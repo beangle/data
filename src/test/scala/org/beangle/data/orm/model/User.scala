@@ -21,24 +21,27 @@ import org.beangle.commons.lang.time.{WeekDay, WeekState, WeekTime}
 import org.beangle.data.model.pojo.{Hierarchical, Named, Remark}
 import org.beangle.data.model.{Component, Entity, LongId, StringId}
 
+import scala.collection.mutable
+
 class User(var id: Long) extends Entity[Long] {
   def this() = this(0)
   var name: Name = _
   var roleSet: java.util.Set[Role] = new java.util.HashSet[Role]
   var age: Option[Int] = None
   var money: Short = 30
-  var properties: collection.mutable.Map[String, String] = _
+  var properties: mutable.Map[String, String] = _
   var occupy: WeekState = new WeekState(0)
   var weekday: WeekDay = WeekDay.Sun
 
   var createdOn = new java.sql.Date(System.currentTimeMillis)
   var role: Option[Role] = _
-  var roleList: collection.mutable.Buffer[Role] = new collection.mutable.ListBuffer[Role]
+  var roleList: mutable.Buffer[Role] = new mutable.ListBuffer[Role]
   var member: Member = _
-  var skills: collection.mutable.Map[SkillType, Skill] = _
+  var skills: mutable.Map[SkillType, Skill] = _
 
-  var profiles: collection.mutable.Set[Profile] = new collection.mutable.HashSet[Profile]
-  var times: collection.mutable.Map[Int,WeekTime] = new collection.mutable.HashMap[Int,WeekTime]
+//  var profiles: mutable.Set[Profile] = new mutable.HashSet[Profile]
+  var profiles: java.util.Set[Profile] = new java.util.HashSet[Profile]
+  var times: mutable.Map[Int,WeekTime] = new mutable.HashMap[Int,WeekTime]
 }
 
 class SkillType extends LongId {

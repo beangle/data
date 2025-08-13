@@ -382,11 +382,12 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao, 
 
   override def saveOrUpdate[E](entities: Iterable[E]): Unit = {
     if (entities.nonEmpty) {
-      for (entity <- entities)
+      for (entity <- entities) {
         entity match {
           case col: IterableOnce[_] => col.iterator.foreach { e => persistEntity(e, null) }
           case _ => persistEntity(entity, null)
         }
+      }
     }
   }
 

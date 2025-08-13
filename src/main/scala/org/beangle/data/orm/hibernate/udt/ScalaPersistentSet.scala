@@ -25,14 +25,13 @@ import org.hibernate.metamodel.mapping.PluralAttributeMapping
 import org.hibernate.persister.collection.CollectionPersister
 
 import java.io.Serializable as JSerializable
-import java.sql.ResultSet
 import java.util as ju
 import scala.collection.mutable
-import scala.collection.mutable.{ListBuffer, HashMap as MHashMap, HashSet as MHashSet, Set as MSet}
+import scala.collection.mutable.{HashMap as MHashMap, HashSet as MHashSet, Set as MSet}
 import scala.jdk.javaapi.CollectionConverters.asJava
 
 class ScalaPersistentSet(session: SharedSessionContractImplementor)
-  extends AbstractPersistentCollection[Object](session) with MSet[Object] {
+  extends AbstractPersistentCollection[Object](session), MSet[Object] {
 
   protected var set: MSet[Object] = _
 
@@ -58,6 +57,11 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
     SeqHelper.getOrphans(snapshot.asInstanceOf[MHashMap[Object, Object]].keys, set, entityName, getSession)
   }
 
+  override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
+    this.set = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Set[Object]]
+    endRead()
+  }
+
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
     val elementType = persister.getElementType
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
@@ -71,21 +75,6 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
         }
       }
     }
-  }
-
-  override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
-    this.set = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Set[Object]]
-    endRead()
-  }
-
-  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
-    val collectionDescriptor = attributeMapping.getCollectionDescriptor
-    val size = if null == loadingStateList then 0 else loadingStateList.size
-    this.set = collectionDescriptor.getCollectionSemantics
-      .instantiateRaw(size, collectionDescriptor).asInstanceOf[mutable.Set[Object]]
-    if null != loadingStateList then
-      import scala.jdk.javaapi.CollectionConverters.asScala
-      this.set.addAll(asScala(loadingStateList))
   }
 
   override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
@@ -115,7 +104,7 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
 
   override def contains(elem: Object): Boolean = {
     val exists = readElementExistence(elem)
-    if (exists == null) set.contains(elem) else exists.booleanValue
+    if (exists == null) set.contains(elem) else exists
   }
 
   override def iterator: Iterator[Object] = {
@@ -124,7 +113,7 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def addOne(elem: Object): this.type = {
-    val exists = if (isOperationQueueEnabled()) readElementExistence(elem) else null
+    val exists = if (isOperationQueueEnabled) readElementExistence(elem) else null
     if (exists == null) {
       initialize(true)
       if (set.add(elem)) dirty()
@@ -135,22 +124,26 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def subtractOne(elem: Object): this.type = {
-    val exists = if (isOperationQueueEnabled()) readElementExistence(elem) else null
+    val exists = if (isPutQueueEnabled) readElementExistence(elem) else null
     if (exists == null) {
       initialize(true)
-      if (this.set.remove(elem)) dirty()
+      if (this.set.remove(elem)) {
+        this.elementRemoved = true
+        dirty()
+      }
     } else if (exists) {
+      this.elementRemoved = true
       queueOperation(new SimpleRemove(elem))
     }
     this
   }
 
   override def clear(): Unit = {
-    if (isClearQueueEnabled()) {
+    if (isClearQueueEnabled) {
       queueOperation(new Clear())
     } else {
       initialize(true)
-      if (!set.isEmpty) {
+      if (set.nonEmpty) {
         set.clear()
         dirty()
       }
@@ -158,8 +151,18 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def toString: String = {
-    read();
+    read()
     set.toString
+  }
+
+  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
+    val collectionDescriptor = attributeMapping.getCollectionDescriptor
+    val size = if null == loadingStateList then 0 else loadingStateList.size
+    this.set = collectionDescriptor.getCollectionSemantics
+      .instantiateRaw(size, collectionDescriptor).asInstanceOf[mutable.Set[Object]]
+    if null != loadingStateList then
+      import scala.jdk.javaapi.CollectionConverters.asScala
+      this.set.addAll(asScala(loadingStateList))
   }
 
   override def entries(persister: CollectionPersister): ju.Iterator[_] = {
@@ -167,14 +170,34 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def disassemble(persister: CollectionPersister): Object = {
-    this.set.map(ele => persister.getElementType.disassemble(ele, getSession, null))
-      .toArray[JSerializable]
+    this.set.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
+  }
+
+  override def hasDeletes(persister: CollectionPersister): Boolean = {
+    val elementType = persister.getElementType
+    val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
+    var itr = sn.keySet.iterator
+    while (itr.hasNext) {
+      if (!set.contains(itr.next)) {
+        return true
+      }
+    }
+    itr = set.iterator
+    while (itr.hasNext) {
+      val test = itr.next
+      val oldValue = sn.get(test).orNull
+      if (oldValue != null && elementType.isDirty(test, oldValue, getSession)) {
+        // the element has changed
+        return true
+      }
+    }
+    false
   }
 
   override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
     val elementType = persister.getElementType
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
-    val deletes = new ListBuffer[Object]
+    val deletes = new mutable.ArrayBuffer[Object]
     deletes ++= sn.keys.filter(!set.contains(_))
     deletes ++= set.filter { ele => sn.contains(ele) && elementType.isDirty(ele, sn(ele), getSession) }
     asJava(deletes.iterator)
@@ -240,9 +263,9 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
       set.clear()
     }
 
-    override def getAddedInstance(): Object = null
+    override def getAddedInstance: Object = null
 
-    override def getOrphan(): Object = {
+    override def getOrphan: Object = {
       throw new UnsupportedOperationException("queued clear cannot be used with orphan delete")
     }
   }

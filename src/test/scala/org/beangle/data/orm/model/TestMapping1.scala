@@ -32,7 +32,6 @@ object TestMapping1 extends MappingModule {
       c.code is(notnull, length(20), unique)
     }
 
-    bind[Profile]
     bind[User].declare { e =>
       e.name.first is(unique, column("first_name"))
       e.name.first & e.name.last & e.createdOn are notnull
@@ -41,6 +40,11 @@ object TestMapping1 extends MappingModule {
       e.member.admin is default("true")
       e.properties is(table("users_props"), eleColumn("value2"), eleLength(200))
     }.generator(IdGenerator.Assigned)
+
+    bind[Profile].declare { e =>
+      index("", true, e.user, e.name)
+    }.generator(IdGenerator.Native)
+
 
     bind[SkillType].cacheable().generator(IdGenerator.Native)
     bind[Skill].cacheable().table("skill_list").generator(IdGenerator.Native)

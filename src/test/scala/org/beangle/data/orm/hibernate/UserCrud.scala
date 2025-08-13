@@ -26,7 +26,7 @@ import org.hibernate.SessionFactory
 import java.time.{LocalDate, YearMonth}
 import scala.collection.mutable.ListBuffer
 
-object UserCrudTest {
+object UserCrud {
 
   def testCrud(sf: SessionFactory): Unit = {
     val entityDao = new HibernateEntityDao(sf)
@@ -67,6 +67,7 @@ object UserCrudTest {
     user.roleList.asInstanceOf[ListBuffer[Role]] += role1
     user.roleList.asInstanceOf[ListBuffer[Role]] += role2
     user.roleList.asInstanceOf[ListBuffer[Role]] += role3
+
     user.age = Some(20)
     user.member = new Member
     user.properties = new collection.mutable.HashMap[String, String]
@@ -82,6 +83,17 @@ object UserCrudTest {
     user.age = Some(21)
     entityDao.saveOrUpdate(user)
     session.flush()
+    entityDao.refresh(user)
+    assert(user.profiles.isEmpty)
+    println("=====================" + user.profiles.size)
+    user.profiles.add(new Profile(user, "p1", "v1"))
+    user.profiles.add(new Profile(user, "p2", "v2"))
+    entityDao.saveOrUpdate(user)
+    session.flush()
+    println("=====================" + user.profiles.size)
+    entityDao.refresh(user)
+    println("=====================" + user.profiles.size)
+    assert(user.profiles.size == 2)
 
     val query = OqlBuilder.from(classOf[Role], "r").where("r.parent = :parent", role1)
     val list = entityDao.search(query)

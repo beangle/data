@@ -25,7 +25,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.springframework.core.io.UrlResource
 
-class HibernateConfigTest extends AnyFunSpec with Matchers {
+class HibernateConfigTest extends AnyFunSpec, Matchers {
 
   val ormLocations = ClassLoaders.getResource("META-INF/beangle/orm.xml").toList
   val resouces = ormLocations map (url => new UrlResource(url.toURI))
@@ -47,7 +47,7 @@ class HibernateConfigTest extends AnyFunSpec with Matchers {
   val userMetaOption = domain.getEntity(classOf[User])
 
   it("Should support option and collection") {
-    UserCrudTest.testCrud(sf)
+    UserCrud.testCrud(sf)
   }
 
   it("test cache") {

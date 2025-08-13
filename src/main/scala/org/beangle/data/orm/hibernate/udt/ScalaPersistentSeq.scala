@@ -30,7 +30,7 @@ import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
 class ScalaPersistentSeq(session: SharedSessionContractImplementor)
-  extends AbstractPersistentCollection[Object](session) with mutable.Buffer[Object] {
+  extends AbstractPersistentCollection[Object](session), mutable.Buffer[Object] {
 
   protected var list: mutable.Buffer[Object] = _
 
@@ -227,15 +227,23 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     list.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
   }
 
+  override def hasDeletes(persister: CollectionPersister): Boolean = {
+    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
+    val snSize = sn.size
+    if (snSize > list.size) return true
+    (0 until snSize).exists(i => list(i) == null && sn(i) != null)
+  }
+
   override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
     val deletes = new ju.ArrayList[Object]()
     val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
+    val snSize = sn.size
     val end =
-      if (sn.size > list.size) {
-        Range(list.size, sn.size) foreach { i => deletes.add(if (indexIsFormula) sn(i) else Integer.valueOf(i)) }
+      if (snSize > list.size) {
+        Range(list.size, snSize) foreach { i => deletes.add(if (indexIsFormula) sn(i) else Integer.valueOf(i)) }
         list.size
       } else {
-        sn.size
+        snSize
       }
 
     Range(0, end) foreach { i =>
