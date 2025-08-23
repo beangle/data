@@ -17,14 +17,18 @@
 
 package org.beangle.data.orm.hibernate.cfg
 
+import org.beangle.commons.json.{Json, JsonArray, JsonObject}
 import org.beangle.data.orm.Mappings
-import org.beangle.data.orm.hibernate.udt.{EnumType, ValueType, YearMonthType}
+import org.beangle.data.orm.hibernate.jdbc.{JsonAccessor, NullableIntJdbcType}
+import org.beangle.data.orm.hibernate.udt.*
 import org.hibernate.`type`.BasicTypeRegistry
+import org.hibernate.`type`.descriptor.java.JavaType
+import org.hibernate.`type`.descriptor.jdbc.{DateJdbcType, JdbcType}
 import org.hibernate.`type`.internal.ImmutableNamedBasicTypeImpl
 import org.hibernate.`type`.spi.TypeConfiguration
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.internal.{InFlightMetadataCollectorImpl, MetadataBuilderImpl, MetadataBuildingContextRootImpl}
-import org.hibernate.boot.model.process.internal.{ManagedResourcesImpl, ScanningCoordinator}
+import org.hibernate.boot.model.process.internal.ManagedResourcesImpl
 import org.hibernate.boot.model.process.spi.ManagedResources
 import org.hibernate.boot.model.{TypeContributions, TypeContributor}
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService
@@ -117,25 +121,27 @@ object BindMetadataBuilderFactory {
   }
 
   private def addMappingTypes(mappings: Mappings, options: MetadataBuildingOptions): Unit = {
-    val registrations = options.getBasicTypeRegistrations
-
     mappings.valueTypes foreach { valueClazz =>
-      val javaType = new ValueType(valueClazz)
-      val jdbcType = javaType.toJdbcType()
-      val vt = new ImmutableNamedBasicTypeImpl(javaType, jdbcType, valueClazz.getName)
-      registrations.add(new BasicTypeRegistration(vt, Array(valueClazz.getName)))
+      val vt = new ValueType(valueClazz)
+      registerBasicType(valueClazz.getName, vt, ValueType.getJdbcType(vt.getValueClass), options)
     }
-
     mappings.enumTypes foreach { enumTypeName =>
-      val javaType = new EnumType(Class.forName(enumTypeName))
-      val jdbcType = javaType.toJdbcType
-      val vt = new ImmutableNamedBasicTypeImpl(javaType, jdbcType, enumTypeName)
-      registrations.add(new BasicTypeRegistration(vt, Array(enumTypeName)))
+      registerBasicType(enumTypeName, new EnumType(Class.forName(enumTypeName)), NullableIntJdbcType, options)
     }
 
-    val ym = new YearMonthType
-    val ymType = new ImmutableNamedBasicTypeImpl(ym, ym.toJdbcType(), classOf[YearMonth].getName)
-    registrations.add(new BasicTypeRegistration(ymType, Array(ymType.getName)))
+    //register year-month
+    registerBasicType(classOf[YearMonth].getName, new YearMonthType, DateJdbcType.INSTANCE, options)
+    //register json
+    val jsonJdbcType = JsonAccessor.getJdbcType(mappings.database.engine)
+    registerBasicType(classOf[Json].getName, new JsonType(classOf[Json]), jsonJdbcType, options)
+    registerBasicType(classOf[JsonObject].getName, new JsonType(classOf[JsonObject]), jsonJdbcType, options)
+    registerBasicType(classOf[JsonArray].getName, new JsonType(classOf[JsonArray]), jsonJdbcType, options)
+  }
+
+  private def registerBasicType(className: String, javaType: JavaType[_], jdbcType: JdbcType, options: MetadataBuildingOptions): Unit = {
+    val registrations = options.getBasicTypeRegistrations
+    val vt = new ImmutableNamedBasicTypeImpl(javaType, jdbcType, className)
+    registrations.add(new BasicTypeRegistration(vt, Array(className)))
   }
 
   private def handleTypes(context: BootstrapContext, options: MetadataBuildingOptions): BasicTypeRegistry = {

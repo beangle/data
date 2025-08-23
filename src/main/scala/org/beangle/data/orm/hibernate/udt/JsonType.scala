@@ -17,41 +17,37 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import org.beangle.commons.conversion.string.EnumConverters
-import org.beangle.commons.lang.Enums
-import org.beangle.data.orm.hibernate.jdbc.NullableIntJdbcType
+import org.beangle.commons.json.Json
 import org.hibernate.`type`.descriptor.WrapperOptions
 import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
-import org.hibernate.`type`.descriptor.jdbc.{JdbcType, VarcharJdbcType}
 
-class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
-
-  private val converter = EnumConverters.getConverter(`type`).get
+/** 转换String到Json
+ *
+ * @param jsonType
+ */
+class JsonType[T <: Json](jsonType: Class[T]) extends AbstractClassJavaType[Object](jsonType) {
 
   override def unwrap[X](value: Object, valueType: Class[X], options: WrapperOptions): X = {
     if (value eq null) null.asInstanceOf[X]
     else {
-      if value.getClass == valueType then value.asInstanceOf[X]
-      else {
-        if valueType == classOf[Integer] || valueType == classOf[Int] then Enums.id(value).asInstanceOf[X]
-        else value.toString.asInstanceOf[X]
-      }
+      if valueType == classOf[Json] then
+        value.asInstanceOf[X]
+      else if valueType == classOf[String] then
+        value.asInstanceOf[Json].toJson.asInstanceOf[X]
+      else
+        throw unknownUnwrap(valueType)
     }
   }
 
-  /** wrap id/name/ordinal to Enum
-   *
-   * @param value cannot be null or not existed id/ordinal
-   * @param options
-   * @tparam X
-   * @return
-   */
-  override def wrap[X](value: X, options: WrapperOptions): AnyRef = {
-    converter.apply(value.toString)
+  override def wrap[X](value: X, options: WrapperOptions): Json = {
+    value match {
+      case null => Json.empty(jsonType)
+      case s: String => Json.parse(s)
+      case _ => throw new RuntimeException(s"Cannot support convert from ${value.getClass} to Json")
+    }
   }
 
   override def isWider(javaType: JavaType[_]): Boolean = {
-    val jtc = javaType.getJavaTypeClass
-    jtc == classOf[Integer] || jtc == classOf[Int]
+    javaType.getJavaType.getTypeName == "java.lang.String"
   }
 }

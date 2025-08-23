@@ -23,9 +23,22 @@ import org.hibernate.`type`.descriptor.jdbc.*
 
 import java.lang.reflect.{Constructor, Field}
 
+object ValueType {
+
+  def getJdbcType(clazz: Class[_]): JdbcType = {
+    if clazz == classOf[Long] then BigIntJdbcType.INSTANCE
+    else if clazz == classOf[Int] then IntegerJdbcType.INSTANCE
+    else if clazz == classOf[Short] then SmallIntJdbcType.INSTANCE
+    else if clazz == classOf[Boolean] then BooleanJdbcType.INSTANCE
+    else if clazz == classOf[Float] then FloatJdbcType.INSTANCE
+    else if clazz == classOf[Double] then DoubleJdbcType.INSTANCE
+    else VarcharJdbcType.INSTANCE
+  }
+}
+
 class ValueType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
 
-  var valueClass: Class[_] = _
+  private var valueClass: Class[_] = _
   private var valueField: Field = _
   private var constructor: Constructor[_] = _
 
@@ -53,18 +66,10 @@ class ValueType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) 
       case _ => if `type` == value.getClass then value.asInstanceOf[AnyRef] else constructor.newInstance(value)
   }
 
-  def toJdbcType(): JdbcType = {
-    if valueClass == classOf[Long] then BigIntJdbcType.INSTANCE
-    else if valueClass == classOf[Int] then IntegerJdbcType.INSTANCE
-    else if valueClass == classOf[Short] then SmallIntJdbcType.INSTANCE
-    else if valueClass == classOf[Boolean] then BooleanJdbcType.INSTANCE
-    else if valueClass == classOf[Float] then FloatJdbcType.INSTANCE
-    else if valueClass == classOf[Double] then DoubleJdbcType.INSTANCE
-    else VarcharJdbcType.INSTANCE
-  }
-
   override def isWider(javaType: JavaType[_]): Boolean = {
     val jtc = javaType.getJavaTypeClass
     jtc == classOf[Integer] || jtc == classOf[java.lang.Long]
   }
+
+  def getValueClass: Class[_] = valueClass
 }

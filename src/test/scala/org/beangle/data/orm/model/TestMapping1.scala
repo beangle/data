@@ -39,12 +39,13 @@ object TestMapping1 extends MappingModule {
       e.profiles is depends("user")
       e.member.admin is default("true")
       e.properties is(table("users_props"), eleColumn("value2"), eleLength(200))
+      e.friends is length(2000)
+      e.remark is length(500)
     }.generator(IdGenerator.Assigned)
 
     bind[Profile].declare { e =>
       index("", true, e.user, e.name)
     }.generator(IdGenerator.Native)
-
 
     bind[SkillType].cacheable().generator(IdGenerator.Native)
     bind[Skill].cacheable().table("skill_list").generator(IdGenerator.Native)

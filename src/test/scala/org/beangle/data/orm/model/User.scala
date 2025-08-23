@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.model
 
+import org.beangle.commons.json.{Json, JsonArray, JsonObject}
 import org.beangle.commons.lang.time.{WeekDay, WeekState, WeekTime}
 import org.beangle.data.model.pojo.{Hierarchical, Named, Remark}
 import org.beangle.data.model.{Component, Entity, LongId, StringId}
@@ -43,6 +44,10 @@ class User(var id: Long) extends Entity[Long] {
   var profiles: mutable.Set[Profile] = new mutable.HashSet[Profile]
   //  var profiles: java.util.Set[Profile] = new java.util.HashSet[Profile]
   var times: mutable.Map[Int, WeekTime] = new mutable.HashMap[Int, WeekTime]
+
+  var friends: JsonArray = new JsonArray()
+  var charactor: JsonObject = new JsonObject()
+  var remark: Option[Json] = None
 }
 
 class SkillType extends LongId {

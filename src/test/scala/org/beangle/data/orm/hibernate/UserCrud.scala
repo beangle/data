@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.hibernate
 
+import org.beangle.commons.json.Json
 import org.beangle.commons.lang.time.{HourMinute, WeekState, WeekTime}
 import org.beangle.data.dao.OqlBuilder
 import org.beangle.data.orm.model.*
@@ -92,7 +93,16 @@ object UserCrud {
     session.flush()
     entityDao.refresh(user)
     assert(user.profiles.size == 2)
+    //test json
+    user.friends = Json.parseArray("""[{"gender":"Male","name":"Json"},{"gender":"Female","name":"Alex"}]""")
+    user.charactor = Json.parseObject("""{"favorite":"reading,skating","color":"red"}""")
+    entityDao.saveOrUpdate(user)
+    session.flush()
+    entityDao.refresh(user)
+    assert(user.friends.query("[1].name").contains("Alex"))
+    assert(user.charactor.query("color").contains("red"))
 
+    //test query
     val query = OqlBuilder.from(classOf[Role], "r").where("r.parent = :parent", role1)
     val list = entityDao.search(query)
     assert(list.size == 1)
