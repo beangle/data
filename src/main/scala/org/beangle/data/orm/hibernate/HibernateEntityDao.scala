@@ -42,7 +42,7 @@ import scala.jdk.javaapi.CollectionConverters.asScala
  * @author chaostone
  */
 @description("基于Hibernate提供的通用实体DAO")
-class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao, Logging, Initializing {
+class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Logging, Initializing {
 
   var domain: Domain = _
 
@@ -50,14 +50,18 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao, 
   Jpas.proxyResolver = HibernateProxyResolver
 
   override def init(): Unit = {
-    if domain == null then domain = DomainFactory.build(sessionFactory)
+    if domain == null then domain = DomainFactory.build(sf)
+  }
+
+  override def sessionFactory: Any = {
+    sf
+  }
+
+  protected def currentSession: Session = {
+    sf.getCurrentSession
   }
 
   import QuerySupport.*
-
-  protected def currentSession: Session = {
-    sessionFactory.getCurrentSession
-  }
 
   private def createQuery(hql: String): Query[_] = {
     currentSession.createQuery(hql, null).asInstanceOf[Query[_]]
@@ -280,18 +284,18 @@ class HibernateEntityDao(val sessionFactory: SessionFactory) extends EntityDao, 
       case hp: HibernateProxy => hp.getHibernateLazyInitializer.getPersistentClass
       case _ => entity.getClass
     }
-    sessionFactory.getCache.evict(clazz, entity.id)
+    sf.getCache.evict(clazz, entity.id)
   }
 
   override def evict[A <: Entity[_]](clazz: Class[A]): Unit = {
-    val sf = sessionFactory.asInstanceOf[SessionFactoryImplementor]
+    val sfi = sf.asInstanceOf[SessionFactoryImplementor]
     //1. evict entity cache
     sf.getCache.evict(clazz)
 
     //2. evict query cache according to entity table
     val entityName = entityNameOf(clazz)
-    val entityDescriptor = sf.getRuntimeMetamodels.getMappingMetamodel.getEntityDescriptor(entityName)
-    sf.getCache.getTimestampsCache.invalidate(entityDescriptor.getPropertySpaces,
+    val entityDescriptor = sfi.getRuntimeMetamodels.getMappingMetamodel.getEntityDescriptor(entityName)
+    sfi.getCache.getTimestampsCache.invalidate(entityDescriptor.getPropertySpaces,
       this.currentSession.asInstanceOf[SessionImplementor])
   }
 

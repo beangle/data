@@ -155,11 +155,11 @@ trait EntityDao {
 
   def refresh[T](entity: T): T
 
-  def count(clazz: Class[_], kvs: Tuple2[String, Any]*): Int
+  def count(clazz: Class[_], kvs: (String, Any)*): Int
 
   def count(clazz: Class[_], params: collection.Map[String, _]): Int
 
-  def exists(clazz: Class[_], kv: Tuple2[String, Any]*): Boolean
+  def exists(clazz: Class[_], kv: (String, Any)*): Boolean
 
   def exists(clazz: Class[_], params: collection.Map[String, _]): Boolean
 
@@ -172,4 +172,10 @@ trait EntityDao {
   def createClob(str: String): Clob
 
   def domain: Domain
+
+  /** 返回SessionFactory
+   *
+   * @return
+   */
+  def sessionFactory: Any
 }

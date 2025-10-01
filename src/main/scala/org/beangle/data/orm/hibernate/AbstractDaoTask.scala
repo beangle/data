@@ -18,15 +18,16 @@
 package org.beangle.data.orm.hibernate
 
 import org.beangle.data.dao.EntityDao
-import org.hibernate.SessionFactory
+import org.hibernate.{Session, SessionFactory}
 
-@deprecated("using AbstractDaoTask", "5.9.3")
-abstract class DaoJob extends Runnable {
+abstract class AbstractDaoTask extends Runnable {
   var entityDao: EntityDao = _
   var sessionFactory: SessionFactory = _
+  var session: Session = _
 
   override def run(): Unit = {
     val holder = SessionHelper.openSession(sessionFactory)
+    session = holder.session
     try {
       execute()
     } finally {
@@ -35,5 +36,12 @@ abstract class DaoJob extends Runnable {
   }
 
   def execute(): Unit
+
+  def clean(): Unit = {
+    if (null != session) {
+      session.clear()
+    }
+    System.gc()
+  }
 
 }
