@@ -22,11 +22,11 @@ import org.hibernate.{Session, SessionFactory}
 
 abstract class AbstractDaoTask extends Runnable {
   var entityDao: EntityDao = _
-  var sessionFactory: SessionFactory = _
-  var session: Session = _
+  private var session: Session = _
 
   override def run(): Unit = {
-    val holder = SessionHelper.openSession(sessionFactory)
+    val sf = entityDao.sessionFactory.asInstanceOf[SessionFactory]
+    val holder = SessionHelper.openSession(sf)
     session = holder.session
     try {
       execute()

@@ -23,10 +23,9 @@ import org.hibernate.SessionFactory
 @deprecated("using AbstractDaoTask", "5.9.3")
 abstract class DaoJob extends Runnable {
   var entityDao: EntityDao = _
-  var sessionFactory: SessionFactory = _
 
   override def run(): Unit = {
-    val holder = SessionHelper.openSession(sessionFactory)
+    val holder = SessionHelper.openSession(entityDao.sessionFactory.asInstanceOf[SessionFactory])
     try {
       execute()
     } finally {

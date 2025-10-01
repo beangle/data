@@ -18,7 +18,6 @@
 package org.beangle.data.orm.hibernate
 
 import org.beangle.data.dao.EntityDao
-import org.hibernate.SessionFactory
 
 object DaoTask {
 
@@ -28,7 +27,6 @@ object DaoTask {
 
   private class SimpleDaoTask(entityDao: EntityDao, f: () => Unit) extends AbstractDaoTask {
     this.entityDao = entityDao
-    this.sessionFactory = this.entityDao.sessionFactory.asInstanceOf[SessionFactory]
 
     override def execute(): Unit = f()
   }
