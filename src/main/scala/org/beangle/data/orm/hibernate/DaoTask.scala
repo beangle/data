@@ -28,7 +28,7 @@ object DaoTask {
 
   private class SimpleDaoTask(entityDao: EntityDao, f: () => Unit) extends AbstractDaoTask {
     this.entityDao = entityDao
-    this.sessionFactory = this.entityDao.factory.asInstanceOf[SessionFactory]
+    this.sessionFactory = this.entityDao.sessionFactory.asInstanceOf[SessionFactory]
 
     override def execute(): Unit = f()
   }
