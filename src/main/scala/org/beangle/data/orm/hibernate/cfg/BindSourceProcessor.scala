@@ -366,7 +366,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       column.setValue(simpleValue)
       column.setTypeIndex(count)
       count += 1
-      bindColumn(cm, column)
+      bindColumn(simpleValue, cm, column)
       val names = nameColumn(cm, propertyPath)
       val logicalName = names._1
       val physicalName = names._2
@@ -379,17 +379,26 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
     }
   }
 
-  private def bindColumn(cm: Column, column: HColumn): Unit = {
+  private def bindColumn(value: SimpleValue, cm: Column, column: HColumn): Unit = {
     val sqlType = cm.sqlType
     column.setSqlTypeCode(sqlType.code)
     if sqlType.isNumberType then column.setPrecision(sqlType.precision.getOrElse(0))
     else column.setLength(sqlType.precision.getOrElse(0))
 
-    column.setScale(sqlType.scale.getOrElse(0))
     column.setNullable(cm.nullable)
+    val scale = sqlType.scale.getOrElse(0)
+    if (scale > 0) {
+      //如果是浮点类型，不要设置精度，hibernate只支持BigDecimal类型上设置scala
+      if (value.getTypeName == "double" || value.getTypeName == "float") {
+        column.setSqlType(cm.sqlType.name)
+      } else {
+        column.setScale(scale)
+      }
+    }
     //hibernate not need know column unique
     //column.setUnique(cm.unique)
     cm.defaultValue foreach (v => column.setDefaultValue(v))
+
   }
 
   private def bindManyToOne(manyToOne: HManyToOne, name: String, entityName: String, cols: Seq[Column], fetchable: Fetchable = null): HManyToOne = {

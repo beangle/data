@@ -47,7 +47,7 @@ class User(var id: Long) extends Entity[Long] {
   var friends: JsonArray = new JsonArray()
   var charactor: JsonObject = new JsonObject()
   var remark: Option[Json] = None
-  var popularity: Option[BigDecimal] = None
+  var popularity: Option[Double] = None
 }
 
 class SkillType extends LongId {

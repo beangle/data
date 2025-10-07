@@ -302,7 +302,7 @@ object MappingModule {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
       if (ch.columns.size == 1) {
-        val nt = holder.engine.toType(Types.DECIMAL, precision, scale)
+        val nt = holder.engine.toType(Types.NUMERIC, precision, scale)
         ch.columns.head.sqlType = nt
       }
     }
