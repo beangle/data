@@ -41,6 +41,7 @@ object TestMapping1 extends MappingModule {
       e.properties is(table("users_props"), eleColumn("value2"), eleLength(200))
       e.friends is length(2000)
       e.remark is length(500)
+      e.popularity is number(10,2)
     }.generator(IdGenerator.Assigned)
 
     bind[Profile].declare { e =>

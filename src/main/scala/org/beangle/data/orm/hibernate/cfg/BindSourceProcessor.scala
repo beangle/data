@@ -27,7 +27,6 @@ import org.beangle.data.orm.hibernate.{ScalaPropertyAccessStrategy, ScalaPropert
 import org.beangle.jdbc.meta.{Column, SqlType}
 import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.boot.MetadataSources
-import org.hibernate.boot.model.internal.GeneratorBinder
 import org.hibernate.boot.model.naming.{Identifier, ObjectNameNormalizer}
 import org.hibernate.boot.model.source.spi.MetadataSourceProcessor
 import org.hibernate.boot.model.{IdentifierGeneratorDefinition, TypeDefinition}
@@ -334,17 +333,15 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
   }
 
   private def bindSimpleValue(value: SimpleValue, name: String, colHolder: ColumnHolder, typeName: String): SimpleValue = {
-    if (null != typeName) {
-      val td = metadata.getTypeDefinition(typeName)
-      if (null != td) {
-        value.setTypeName(td.getTypeImplementorClass.getName)
-        value.setTypeParameters(td.getParameters)
+    val td = metadata.getTypeDefinition(typeName)
+    if (null != td) {
+      value.setTypeName(td.getTypeImplementorClass.getName)
+      value.setTypeParameters(td.getParameters)
+    } else {
+      if (typeName.equals("[B")) {
+        value.setTypeName("binary")
       } else {
-        if (typeName.equals("[B")) {
-          value.setTypeName("binary")
-        } else {
-          value.setTypeName(typeName)
-        }
+        value.setTypeName(typeName)
       }
     }
     //hibernate use a custom sqlType for instant type.

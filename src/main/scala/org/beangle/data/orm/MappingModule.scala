@@ -288,6 +288,27 @@ object MappingModule {
     }
   }
 
+  class ColumnType(typeCode: Int, precision: Int, scale: Int) extends PropertyDeclaration {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
+      if (ch.columns.size == 1) {
+        val nt = holder.engine.toType(typeCode, precision, scale)
+        ch.columns.head.sqlType = nt
+      }
+    }
+  }
+
+  class Numeric(precision: Int, scale: Int) extends PropertyDeclaration {
+    def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
+      val ch = cast[ColumnHolder](pm, holder, "Column holder needed")
+      if (ch.columns.size == 1) {
+        val nt = holder.engine.toType(Types.DECIMAL, precision, scale)
+        ch.columns.head.sqlType = nt
+      }
+    }
+  }
+
+
   class OrderColumn(orderColumn: String) extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val collp = cast[OrmCollectionProperty](pm, holder, "order column should used on many2many seq")
@@ -523,6 +544,10 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
   protected def ordered(column: String): OrderColumn = new OrderColumn(column)
 
   protected def column(name: String): ColumnName = new ColumnName(name)
+
+  protected def number(p: Int, s: Int): Numeric = new Numeric(p, s)
+
+  protected def setType(code: Int, p: Int, s: Int): ColumnType = new ColumnType(code, p, s)
 
   protected def keyColumn(name: String): KeyColumn = new KeyColumn(name)
 

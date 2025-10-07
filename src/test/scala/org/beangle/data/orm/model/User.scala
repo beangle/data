@@ -42,12 +42,12 @@ class User(var id: Long) extends Entity[Long] {
   var skills: mutable.Map[SkillType, Skill] = _
 
   var profiles: mutable.Set[Profile] = new mutable.HashSet[Profile]
-  //  var profiles: java.util.Set[Profile] = new java.util.HashSet[Profile]
   var times: mutable.Map[Int, WeekTime] = new mutable.HashMap[Int, WeekTime]
 
   var friends: JsonArray = new JsonArray()
   var charactor: JsonObject = new JsonObject()
   var remark: Option[Json] = None
+  var popularity: Option[BigDecimal] = None
 }
 
 class SkillType extends LongId {
