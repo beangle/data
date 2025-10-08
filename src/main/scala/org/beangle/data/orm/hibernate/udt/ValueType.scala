@@ -36,11 +36,11 @@ object ValueType {
   }
 }
 
-class ValueType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
+class ValueType[T](`type`: Class[T]) extends AbstractClassJavaType[T](`type`) {
 
   private var valueClass: Class[_] = _
   private var valueField: Field = _
-  private var constructor: Constructor[_] = _
+  private var constructor: Constructor[T] = _
 
   this.`type`.getDeclaredFields foreach { f =>
     valueClass = f.getType
@@ -52,18 +52,16 @@ class ValueType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) 
   if (this.valueField == null || valueClass == null)
     throw new RuntimeException(s"Cannot find field for ${this.`type`}")
 
-  override def unwrap[X](value: Object, valueType: Class[X], options: WrapperOptions): X = {
-    if value eq null then null.asInstanceOf[X]
-    else {
-      if value.getClass == valueType then value.asInstanceOf[X]
-      else valueField.get(value).asInstanceOf[X]
-    }
+  override def unwrap[X](v: T, valueType: Class[X], options: WrapperOptions): X = {
+    v match
+      case null => null.asInstanceOf[X]
+      case _ => if v.getClass == valueType then v.asInstanceOf[X] else valueField.get(v).asInstanceOf[X]
   }
 
-  override def wrap[X](value: X, options: WrapperOptions): AnyRef = {
+  override def wrap[X](value: X, options: WrapperOptions): T = {
     value match
-      case null => null
-      case _ => if `type` == value.getClass then value.asInstanceOf[AnyRef] else constructor.newInstance(value)
+      case null => null.asInstanceOf[T]
+      case _ => if `type` == value.getClass then value.asInstanceOf[T] else constructor.newInstance(value)
   }
 
   override def isWider(javaType: JavaType[_]): Boolean = {
