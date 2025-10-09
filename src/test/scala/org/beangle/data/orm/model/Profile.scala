@@ -28,6 +28,14 @@ class Profile extends LongId with Named {
   var user: User = _
   var contents: String = _
 
+  def this(id: Long, user: User, name: String, contents: String) = {
+    this()
+    this.id = id
+    this.user = user
+    this.name = name
+    this.contents = contents
+  }
+
   def this(user: User, name: String, contents: String) = {
     this()
     this.user = user

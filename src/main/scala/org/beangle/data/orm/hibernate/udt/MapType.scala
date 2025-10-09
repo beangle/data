@@ -17,20 +17,19 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import java.util as ju
 import org.hibernate.collection.spi.PersistentCollection
 import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.metamodel.CollectionClassification
 import org.hibernate.persister.collection.CollectionPersister
-import org.hibernate.usertype.UserCollectionType
 
+import java.util as ju
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
 
 /**
-  * Mutable Map Type
-  */
-class MapType extends UserCollectionType {
+ * Mutable Map Type
+ */
+class MapType extends ScalaCollectionType {
   type MMap = mutable.Map[Object, Object]
 
   override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
@@ -41,22 +40,12 @@ class MapType extends UserCollectionType {
     new ScalaPersistentMap(session, collection.asInstanceOf[MMap])
   }
 
-  override def getElementsIterator(collection: Object): ju.Iterator[Object] = {
+  override def getElementsIterator(collection: Object): ju.Iterator[_] = {
     asJava(collection.asInstanceOf[MMap]).values().iterator()
   }
 
   override def contains(collection: Object, entity: Object): Boolean = {
     collection.asInstanceOf[MMap].contains(entity)
-  }
-
-  override def indexOf(collection: Object, entity: Object): Object = null
-
-  override def replaceElements(original: Object, target: Object, persister: CollectionPersister,
-                      owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor): Object = {
-    val targetSeq = target.asInstanceOf[MMap]
-    targetSeq.clear()
-    targetSeq ++= original.asInstanceOf[MMap]
-    targetSeq
   }
 
   override def instantiate(anticipatedSize: Int): Object = {

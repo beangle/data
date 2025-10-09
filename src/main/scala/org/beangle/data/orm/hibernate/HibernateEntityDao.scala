@@ -34,6 +34,7 @@ import org.hibernate.{Hibernate, Session, SessionFactory}
 
 import java.io.{ByteArrayOutputStream, InputStream, Serializable}
 import java.sql.{Blob, Clob}
+import scala.annotation.nowarn
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asScala
@@ -85,7 +86,8 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Logging, Initial
     asScala(query.list()).toList.asInstanceOf[List[T]]
   }
 
-  def find[T <: Entity[ID], ID](entityName: String, id: ID): Option[T] = {
+  @nowarn
+  private def find[T <: Entity[ID], ID](entityName: String, id: ID): Option[T] = {
     if (Strings.contains(entityName, '.')) {
       val obj = currentSession.get(entityName, id.asInstanceOf[Serializable])
       if (null == obj) None else Some(obj.asInstanceOf[T])
@@ -304,6 +306,7 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Logging, Initial
     entity
   }
 
+  @nowarn
   override def initialize[T](proxy: T): T = {
     var rs = proxy
     proxy match {
@@ -449,16 +452,16 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Logging, Initial
   }
 
   override def createBlob(inputStream: InputStream, length: Int): Blob = {
-    currentSession.getLobHelper.createBlob(inputStream, length)
+    Hibernate.getLobHelper.createBlob(inputStream, length)
   }
 
   override def createBlob(inputStream: InputStream): Blob = {
     val buffer = new ByteArrayOutputStream(inputStream.available())
-    currentSession.getLobHelper.createBlob(buffer.toByteArray)
+    Hibernate.getLobHelper.createBlob(buffer.toByteArray)
   }
 
   override def createClob(str: String): Clob = {
-    currentSession.getLobHelper.createClob(str)
+    Hibernate.getLobHelper.createClob(str)
   }
 
   /**

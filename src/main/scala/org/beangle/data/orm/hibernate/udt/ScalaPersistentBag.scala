@@ -18,6 +18,7 @@
 package org.beangle.data.orm.hibernate.udt
 
 import org.beangle.commons.collection.Collections
+import org.beangle.data.orm.hibernate.udt.PersistentHelper.*
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.collection.spi.AbstractPersistentCollection.DelayedOperation
@@ -38,7 +39,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
   def this(session: SharedSessionContractImplementor, data: Iterable[Object]) = {
     this(session)
     data match {
-      case d: mutable.Buffer[Object] => bag = d
+      case d: mutable.Buffer[Object @unchecked] => bag = d
       case _ => bag = Collections.newBuffer[Object](data)
     }
     setInitialized()
@@ -58,7 +59,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
   }
 
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
-    val elementType = persister.getElementType()
+    val elementType = getElementType(persister)
     val sn = getSnapshot().asInstanceOf[mutable.Buffer[Object]]
     if (sn.size != bag.size) {
       return false
@@ -141,28 +142,28 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
 
   override def getSnapshot(persister: CollectionPersister): JSerializable = {
     val clonedList = new mutable.ArrayBuffer[Object]
-    bag.foreach { ele => clonedList += persister.getElementType.deepCopy(ele, persister.getFactory) }
+    bag.foreach { ele => clonedList += getElementType(persister).deepCopy(ele, persister.getFactory) }
     clonedList
   }
 
   override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[Object] = {
-    SeqHelper.getOrphans(snapshot.asInstanceOf[mutable.ArrayBuffer[Object]], bag, entityName, getSession)
+    PersistentHelper.getOrphans(snapshot.asInstanceOf[mutable.ArrayBuffer[Object]], bag, entityName, getSession)
   }
 
   override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
-    bag = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Buffer[Object]]
+    bag = getCollectionType(persister).instantiate(0).asInstanceOf[mutable.Buffer[Object]]
     endRead()
   }
 
   override def disassemble(persister: CollectionPersister): Object = {
-    bag.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
+    bag.map(ele => getElementType(persister).disassemble(ele, getSession, null)).toArray[JSerializable]
   }
 
   override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
     this.bag = persister.getCollectionSemantics.instantiateRaw(array.length, persister).asInstanceOf[mutable.Buffer[Object]]
     array foreach { ele =>
-      val item = persister.getElementType.assemble(ele, getSession, owner)
+      val item = getElementType(persister).assemble(ele, getSession, owner)
       if (null != item) bag.addOne(item)
     }
   }
@@ -174,7 +175,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
   override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
     val deletes = new ju.ArrayList[Object]()
     val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
-    val elementType = persister.getElementType
+    val elementType = getElementType(persister)
     val olditer = sn.iterator
     var i = 0;
     while (olditer.hasNext) {
@@ -201,7 +202,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
   //used by hibernate 7
   def hasDeletes(persister: CollectionPersister): Boolean = {
     val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
-    val elementType = persister.getElementType
+    val elementType = getElementType(persister)
     if (sn == null) {
       return false
     }
@@ -393,7 +394,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
 
   /** Bag does not respect the collection API
    *
-   * @param other
+   * @param other other
    * @return
    */
   override def equals(other: Any): Boolean = {
@@ -416,7 +417,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     }
   }
 
-  final class SimpleAdd(value: Object, append: Boolean) extends SeqHelper.Delayed(value, null, session, getOwner) {
+  final class SimpleAdd(value: Object, append: Boolean) extends PersistentHelper.Delayed(value, null, session, getOwner) {
     override def operate(): Unit = {
       val added = getAddedInstance
       if (!bag.contains(added)) {
@@ -426,7 +427,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     }
   }
 
-  final class SimpleRemove(orphan: Object) extends SeqHelper.Delayed(null, orphan, session, getOwner) {
+  final class SimpleRemove(orphan: Object) extends PersistentHelper.Delayed(null, orphan, session, getOwner) {
     override def operate(): Unit = {
       bag.subtractOne(getOrphan)
     }

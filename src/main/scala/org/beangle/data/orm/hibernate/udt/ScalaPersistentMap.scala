@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.hibernate.udt
 
+import org.beangle.data.orm.hibernate.udt.PersistentHelper.*
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.collection.spi.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
@@ -31,10 +32,10 @@ import scala.jdk.javaapi.CollectionConverters.asJava
 
 class ScalaPersistentMap(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection[Object](session), mutable.Map[Object, Object] {
-  type MM = mutable.Map[Object, Object]
+  private type MM = mutable.Map[Object, Object]
   type MHashMap = mutable.HashMap[Object, Object]
 
-  private var map: mutable.Map[Object, Object] = null
+  private var map: mutable.Map[Object, Object] = _
 
   def this(session: SharedSessionContractImplementor, map: mutable.Map[Object, Object]) = {
     this(session)
@@ -47,22 +48,22 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
 
   override def getSnapshot(persister: CollectionPersister): JSerializable = {
     val cloned = new MHashMap
-    map foreach { e => cloned.put(e._1, persister.getElementType.deepCopy(e._2, persister.getFactory())) }
+    map foreach { e => cloned.put(e._1, getElementType(persister).deepCopy(e._2, persister.getFactory)) }
     cloned
   }
 
   override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[Object] = {
-    SeqHelper.getOrphans(snapshot.asInstanceOf[MM].values, map.values, entityName, getSession)
+    PersistentHelper.getOrphans(snapshot.asInstanceOf[MM].values, map.values, entityName, getSession)
   }
 
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
-    val elementType = persister.getElementType
+    val elementType = getElementType(persister)
     val sn = getSnapshot().asInstanceOf[MM]
     (sn.size == map.size) && !map.exists { e => elementType.isDirty(e._2, sn.get(e._1).orNull, getSession) }
   }
 
   override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
-    this.map = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Map[Object, Object]]
+    this.map = getCollectionType(persister).instantiate(0).asInstanceOf[mutable.Map[Object, Object]]
     endRead()
   }
 
@@ -88,11 +89,11 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
   }
 
   override def size: Int = {
-    if (readSize()) getCachedSize() else map.size
+    if (readSize()) getCachedSize else map.size
   }
 
   override def isEmpty: Boolean = {
-    if (readSize()) getCachedSize() == 0 else map.isEmpty
+    if (readSize()) getCachedSize == 0 else map.isEmpty
   }
 
   override def contains(key: Object): Boolean = {
@@ -106,7 +107,7 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
   }
 
   def addOne(kv: (Object, Object)): this.type = {
-    if (isPutQueueEnabled()) {
+    if (isPutQueueEnabled) {
       val old = readElementByIndex(kv._1)
       if (!(old eq UNKNOWN)) queueOperation(new Put(kv, old))
     }
@@ -117,7 +118,7 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
   }
 
   override def subtractOne(key: Object): this.type = {
-    if (isPutQueueEnabled()) {
+    if (isPutQueueEnabled) {
       val old = readElementByIndex(key)
       if (!(old eq UNKNOWN)) queueOperation(new Remove(key, old))
     }
@@ -128,11 +129,11 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
   }
 
   override def clear(): Unit = {
-    if (isClearQueueEnabled()) {
+    if (isClearQueueEnabled) {
       queueOperation(new Clear())
     } else {
       initialize(true)
-      if (!map.isEmpty) {
+      if (map.nonEmpty) {
         dirty()
         map.clear()
       }
@@ -155,11 +156,11 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
   override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
     val len = array.length
-    this.map = persister.getCollectionType.instantiate(len).asInstanceOf[MM]
+    this.map = getCollectionType(persister).instantiate(len).asInstanceOf[MM]
     Range(0, len, 2) foreach { i =>
       this.map.put(
-        persister.getIndexType.assemble(array(i), getSession, owner),
-        persister.getElementType.assemble(array(i + 1), getSession, owner))
+        getIndexType(persister).assemble(array(i), getSession, owner),
+        getElementType(persister).assemble(array(i + 1), getSession, owner))
     }
   }
 
@@ -167,8 +168,8 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
     val result = new Array[JSerializable](map.size * 2)
     var i = 0
     map foreach { e =>
-      result(i) = persister.getIndexType.disassemble(e._1, getSession, null)
-      result(i + 1) = persister.getElementType.disassemble(e._2, getSession, null)
+      result(i) = getIndexType(persister).disassemble(e._1, getSession, null)
+      result(i + 1) = getElementType(persister).disassemble(e._2, getSession, null)
       i += 2
     }
     result
@@ -240,9 +241,9 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
       map += value
     }
 
-    override def getAddedInstance(): Object = value
+    override def getAddedInstance: Object = value
 
-    override def getOrphan(): Object = null
+    override def getOrphan: Object = null
   }
 
   final class Remove(index: Object, old: Object) extends DelayedOperation[Object] {
@@ -250,9 +251,9 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
       map.remove(index)
     }
 
-    override def getAddedInstance(): Object = null
+    override def getAddedInstance: Object = null
 
-    override def getOrphan(): Object = old
+    override def getOrphan: Object = old
   }
 
   final class Clear extends DelayedOperation[Object] {
@@ -260,9 +261,9 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
       map.clear()
     }
 
-    override def getAddedInstance(): Object = null
+    override def getAddedInstance: Object = null
 
-    override def getOrphan(): Object = {
+    override def getOrphan: Object = {
       throw new UnsupportedOperationException("queued clear cannot be used with orphan delete")
     }
   }

@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.hibernate.udt
 
+import org.hibernate.`type`.{BasicType, CollectionType, Type}
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.engine.internal.ForeignKeys
 import org.hibernate.engine.spi.{SharedSessionContractImplementor, Status, TypedValue}
@@ -24,32 +25,52 @@ import org.hibernate.internal.util.collections.IdentitySet
 import org.hibernate.persister.collection.CollectionPersister
 
 import java.util as ju
+import java.util.UUID
+import scala.annotation.nowarn
 import scala.jdk.javaapi.CollectionConverters.asJava
 
-private[udt] object SeqHelper {
+private[udt] object PersistentHelper {
+
+  @inline
+  @nowarn
+  def getElementType(persister: CollectionPersister): Type = {
+    persister.getElementType
+  }
+
+  @inline
+  @nowarn
+  def getCollectionType(persister: CollectionPersister): CollectionType = {
+    persister.getCollectionType
+  }
+
+  @inline
+  @nowarn
+  def getIndexType(persister: CollectionPersister): Type = {
+    persister.getIndexType
+  }
 
   def getOrphans(oldElements: Iterable[Object], currentElements: Iterable[Object], entityName: String, session: SharedSessionContractImplementor): ju.Collection[Object] = {
     // short-circuit(s)
     if (currentElements.isEmpty) return asJava(oldElements.toSeq)
     if (oldElements.isEmpty) return ju.Collections.emptyList()
 
-    val entityPersister = session.getFactory.getMappingMetamodel.findEntityDescriptor(entityName)
-    val idType = entityPersister.getIdentifierType
-
+    val idType = session.getFactory.getMappingMetamodel.getEntityDescriptor(entityName).getIdentifierType
+    val useIdDirect = mayUseIdDirect(idType)
     // create the collection holding the Orphans
     val res = new ju.ArrayList[Object]
 
     // collect EntityIdentifier(s) of the *current* elements - add them into a HashSet for fast access
     val currentIds = new ju.HashSet[Object]
     val currentSaving = new IdentitySet[Object]
+    val persistenceContext = session.getPersistenceContextInternal
     currentElements foreach { current =>
       if (current != null && ForeignKeys.isNotTransient(entityName, current, null, session)) {
-        val ee = session.getPersistenceContext.getEntry(current)
+        val ee = persistenceContext.getEntry(current)
         if (ee != null && ee.getStatus == Status.SAVING) {
           currentSaving.add(current)
         } else {
           val currentId = ForeignKeys.getEntityIdentifierIfNotUnsaved(entityName, current, session)
-          currentIds.add(new TypedValue(idType, currentId))
+          currentIds.add(if useIdDirect then currentId else new TypedValue(idType, currentId))
         }
       }
     }
@@ -58,13 +79,22 @@ private[udt] object SeqHelper {
     oldElements foreach { old =>
       if (!currentSaving.contains(old)) {
         val oldId = ForeignKeys.getEntityIdentifierIfNotUnsaved(entityName, old, session)
-        if (!currentIds.contains(new TypedValue(idType, oldId))) {
+        if (oldId != null && !currentIds.contains(if useIdDirect then oldId else new TypedValue(idType, oldId))) {
           res.add(old)
         }
       }
     }
 
     res
+  }
+
+  private def mayUseIdDirect(idType: Type): Boolean = {
+    idType match {
+      case basicType: BasicType[_] =>
+        val javaType = basicType.getJavaType
+        (javaType eq classOf[String]) || (javaType eq classOf[Integer]) || (javaType eq classOf[Long]) || (javaType eq classOf[UUID])
+      case _ => false
+    }
   }
 
   /**
@@ -80,11 +110,12 @@ private[udt] object SeqHelper {
     extends AbstractPersistentCollection.ValueDelayedOperation[E] {
 
     override def replace(persister: CollectionPersister, copyCache: java.util.Map[AnyRef, AnyRef]): Unit = {
-      if (addedValue != null) addedValue = getReplacement(persister.getElementType, addedValue, copyCache)
+      if (addedValue != null) addedValue = getReplacement(PersistentHelper.getElementType(persister), addedValue, copyCache)
     }
 
-    private def getReplacement(`type`: org.hibernate.`type`.Type, current: Any, copyCache: java.util.Map[AnyRef, AnyRef]): E =
+    private def getReplacement(`type`: org.hibernate.`type`.Type, current: Any, copyCache: java.util.Map[AnyRef, AnyRef]): E = {
       `type`.replace(current, null, session, owner, copyCache).asInstanceOf[E]
+    }
 
     override final def getAddedInstance: E = addedValue
 

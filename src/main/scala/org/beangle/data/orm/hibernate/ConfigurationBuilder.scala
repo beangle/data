@@ -33,6 +33,7 @@ import java.net.URL
 import java.util as ju
 import java.util.Properties
 import javax.sql.DataSource
+import scala.annotation.nowarn
 
 object ConfigurationBuilder {
   def default: Configuration = {
@@ -67,6 +68,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
     }
   }
 
+  @nowarn
   protected def addDefaultProperties(): Unit = {
     addDefault(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.orm.hibernate.SpringSessionContext")
 
