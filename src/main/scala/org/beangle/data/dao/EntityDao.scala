@@ -143,7 +143,9 @@ trait EntityDao {
 
   def executeUpdateRepeatly(queryString: String, arguments: Iterable[Iterable[_]]): List[Int]
 
-  // 容器相关
+  // 缓存相关
+  def evict(clazz: Class[_], id: Any): Unit
+
   def evict(entity: Entity[_]): Unit
 
   def evict[A <: Entity[_]](clazz: Class[A]): Unit

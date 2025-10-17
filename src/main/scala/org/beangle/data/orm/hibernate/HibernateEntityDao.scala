@@ -289,6 +289,11 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Logging, Initial
     sf.getCache.evict(clazz, entity.id)
   }
 
+  override def evict(clazz: Class[_], id: Any): Unit = {
+    println(s"evict ${clazz.getName} by id ${id}")
+    sf.getCache.evict(clazz, id)
+  }
+
   override def evict[A <: Entity[_]](clazz: Class[A]): Unit = {
     val sfi = sf.asInstanceOf[SessionFactoryImplementor]
     //1. evict entity cache
