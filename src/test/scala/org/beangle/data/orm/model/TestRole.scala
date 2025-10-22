@@ -24,7 +24,7 @@ import org.beangle.data.model.pojo.Named
 import java.time.LocalDate
 import scala.collection.mutable
 
-class TestRole extends LongId with Named {
+class TestRole extends LongId, Named {
   var rootUser: Boolean = true
   var properties = Collections.newMap[Int, String]
   var vocations = Collections.newSet[LocalDate]

@@ -308,7 +308,6 @@ object MappingModule {
     }
   }
 
-
   class OrderColumn(orderColumn: String) extends PropertyDeclaration {
     def apply(holder: EntityHolder[_], pm: OrmProperty): Unit = {
       val collp = cast[OrmCollectionProperty](pm, holder, "order column should used on many2many seq")
@@ -336,7 +335,7 @@ object MappingModule {
   object Expression {
     // only apply unique on component properties
     def is(holder: EntityHolder[_], declarations: Seq[PropertyDeclaration]): Unit = {
-      val lasts = asScala(holder.proxy.lastAccessed)
+      val lasts = holder.proxy.ctx.accessed()
       if (declarations.nonEmpty && lasts.isEmpty) {
         throw new RuntimeException("Cannot find access properties for " + holder.mapping.entityName + " with declarations:" + declarations)
       }
@@ -346,7 +345,6 @@ object MappingModule {
         //if the property is declared explicitly, don't change it
         pm.mergeable = false
       }
-      lasts.clear()
     }
   }
 
@@ -373,7 +371,7 @@ object MappingModule {
 
   final class EntityHolder[T](val mapping: OrmEntityType, val mappings: Mappings, val clazz: Class[T], module: MappingModule) {
 
-    var proxy: Proxy.EntityProxy = _
+    var proxy: AccessProxy = _
 
     def engine: Engine = mappings.database.engine
 
@@ -393,7 +391,7 @@ object MappingModule {
     }
 
     def declare(declarations: T => Any): this.type = {
-      if (null == proxy) proxy = Proxy.generate(clazz)
+      if (null == proxy) proxy = AccessProxy.of(clazz)
       declarations(proxy.asInstanceOf[T])
       this
     }
@@ -632,19 +630,14 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
   }
 
   def index(name: String, unique: Boolean, properties: Any*): Unit = {
-    val lasts = currentHolder.proxy.lastAccessed
+    val lasts = currentHolder.proxy.ctx.accessed()
     if (lasts.isEmpty) {
       throw new RuntimeException("Cannot find access properties for " + currentHolder.mapping.entityName + " with index declarations")
     }
     val mapping = currentHolder.mapping
     val pms = Collections.newBuffer[OrmProperty]
-    //Don't wrap java.util.LinkedHashSet to scala set,It will lost order.
-    val i = lasts.iterator()
-    while (i.hasNext) {
-      pms += mapping.property(i.next())
-    }
+    lasts foreach { i => pms += mapping.property(i) }
     new IndexDeclaration(name, unique).apply(currentHolder, pms)
-    lasts.clear()
   }
 
   def typedef(name: String, clazz: String, params: Map[String, String] = Map.empty): Unit = {

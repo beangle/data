@@ -20,7 +20,7 @@ package org.beangle.data.orm.hibernate
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.logging.Logging
-import org.beangle.data.orm.{Mappings, Proxy}
+import org.beangle.data.orm.Mappings
 import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.beangle.jdbc.engine.Engines
 import org.beangle.jdbc.meta.Database
@@ -135,7 +135,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
 
     configuration.addProperties(this.properties)
     //clean proxy meta class
-    Proxy.cleanup()
+    //AccessProxy.cleanup()
     configuration
   }
 

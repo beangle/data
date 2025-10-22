@@ -17,26 +17,34 @@
 
 package org.beangle.data.orm
 
-import org.beangle.data.orm.model.TestUser
-import org.scalatest.matchers.should.Matchers
+import org.beangle.data.orm.model.*
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-/**
- * @author chaostone
- */
-class ProxyTest extends AnyFunSpec with Matchers {
-  describe("Proxy") {
-    it("access without component") {
-      val proxy1 = Proxy.generate(classOf[TestUser])
-      val user1 = proxy1.asInstanceOf[TestUser]
+class AccessProxyTest extends AnyFunSpec with Matchers {
+  describe("AccessProxy") {
+    it("access class") {
+      AccessProxy.of(classOf[TestRole])
+      val user1 = AccessProxy.of(classOf[TestUser])
       val ps = user1.properties
-      val accessed = proxy1.lastAccessed
-      assert(accessed.size == 1)
+      val u = user1.member.middleName
+      val r = user1.role
+      val rn = user1.role.name
+      val accessed = user1.ctx.accessed()
+      assert(accessed.size == 3)
       assert(accessed.contains("properties"))
+      assert(accessed.contains("member.middleName"))
+      assert(accessed.contains("role.name"))
     }
-
+    it("access interface") {
+      val code = AccessProxy.of(classOf[Coded])
+      assert(code.code == null)
+      val accessed = code.ctx.accessed()
+      assert(accessed.size == 1)
+      assert(accessed.contains("code"))
+    }
     it("generate proxy") {
-      val proxy1 = Proxy.generate(classOf[TestUser])
+      val proxy1 = AccessProxy.of(classOf[TestUser])
       val user1 = proxy1.asInstanceOf[TestUser]
       //when we make id():long method in proxy,
       //this expression will not invoke id method,just direct get id field.
@@ -45,12 +53,13 @@ class ProxyTest extends AnyFunSpec with Matchers {
       assert(null != user1.member.name)
       assert(user1.member.name.firstName == null)
 
-      val accessed = proxy1.lastAccessed
+      val accessed = proxy1.ctx.accessed()
       assert(accessed.size >= 2)
       assert(accessed.contains("member.name.firstName"))
 
-      val user2 = Proxy.generate(classOf[TestUser]).asInstanceOf[TestUser]
+      val user2 = AccessProxy.of(classOf[TestUser]).asInstanceOf[TestUser]
       assert(user2.member != user1.member)
     }
   }
+
 }
