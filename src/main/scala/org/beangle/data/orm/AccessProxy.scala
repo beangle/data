@@ -124,6 +124,27 @@ object AccessProxy extends Logging {
     }
   }
 
+  /** generate 代理类
+   * 针对每个读方法生成一个新的方法，记录访问属性。如果该属性属于复杂类型
+   * {{{
+   * def gender():Gender={
+   *   this._ctx.access("gender")
+   *   val nctx = this._ctx.fork("gender")
+   *   new Gender$AccessProxy(nctx)
+   * }
+   * }}}
+   * 如属于简单类型，则直接返回字面量或者父级方法
+   * {{{
+   * def birthday():LocalDate={
+   *   this._ctx.access("birthday")
+   *   super.birthday()//or return null
+   * }
+   * }}}
+   *
+   * @param clazz
+   * @param proxyClazzName
+   * @return
+   */
   private def doGenerate(clazz: Class[_], proxyClazzName: String): Class[_] = {
     val watch = Stopwatch(true)
     var builder: DynamicType.Builder[_] = byteBuddy
@@ -150,7 +171,7 @@ object AccessProxy extends Logging {
         val getter = p.getter.get
         import ByteBuddyHelper.*
         builder = builder.method(named(getter.getName)).intercept(
-          new Implementation.Simple((v: MethodVisitor, c: Implementation.Context, m: MethodDescription) => {
+          new Implementation.Simple((v: MethodVisitor, c: Implementation.Context, md: MethodDescription) => {
             // 步骤1：将 proxy 强转为 AccessProxy 并获取 ctx
             v.visitVarInsn(Opcodes.ALOAD, 0)
             v.visitFieldInsn(Opcodes.GETFIELD, proxyClazzName.replace('.', '/'), "_ctx", notation(classOf[Context]))
@@ -158,11 +179,11 @@ object AccessProxy extends Logging {
             if (Jpas.isComponent(p.clazz) || Jpas.isEntity(p.clazz)) {
               // 步骤2：调用 ctx.access(method.getName)
               v.visitInsn(Opcodes.DUP)
-              v.visitLdcInsn(m.getName)
+              v.visitLdcInsn(md.getName)
               v.visitMethodInsn(Opcodes.INVOKEVIRTUAL, path(classOf[Context]), "access", s"(${notation(classOf[String])})V", false)
 
               // 步骤3：调用 ctx.fork(method.getName) 创建新的ctx
-              v.visitLdcInsn(m.getName)
+              v.visitLdcInsn(md.getName)
               v.visitMethodInsn(Opcodes.INVOKEVIRTUAL, path(classOf[Context]), "fork", s"(${notation(classOf[String])})${notation(classOf[Context])}", false)
               v.visitVarInsn(Opcodes.ASTORE, 1)
 
@@ -177,17 +198,17 @@ object AccessProxy extends Logging {
               new ByteCodeAppender.Size(3, 2)
             } else {
               // 步骤2：调用 ctx.access(method.getName)
-              v.visitLdcInsn(m.getName)
+              v.visitLdcInsn(md.getName)
               v.visitMethodInsn(Opcodes.INVOKEVIRTUAL, path(classOf[Context]), "access", "(Ljava/lang/String;)V", false)
 
               if (clazz.isInterface) {
-                v.visitInsn(Opcodes.ACONST_NULL) // 栈顶：[null]
+                appendLiteralToStack(v, md)
               } else {
                 //步骤3： super.getXXX
                 v.visitVarInsn(Opcodes.ALOAD, 0)
-                v.visitMethodInsn(Opcodes.INVOKESPECIAL, clazz.getName.replace('.', '/'), m.getName, m.getDescriptor, false)
+                v.visitMethodInsn(Opcodes.INVOKESPECIAL, path(clazz), md.getName, md.getDescriptor, false)
               }
-              v.visitInsn(getReturnOpcode(m))
+              v.visitInsn(getReturnOpcode(md))
               new ByteCodeAppender.Size(2, 1)
             }
           })

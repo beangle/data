@@ -74,6 +74,7 @@ class Member extends Component {
 
 trait Coded {
   var code: String = _
+  var enabled: Boolean = _
 }
 
 abstract class CodedEntity extends StringId with Coded

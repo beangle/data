@@ -21,7 +21,7 @@ import org.beangle.data.orm.model.*
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class AccessProxyTest extends AnyFunSpec with Matchers {
+class AccessProxyTest extends AnyFunSpec, Matchers {
   describe("AccessProxy") {
     it("access class") {
       AccessProxy.of(classOf[TestRole])

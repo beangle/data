@@ -18,7 +18,7 @@
 package org.beangle.data.orm
 
 import net.bytebuddy.description.method.MethodDescription
-import net.bytebuddy.jar.asm.Opcodes
+import net.bytebuddy.jar.asm.{MethodVisitor, Opcodes}
 
 object ByteBuddyHelper {
 
@@ -42,6 +42,26 @@ object ByteBuddyHelper {
       "[" + notation(clazz.getComponentType)
     } else {
       "L" + clazz.getName.replace('.', '/') + ";"
+    }
+  }
+
+  def appendLiteralToStack(mv: MethodVisitor, md: MethodDescription): Unit = {
+    val rt = md.getReturnType
+    if (rt.isPrimitive) {
+      val primitiveType = rt.getTypeName
+      primitiveType match {
+        case "boolean" => mv.visitInsn(Opcodes.ICONST_0) // boolean 实际用 int 表示（0=false, 1=true）
+        case "byte" => mv.visitIntInsn(Opcodes.BIPUSH, 0.asInstanceOf[Byte])
+        case "char" => mv.visitIntInsn(Opcodes.SIPUSH, 0.asInstanceOf[Char])
+        case "short" => mv.visitIntInsn(Opcodes.SIPUSH, 0.asInstanceOf[Short])
+        case "int" => mv.visitInsn(Opcodes.ICONST_0)
+        case "long" => mv.visitLdcInsn(0L)
+        case "float" => mv.visitLdcInsn(0f)
+        case "double" => mv.visitLdcInsn(0d)
+        case _ => throw new IllegalArgumentException("不支持的基本类型: " + primitiveType)
+      }
+    } else {
+      mv.visitInsn(Opcodes.ACONST_NULL)
     }
   }
 
