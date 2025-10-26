@@ -15,12 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm
+package org.beangle.data.dao
 
 import net.bytebuddy.description.method.MethodDescription
 import net.bytebuddy.jar.asm.{MethodVisitor, Opcodes}
 
-object ByteBuddyHelper {
+private[dao] object ByteBuddyHelper {
 
   def path(clazz: Class[_]): String = {
     clazz.getName.replace('.', '/')

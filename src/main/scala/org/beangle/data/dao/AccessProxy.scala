@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm
+package org.beangle.data.dao
 
 import net.bytebuddy.description.method.MethodDescription
 import net.bytebuddy.description.modifier.Visibility
@@ -31,6 +31,7 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.lang.time.Stopwatch
 import org.beangle.commons.logging.Logging
+import org.beangle.data.orm.Jpas
 
 import java.lang.reflect.Modifier
 import scala.collection.mutable

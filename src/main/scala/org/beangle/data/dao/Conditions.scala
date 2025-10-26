@@ -191,6 +191,12 @@ object Conditions extends Logging {
   }
 
   object Operator {
+    /** 针对一个类型解析字面值，例如"$abc"
+     *
+     * @param value
+     * @param clazz
+     * @return
+     */
     def apply(value: String, clazz: Class[_]): Operator = {
       if (clazz == classOf[String]) {
         var v = value

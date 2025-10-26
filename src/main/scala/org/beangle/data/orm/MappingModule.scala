@@ -22,12 +22,12 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
 import org.beangle.commons.logging.Logging
+import org.beangle.data.dao.AccessProxy
 import org.beangle.jdbc.engine.Engine
 import org.beangle.jdbc.meta.*
 
 import java.sql.{Blob, Clob, Types}
 import scala.collection.mutable
-import scala.jdk.javaapi.CollectionConverters.asScala
 import scala.quoted.{Quotes, Type}
 import scala.reflect.ClassTag
 

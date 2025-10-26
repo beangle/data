@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm
+package org.beangle.data.dao
 
 import org.beangle.data.orm.model.*
 import org.scalatest.funspec.AnyFunSpec
