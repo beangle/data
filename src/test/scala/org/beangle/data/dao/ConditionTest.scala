@@ -20,7 +20,7 @@ package org.beangle.data.dao
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class ConditionTest extends AnyFunSpec with Matchers {
+class ConditionTest extends AnyFunSpec , Matchers {
 
   describe("Condition") {
     it("paramNames should given list string") {

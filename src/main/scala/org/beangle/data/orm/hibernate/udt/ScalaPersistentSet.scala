@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.hibernate.udt
 
+import org.beangle.data.orm.hibernate.udt.PersistentHelper.*
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.collection.spi.AbstractPersistentCollection.DelayedOperation
@@ -47,23 +48,23 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
   override def getSnapshot(persister: CollectionPersister): JSerializable = {
     val cloned = new MHashMap[Object, Object]
     set foreach { ele =>
-      val copied = persister.getElementType.deepCopy(ele, persister.getFactory)
+      val copied = getElementType(persister).deepCopy(ele, persister.getFactory)
       cloned.put(copied, copied)
     }
     cloned
   }
 
   override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[Object] = {
-    SeqHelper.getOrphans(snapshot.asInstanceOf[MHashMap[Object, Object]].keys, set, entityName, getSession)
+    PersistentHelper.getOrphans(snapshot.asInstanceOf[MHashMap[Object, Object]].keys, set, entityName, getSession)
   }
 
   override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
-    this.set = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Set[Object]]
+    this.set = getCollectionType(persister).instantiate(0).asInstanceOf[mutable.Set[Object]]
     endRead()
   }
 
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
-    val elementType = persister.getElementType
+    val elementType = getElementType(persister)
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
     if (sn.size != this.set.size) {
       false
@@ -83,9 +84,9 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
 
   override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
-    this.set = persister.getCollectionType.instantiate(array.length).asInstanceOf[MHashSet[Object]]
+    this.set = getCollectionType(persister).instantiate(array.length).asInstanceOf[MHashSet[Object]]
     array foreach { ele =>
-      val newone = persister.getElementType.assemble(ele, getSession, owner)
+      val newone = getElementType(persister).assemble(ele, getSession, owner)
       if (null != newone) this.set += newone
     }
   }
@@ -170,12 +171,12 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def disassemble(persister: CollectionPersister): Object = {
-    this.set.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
+    this.set.map(ele => getElementType(persister).disassemble(ele, getSession, null)).toArray[JSerializable]
   }
 
   // used by hibernate 7
   def hasDeletes(persister: CollectionPersister): Boolean = {
-    val elementType = persister.getElementType
+    val elementType = getElementType(persister)
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
     var itr = sn.keySet.iterator
     while (itr.hasNext) {
@@ -196,7 +197,7 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
-    val elementType = persister.getElementType
+    val elementType = getElementType(persister)
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
     val deletes = new mutable.ArrayBuffer[Object]
     deletes ++= sn.keys.filter(!set.contains(_))
@@ -247,13 +248,13 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
     set eq collection
   }
 
-  final class SimpleAdd(value: Object) extends SeqHelper.Delayed(value, null, session, getOwner) {
+  final class SimpleAdd(value: Object) extends PersistentHelper.Delayed(value, null, session, getOwner) {
     override def operate(): Unit = {
       set.add(getAddedInstance())
     }
   }
 
-  final class SimpleRemove(orphan: Object) extends SeqHelper.Delayed(null, orphan, session, getOwner) {
+  final class SimpleRemove(orphan: Object) extends PersistentHelper.Delayed(null, orphan, session, getOwner) {
     override def operate(): Unit = {
       set.remove(orphan)
     }

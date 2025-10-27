@@ -20,7 +20,7 @@ package org.beangle.data.orm.hibernate
 import org.beangle.data.dao.EntityDao
 import org.hibernate.SessionFactory
 
-@deprecated("using AbstractDaoTask", "5.9.3")
+@deprecated("using AbstractDaoTask", "since 5.10.0")
 abstract class DaoJob extends Runnable {
   var entityDao: EntityDao = _
 

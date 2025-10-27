@@ -24,6 +24,7 @@ import org.hibernate.`type`.descriptor.{ValueBinder, ValueExtractor, WrapperOpti
 import org.hibernate.`type`.spi.TypeConfiguration
 
 import java.sql.*
+import scala.annotation.nowarn
 
 /** Same as hibernate IntegerJdbcType,but invoke wasNull before javaType.wrap
  */
@@ -35,6 +36,7 @@ object NullableIntJdbcType extends JdbcType {
 
   override def toString = "IntegerTypeDescriptor"
 
+  @nowarn
   override def getJdbcRecommendedJavaTypeMapping[T](length: Integer, scale: Integer,
                                                     typeConfiguration: TypeConfiguration): JavaType[T] = {
     typeConfiguration.getJavaTypeRegistry.getDescriptor(classOf[Integer])

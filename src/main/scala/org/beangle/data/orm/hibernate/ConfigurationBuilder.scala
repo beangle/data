@@ -20,7 +20,7 @@ package org.beangle.data.orm.hibernate
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.logging.Logging
-import org.beangle.data.orm.{Mappings, Proxy}
+import org.beangle.data.orm.Mappings
 import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.beangle.jdbc.engine.Engines
 import org.beangle.jdbc.meta.Database
@@ -33,6 +33,7 @@ import java.net.URL
 import java.util as ju
 import java.util.Properties
 import javax.sql.DataSource
+import scala.annotation.nowarn
 
 object ConfigurationBuilder {
   def default: Configuration = {
@@ -67,6 +68,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
     }
   }
 
+  @nowarn
   protected def addDefaultProperties(): Unit = {
     addDefault(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.orm.hibernate.SpringSessionContext")
 
@@ -133,7 +135,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
 
     configuration.addProperties(this.properties)
     //clean proxy meta class
-    Proxy.cleanup()
+    //AccessProxy.cleanup()
     configuration
   }
 

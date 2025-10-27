@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.hibernate.udt
 
+import org.beangle.data.orm.hibernate.udt.PersistentHelper.*
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
 import org.hibernate.collection.spi.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
@@ -45,21 +46,21 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
 
   override def getSnapshot(persister: CollectionPersister): JSerializable = {
     val clonedList = new mutable.ArrayBuffer[Object]
-    list.foreach { ele => clonedList += persister.getElementType.deepCopy(ele, persister.getFactory) }
+    list.foreach { ele => clonedList += getElementType(persister).deepCopy(ele, persister.getFactory) }
     clonedList
   }
 
   override def getOrphans(snapshot: JSerializable, entityName: String): ju.Collection[Object] = {
-    SeqHelper.getOrphans(snapshot.asInstanceOf[mutable.ArrayBuffer[Object]], list, entityName, getSession)
+    PersistentHelper.getOrphans(snapshot.asInstanceOf[mutable.ArrayBuffer[Object]], list, entityName, getSession)
   }
 
   override def initializeEmptyCollection(persister: CollectionPersister): Unit = {
-    list = persister.getCollectionType.instantiate(0).asInstanceOf[mutable.Buffer[Object]]
+    list = getCollectionType(persister).instantiate(0).asInstanceOf[mutable.Buffer[Object]]
     endRead()
   }
 
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
-    val elementType = persister.getElementType
+    val elementType = getElementType(persister)
     val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[_]]
     val itr = list.iterator
     (sn.size == list.size) && !sn.exists { ele => elementType.isDirty(itr.next(), ele, getSession) }
@@ -71,8 +72,8 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
 
   override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
     val array = disassembled.asInstanceOf[Array[JSerializable]]
-    this.list = persister.getCollectionType.instantiate(array.length).asInstanceOf[mutable.Buffer[Object]]
-    array foreach { ele => list += persister.getElementType.assemble(ele, getSession, owner) }
+    this.list = getCollectionType(persister).instantiate(array.length).asInstanceOf[mutable.Buffer[Object]]
+    array foreach { ele => list += getElementType(persister).assemble(ele, getSession, owner) }
   }
 
   override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
@@ -223,7 +224,7 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def disassemble(persister: CollectionPersister): Object = {
-    list.map(ele => persister.getElementType.disassemble(ele, getSession, null)).toArray[JSerializable]
+    list.map(ele => getElementType(persister).disassemble(ele, getSession, null)).toArray[JSerializable]
   }
 
   // used by hibernate 7
@@ -308,14 +309,14 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     }
   }
 
-  final class SimpleAdd(value: Object, append: Boolean) extends SeqHelper.Delayed(value, null, session, getOwner) {
+  final class SimpleAdd(value: Object, append: Boolean) extends PersistentHelper.Delayed(value, null, session, getOwner) {
     override def operate(): Unit = {
       if append then list.addOne(getAddedInstance)
       else list.prepend(getAddedInstance)
     }
   }
 
-  final class SimpleRemove(orphan: Object) extends SeqHelper.Delayed(null, orphan, session, getOwner) {
+  final class SimpleRemove(orphan: Object) extends PersistentHelper.Delayed(null, orphan, session, getOwner) {
     override def operate(): Unit = {
       list.subtractOne(getOrphan)
     }

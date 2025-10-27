@@ -25,9 +25,9 @@ import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
  *
  * @param jsonType
  */
-class JsonType[T <: Json](jsonType: Class[T]) extends AbstractClassJavaType[Object](jsonType) {
+class JsonType[T <: Json](jsonType: Class[T]) extends AbstractClassJavaType[T](jsonType) {
 
-  override def unwrap[X](value: Object, valueType: Class[X], options: WrapperOptions): X = {
+  override def unwrap[X](value: T, valueType: Class[X], options: WrapperOptions): X = {
     if (value eq null) null.asInstanceOf[X]
     else {
       if valueType == classOf[Json] then
@@ -39,10 +39,10 @@ class JsonType[T <: Json](jsonType: Class[T]) extends AbstractClassJavaType[Obje
     }
   }
 
-  override def wrap[X](value: X, options: WrapperOptions): Json = {
+  override def wrap[X](value: X, options: WrapperOptions): T = {
     value match {
-      case null => Json.empty(jsonType)
-      case s: String => Json.parse(s)
+      case null => Json.empty(jsonType).asInstanceOf[T]
+      case s: String => Json.parse(s).asInstanceOf[T]
       case _ => throw new RuntimeException(s"Cannot support convert from ${value.getClass} to Json")
     }
   }

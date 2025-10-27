@@ -42,7 +42,7 @@ class TestUser extends LongId with Updated {
 
   var roles: mutable.Buffer[TestRole] = _
 
-  var birthday:WeekDay=WeekDay.Sun
+  var birthday: WeekDay = WeekDay.Sun
 }
 
 class NamedMember extends Component {

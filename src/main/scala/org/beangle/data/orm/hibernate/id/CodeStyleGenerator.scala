@@ -23,6 +23,7 @@ import org.beangle.data.model.pojo.Coded
 import org.hibernate.`type`.*
 import org.hibernate.dialect.Dialect
 import org.hibernate.engine.spi.{SessionImplementor, SharedSessionContractImplementor}
+import org.hibernate.generator.GeneratorCreationContext
 import org.hibernate.id.{Configurable, IdentifierGenerator}
 import org.hibernate.jdbc.AbstractReturningWork
 import org.hibernate.service.ServiceRegistry
@@ -37,11 +38,11 @@ class CodeStyleGenerator extends IdentifierGenerator {
   var identifierType: Class[_] = _
   var tableName: String = _
 
-  override def configure(t: Type, params: ju.Properties, sr: ServiceRegistry): Unit = {
-    this.identifierType = Primitives.unwrap(t.asInstanceOf[BasicType[_]].getJavaType)
-    this.tableName = IdHelper.getTableQualifiedName(params, sr)
-    val clz = IdHelper.getEntityClass(params, sr)
-    require(classOf[Coded].isAssignableFrom(clz), s"CodedIdGenerator only support Coded,${clz.getName} isn't a subclass of Coded.")
+  override def configure(ctx: GeneratorCreationContext, params: ju.Properties): Unit = {
+    this.identifierType = Primitives.unwrap(ctx.getType.asInstanceOf[BasicType[_]].getJavaType)
+    this.tableName = IdHelper.getTableQualifiedName(params, ctx.getServiceRegistry)
+    val clz = IdHelper.getEntityClass(params, ctx.getServiceRegistry)
+    require(classOf[Coded].isAssignableFrom(clz), s"CodeStyleGenerator only support Coded,${clz.getName} isn't a subclass of Coded.")
   }
 
   override def generate(session: SharedSessionContractImplementor, obj: Object): java.io.Serializable = {

@@ -24,18 +24,19 @@ import org.hibernate.`type`.descriptor.WrapperOptions
 import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
 import org.hibernate.`type`.descriptor.jdbc.{JdbcType, VarcharJdbcType}
 
-class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
+class EnumType[T](`type`: Class[T]) extends AbstractClassJavaType[T](`type`) {
 
   private val converter = EnumConverters.getConverter(`type`).get
 
-  override def unwrap[X](value: Object, valueType: Class[X], options: WrapperOptions): X = {
-    if (value eq null) null.asInstanceOf[X]
-    else {
-      if value.getClass == valueType then value.asInstanceOf[X]
-      else {
-        if valueType == classOf[Integer] || valueType == classOf[Int] then Enums.id(value).asInstanceOf[X]
-        else value.toString.asInstanceOf[X]
-      }
+  override def unwrap[X](value: T, valueType: Class[X], options: WrapperOptions): X = {
+    value match {
+      case null => null.asInstanceOf[X]
+      case _ =>
+        if value.getClass == valueType then value.asInstanceOf[X]
+        else {
+          if valueType == classOf[Integer] || valueType == classOf[Int] then Enums.id(value.asInstanceOf[AnyRef]).asInstanceOf[X]
+          else value.toString.asInstanceOf[X]
+        }
     }
   }
 
@@ -46,7 +47,7 @@ class EnumType(`type`: Class[_]) extends AbstractClassJavaType[Object](`type`) {
    * @tparam X
    * @return
    */
-  override def wrap[X](value: X, options: WrapperOptions): AnyRef = {
+  override def wrap[X](value: X, options: WrapperOptions): T = {
     converter.apply(value.toString)
   }
 
