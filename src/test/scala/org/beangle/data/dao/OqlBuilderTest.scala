@@ -22,7 +22,6 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
-import scala.language.implicitConversions
 
 class OqlBuilderTest extends AnyFunSpec, Matchers {
 

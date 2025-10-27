@@ -234,6 +234,6 @@ class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
 
   override def lang: Query.Lang = Query.Lang.OQL
 
-  given any2Var: Conversion[Any, Var] = (a: Any) => new Var(proxy)
-
+  import scala.language.implicitConversions
+  implicit def any2Var(a: Any): Var = new Var(proxy)
 }
