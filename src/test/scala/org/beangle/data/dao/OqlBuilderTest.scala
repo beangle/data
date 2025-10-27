@@ -22,7 +22,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
-import scala.language.{implicitConversions, postfixOps}
+import scala.language.implicitConversions
 
 class OqlBuilderTest extends AnyFunSpec, Matchers {
 
@@ -35,7 +35,7 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
           e.friends.isNotNull or
           e.properties.isNotNull
       }
-      q.where(_.birthday isNull)
+      q.where(_.birthday.isNull)
       q.where(_.updatedAt equal Instant.now)
       q.where(_.role.name like "test")
       q.where(_.id gt 2)
@@ -45,7 +45,19 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
       assert(query.params.contains("v1"))
       assert(query.params.contains("v2"))
       assert(query.params.contains("v3"))
-      assert(query.statement == "select t from org.beangle.data.orm.model.TestUser t where (t.member.middleName is not null or t.friends is not null or t.properties is not null) and (t.birthday is null) and (t.updatedAt = :v1) and (t.role.name like :v2) and (t.id > :v3)")
+      assert(query.statement == "select t from org.beangle.data.orm.model.TestUser t where " +
+        "(t.member.middleName is not null or t.friends is not null or t.properties is not null)" +
+        " and (t.birthday is null) and (t.updatedAt = :v1) and (t.role.name like :v2) and (t.id > :v3)")
+    }
+    it("user define function") {
+      val q = OqlBuilder.from(classOf[TestUser], "t")
+      import q.given
+      q.where { e =>
+        e.member.middleName is("len($)=?", 2) or
+          e.id.is("bitand($,?)>0", 123)
+      }
+      val query = q.build()
+      println(query.statement)
     }
   }
 

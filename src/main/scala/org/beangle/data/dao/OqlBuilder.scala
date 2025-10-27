@@ -20,7 +20,7 @@ package org.beangle.data.dao
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings.*
 import org.beangle.commons.lang.{ClassLoaders, Strings}
-import org.beangle.data.dao.OqlBuilder.Expression
+import org.beangle.data.dao.OqlBuilder.{Expression, Var}
 import org.beangle.data.orm.Jpas
 
 object OqlBuilder {
@@ -61,6 +61,48 @@ object OqlBuilder {
     query
   }
 
+  class Var(proxy: AccessProxy) {
+
+    def isNull: Expression = create("is null")
+
+    def isNotNull: Expression = create("is not null")
+
+    def like(value: String): Expression = {
+      var arg = value
+      if (!arg.startsWith("%") && !arg.endsWith("%")) {
+        arg = "%" + arg + "%"
+      }
+      create("like ?", arg)
+    }
+
+    def equal(arg: Any): Expression = create("= ?", arg)
+
+    def gt(arg: Any): Expression = create("> ?", arg)
+
+    def ge(arg: Any): Expression = create(">= ?", arg)
+
+    def lt(arg: Any): Expression = create("< ?", arg)
+
+    def le(arg: Any): Expression = create("<= ?", arg)
+
+    def is(exp: String, args: Any*): Expression = {
+      val argCount = Strings.count(exp, '?')
+      require(argCount == args.size, s"${exp} has ${argCount} args,but given ${args.size}.")
+      create(exp, args: _*)
+    }
+
+    def between(start: Any, end: Any): Expression = {
+      create("between ? and ?", start, end)
+    }
+
+    private def create(con: String, args: Any*): Expression = {
+      val exp = proxy.ctx.accessed().map { p =>
+        if con.contains("$") then Strings.replace(con, "$", "$alias" + "." + p) else "$alias" + "." + p + " " + con
+      }.mkString(" and ")
+      new Expression(proxy, exp, args)
+    }
+  }
+
   class Expression(proxy: AccessProxy) {
     protected var exp: String = ""
     protected val args = Collections.newBuffer[Any]
@@ -84,42 +126,8 @@ object OqlBuilder {
       new Expression(this.proxy, this.exp + " or " + o.exp, this.args.addAll(o.args))
     }
 
-    private def update(con: String, args: Any*): Expression = {
-      this.exp = proxy.ctx.accessed().map(p => "$" + "." + p + " " + con).mkString(" and ")
-      args.foreach(x => this.args.addOne(x))
-      this
-    }
-
-    def isNull: Expression = update("is null")
-
-    def isNotNull: Expression = update("is not null")
-
-    def like(value: String): Expression = {
-      var arg = value
-      if (!arg.startsWith("%") && !arg.endsWith("%")) {
-        arg = "%" + arg + "%"
-      }
-      update("like ?", arg)
-    }
-
-    def equal(arg: Any): Expression = update("= ?", arg)
-
-    def gt(arg: Any): Expression = update("> ?", arg)
-
-    def ge(arg: Any): Expression = update(">= ?", arg)
-
-    def lt(arg: Any): Expression = update("< ?", arg)
-
-    def le(arg: Any): Expression = update("<= ?", arg)
-
-    def >(arg: Any): Expression = update(" > ?", arg)
-
-    def between(start: Any, end: Any): Expression = {
-      update("between ? and ?", start, end)
-    }
-
     def append(query: OqlBuilder[_]): Unit = {
-      var clause = Strings.replace(exp, "$", query.alias)
+      var clause = Strings.replace(exp, "$alias", query.alias)
       val s = query.params.size
       args.indices foreach { i =>
         val idx = clause.indexOf('?')
@@ -226,6 +234,6 @@ class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
 
   override def lang: Query.Lang = Query.Lang.OQL
 
-  given any2Exp: Conversion[Any, Expression] = (a: Any) => new Expression(proxy)
+  given any2Var: Conversion[Any, Var] = (a: Any) => new Var(proxy)
 
 }
