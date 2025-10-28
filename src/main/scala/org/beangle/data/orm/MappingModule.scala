@@ -616,6 +616,7 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
   protected final inline def collection[T](inline properties: String*): List[Collection] = ${ MappingMacro.collection[T]('properties) }
 
   protected final def defaultCache(region: String, usage: String): Unit = {
+    require(!region.contains("."), "Region name cannot contains dot,replace it with -.")
     cacheConfig.region = region
     cacheConfig.usage = usage
   }
