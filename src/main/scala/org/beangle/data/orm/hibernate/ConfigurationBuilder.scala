@@ -106,7 +106,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
 
     if (!properties.contains("hibernate.javax.cache.provider")) {
       addDefault("hibernate.javax.cache.missing_cache_strategy", "create")
-      //config caffeine within application.conf(typesafe config file)
+      //请使用application.conf配置缓存(typesafe config file)，这里不做配置
       val caffeine = "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider"
       if ClassLoaders.get(caffeine).nonEmpty then addDefault("hibernate.javax.cache.provider", caffeine)
     }
@@ -115,6 +115,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
   def enableDevMode(): Unit = {
     addDefault(JdbcSettings.SHOW_SQL, "true")
     addDefault(JdbcSettings.LOG_SLOW_QUERY, "100") //100ms
+    addDefault(StatisticsSettings.GENERATE_STATISTICS, "true")
   }
 
   private def addDefault(name: String, value: Any): Unit = {
@@ -124,18 +125,16 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
   def build(): Configuration = {
     addDefaultProperties()
     importSysProperties()
-    val standardRegistryBuilder = new StandardServiceRegistryBuilder()
+    val srb = new StandardServiceRegistryBuilder()
     val mappings = getMappings
-    standardRegistryBuilder.addService(classOf[MappingService], new MappingService(mappings))
-    standardRegistryBuilder.applySettings(this.properties)
-    val standardRegistry = standardRegistryBuilder.build()
+    srb.addService(classOf[MappingService], new MappingService(mappings))
+    srb.applySettings(this.properties)
+    val standardRegistry = srb.build()
 
     val metadataSources = new MetadataSources(standardRegistry)
     val configuration = new Configuration(metadataSources)
 
     configuration.addProperties(this.properties)
-    //clean proxy meta class
-    //AccessProxy.cleanup()
     configuration
   }
 

@@ -19,18 +19,15 @@ package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.bean.{Factory, Initializing}
 import org.beangle.commons.lang.annotation.description
-import org.beangle.data.model.meta.Domain
 import org.beangle.data.orm.hibernate.ConfigurationBuilder
 import org.hibernate.SessionFactory
-import org.hibernate.cfg.AvailableSettings
 import org.springframework.core.io.Resource
 
 import java.util as ju
 import javax.sql.DataSource
 
 @description("构建Hibernate的会话工厂")
-class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory]
-  with Initializing {
+class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory], Initializing {
 
   var ormLocations: Array[Resource] = Array.empty
 
