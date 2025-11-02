@@ -20,6 +20,8 @@ package org.beangle.data.orm.cfg
 import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty}
 import org.beangle.data.orm.NamingPolicy
 
+/** 映射命名配置
+ */
 class MappingProfile {
   var packageName: String = _
   var naming: NamingPolicy = _

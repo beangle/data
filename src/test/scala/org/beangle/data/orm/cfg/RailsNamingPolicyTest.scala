@@ -30,7 +30,7 @@ class RailsNamingPolicyTest extends AnyFunSpec with Matchers {
   describe("RailsNamingPolicy") {
     it("Get Module") {
       System.setProperty("jpa_prefix", "public")
-      val profiles = new Profiles(new Resources(None, ClassLoaders.getResources("META-INF/beangle/orm.xml"), None))
+      val profiles = new Profiles(new Resources(None, ClassLoaders.getResources("META-INF/beangle.xml"), None))
       val module = profiles.getProfile(classOf[NationBean])
       assert(module.schema.contains("public_code"))
       assert(profiles.getPrefix(classOf[NationBean]) == "gb_")

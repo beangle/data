@@ -30,7 +30,7 @@ class GlobalSchemaTest extends AnyFunSpec with Matchers {
   describe("RailsNamingPolicy") {
     it("Get Module") {
       System.setProperty("beangle.data.orm.global_schema", "test")
-      val profiles = new Profiles(new Resources(None, ClassLoaders.getResources("META-INF/beangle/orm.xml"), None))
+      val profiles = new Profiles(new Resources(None, ClassLoaders.getResources("META-INF/beangle.xml"), None))
       val module = profiles.getProfile(classOf[NationBean])
       assert(module.schema.contains("test"))
       assert(profiles.getPrefix(classOf[NationBean]) == "gb_")

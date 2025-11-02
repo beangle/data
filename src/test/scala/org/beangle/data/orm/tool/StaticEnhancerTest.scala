@@ -29,7 +29,7 @@ import java.util.Locale
 object StaticEnhancerTest {
   def main(args: Array[String]): Unit = {
     val engine = Engines.forName("PostgreSQL")
-    val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle/orm.xml")
+    val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle.xml")
     val database = new Database(engine)
     val mappings = new Mappings(database, ormLocations)
     mappings.locale = Locale.SIMPLIFIED_CHINESE

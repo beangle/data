@@ -95,38 +95,12 @@ class Profiles(resources: Resources) extends Logging {
       defaultProfile._schema = Some(s)
     }
     val ms = new mutable.HashMap[String, MappingModule]
-    for (url <- resources.paths) addConfig(url, ms)
+    for (url <- resources.paths) addXMLConfig(url, ms)
     if (logger.isDebugEnabled) {
       if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
     }
     //module排序,使其处理过程稳定化
     modules = ms.values.toSeq.sortBy(_.getClass.getName).toList
-  }
-
-  private def addConfig(url: URL, ms: mutable.HashMap[String, MappingModule]): Unit = {
-    try {
-      logger.debug(s"loading $url")
-      val is = url.openStream()
-      if (null != is) {
-        val xml = scala.xml.XML.load(is)
-        (xml \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
-        (xml \ "mapping") foreach { ele =>
-          val name = (ele \ "@name").text
-          val clz = (ele \ "@class").text
-          if (ms.contains(clz)) {
-            logger.warn("duplicated moudule " + clz)
-          } else {
-            val module = Reflections.getInstance[MappingModule](clz)
-            if Strings.isNotBlank(name) then module.name = Some(name.trim())
-            ms.put(clz, module)
-          }
-        }
-        is.close()
-      }
-      autoWire()
-    } catch {
-      case e: Exception => throw new RuntimeException("property load error in url:" + url, e)
-    }
   }
 
   /**
@@ -147,6 +121,32 @@ class Profiles(resources: Resources) extends Logging {
             if (parentName.length() == len) parentName = ""
           }
       }
+    }
+  }
+
+  private def addXMLConfig(url: URL, ms: mutable.HashMap[String, MappingModule]): Unit = {
+    try {
+      logger.debug(s"loading xml $url")
+      val is = url.openStream()
+      if (null != is) {
+        val xml = scala.xml.XML.load(is)
+        (xml \ "orm" \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
+        (xml \ "orm" \ "mapping") foreach { ele =>
+          val name = (ele \ "@name").text
+          val clz = (ele \ "@class").text
+          if (ms.contains(clz)) {
+            logger.warn("duplicated moudule " + clz)
+          } else {
+            val module = Reflections.getInstance[MappingModule](clz)
+            if Strings.isNotBlank(name) then module.name = Some(name.trim())
+            ms.put(clz, module)
+          }
+        }
+        is.close()
+      }
+      autoWire()
+    } catch {
+      case e: Exception => throw new RuntimeException("property load error in url:" + url, e)
     }
   }
 

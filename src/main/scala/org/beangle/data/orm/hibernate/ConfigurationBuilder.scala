@@ -39,7 +39,7 @@ object ConfigurationBuilder {
   def default: Configuration = {
     val resolver = new ResourcePatternResolver
     val sfb = new ConfigurationBuilder(null)
-    sfb.ormLocations = resolver.getResources("classpath*:META-INF/beangle/orm.xml")
+    sfb.ormLocations = resolver.getResources("classpath*:META-INF/beangle.xml")
     sfb.build()
   }
 }
