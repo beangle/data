@@ -27,7 +27,7 @@ import org.springframework.core.io.UrlResource
 
 class HibernateConfigTest extends AnyFunSpec, Matchers {
 
-  val ormLocations = ClassLoaders.getResource("META-INF/beangle.xml").toList
+  val ormLocations = ClassLoaders.getResource("beangle.xml").toList
   val resouces = ormLocations map (url => new UrlResource(url.toURI))
   val ds = Tests.buildTestH2()
   val builder = new LocalSessionFactoryBean(ds)

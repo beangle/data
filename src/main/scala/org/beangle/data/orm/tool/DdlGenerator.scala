@@ -60,7 +60,7 @@ object DdlGenerator {
       return List.empty
     }
     val engine = Engines.forName(dialect)
-    val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle.xml")
+    val ormLocations = ResourcePatternResolver.getResources("classpath*:beangle.xml")
     val database = new Database(engine)
     val version = System.getProperty("database.version")
     if Strings.isNotBlank(version) then database.version = version
