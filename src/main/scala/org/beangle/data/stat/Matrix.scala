@@ -20,6 +20,7 @@ package org.beangle.data.stat
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
+import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
 import org.beangle.data.model.Entity
 
 object Matrix {
@@ -37,6 +38,13 @@ object Matrix {
       Column(name, title, values.filter(x => keys.contains(x._1)))
     }
   }
+
+  private def registMeta(): Unit = {
+    BeanInfos.of(classOf[Matrix])
+    BeanInfos.of(classOf[Matrix.Column])
+  }
+
+  registMeta()
 }
 
 /** 数据统计矩阵
