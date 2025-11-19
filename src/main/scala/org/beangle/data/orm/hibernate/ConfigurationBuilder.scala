@@ -64,6 +64,8 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
       }
     }
     if (!sysProps.contains("org.jboss.logging.provider")) {
+      //@see org.jboss.logging.LoggerProviders.findProvider
+      //让hibernate使用sfl4j的日志框架
       System.setProperty("org.jboss.logging.provider", "slf4j")
     }
   }

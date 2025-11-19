@@ -22,6 +22,9 @@ import org.hibernate.context.spi.CurrentSessionContext
 import org.hibernate.engine.spi.SessionFactoryImplementor
 
 /**
+ * 简化版的SpringSessionContext，仅仅存取session，没有其他设置
+ *
+ * @see org.springframework.orm.jpa.hibernate.SpringSessionContext
  * @author chaostone
  */
 class SpringSessionContext(val sessionFactory: SessionFactoryImplementor) extends CurrentSessionContext {
