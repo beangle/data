@@ -26,7 +26,7 @@ ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
 
 val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.32"
 val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.3"
-val spring_orm ="org.springframework" % "spring-orm" % "7.0.0"
+
 lazy val root = (project in file("."))
   .settings(
     name := "beangle-model",
