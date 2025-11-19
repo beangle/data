@@ -30,8 +30,8 @@ import javax.sql.DataSource
 object HibernateTransactionManager {
 
   /** 移植自spring orm的SessionHolder
-   * 去掉transactionActive,savepointManager
-   *
+   *  去掉transactionActive,savepointManager
+   *  增加了statelessSession,transaction,previousFlushMode
    * @param session session
    */
   class SessionHolder(val session: Session) extends ResourceHolderSupport {
@@ -133,7 +133,7 @@ class HibernateTransactionManager(val sessionFactory: EntityManagerFactory)
     if (null == emHolder) {
       // Beangle Added. for avoid openSession in view explicitly.
       emHolder = SessionHelper.openSession(sessionFactory.asInstanceOf[SessionFactory])
-      txObject.update(emHolder, true, true)
+      txObject.update(emHolder, false, false)
     } else {
       txObject.setSessionHolder(emHolder)
     }
@@ -214,7 +214,7 @@ class HibernateTransactionManager(val sessionFactory: EntityManagerFactory)
       txObject.setConnectionHolder(conHolder)
 
       // Bind the entity manager holder to the thread.
-      if (txObject.isNewSessionHolder) {
+      if (txObject.isNewSessionHolder && !Tsm.hasResource(sessionFactory)) {
         Tsm.bindResource(sessionFactory, txObject.sessionHolder)
       }
       txObject.sessionHolder.setSynchronizedWithTransaction(true)
