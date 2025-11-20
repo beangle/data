@@ -60,7 +60,31 @@ object OqlBuilder {
     query
   }
 
-  class Var(val name: String) {
+  def sum(v: Var): Var = {
+    Var(s"sum(${v.name})")
+  }
+
+  def avg(v: Var): Var = {
+    Var(s"avg(${v.name})")
+  }
+
+  def max(v: Var): Var = {
+    Var(s"max(${v.name})")
+  }
+
+  def min(v: Var): Var = {
+    Var(s"min(${v.name})")
+  }
+
+  def distinct(v: Var): Var = {
+    Var(s"distinct ${v.name}")
+  }
+
+  def count(v: Var): Var = {
+    Var(s"count(${v.name})")
+  }
+
+  case class Var(name: String) {
 
     def isNull: Expression = create("is null")
 
@@ -101,6 +125,10 @@ object OqlBuilder {
 
     def fillin(alias: String): String = {
       Strings.replace(this.name, "_.", alias + ".")
+    }
+
+    def f(func: String): Var = {
+      Var(Strings.replace(func, "_", this.name))
     }
   }
 

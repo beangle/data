@@ -17,6 +17,7 @@
 
 package org.beangle.data.dao
 
+import org.beangle.data.dao.OqlBuilder.*
 import org.beangle.data.orm.model.TestUser
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -38,7 +39,7 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
       }
       q.on { e =>
         q.groupBy(e.id, e.role.name)
-          .select(e.id, e.role.name, "count(*)")
+          .select(e.id, e.role.name, "count(*)", max(e.id), count(distinct(e.role.name)), e.id.f("avg(_)"))
           .orderBy(e.role.name)
       }
 
@@ -47,7 +48,8 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
       assert(query.params.contains("v1"))
       assert(query.params.contains("v2"))
       assert(query.params.contains("v3"))
-      assert(query.statement == "select t.id,t.role.name,count(*) from org.beangle.data.orm.model.TestUser t" +
+      assert(query.statement == "select t.id,t.role.name,count(*),max(t.id),count(distinct t.role.name),avg(t.id)" +
+        " from org.beangle.data.orm.model.TestUser t" +
         " where (t.member.middleName is not null or t.friends is not null or t.properties is not null)" +
         " and t.birthday is null and t.updatedAt = :v1 and t.role.name like :v2 and t.id > :v3" +
         " group by t.id,t.role.name order by t.role.name")
