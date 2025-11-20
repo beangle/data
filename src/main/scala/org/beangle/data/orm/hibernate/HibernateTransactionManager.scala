@@ -17,7 +17,6 @@
 
 package org.beangle.data.orm.hibernate
 
-import jakarta.persistence.{EntityManager, EntityManagerFactory}
 import org.beangle.data.orm.hibernate.HibernateTransactionManager.*
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.{TransactionException as HibernateTransactionException, *}
@@ -35,7 +34,7 @@ object HibernateTransactionManager {
    *
    * @param session session
    */
-  class SessionHolder(val session: Session) extends ResourceHolderSupport {
+  class SessionHolder(val session: SessionImplementor) extends ResourceHolderSupport {
     var statelessSession: StatelessSession = _
     var transaction: Transaction = _
     var previousFlushMode: FlushMode = _
@@ -47,20 +46,20 @@ object HibernateTransactionManager {
     }
 
     def closeAll(): Unit = {
-      SessionHelper.safeCloseSession(session)
-      if (this.statelessSession != null && this.statelessSession.isOpen) this.statelessSession.close()
+      SessionHelper.safeCloseSession(this.session)
+      SessionHelper.safeCloseSession(this.statelessSession)
     }
   }
 
-  class SuspendedResourcesHolder(val sessionHolder: SessionHolder, val connectionHolder: ConnectionHolder)
+  private class SuspendedResourcesHolder(val sessionHolder: SessionHolder, val connectionHolder: ConnectionHolder)
 
   /**
    * JPA transaction object, representing a EntityManagerHolder.
    * Used as transaction object by JpaTransactionManager.
    */
-  class JpaTransactionObject(private var holder: SessionHolder = null,
-                             private var newHolder: Boolean = false,
-                             private var newSession: Boolean = false)
+  private class JpaTransactionObject(private var holder: SessionHolder = null,
+                                     private var newHolder: Boolean = false,
+                                     private var newSession: Boolean = false)
     extends JdbcTransactionObjectSupport {
 
     var needsConnectionReset = false
@@ -71,7 +70,7 @@ object HibernateTransactionManager {
       this.newSession = newSession
     }
 
-    def setSession(session: Session): Unit = {
+    def setSession(session: SessionImplementor): Unit = {
       this.holder = new SessionHolder(session)
       this.newHolder = true
       this.newSession = true
@@ -97,7 +96,7 @@ object HibernateTransactionManager {
 
     def hasTransaction: Boolean = this.holder != null && this.holder.transaction != null
 
-    def session: EntityManager = holder.session
+    def session: SessionImplementor = holder.session
 
     def setRollbackOnly(): Unit = {
       holder.setRollbackOnly()
@@ -121,14 +120,12 @@ object HibernateTransactionManager {
  *      <li>Disable exceptionTranslator</li>
  *      <li>Force prepareConnection = true</li>
  *      </ol>
- * @param sessionFactory EntityManagerFactory
+ * @param sessionFactory SessionFactory
  */
-class HibernateTransactionManager(val sessionFactory: EntityManagerFactory)
+class HibernateTransactionManager(val sessionFactory: SessionFactory)
   extends AbstractPlatformTransactionManager, ResourceTransactionManager {
 
   var dataSource: DataSource = _
-
-  var jpaPropertyMap: java.util.Map[String, Object] = _
 
   override def getResourceFactory: Object = sessionFactory
 
@@ -164,8 +161,7 @@ class HibernateTransactionManager(val sessionFactory: EntityManagerFactory)
     var em: SessionImplementor = null
     try {
       if (!txObject.hasSessionHolder || txObject.sessionHolder.isSynchronizedWithTransaction) {
-        val newEm = createEntityManagerForTransaction()
-        txObject.setSession(newEm)
+        txObject.setSession(SessionHelper.doOpenSession(sessionFactory))
       }
       em = txObject.session.unwrap(classOf[SessionImplementor])
 
@@ -242,16 +238,6 @@ class HibernateTransactionManager(val sessionFactory: EntityManagerFactory)
     }
   }
 
-  /**
-   * Create a JPA EntityManager to be used for a transaction.
-   */
-  protected def createEntityManagerForTransaction(): Session = {
-    val emf = sessionFactory
-    val properties = jpaPropertyMap
-    val em = if null == properties || properties.isEmpty then emf.createEntityManager() else emf.createEntityManager(properties)
-    em.asInstanceOf[Session]
-  }
-
   protected override def doSuspend(transaction: Object): Object = {
     val txObject = transaction.asInstanceOf[JpaTransactionObject]
     txObject.setSessionHolder(null)
@@ -263,9 +249,8 @@ class HibernateTransactionManager(val sessionFactory: EntityManagerFactory)
 
   protected override def doResume(transaction: Object, suspendedResources: Object): Unit = {
     val resourcesHolder = suspendedResources.asInstanceOf[SuspendedResourcesHolder]
-    if (Tsm.hasResource(sessionFactory)) {
-      Tsm.unbindResource(sessionFactory)
-    }
+    if Tsm.hasResource(sessionFactory) then Tsm.unbindResource(sessionFactory)
+
     Tsm.bindResource(sessionFactory, resourcesHolder.sessionHolder)
     if (resourcesHolder.connectionHolder != null) {
       Tsm.bindResource(dataSource, resourcesHolder.connectionHolder)

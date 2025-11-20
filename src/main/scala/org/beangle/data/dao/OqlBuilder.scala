@@ -17,7 +17,6 @@
 
 package org.beangle.data.dao
 
-import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings.*
 import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.data.dao.OqlBuilder.{Expression, Var}
@@ -61,7 +60,7 @@ object OqlBuilder {
     query
   }
 
-  class Var(proxy: AccessProxy) {
+  class Var(val name: String) {
 
     def isNull: Expression = create("is null")
 
@@ -87,7 +86,7 @@ object OqlBuilder {
 
     def is(exp: String, args: Any*): Expression = {
       val argCount = Strings.count(exp, '?')
-      require(argCount == args.size, s"${exp} has ${argCount} args,but given ${args.size}.")
+      require(argCount == args.size, s"$exp has $argCount args,but given ${args.size}.")
       create(exp, args: _*)
     }
 
@@ -96,38 +95,27 @@ object OqlBuilder {
     }
 
     private def create(con: String, args: Any*): Expression = {
-      val exp = proxy.ctx.accessed().map { p =>
-        if con.contains("$") then Strings.replace(con, "$", "$alias" + "." + p) else "$alias" + "." + p + " " + con
-      }.mkString(" and ")
-      new Expression(proxy, exp, args)
+      val exp = if con.contains("_") then Strings.replace(con, "_", name) else name + " " + con
+      new Expression(exp, args)
+    }
+
+    def fillin(alias: String): String = {
+      Strings.replace(this.name, "_.", alias + ".")
     }
   }
 
-  class Expression(proxy: AccessProxy) {
-    protected var exp: String = ""
-    protected val args = Collections.newBuffer[Any]
-
-    def this(proxy: AccessProxy, exp: String) = {
-      this(proxy)
-      this.exp = exp
-    }
-
-    def this(proxy: AccessProxy, exp: String, args: Iterable[Any]) = {
-      this(proxy)
-      this.exp = exp
-      this.args.addAll(args)
-    }
+  class Expression(val exp: String, val args: Seq[Any]) {
 
     def and(o: Expression): Expression = {
-      new Expression(this.proxy, this.exp + " and " + o.exp, this.args.addAll(o.args))
+      new Expression(this.safeExp + " and " + o.safeExp, this.args ++ o.args)
     }
 
     def or(o: Expression): Expression = {
-      new Expression(this.proxy, this.exp + " or " + o.exp, this.args.addAll(o.args))
+      new Expression(s"${this.exp} or ${o.exp}", this.args ++ o.args)
     }
 
     def append(query: OqlBuilder[_]): Unit = {
-      var clause = Strings.replace(exp, "$alias", query.alias)
+      var clause = Strings.replace(exp, "_.", query.alias + ".")
       val s = query.params.size
       args.indices foreach { i =>
         val idx = clause.indexOf('?')
@@ -138,6 +126,11 @@ object OqlBuilder {
       val con = new Condition(clause).params(args)
       query.where(con)
     }
+
+    private def safeExp: String = {
+      if this.exp.charAt(0) != '(' && this.exp.contains(" or ") then s"(${this.exp})" else this.exp
+    }
+
   }
 
 }
@@ -232,8 +225,35 @@ class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
     this
   }
 
+  def on(exp: T => Any): this.type = {
+    exp(proxy)
+    this
+  }
+
+  def groupBy(vars: Var*): this.type = {
+    val clause = vars.map(e => e.fillin(this.alias)).mkString(",")
+    if clause.nonEmpty then groupBy(clause)
+    this
+  }
+
+  def select(vars: Var*): this.type = {
+    val clause = vars.map(e => e.fillin(this.alias)).mkString(",")
+    if clause.nonEmpty then select(clause)
+    this
+  }
+
+  def orderBy(vars: Var*): this.type = {
+    val clause = vars.map(e => e.fillin(this.alias)).mkString(",")
+    if clause.nonEmpty then orderBy(clause)
+    this
+  }
+
   override def lang: Query.Lang = Query.Lang.OQL
 
   import scala.language.implicitConversions
-  implicit def any2Var(a: Any): Var = new Var(proxy)
+
+  implicit def any2Var(a: Any): Var = {
+    val props = proxy.ctx.accessed()
+    if props.isEmpty then new Var(a.toString) else new Var("_." + props.head)
+  }
 }

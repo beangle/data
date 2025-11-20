@@ -34,13 +34,17 @@ object Conditions extends Logging {
 
   def toQueryString(conditions: List[Condition]): String = {
     if (null == conditions || conditions.isEmpty) return ""
-    val buf = new StringBuilder("")
-    val seperator = " and "
-    for (con <- conditions) {
-      buf.append('(').append(con.content).append(')').append(seperator)
+    if (conditions.size == 1) {
+      conditions.head.content
+    } else {
+      val buf = new StringBuilder("")
+      val seperator = " and "
+      for (con <- conditions) {
+        buf.append('(').append(con.content).append(')').append(seperator)
+      }
+      if (buf.nonEmpty) buf.delete(buf.length - seperator.length, buf.length)
+      buf.toString
     }
-    if (buf.nonEmpty) buf.delete(buf.length - seperator.length, buf.length)
-    buf.toString
   }
 
   /** 提取对象中的条件

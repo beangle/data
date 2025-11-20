@@ -19,7 +19,7 @@ package org.beangle.data.dao
 
 import org.beangle.commons.collection.Order
 import org.beangle.commons.collection.page.PageLimit
-import org.beangle.commons.lang.Assert
+import org.beangle.commons.lang.{Assert, Strings}
 import org.beangle.commons.lang.Strings.*
 
 object AbstractQueryBuilder {
@@ -73,11 +73,12 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
   def lang: Query.Lang
 
   def select(what: String): this.type = {
-    this.select = if (null == what) {
-      null
-    } else {
-      if (what.toLowerCase.trim().startsWith("select")) what else "select " + what
-    }
+    this.select =
+      if null == what then null
+      else {
+        val wt = Strings.replace(what, "_.", alias + ".")
+        if (wt.toLowerCase.trim().startsWith("select")) wt else "select " + wt
+      }
     this
   }
 
@@ -142,7 +143,9 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
     params(Conditions.getParamMap(cons))
   }
 
-  def where(content: String, params: Any*): this.type = where(new Condition(content, params: _*))
+  def where(content: String, params: Any*): this.type = {
+    where(new Condition(content, params: _*))
+  }
 
   def tailOrder(order: String): this.type = {
     this.tailOrder = Order.parse(order).headOption
@@ -150,7 +153,7 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
   }
 
   def orderBy(order: String): this.type = {
-    orderBy(Order.parse(order))
+    orderBy(Order.parse(Strings.replace(order, "_.", alias + ".")))
     this
   }
 

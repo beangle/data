@@ -148,7 +148,7 @@ object QuerySupport {
         }
       } else {
         val paramNames = condition.paramNames
-        for (i <- 0 until paramNames.size)
+        for (i <- paramNames.indices)
           setParameter(query, paramNames(i), condition.params.apply(i))
       }
     }

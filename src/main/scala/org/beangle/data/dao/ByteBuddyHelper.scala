@@ -65,6 +65,11 @@ private[dao] object ByteBuddyHelper {
     }
   }
 
+  /** 根据方法返回值类型，确定使用的字节指令
+   *
+   * @param m
+   * @return
+   */
   def getReturnOpcode(m: MethodDescription): Int = {
     val rt = m.getReturnType
     if (rt.represents(classOf[Unit])) {
@@ -81,13 +86,13 @@ private[dao] object ByteBuddyHelper {
         rt.represents(classOf[Short])) {
         Opcodes.IRETURN
       } else if (rt.represents(classOf[Long])) {
-        Opcodes.LRETURN;
+        Opcodes.LRETURN
       } else if (rt.represents(classOf[Float])) {
-        Opcodes.FRETURN;
+        Opcodes.FRETURN
       } else if (rt.represents(classOf[Double])) {
-        Opcodes.DRETURN;
+        Opcodes.DRETURN
       } else {
-        throw new IllegalArgumentException("未知的基础类型: " + rt);
+        throw new IllegalArgumentException("未知的基础类型: " + rt)
       }
     }
   }

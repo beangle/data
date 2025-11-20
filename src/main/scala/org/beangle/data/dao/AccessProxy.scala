@@ -47,12 +47,13 @@ object AccessProxy extends Logging {
   class Names(val values: mutable.LinkedHashSet[String]) {
     var last: String = _
 
-    def access(name: String): Unit = {
+    def access(name: String): String = {
       if (null != last && name.startsWith(last + ".") && values.lastOption.contains(last)) {
         values.remove(last)
       }
       values.add(name)
       last = name
+      s"_.$last"
     }
   }
 
@@ -67,11 +68,16 @@ object AccessProxy extends Logging {
       names.last = null
     }
 
-    def access(name: String): Unit = {
+    def access(name: String): String = {
       val p = if Strings.isEmpty(path) then name else path + name
       names.access(p)
     }
 
+    /** 依据路径产生一个新的上下文
+     *
+     * @param name
+     * @return
+     */
     def fork(name: String): Context = {
       if (Strings.isEmpty(path)) {
         Context(names, name + ".")
@@ -104,7 +110,7 @@ object AccessProxy extends Logging {
   def generate(clazz: Class[_]): Class[_] = {
     val proxyClazzName = clazz.getName + ProxyNamePostfix
     var existed = proxies.getOrElse(proxyClazzName, null)
-    if (null == existed|| existed == classOf[AnyRef]) {
+    if (null == existed || existed == classOf[AnyRef]) {
       val manifest = BeanInfos.get(clazz)
       proxies.synchronized {
         existed = proxies.getOrElse(proxyClazzName, null)
@@ -188,8 +194,8 @@ object AccessProxy extends Logging {
               // 步骤2：调用 ctx.access(method.getName)
               v.visitInsn(Opcodes.DUP)
               v.visitLdcInsn(md.getName)
-              v.visitMethodInsn(Opcodes.INVOKEVIRTUAL, path(classOf[Context]), "access", s"(${notation(classOf[String])})V", false)
-
+              v.visitMethodInsn(Opcodes.INVOKEVIRTUAL, path(classOf[Context]), "access", s"(${notation(classOf[String])})${notation(classOf[String])}", false)
+              v.visitInsn(Opcodes.POP)
               // 步骤3：调用 ctx.fork(method.getName) 创建新的ctx
               v.visitLdcInsn(md.getName)
               v.visitMethodInsn(Opcodes.INVOKEVIRTUAL, path(classOf[Context]), "fork", s"(${notation(classOf[String])})${notation(classOf[Context])}", false)
@@ -207,14 +213,18 @@ object AccessProxy extends Logging {
             } else {
               // 步骤2：调用 ctx.access(method.getName)
               v.visitLdcInsn(md.getName)
-              v.visitMethodInsn(Opcodes.INVOKEVIRTUAL, path(classOf[Context]), "access", "(Ljava/lang/String;)V", false)
+              v.visitMethodInsn(Opcodes.INVOKEVIRTUAL, path(classOf[Context]), "access", s"(Ljava/lang/String;)${notation(classOf[String])}", false)
 
-              if (clazz.isInterface) {
-                appendLiteralToStack(v, md)
-              } else {
-                //步骤3： super.getXXX
-                v.visitVarInsn(Opcodes.ALOAD, 0)
-                v.visitMethodInsn(Opcodes.INVOKESPECIAL, path(clazz), md.getName, md.getDescriptor, false)
+              //如果是不要求返回字符串，则出栈一条
+              if (!md.getReturnType.represents(classOf[String])) {
+                v.visitInsn(Opcodes.POP)
+                if (clazz.isInterface) {
+                  appendLiteralToStack(v, md)
+                } else {
+                  //步骤3： super.getXXX
+                  v.visitVarInsn(Opcodes.ALOAD, 0)
+                  v.visitMethodInsn(Opcodes.INVOKESPECIAL, path(clazz), md.getName, md.getDescriptor, false)
+                }
               }
               v.visitInsn(getReturnOpcode(md))
               new ByteCodeAppender.Size(2, 1)
@@ -226,7 +236,7 @@ object AccessProxy extends Logging {
 
     // 生成并加载类
     val dynamicType = builder.make()
-    //dynamicType.saveIn(new java.io.File(SystemInfo.tmpDir))
+    // dynamicType.saveIn(new java.io.File(SystemInfo.tmpDir))
     val generated = dynamicType.load(clazz.getClassLoader, ClassLoadingStrategy.Default.INJECTION).getLoaded
     logger.debug(s"generate $proxyClazzName using $watch")
     proxies.put(proxyClazzName, generated)

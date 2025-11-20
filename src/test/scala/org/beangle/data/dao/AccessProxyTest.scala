@@ -30,6 +30,7 @@ class AccessProxyTest extends AnyFunSpec, Matchers {
       val u = user1.member.middleName
       val r = user1.role
       val rn = user1.role.name
+      assert(rn == "_.role.name")
       val accessed = user1.ctx.accessed()
       assert(accessed.size == 3)
       assert(accessed.contains("properties"))
@@ -38,7 +39,7 @@ class AccessProxyTest extends AnyFunSpec, Matchers {
     }
     it("access interface") {
       val code = AccessProxy.of(classOf[Coded])
-      assert(code.code == null)
+      assert(code.code == "_.code")
       val accessed = code.ctx.accessed()
       assert(accessed.size == 1)
       assert(accessed.contains("code"))
@@ -51,7 +52,7 @@ class AccessProxyTest extends AnyFunSpec, Matchers {
       assert(user1.id == 0L)
       assert(null != user1.member)
       assert(null != user1.member.name)
-      assert(user1.member.name.firstName == null)
+      assert(user1.member.name.firstName == "_.member.name.firstName")
 
       val accessed = proxy1.ctx.accessed()
       assert(accessed.size >= 2)

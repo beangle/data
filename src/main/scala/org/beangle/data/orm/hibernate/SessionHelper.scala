@@ -54,6 +54,10 @@ object SessionHelper extends Logging {
     }
   }
 
+  def safeCloseSession(s: StatelessSession): Unit = {
+    if (s != null && s.isOpen) s.close()
+  }
+
   def getDataSource(factory: SessionFactory): DataSource = {
     val factoryImpl = factory.asInstanceOf[SessionFactoryImplementor]
     if (factoryImpl.getSessionFactoryOptions.isMultiTenancyEnabled) {
@@ -63,9 +67,9 @@ object SessionHelper extends Logging {
     }
   }
 
-  private def doOpenSession(factory: SessionFactory,
-                            interceptor: Option[Interceptor],
-                            initializer: Option[Consumer[Session]]) = {
+  def doOpenSession(factory: SessionFactory,
+                    interceptor: Option[Interceptor] = None,
+                    initializer: Option[Consumer[Session]] = None): SessionImplementor = {
     val s = interceptor match {
       case Some(i) =>
         val builder = factory.withOptions()
@@ -74,14 +78,14 @@ object SessionHelper extends Logging {
       case None => factory.openSession()
     }
     initializer foreach { iz => iz.accept(s) }
-    s
+    s.asInstanceOf[SessionImplementor]
   }
 
   def openSession(factory: SessionFactory,
                   interceptor: Option[Interceptor] = None,
                   initializer: Option[Consumer[Session]] = None): SessionHolder = {
     var holder = Tsm.getResource(factory).asInstanceOf[SessionHolder]
-    var session: Session = null
+    var session: SessionImplementor = null
     if (null == holder) {
       session = doOpenSession(factory, interceptor, initializer)
       session.setHibernateFlushMode(FlushMode.COMMIT)
