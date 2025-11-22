@@ -42,6 +42,14 @@ trait TemporalOn {
   }
 
   def active: Boolean = within(LocalDate.now)
+
+  def update(beginOn: LocalDate, endOn: Option[LocalDate]): Unit = {
+    endOn foreach { en =>
+      require(!en.isBefore(beginOn), "endOn cannot before beginOn")
+    }
+    this.beginOn = beginOn
+    this.endOn = endOn
+  }
 }
 
 object TemporalOn {

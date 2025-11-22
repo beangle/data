@@ -38,6 +38,12 @@ trait DateRange {
   }
 
   def active: Boolean = within(LocalDate.now)
+
+  def update(beginOn: LocalDate, endOn: LocalDate): Unit = {
+    require(!endOn.isBefore(beginOn), "endOn cannot before beginOn")
+    this.beginOn = beginOn
+    this.endOn = endOn
+  }
 }
 
 object DateRange {

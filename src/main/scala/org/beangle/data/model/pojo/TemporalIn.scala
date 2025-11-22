@@ -39,6 +39,14 @@ trait TemporalIn {
   }
 
   def active: Boolean = within(YearMonth.now)
+
+  def update(beginIn: YearMonth, endIn: Option[YearMonth]): Unit = {
+    endIn foreach { en =>
+      require(!en.isBefore(beginIn), "endIn cannot before beginIn")
+    }
+    this.beginIn = beginIn
+    this.endIn = endIn
+  }
 }
 
 object TemporalIn {

@@ -39,4 +39,12 @@ trait TemporalAt {
   }
 
   def active: Boolean = within(Instant.now)
+
+  def update(beginAt: Instant, endAt: Option[Instant]): Unit = {
+    endAt foreach { en =>
+      require(!en.isBefore(beginAt), "endAt cannot before beginAt")
+    }
+    this.beginAt = beginAt
+    this.endAt = endAt
+  }
 }
