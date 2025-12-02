@@ -57,34 +57,23 @@ object HibernateTransactionManager {
    * JPA transaction object, representing a EntityManagerHolder.
    * Used as transaction object by JpaTransactionManager.
    */
-  private class JpaTransactionObject(private var holder: SessionHolder = null,
-                                     private var newHolder: Boolean = false,
-                                     private var newSession: Boolean = false)
+  private class JpaTransactionObject(private var holder: SessionHolder = null, private var newSession: Boolean = false)
     extends JdbcTransactionObjectSupport {
 
     var needsConnectionReset = false
 
-    def update(sessionHolder: SessionHolder, newHolder: Boolean, newSession: Boolean): Unit = {
-      this.holder = sessionHolder
-      this.newHolder = newHolder
-      this.newSession = newSession
-    }
-
-    def setSession(session: SessionImplementor): Unit = {
+    def setSession(session: SessionImplementor): SessionHolder = {
       this.holder = new SessionHolder(session)
-      this.newHolder = true
       this.newSession = true
+      this.holder
     }
 
     def isNewSession: Boolean = this.newSession
-
-    def isNewSessionHolder: Boolean = this.newHolder
 
     def sessionHolder: SessionHolder = this.holder
 
     def setSessionHolder(sessionHolder: SessionHolder): Unit = {
       this.holder = sessionHolder
-      this.newHolder = false
       this.newSession = false
     }
 
@@ -136,8 +125,9 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory)
     var emHolder = Tsm.getResource(sessionFactory).asInstanceOf[SessionHolder]
     if (null == emHolder) {
       // Beangle Added. for avoid openSession in view explicitly.
-      emHolder = SessionHelper.openSession(sessionFactory.asInstanceOf[SessionFactory])
-      txObject.update(emHolder, false, true)
+      // Open a session in place,and the new emHolder will be bind in doBegin function.
+      // and the temporal session will be close in doCleanupAfterCompletion
+      emHolder = txObject.setSession(SessionHelper.doOpenSession(sessionFactory))
     } else {
       txObject.setSessionHolder(emHolder)
     }
@@ -217,7 +207,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory)
       txObject.setConnectionHolder(conHolder)
 
       // Bind the entity manager holder to the thread.
-      if (txObject.isNewSessionHolder) {
+      if (txObject.isNewSession) {
         Tsm.bindResource(sessionFactory, txObject.sessionHolder)
       }
       txObject.sessionHolder.setSynchronizedWithTransaction(true)
@@ -285,9 +275,6 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory)
 
   protected override def doCleanupAfterCompletion(transaction: Object): Unit = {
     val txObject = transaction.asInstanceOf[JpaTransactionObject]
-    if (txObject.isNewSessionHolder) {
-      Tsm.unbindResourceIfPossible(sessionFactory)
-    }
     // Remove the JDBC connection holder from the thread, if exposed.
     Tsm.unbindResource(dataSource)
 
@@ -298,6 +285,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory)
     }
 
     if (txObject.isNewSession) {
+      Tsm.unbindResourceIfPossible(sessionFactory)
       txObject.sessionHolder.closeAll()
     } else {
       if (txObject.sessionHolder.previousFlushMode != null) {
