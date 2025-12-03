@@ -224,7 +224,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory)
             txObject.setSessionHolder(null)
           }
         }
-        throw new CannotCreateTransactionException("Could not open JPA EntityManager for transaction", ex)
+        throw new CannotCreateTransactionException("Could not open session for transaction", ex)
     }
   }
 
@@ -279,9 +279,9 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory)
     Tsm.unbindResource(dataSource)
 
     val session = txObject.sessionHolder.session.unwrap(classOf[SessionImplementor])
-    if (txObject.needsConnectionReset && session.getJdbcCoordinator.getLogicalConnection.isPhysicallyConnected) {
-      val con = session.getJdbcCoordinator.getLogicalConnection.getPhysicalConnection
-      DataSourceUtils.resetConnectionAfterTransaction(con, txObject.getPreviousIsolationLevel, txObject.isReadOnly)
+    val lconn = session.getJdbcCoordinator.getLogicalConnection
+    if (txObject.needsConnectionReset && lconn.isPhysicallyConnected) {
+      DataSourceUtils.resetConnectionAfterTransaction(lconn.getPhysicalConnection, txObject.getPreviousIsolationLevel, txObject.isReadOnly)
     }
 
     if (txObject.isNewSession) {
@@ -291,7 +291,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory)
       if (txObject.sessionHolder.previousFlushMode != null) {
         session.setHibernateFlushMode(txObject.sessionHolder.previousFlushMode)
       }
-      session.getJdbcCoordinator.getLogicalConnection.manualDisconnect();
+      lconn.manualDisconnect()
     }
     txObject.sessionHolder.clear()
   }
