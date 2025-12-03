@@ -23,7 +23,7 @@ import org.beangle.data.orm.hibernate.HibernateTransactionManager.SessionHolder
 import org.hibernate.*
 import org.hibernate.engine.jdbc.connections.spi.{ConnectionProvider, MultiTenantConnectionProvider}
 import org.hibernate.engine.spi.{SessionFactoryImplementor, SessionImplementor}
-import org.springframework.jdbc.datasource.ConnectionHandle
+import org.springframework.jdbc.datasource.{ConnectionHandle, ConnectionHolder}
 import org.springframework.transaction.support.TransactionSynchronizationManager as Tsm
 
 import java.sql.Connection
@@ -37,25 +37,8 @@ object SessionHelper extends Logging {
     }
   }
 
-  def releaseJdbcConnection(conHandle: ConnectionHandle, em: EntityManager): Unit = {}
-
-  def getJdbcConnection(entityManager: EntityManager): ConnectionHandle = {
-    new HibernateConnectionHandle(getSession(entityManager))
-  }
-
-  protected def getSession(entityManager: EntityManager): SessionImplementor = {
-    entityManager.unwrap(classOf[SessionImplementor])
-  }
-
-  def safeCloseSession(em: EntityManager): Unit = {
-    if (em != null) try if (em.isOpen) em.close()
-    catch {
-      case ex: Throwable => logger.error("Failed to release JPA EntityManager", ex)
-    }
-  }
-
-  def safeCloseSession(s: StatelessSession): Unit = {
-    if (s != null && s.isOpen) s.close()
+  def getConnectionHolder(session: SessionImplementor): ConnectionHolder = {
+    new ConnectionHolder(new HibernateConnectionHandle(session))
   }
 
   def getDataSource(factory: SessionFactory): DataSource = {
@@ -100,27 +83,27 @@ object SessionHelper extends Logging {
   }
 
   def closeSession(factory: SessionFactory): Unit = {
-    try {
-      val holder = Tsm.getResource(factory).asInstanceOf[SessionHolder]
-      if (null != holder) {
-        Tsm.unbindResource(factory)
-        holder.session.close()
-      }
-    } catch {
-      case ex: HibernateException => logger.debug("Could not close Hibernate Session", ex)
-      case e: Throwable => logger.debug("Unexpected exception on closing Hibernate Session", e)
-    }
+    val holder = Tsm.unbindResourceIfPossible(factory).asInstanceOf[SessionHolder]
+    if null != holder then safeCloseSession(holder.session)
   }
 
   def closeSession(session: Session): Unit = {
-    try {
-      val holder = Tsm.getResource(session.getSessionFactory).asInstanceOf[SessionHolder]
-      if (null != holder) Tsm.unbindResource(session.getSessionFactory)
-      session.close()
-    } catch {
-      case ex: HibernateException => logger.debug("Could not close Hibernate Session", ex)
-      case e: Throwable => logger.debug("Unexpected exception on closing Hibernate Session", e)
+    Tsm.unbindResourceIfPossible(session.getSessionFactory)
+    safeCloseSession(session)
+  }
+
+  def safeCloseSession(em: EntityManager): Unit = {
+    if (em != null) {
+      try {
+        if (em.isOpen) em.close()
+      } catch {
+        case ex: Throwable => logger.error("Failed to release session", ex)
+      }
     }
+  }
+
+  def safeCloseSession(s: StatelessSession): Unit = {
+    if (s != null && s.isOpen) s.close()
   }
 
   def toString(session: Session): String = {

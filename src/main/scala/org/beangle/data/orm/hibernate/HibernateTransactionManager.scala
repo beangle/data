@@ -198,8 +198,7 @@ class HibernateTransactionManager(val sessionFactory: SessionFactory)
       txObject.sessionHolder.transaction = hibTx
 
       // Register the Hibernate Session's JDBC Connection for the DataSource, if set.
-      val conHandle = SessionHelper.getJdbcConnection(em)
-      val conHolder = new ConnectionHolder(conHandle)
+      val conHolder = SessionHelper.getConnectionHolder(em)
       if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
         conHolder.setTimeoutInSeconds(timeout)
       }
