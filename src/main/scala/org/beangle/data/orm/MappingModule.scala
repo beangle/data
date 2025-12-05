@@ -22,7 +22,7 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
 import org.beangle.commons.logging.Logging
-import org.beangle.data.dao.AccessProxy
+import org.beangle.data.dao.AccessTracker
 import org.beangle.jdbc.engine.Engine
 import org.beangle.jdbc.meta.*
 
@@ -335,7 +335,7 @@ object MappingModule {
   object Expression {
     // only apply unique on component properties
     def is(holder: EntityHolder[_], declarations: Seq[PropertyDeclaration]): Unit = {
-      val lasts = holder.proxy.ctx.accessed()
+      val lasts = holder.tracker.ctx.accessed()
       if (declarations.nonEmpty && lasts.isEmpty) {
         throw new RuntimeException("Cannot find access properties for " + holder.mapping.entityName + " with declarations:" + declarations)
       }
@@ -371,7 +371,7 @@ object MappingModule {
 
   final class EntityHolder[T](val mapping: OrmEntityType, val mappings: Mappings, val clazz: Class[T], module: MappingModule) {
 
-    var proxy: AccessProxy = _
+    var tracker: AccessTracker = _
 
     def engine: Engine = mappings.database.engine
 
@@ -391,8 +391,8 @@ object MappingModule {
     }
 
     def declare(declarations: T => Any): this.type = {
-      if (null == proxy) proxy = AccessProxy.of(clazz)
-      declarations(proxy.asInstanceOf[T])
+      if (null == tracker) tracker = AccessTracker.of(clazz)
+      declarations(tracker.asInstanceOf[T])
       this
     }
 
@@ -631,7 +631,7 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
   }
 
   def index(name: String, unique: Boolean, properties: Any*): Unit = {
-    val lasts = currentHolder.proxy.ctx.accessed()
+    val lasts = currentHolder.tracker.ctx.accessed()
     if (lasts.isEmpty) {
       throw new RuntimeException("Cannot find access properties for " + currentHolder.mapping.entityName + " with index declarations")
     }

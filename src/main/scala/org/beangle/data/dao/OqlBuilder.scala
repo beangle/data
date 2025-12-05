@@ -39,7 +39,7 @@ object OqlBuilder {
   def from[E](entityName: String, alias: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
     query.entityClass = ClassLoaders.load(entityName).asInstanceOf[Class[E]]
-    query.proxy = AccessProxy.of(query.entityClass)
+    query.tracker = AccessTracker.of(query.entityClass)
     query.alias = alias
     query.select = "select " + alias
     query.from = concat("from ", entityName, " ", alias)
@@ -53,7 +53,7 @@ object OqlBuilder {
   def from[E](entityClass: Class[E], alias: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
     query.entityClass = entityClass
-    query.proxy = AccessProxy.of(entityClass)
+    query.tracker = AccessTracker.of(entityClass)
     query.alias = alias
     query.select = "select " + alias
     query.from = concat("from ", Jpas.findEntityName(entityClass), " ", alias)
@@ -172,7 +172,7 @@ class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
 
   /** 查询实体类 */
   var entityClass: Class[T] = _
-  var proxy: AccessProxy & T = _
+  var tracker: AccessTracker & T = _
 
   /**
    * 形成计数查询语句，如果不能形成，则返回""
@@ -244,17 +244,17 @@ class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
 
   def forEntity(entityClass: Class[T]): this.type = {
     this.entityClass = entityClass
-    this.proxy = AccessProxy.of(entityClass)
+    this.tracker = AccessTracker.of(entityClass)
     this
   }
 
   def where(exp: T => Expression): this.type = {
-    exp(proxy).append(this)
+    exp(tracker).append(this)
     this
   }
 
   def on(exp: T => Any): this.type = {
-    exp(proxy)
+    exp(tracker)
     this
   }
 
@@ -281,7 +281,7 @@ class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
   import scala.language.implicitConversions
 
   implicit def any2Var(a: Any): Var = {
-    val props = proxy.ctx.accessed()
+    val props = tracker.ctx.accessed()
     if props.isEmpty then new Var(a.toString) else new Var("_." + props.head)
   }
 }

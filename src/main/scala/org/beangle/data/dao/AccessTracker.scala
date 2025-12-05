@@ -36,13 +36,13 @@ import org.beangle.data.orm.Jpas
 import java.lang.reflect.Modifier
 import scala.collection.mutable
 
-trait AccessProxy {
-  def ctx: AccessProxy.Context
+trait AccessTracker {
+  def ctx: AccessTracker.Context
 }
 
-object AccessProxy extends Logging {
+object AccessTracker extends Logging {
 
-  private val ProxyNamePostfix = "$AccessProxy"
+  private val ProxyNamePostfix = "$Tracker"
 
   class Names(val values: mutable.LinkedHashSet[String]) {
     var last: String = _
@@ -101,10 +101,10 @@ object AccessProxy extends Logging {
     new ByteBuddy(ClassFileVersion.ofThisVm(ClassFileVersion.JAVA_V21)).`with`(TypeValidation.DISABLED)
   }
 
-  def of[T](clazz: Class[T]): T & AccessProxy = {
+  def of[T](clazz: Class[T]): T & AccessTracker = {
     val existing = generate(clazz)
     val proxy = existing.getConstructor(classOf[Context]).newInstance(new Context())
-    proxy.asInstanceOf[T & AccessProxy]
+    proxy.asInstanceOf[T & AccessTracker]
   }
 
   def generate(clazz: Class[_]): Class[_] = {
@@ -144,7 +144,7 @@ object AccessProxy extends Logging {
    * def gender():Gender={
    *   this._ctx.access("gender")
    *   val nctx = this._ctx.fork("gender")
-   *   new Gender$AccessProxy(nctx)
+   *   new Gender$Tracker(nctx)
    * }
    * }}}
    * 如属于简单类型，则直接返回字面量或者父级方法
@@ -155,8 +155,8 @@ object AccessProxy extends Logging {
    * }
    * }}}
    *
-   * @param clazz
-   * @param proxyClazzName
+   * @param clazz          origin class
+   * @param proxyClazzName proxy class name
    * @return
    */
   private def doGenerate(clazz: Class[_], proxyClazzName: String): Class[_] = {
@@ -164,7 +164,7 @@ object AccessProxy extends Logging {
     var builder: DynamicType.Builder[_] = byteBuddy
       .subclass(if (clazz.isInterface) classOf[Object] else clazz)
       .name(proxyClazzName)
-      .implement(classOf[AccessProxy])
+      .implement(classOf[AccessTracker])
       .defineField("_ctx", classOf[Context], Visibility.PRIVATE)
       .defineMethod("ctx", classOf[Context]).intercept(FieldAccessor.ofField("_ctx"))
 
@@ -186,7 +186,7 @@ object AccessProxy extends Logging {
         import ByteBuddyHelper.*
         builder = builder.method(named(getter.getName)).intercept(
           new Implementation.Simple((v: MethodVisitor, c: Implementation.Context, md: MethodDescription) => {
-            // 步骤1：将 proxy 强转为 AccessProxy 并获取 ctx
+            // 步骤1：将 proxy 强转为 AccessTracker 并获取 ctx
             v.visitVarInsn(Opcodes.ALOAD, 0)
             v.visitFieldInsn(Opcodes.GETFIELD, proxyClazzName.replace('.', '/'), "_ctx", notation(classOf[Context]))
 
@@ -236,7 +236,8 @@ object AccessProxy extends Logging {
 
     // 生成并加载类
     val dynamicType = builder.make()
-    // dynamicType.saveIn(new java.io.File(SystemInfo.tmpDir))
+    //dynamicType.saveIn(new java.io.File(SystemInfo.tmpDir))
+    //println(SystemInfo.tmpDir)
     val generated = dynamicType.load(clazz.getClassLoader, ClassLoadingStrategy.Default.INJECTION).getLoaded
     logger.debug(s"generate $proxyClazzName using $watch")
     proxies.put(proxyClazzName, generated)
