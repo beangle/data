@@ -369,9 +369,8 @@ object MappingModule {
     }
   }
 
-  final class EntityHolder[T](val mapping: OrmEntityType, val mappings: Mappings, val clazz: Class[T], module: MappingModule) {
-
-    var tracker: AccessTracker = _
+  final class EntityHolder[T](val mapping: OrmEntityType, val mappings: Mappings, val clazz: Class[T],
+                              val tracker: AccessTracker, module: MappingModule) {
 
     def engine: Engine = mappings.database.engine
 
@@ -391,7 +390,6 @@ object MappingModule {
     }
 
     def declare(declarations: T => Any): this.type = {
-      if (null == tracker) tracker = AccessTracker.of(clazz)
       declarations(tracker.asInstanceOf[T])
       this
     }
@@ -589,7 +587,9 @@ abstract class MappingModule(var name: Option[String]) extends Logging {
         }
       }
     }
-    val holder = new EntityHolder(mapping, mappings, cls, this)
+    val tracker = AccessTracker.of(cls)
+    val holder = new EntityHolder(mapping, mappings, cls, tracker, this)
+
     mapping.module = this.name
     currentHolder = holder
     entityMappings.put(mapping.entityName, mapping)
