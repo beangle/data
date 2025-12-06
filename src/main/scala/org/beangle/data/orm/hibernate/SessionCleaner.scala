@@ -21,8 +21,9 @@ import org.beangle.commons.cdi.{Container, ContainerListener}
 import org.beangle.data.orm.hibernate.SessionHelper
 import org.hibernate.SessionFactory
 
-class SessionCleaner(factories: List[SessionFactory]) extends ContainerListener {
+class SessionCleaner extends ContainerListener {
   override def onStarted(container: Container): Unit = {
+    val factories = container.getBeans(classOf[SessionFactory]).values
     factories.foreach(sf => SessionHelper.closeSession(sf))
   }
 }
