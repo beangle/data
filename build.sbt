@@ -24,7 +24,7 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Data Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.32"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "5.6.33"
 val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.4"
 
 lazy val root = (project in file("."))
