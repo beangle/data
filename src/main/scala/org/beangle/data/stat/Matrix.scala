@@ -22,38 +22,45 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
 import org.beangle.data.model.Entity
+import org.beangle.data.stat.Matrix.registerBeanInfo
 
 object Matrix {
 
   case class Row(keys: Seq[Any], counters: Array[Double])
 
-  case class Column(name: String, title: String, values: Map[Any, Any]) {
+  case class Column(name: String, title: String, datas: Map[Any, Any]) {
     def keys: Iterable[Any] = {
-      values.keys
+      datas.keys
     }
 
-    def get(key: Any): Option[Any] = values.get(key)
+    def values: Iterable[Any] = {
+      datas.values
+    }
+
+    def get(key: Any): Option[Any] = datas.get(key)
 
     def keep(keys: Set[Any]): Column = {
-      Column(name, title, values.filter(x => keys.contains(x._1)))
+      Column(name, title, datas.filter(x => keys.contains(x._1)))
     }
   }
 
-  private def registMeta(): Unit = {
-    BeanInfos.of(classOf[Matrix])
-    BeanInfos.of(classOf[Matrix.Column])
+  def registerBeanInfo(): Unit = {
+    if (!BeanInfos.cached(classOf[Matrix])) {
+      BeanInfos.of(classOf[Matrix])
+      BeanInfos.of(classOf[Matrix.Column])
+    }
   }
-
-  registMeta()
 }
 
 /** 数据统计矩阵
  *
- * @param columns
- * @param datas
+ * @param columns columns
+ * @param datas   rows
  */
 @beta
 class Matrix(val columns: Seq[Matrix.Column], val datas: collection.Seq[Matrix.Row]) {
+
+  registerBeanInfo()
 
   def getColumn(name: String): Matrix.Column = {
     columns.find(_.name == name).head
