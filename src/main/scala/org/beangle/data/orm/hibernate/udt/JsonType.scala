@@ -17,7 +17,7 @@
 
 package org.beangle.data.orm.hibernate.udt
 
-import org.beangle.commons.json.Json
+import org.beangle.commons.json.{Json, JsonArray, JsonObject, JsonValue}
 import org.hibernate.`type`.descriptor.WrapperOptions
 import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
 
@@ -41,7 +41,14 @@ class JsonType[T <: Json](jsonType: Class[T]) extends AbstractClassJavaType[T](j
 
   override def wrap[X](value: X, options: WrapperOptions): T = {
     value match {
-      case null => Json.empty(jsonType).asInstanceOf[T]
+      case null =>
+        if (jsonType == classOf[JsonObject]) {
+          Json.emptyObject.asInstanceOf[T]
+        } else if (jsonType == classOf[JsonArray]) {
+          Json.emptyArray.asInstanceOf[T]
+        } else {
+          JsonValue("").asInstanceOf[T]
+        }
       case s: String => Json.parse(s).asInstanceOf[T]
       case _ => throw new RuntimeException(s"Cannot support convert from ${value.getClass} to Json")
     }
