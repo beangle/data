@@ -18,19 +18,18 @@
 package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.bean.{Factory, Initializing}
+import org.beangle.commons.cdi.Container
 import org.beangle.commons.lang.annotation.description
 import org.beangle.data.orm.hibernate.ConfigurationBuilder
 import org.hibernate.SessionFactory
 import org.hibernate.cfg.ManagedBeanSettings
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
-import org.springframework.beans.factory.{BeanFactory, BeanFactoryAware}
-import org.springframework.core.io.Resource
 
 import java.util as ju
 import javax.sql.DataSource
 
 @description("构建Hibernate的会话工厂")
-class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory], Initializing, BeanFactoryAware {
+class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory], Initializing {
 
   var ormLocation: String = "classpath*:beangle.xml"
 
@@ -40,20 +39,15 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
 
   private var result: SessionFactory = _
 
-  private var beanFactory: ConfigurableListableBeanFactory = _
+  var container: Container = _
 
   def init(): Unit = {
-    if (null != beanFactory) {
-      properties.put(ManagedBeanSettings.BEAN_CONTAINER, new SpringBeanContainer(beanFactory))
-    }
+    val bf = container.underlying.asInstanceOf[ConfigurableListableBeanFactory]
+    properties.put(ManagedBeanSettings.BEAN_CONTAINER, new SpringBeanContainer(bf))
     val cfgb = new ConfigurationBuilder(dataSource, this.ormLocation, properties)
     if (devMode) cfgb.enableDevMode()
     val config = cfgb.build()
     result = config.buildSessionFactory()
-  }
-
-  def setBeanFactory(beanFactory: BeanFactory): Unit = {
-    this.beanFactory = beanFactory.asInstanceOf[ConfigurableListableBeanFactory]
   }
 
   override def getObject: SessionFactory = result
