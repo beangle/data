@@ -42,8 +42,10 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
   var container: Container = _
 
   def init(): Unit = {
-    val bf = container.underlying.asInstanceOf[ConfigurableListableBeanFactory]
-    properties.put(ManagedBeanSettings.BEAN_CONTAINER, new SpringBeanContainer(bf))
+    if (null != container && container.underlying != null) {
+      val bf = container.underlying.asInstanceOf[ConfigurableListableBeanFactory]
+      properties.put(ManagedBeanSettings.BEAN_CONTAINER, new SpringBeanContainer(bf))
+    }
     val cfgb = new ConfigurationBuilder(dataSource, this.ormLocation, properties)
     if (devMode) cfgb.enableDevMode()
     val config = cfgb.build()
