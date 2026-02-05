@@ -15,26 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.orm.tool
+package org.beangle.data
 
-import org.beangle.commons.io.ResourcePatternResolver
-import org.beangle.commons.lang.SystemInfo
-import org.beangle.data.orm.Mappings
-import org.beangle.jdbc.engine.Engines
-import org.beangle.jdbc.meta.Database
+import org.beangle.commons.logging.{Logger, slf4j}
 
-import java.io.File
-import java.util.Locale
-
-object StaticEnhancerTest {
-  def main(args: Array[String]): Unit = {
-    val engine = Engines.forName("PostgreSQL")
-    val database = new Database(engine)
-    val mappings = new Mappings(database, "classpath*:beangle.xml")
-    mappings.locale = Locale.SIMPLIFIED_CHINESE
-    mappings.autobind()
-
-    val se = new StaticEnhancer
-    se.enhance(new File(SystemInfo.tmpDir), mappings)
-  }
-}
+object DataLogger extends Logger(slf4j("org.beangle.data"))

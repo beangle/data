@@ -22,11 +22,11 @@ import org.beangle.commons.conversion.Conversion
 import org.beangle.commons.conversion.impl.DefaultConversion
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.{Objects, Strings}
-import org.beangle.commons.logging.Logging
+import org.beangle.data.DataLogger
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.*
 
-object ConvertPopulator extends Logging {
+object ConvertPopulator {
   private val zero = '\u0000'
 
   /** trim and remove zero
@@ -60,7 +60,7 @@ object ConvertPopulator extends Logging {
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.data.model.util.ConvertPopulator.*
 
-class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) extends Populator with Logging {
+class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) extends Populator {
   val properties = new Properties(conversion)
 
   /** Initialize target's attribuate path
@@ -112,7 +112,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
   }
 
   private def logError(obj: Any, propertyName: String): Unit = {
-    logger.error(s"Cannot find property type [$propertyName] of ${obj.getClass}")
+    DataLogger.error(s"Cannot find property type [$propertyName] of ${obj.getClass}")
   }
 
   /**

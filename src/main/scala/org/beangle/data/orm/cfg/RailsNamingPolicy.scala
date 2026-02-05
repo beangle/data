@@ -19,7 +19,6 @@ package org.beangle.data.orm.cfg
 
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.{substringBeforeLast, unCamel}
-import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.inflector.Pluralizer
 import org.beangle.commons.text.inflector.en.EnNounPluralizer
 import org.beangle.data.orm.{Name, NamingPolicy}
@@ -29,7 +28,7 @@ import org.beangle.data.orm.{Name, NamingPolicy}
  *
  * @author chaostone
  */
-class RailsNamingPolicy(profiles: Profiles) extends NamingPolicy with Logging {
+class RailsNamingPolicy(profiles: Profiles) extends NamingPolicy {
 
   private val pluralizer: Pluralizer = EnNounPluralizer
 

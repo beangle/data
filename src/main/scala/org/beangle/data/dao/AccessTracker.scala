@@ -30,7 +30,7 @@ import net.bytebuddy.{ByteBuddy, ClassFileVersion}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.lang.time.Stopwatch
-import org.beangle.commons.logging.Logging
+import org.beangle.data.DataLogger
 import org.beangle.data.orm.Jpas
 
 import java.lang.reflect.Modifier
@@ -40,7 +40,7 @@ trait AccessTracker {
   def ctx: AccessTracker.Context
 }
 
-object AccessTracker extends Logging {
+object AccessTracker {
 
   private val TrackerNamePostfix = "$Tracker"
 
@@ -239,7 +239,7 @@ object AccessTracker extends Logging {
     //dynamicType.saveIn(new java.io.File(SystemInfo.tmpDir))
     //println(SystemInfo.tmpDir)
     val generated = dynamicType.load(clazz.getClassLoader, ClassLoadingStrategy.Default.INJECTION).getLoaded
-    logger.debug(s"generate $trackerClazzName using $watch")
+    DataLogger.debug(s"generate $trackerClazzName using $watch")
     trackers.put(trackerClazzName, generated)
     generated
   }

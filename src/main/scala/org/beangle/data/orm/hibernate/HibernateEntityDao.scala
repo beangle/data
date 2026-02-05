@@ -21,7 +21,6 @@ import org.beangle.commons.bean.Initializing
 import org.beangle.commons.collection.page.{Page, PageLimit, SinglePage}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.description
-import org.beangle.commons.logging.Logging
 import org.beangle.data.dao.{EntityDao, LimitQuery, Operation, OperationType, OqlBuilder, QueryBuilder, Query as BQuery}
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.Domain
@@ -43,7 +42,7 @@ import scala.jdk.javaapi.CollectionConverters.asScala
  * @author chaostone
  */
 @description("基于Hibernate提供的通用实体DAO")
-class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Logging, Initializing {
+class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
 
   var domain: Domain = _
 

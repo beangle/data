@@ -32,8 +32,7 @@ class MappingTest extends AnyFunSpec with Matchers {
   describe("Mapping") {
     it("bind") {
       val engine = new PostgreSQL10
-      val ormLocations = ResourcePatternResolver.getResources("classpath*:META-INF/beangle.xml")
-      val mappings = new Mappings(new Database(engine), ormLocations)
+      val mappings = new Mappings(new Database(engine), "classpath*:beangle.xml")
       mappings.locale = java.util.Locale.SIMPLIFIED_CHINESE
       mappings.autobind()
       val menuBeanInfo = BeanInfos.get(classOf[UserProperty])

@@ -17,17 +17,18 @@
 
 package org.beangle.data.orm.cfg
 
-import org.beangle.commons.config.Resources
+import org.beangle.commons.config.XmlConfigs
 import org.beangle.commons.lang.Strings.*
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.{ClassLoaders, Strings}
-import org.beangle.commons.logging.Logging
+import org.beangle.commons.xml.{Element, Node}
+import org.beangle.data.DataLogger
 import org.beangle.data.orm.{MappingModule, NamingPolicy}
 
 import java.net.URL
 import scala.collection.mutable
 
-class Profiles(resources: Resources) extends Logging {
+class Profiles(configLocation: String) {
 
   private val defaultProfile = new MappingProfile
 
@@ -95,9 +96,10 @@ class Profiles(resources: Resources) extends Logging {
       defaultProfile._schema = Some(s)
     }
     val ms = new mutable.HashMap[String, MappingModule]
-    for (url <- resources.paths) addXMLConfig(url, ms)
-    if (logger.isDebugEnabled) {
-      if (profiles.nonEmpty) logger.debug(s"Table name pattern: -> \n${this.toString}")
+    val doc = XmlConfigs.load(configLocation)
+    (doc \ "orm") foreach { orm => addXMLConfig(orm, ms) }
+    if (DataLogger.isDebugEnabled) {
+      if (profiles.nonEmpty) DataLogger.debug(s"Table name pattern: -> \n${this.toString}")
     }
     //module排序,使其处理过程稳定化
     modules = ms.values.toSeq.sortBy(_.getClass.getName).toList
@@ -113,7 +115,7 @@ class Profiles(resources: Resources) extends Logging {
           var parentName = substringBeforeLast(key, ".")
           while (isNotEmpty(parentName) && null == profile.parent) {
             if (profiles.contains(parentName) && profile.packageName != parentName) {
-              logger.debug(s"set ${profile.packageName}'s parent is $parentName")
+              DataLogger.debug(s"set ${profile.packageName}'s parent is $parentName")
               profile.parent = profiles.get(parentName)
             }
             val len = parentName.length
@@ -124,33 +126,23 @@ class Profiles(resources: Resources) extends Logging {
     }
   }
 
-  private def addXMLConfig(url: URL, ms: mutable.HashMap[String, MappingModule]): Unit = {
-    try {
-      logger.debug(s"loading xml $url")
-      val is = url.openStream()
-      if (null != is) {
-        val xml = scala.xml.XML.load(is)
-        (xml \ "orm" \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
-        (xml \ "orm" \ "mapping") foreach { ele =>
-          val name = (ele \ "@name").text
-          val clz = (ele \ "@class").text
-          if (ms.contains(clz)) {
-            logger.warn("duplicated moudule " + clz)
-          } else {
-            val module = Reflections.getInstance[MappingModule](clz)
-            if Strings.isNotBlank(name) then module.name = Some(name.trim())
-            ms.put(clz, module)
-          }
-        }
-        is.close()
+  private def addXMLConfig(orm: Node, ms: mutable.HashMap[String, MappingModule]): Unit = {
+    (orm \ "naming" \ "profile") foreach { ele => parseProfile(ele, null) }
+    (orm \ "mapping") foreach { ele =>
+      val name = (ele \ "@name").text
+      val clz = (ele \ "@class").text
+      if (ms.contains(clz)) {
+        DataLogger.warn("duplicated moudule " + clz)
+      } else {
+        val module = Reflections.getInstance[MappingModule](clz)
+        if Strings.isNotBlank(name) then module.name = Some(name.trim())
+        ms.put(clz, module)
       }
-      autoWire()
-    } catch {
-      case e: Exception => throw new RuntimeException("property load error in url:" + url, e)
     }
+    autoWire()
   }
 
-  private def parseProfile(melem: scala.xml.Node, parent: MappingProfile): Unit = {
+  private def parseProfile(melem: Node, parent: MappingProfile): Unit = {
     val profile = new MappingProfile
     if ((melem \ "@package").nonEmpty) {
       profile.packageName = (melem \ "@package").text

@@ -27,16 +27,14 @@ import org.springframework.core.io.UrlResource
 
 class HibernateConfigTest extends AnyFunSpec, Matchers {
 
-  val ormLocations = ClassLoaders.getResource("beangle.xml").toList
-  val resouces = ormLocations map (url => new UrlResource(url.toURI))
   val ds = Tests.buildTestH2()
   val builder = new LocalSessionFactoryBean(ds)
-  builder.ormLocations = resouces.toArray
+  builder.ormLocation = "classpath*:beangle.xml"
   builder.properties.put("hibernate.show_sql", "true")
   builder.properties.put("hibernate.hbm2ddl.auto", "create")
   builder.init()
 
-  val sf = builder.result
+  val sf = builder.getObject
 
   val entityDao = new HibernateEntityDao(sf)
   entityDao.init()

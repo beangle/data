@@ -19,7 +19,7 @@ package org.beangle.data.orm.hibernate
 
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.commons.logging.Logging
+import org.beangle.data.DataLogger
 import org.beangle.data.orm.Mappings
 import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.beangle.jdbc.engine.Engines
@@ -38,16 +38,12 @@ import scala.annotation.nowarn
 object ConfigurationBuilder {
   def default: Configuration = {
     val resolver = new ResourcePatternResolver
-    val sfb = new ConfigurationBuilder(null)
-    sfb.ormLocations = resolver.getResources("classpath*:beangle.xml")
+    val sfb = new ConfigurationBuilder(null, "classpath*:beangle.xml")
     sfb.build()
   }
 }
 
-class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties = new Properties()) extends Logging {
-
-  var ormLocations: Seq[URL] = _
-
+class ConfigurationBuilder(val dataSource: DataSource, val ormLocation: String, properties: ju.Properties = new Properties()) {
   /**
    * Import System properties
    */
@@ -60,7 +56,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
         val value = sysProps.getProperty(key)
         val overridden = properties.containsKey(key)
         properties.put(key, value)
-        if (overridden) logger.info(s"Override hibernate property $key=$value")
+        if (overridden) DataLogger.info(s"Override hibernate property $key=$value")
       }
     }
     if (!sysProps.contains("org.jboss.logging.provider")) {
@@ -142,7 +138,7 @@ class ConfigurationBuilder(val dataSource: DataSource, properties: ju.Properties
 
   private def getMappings: Mappings = {
     val engine = Engines.forDataSource(dataSource)
-    val mappings = new Mappings(new Database(engine), ormLocations.toList)
+    val mappings = new Mappings(new Database(engine), ormLocation)
     mappings.autobind()
     mappings
   }

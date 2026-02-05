@@ -19,10 +19,9 @@ package org.beangle.data.orm.cfg
 
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.Strings.substringBeforeLast
-import org.beangle.commons.logging.Logging
 import org.beangle.data.orm.{Name, NamingPolicy}
 
-class EJB3NamingPolicy(profiles: Profiles) extends NamingPolicy with Logging {
+class EJB3NamingPolicy(profiles: Profiles) extends NamingPolicy {
 
   override def classToTableName(clazz: Class[_], entityName: String): Name = {
     var className = if (clazz.getName.endsWith("Bean")) substringBeforeLast(clazz.getName, "Bean") else clazz.getName

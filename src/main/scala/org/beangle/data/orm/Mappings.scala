@@ -19,12 +19,10 @@ package org.beangle.data.orm
 
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.collection.Collections
-import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, Reflections, TypeInfo}
-import org.beangle.commons.logging.Logging
 import org.beangle.commons.text.i18n.Messages
 import org.beangle.data.model.annotation.archive
 import org.beangle.data.model.meta.*
@@ -40,10 +38,10 @@ import java.util.Locale
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 
-final class Mappings(val database: Database, val profiles: Profiles) extends Logging {
+final class Mappings(val database: Database, val profiles: Profiles) {
 
-  def this(database: Database, ormLocations: List[URL]) = {
-    this(database, new Profiles(new Resources(None, ormLocations, None)))
+  def this(database: Database, ormLocation: String) = {
+    this(database, new Profiles(ormLocation))
   }
 
   var locale: Locale = Locale.getDefault

@@ -20,7 +20,7 @@ package org.beangle.data.dao
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.conversion.impl.DefaultConversion
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.logging.Logging
+import org.beangle.data.DataLogger
 import org.beangle.data.model.util.Id
 import org.beangle.data.model.{Component, Entity}
 
@@ -30,7 +30,7 @@ import scala.collection.mutable
  *
  * @author chaostone
  */
-object Conditions extends Logging {
+object Conditions {
 
   def toQueryString(conditions: List[Condition]): String = {
     if (null == conditions || conditions.isEmpty) return ""
@@ -70,7 +70,7 @@ object Conditions extends Logging {
       }
     } catch {
       case _: Exception =>
-        logger.debug(s"error occur in extractConditions for  bean $entity with attr named $curr")
+        DataLogger.debug(s"error occur in extractConditions for  bean $entity with attr named $curr")
     }
     conditions.toList
   }
@@ -123,7 +123,7 @@ object Conditions extends Logging {
             conditions += Condition(content.toString, property)
           }
         } catch {
-          case e: Exception => logger.warn(s"getProperty $value error", e);
+          case e: Exception => DataLogger.warn(s"getProperty $value error", e);
         }
       case _ =>
         conditions += Condition(name + " = :" + name.replace('.', '_'), value)
@@ -143,7 +143,7 @@ object Conditions extends Logging {
           addAttrCondition(conditions, prefix + "." + attr, value)
       }
     } catch {
-      case _: Exception => logger.warn(s"error occur in extractComponent of component:$component with attr named :$curr")
+      case _: Exception => DataLogger.warn(s"error occur in extractComponent of component:$component with attr named :$curr")
     }
     conditions.toList
   }

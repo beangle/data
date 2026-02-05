@@ -18,7 +18,7 @@
 package org.beangle.data.orm.hibernate
 
 import jakarta.persistence.EntityManager
-import org.beangle.commons.logging.Logging
+import org.beangle.data.DataLogger
 import org.beangle.data.orm.hibernate.HibernateTransactionManager.SessionHolder
 import org.hibernate.*
 import org.hibernate.engine.jdbc.connections.spi.{ConnectionProvider, MultiTenantConnectionProvider}
@@ -30,7 +30,7 @@ import java.sql.Connection
 import java.util.function.Consumer
 import javax.sql.DataSource
 
-object SessionHelper extends Logging {
+object SessionHelper {
   private class HibernateConnectionHandle(session: SessionImplementor) extends ConnectionHandle {
     override def getConnection: Connection = {
       session.getJdbcCoordinator.getLogicalConnection.getPhysicalConnection
@@ -97,7 +97,7 @@ object SessionHelper extends Logging {
       try {
         if (em.isOpen) em.close()
       } catch {
-        case ex: Throwable => logger.error("Failed to release session", ex)
+        case ex: Throwable => DataLogger.error("Failed to release session", ex)
       }
     }
   }

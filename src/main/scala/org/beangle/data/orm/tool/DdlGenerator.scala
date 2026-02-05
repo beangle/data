@@ -21,10 +21,9 @@ import org.beangle.commons.collection.Collections
 import org.beangle.commons.io.Files./
 import org.beangle.commons.io.{IOs, ResourcePatternResolver}
 import org.beangle.commons.lang.{Charsets, Locales, Strings, SystemInfo}
-import org.beangle.commons.logging.Logging
+import org.beangle.data.orm.Mappings
 import org.beangle.jdbc.engine.{Engine, Engines}
 import org.beangle.jdbc.meta.*
-import org.beangle.data.orm.Mappings
 
 import java.io.{File, FileWriter}
 import java.util.Locale
@@ -60,12 +59,11 @@ object DdlGenerator {
       return List.empty
     }
     val engine = Engines.forName(dialect)
-    val ormLocations = ResourcePatternResolver.getResources("classpath*:beangle.xml")
     val database = new Database(engine)
     val version = System.getProperty("database.version")
     if Strings.isNotBlank(version) then database.version = version
 
-    val mappings = new Mappings(database, ormLocations)
+    val mappings = new Mappings(database, "classpath*:beangle.xml")
     mappings.locale = locale
     mappings.autobind()
     val scripts = new SchemaExporter(mappings, engine).generate()
@@ -109,7 +107,7 @@ object DdlGenerator {
   }
 }
 
-class SchemaExporter(mappings: Mappings, engine: Engine) extends Logging {
+class SchemaExporter(mappings: Mappings, engine: Engine) {
   private val schemas = new collection.mutable.ListBuffer[String]
   private val tables = new collection.mutable.ListBuffer[String]
   private val sequences = new collection.mutable.ListBuffer[String]

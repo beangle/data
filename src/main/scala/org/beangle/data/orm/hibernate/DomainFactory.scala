@@ -60,5 +60,7 @@ object DomainFactory {
 
 @description("基于Hibernate提供的元信息工厂")
 class DomainFactory(factories: Iterable[SessionFactory]) extends Factory[Domain] {
-  val result: Domain = DomainFactory.build(factories)
+  private val result: Domain = DomainFactory.build(factories)
+
+  override def getObject: Domain = result
 }

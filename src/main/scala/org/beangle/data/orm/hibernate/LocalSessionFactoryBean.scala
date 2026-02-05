@@ -32,13 +32,13 @@ import javax.sql.DataSource
 @description("构建Hibernate的会话工厂")
 class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory], Initializing, BeanFactoryAware {
 
-  var ormLocations: Array[Resource] = Array.empty
+  var ormLocation: String = "classpath*:beangle.xml"
 
   var devMode: Boolean = false
 
   var properties = new ju.Properties
 
-  var result: SessionFactory = _
+  private var result: SessionFactory = _
 
   private var beanFactory: ConfigurableListableBeanFactory = _
 
@@ -46,8 +46,7 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
     if (null != beanFactory) {
       properties.put(ManagedBeanSettings.BEAN_CONTAINER, new SpringBeanContainer(beanFactory))
     }
-    val cfgb = new ConfigurationBuilder(dataSource, properties)
-    cfgb.ormLocations = ormLocations.toIndexedSeq.map(l => l.getURL)
+    val cfgb = new ConfigurationBuilder(dataSource, this.ormLocation, properties)
     if (devMode) cfgb.enableDevMode()
     val config = cfgb.build()
     result = config.buildSessionFactory()
@@ -56,5 +55,7 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
   def setBeanFactory(beanFactory: BeanFactory): Unit = {
     this.beanFactory = beanFactory.asInstanceOf[ConfigurableListableBeanFactory]
   }
+
+  override def getObject: SessionFactory = result
 
 }

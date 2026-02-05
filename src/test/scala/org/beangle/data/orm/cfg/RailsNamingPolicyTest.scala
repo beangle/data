@@ -17,7 +17,6 @@
 
 package org.beangle.data.orm.cfg
 
-import org.beangle.commons.config.Resources
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.orm.cfg.Profiles
 import org.beangle.data.orm.model.code.{NationBean, SchoolBean}
@@ -30,7 +29,7 @@ class RailsNamingPolicyTest extends AnyFunSpec with Matchers {
   describe("RailsNamingPolicy") {
     it("Get Module") {
       System.setProperty("jpa_prefix", "public")
-      val profiles = new Profiles(new Resources(None, ClassLoaders.getResources("beangle.xml"), None))
+      val profiles = new Profiles("classpath*:beangle.xml")
       val module = profiles.getProfile(classOf[NationBean])
       assert(module.schema.contains("public_code"))
       assert(profiles.getPrefix(classOf[NationBean]) == "gb_")
