@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.hibernate
 
+import org.beangle.commons.config.Enviroment as CfgEnviroment
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.DataLogger
@@ -29,7 +30,6 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.*
 import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
 
-import java.net.URL
 import java.util as ju
 import java.util.Properties
 import javax.sql.DataSource
@@ -48,20 +48,13 @@ class ConfigurationBuilder(val dataSource: DataSource, val ormLocation: String, 
    * Import System properties
    */
   protected def importSysProperties(): Unit = {
-    val sysProps = System.getProperties
-    val keys = sysProps.propertyNames
-    while (keys.hasMoreElements) {
-      val key = keys.nextElement.asInstanceOf[String]
-      if (key.startsWith("hibernate.")) {
-        val value = sysProps.getProperty(key)
-        val overridden = properties.containsKey(key)
-        properties.put(key, value)
-        if (overridden) DataLogger.info(s"Override hibernate property $key=$value")
-      }
+    val settings = CfgEnviroment.Default.getNestedProperties("hibernate.settings")
+    settings foreach { case (k, v) =>
+      properties.put(k, v)
     }
-    if (!sysProps.contains("org.jboss.logging.provider")) {
+    //让hibernate使用sfl4j的日志框架
+    if (!properties.contains("org.jboss.logging.provider")) {
       //@see org.jboss.logging.LoggerProviders.findProvider
-      //让hibernate使用sfl4j的日志框架
       System.setProperty("org.jboss.logging.provider", "slf4j")
     }
   }
