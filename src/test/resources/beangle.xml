@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beangle>
-  <orm>
+  <jpa>
     <mapping class="org.beangle.data.orm.model.TestMapping1"/>
     <mapping class="org.beangle.data.orm.model.TestMapping2"/>
     <mapping class="org.beangle.data.orm.model.TestMapping3"/>
@@ -15,5 +15,5 @@
 
       <profile package = "org.beangle.data.orm.hibernate.dao" pluralize="true" schema="${jpa_prefix}"/>
     </naming>
-  </orm>
+  </jpa>
 </beangle>
