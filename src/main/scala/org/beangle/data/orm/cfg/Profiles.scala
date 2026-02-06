@@ -22,7 +22,7 @@ import org.beangle.commons.lang.Strings.*
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.commons.xml.{Element, Node}
-import org.beangle.data.DataLogger
+import org.beangle.data.Logger
 import org.beangle.data.orm.{MappingModule, NamingPolicy}
 
 import java.net.URL
@@ -97,9 +97,9 @@ class Profiles(configLocation: String) {
     }
     val ms = new mutable.HashMap[String, MappingModule]
     val doc = XmlConfigs.load(configLocation)
-    (doc \ "orm") foreach { orm => addXMLConfig(orm, ms) }
-    if (DataLogger.isDebugEnabled) {
-      if (profiles.nonEmpty) DataLogger.debug(s"Table name pattern: -> \n${this.toString}")
+    (doc \ "jpa") foreach { orm => addXMLConfig(orm, ms) }
+    if (Logger.isDebugEnabled) {
+      if (profiles.nonEmpty) Logger.debug(s"Table name pattern: -> \n${this.toString}")
     }
     //module排序,使其处理过程稳定化
     modules = ms.values.toSeq.sortBy(_.getClass.getName).toList
@@ -115,7 +115,7 @@ class Profiles(configLocation: String) {
           var parentName = substringBeforeLast(key, ".")
           while (isNotEmpty(parentName) && null == profile.parent) {
             if (profiles.contains(parentName) && profile.packageName != parentName) {
-              DataLogger.debug(s"set ${profile.packageName}'s parent is $parentName")
+              Logger.debug(s"set ${profile.packageName}'s parent is $parentName")
               profile.parent = profiles.get(parentName)
             }
             val len = parentName.length
@@ -132,7 +132,7 @@ class Profiles(configLocation: String) {
       val name = (ele \ "@name").text
       val clz = (ele \ "@class").text
       if (ms.contains(clz)) {
-        DataLogger.warn("duplicated moudule " + clz)
+        Logger.warn("duplicated moudule " + clz)
       } else {
         val module = Reflections.getInstance[MappingModule](clz)
         if Strings.isNotBlank(name) then module.name = Some(name.trim())

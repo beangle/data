@@ -20,7 +20,6 @@ package org.beangle.data.orm.hibernate
 import org.beangle.commons.config.Enviroment as CfgEnviroment
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.DataLogger
 import org.beangle.data.orm.Mappings
 import org.beangle.data.orm.hibernate.cfg.MappingService
 import org.beangle.jdbc.engine.Engines
@@ -48,9 +47,9 @@ class ConfigurationBuilder(val dataSource: DataSource, val ormLocation: String, 
    * Import System properties
    */
   protected def importSysProperties(): Unit = {
-    val settings = CfgEnviroment.Default.getNestedProperties("hibernate.settings")
+    val settings = CfgEnviroment.Default.getNestedProperties("jpa.hibernate.settings")
     settings foreach { case (k, v) =>
-      properties.put(k, v)
+      properties.put("hibernate." + k, v)
     }
     //让hibernate使用sfl4j的日志框架
     if (!properties.contains("org.jboss.logging.provider")) {

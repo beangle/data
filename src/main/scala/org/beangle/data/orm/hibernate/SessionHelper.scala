@@ -18,7 +18,7 @@
 package org.beangle.data.orm.hibernate
 
 import jakarta.persistence.EntityManager
-import org.beangle.data.DataLogger
+import org.beangle.data.Logger
 import org.beangle.data.orm.hibernate.HibernateTransactionManager.SessionHolder
 import org.hibernate.*
 import org.hibernate.engine.jdbc.connections.spi.{ConnectionProvider, MultiTenantConnectionProvider}
@@ -97,7 +97,7 @@ object SessionHelper {
       try {
         if (em.isOpen) em.close()
       } catch {
-        case ex: Throwable => DataLogger.error("Failed to release session", ex)
+        case ex: Throwable => Logger.error("Failed to release session", ex)
       }
     }
   }

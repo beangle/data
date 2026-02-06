@@ -17,6 +17,6 @@
 
 package org.beangle.data
 
-import org.beangle.commons.logging.{Logger, slf4j}
+import org.beangle.commons.logging.{slf4j, Logger as CLogger}
 
-object DataLogger extends Logger(slf4j("org.beangle.data"))
+private[data] object Logger extends CLogger(slf4j("org.beangle.data"))

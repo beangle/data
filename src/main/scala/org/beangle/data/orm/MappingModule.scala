@@ -21,7 +21,7 @@ import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
-import org.beangle.data.DataLogger
+import org.beangle.data.Logger
 import org.beangle.data.dao.AccessTracker
 import org.beangle.jdbc.engine.Engine
 import org.beangle.jdbc.meta.*
@@ -622,7 +622,7 @@ abstract class MappingModule(var name: Option[String]) {
   }
 
   final def configure(mappings: Mappings): Unit = {
-    DataLogger.debug(s"Process ${getClass.getName}")
+    Logger.debug(s"Process ${getClass.getName}")
     this.mappings = mappings
     this.binding()
     entityMappings.clear()

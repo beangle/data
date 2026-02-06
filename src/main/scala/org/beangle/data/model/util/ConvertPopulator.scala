@@ -22,7 +22,7 @@ import org.beangle.commons.conversion.Conversion
 import org.beangle.commons.conversion.impl.DefaultConversion
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.{Objects, Strings}
-import org.beangle.data.DataLogger
+import org.beangle.data.Logger
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.*
 
@@ -112,7 +112,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
   }
 
   private def logError(obj: Any, propertyName: String): Unit = {
-    DataLogger.error(s"Cannot find property type [$propertyName] of ${obj.getClass}")
+    Logger.error(s"Cannot find property type [$propertyName] of ${obj.getClass}")
   }
 
   /**

@@ -30,7 +30,7 @@ import net.bytebuddy.{ByteBuddy, ClassFileVersion}
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.lang.time.Stopwatch
-import org.beangle.data.DataLogger
+import org.beangle.data.Logger
 import org.beangle.data.orm.Jpas
 
 import java.lang.reflect.Modifier
@@ -239,7 +239,7 @@ object AccessTracker {
     //dynamicType.saveIn(new java.io.File(SystemInfo.tmpDir))
     //println(SystemInfo.tmpDir)
     val generated = dynamicType.load(clazz.getClassLoader, ClassLoadingStrategy.Default.INJECTION).getLoaded
-    DataLogger.debug(s"generate $trackerClazzName using $watch")
+    Logger.debug(s"generate $trackerClazzName using $watch")
     trackers.put(trackerClazzName, generated)
     generated
   }

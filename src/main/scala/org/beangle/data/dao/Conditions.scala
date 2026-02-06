@@ -20,7 +20,7 @@ package org.beangle.data.dao
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.conversion.impl.DefaultConversion
 import org.beangle.commons.lang.Strings
-import org.beangle.data.DataLogger
+import org.beangle.data.Logger
 import org.beangle.data.model.util.Id
 import org.beangle.data.model.{Component, Entity}
 
@@ -70,7 +70,7 @@ object Conditions {
       }
     } catch {
       case _: Exception =>
-        DataLogger.debug(s"error occur in extractConditions for  bean $entity with attr named $curr")
+        Logger.debug(s"error occur in extractConditions for  bean $entity with attr named $curr")
     }
     conditions.toList
   }
@@ -123,7 +123,7 @@ object Conditions {
             conditions += Condition(content.toString, property)
           }
         } catch {
-          case e: Exception => DataLogger.warn(s"getProperty $value error", e);
+          case e: Exception => Logger.warn(s"getProperty $value error", e);
         }
       case _ =>
         conditions += Condition(name + " = :" + name.replace('.', '_'), value)
@@ -143,7 +143,7 @@ object Conditions {
           addAttrCondition(conditions, prefix + "." + attr, value)
       }
     } catch {
-      case _: Exception => DataLogger.warn(s"error occur in extractComponent of component:$component with attr named :$curr")
+      case _: Exception => Logger.warn(s"error occur in extractComponent of component:$component with attr named :$curr")
     }
     conditions.toList
   }
