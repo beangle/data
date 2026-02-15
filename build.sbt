@@ -28,14 +28,28 @@ val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.0.6"
 val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.8"
 
 lazy val root = (project in file("."))
+  .settings(common)
+  .aggregate(model, hibernate)
+
+lazy val model = (project in file("model"))
   .settings(
-    name := "beangle-model",
+    name := "beangle-data-model",
     common,
-    libraryDependencies ++= Seq(beangle_commons, slf4j, logback_classic % "test", logback_core % "test", scalatest),
-    libraryDependencies ++= Seq(beangle_jdbc, jpa, byte_buddy),
-    libraryDependencies ++= Seq(spring_tx % "optional", spring_aop % "optional"),
-    libraryDependencies ++= Seq(hibernate_jcache % "optional", hibernate_core % "optional", ehcache % "test"),
-    libraryDependencies ++= Seq(h2 % "test", HikariCP % "test", postgresql % "test")
+    libraryDependencies ++= Seq(beangle_commons, beangle_jdbc, jpa, byte_buddy, slf4j),
+    libraryDependencies ++= Seq(logback_classic % "test", logback_core % "test", scalatest),
+    Test / parallelExecution := false
   )
 
-Test / parallelExecution := false
+lazy val hibernate = (project in file("hibernate"))
+  .settings(
+    name := "beangle-data-hibernate",
+    common,
+    libraryDependencies ++= Seq(hibernate_core, hibernate_jcache, spring_tx, spring_aop),
+    libraryDependencies ++= Seq(logback_classic % "test", logback_core % "test", scalatest, ehcache % "test"),
+    libraryDependencies ++= Seq(h2 % "test", HikariCP % "test", postgresql % "test"),
+    Test / parallelExecution := false
+  ).dependsOn(model)
+
+publish / skip := true
+
+
