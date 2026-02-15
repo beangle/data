@@ -13,7 +13,7 @@
         <profile package = "code" plau="true" schema="${jpa_prefix}_code"/>
       </profile>
 
-      <profile package = "org.beangle.data.orm.hibernate.dao" pluralize="true" schema="${jpa_prefix}"/>
+      <profile package = "org.beangle.data.hibernate.dao" pluralize="true" schema="${jpa_prefix}"/>
     </naming>
   </jpa>
 </beangle>

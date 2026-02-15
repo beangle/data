@@ -17,6 +17,7 @@
 
 package org.beangle.data.dao
 
+import jakarta.persistence.{EntityManager, EntityManagerFactory}
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.data.model.Entity
 import org.beangle.data.model.meta.Domain
@@ -179,5 +180,9 @@ trait EntityDao {
    *
    * @return
    */
-  def sessionFactory: Any
+  def sessionFactory: EntityManagerFactory
+
+  def openSession(): EntityManager
+
+  def closeSession(session: EntityManager): Unit
 }

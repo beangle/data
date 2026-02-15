@@ -1,0 +1,138 @@
+/*
+ * Copyright (C) 2005, The Beangle Software.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package org.beangle.data.hibernate
+
+import org.beangle.commons.config.Enviroment as CfgEnviroment
+import org.beangle.commons.io.ResourcePatternResolver
+import org.beangle.commons.lang.ClassLoaders
+import org.beangle.data.orm.Mappings
+import org.beangle.data.hibernate.cfg.MappingService
+import org.beangle.jdbc.engine.Engines
+import org.beangle.jdbc.meta.Database
+import org.hibernate.boot.MetadataSources
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder
+import org.hibernate.cfg.*
+import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
+
+import java.util as ju
+import java.util.Properties
+import javax.sql.DataSource
+import scala.annotation.nowarn
+
+object ConfigurationBuilder {
+  def default: Configuration = {
+    val resolver = new ResourcePatternResolver
+    val sfb = new ConfigurationBuilder(null, "classpath*:beangle.xml")
+    sfb.build()
+  }
+}
+
+class ConfigurationBuilder(val dataSource: DataSource, val ormLocation: String, properties: ju.Properties = new Properties()) {
+  /**
+   * Import System properties
+   */
+  protected def importSysProperties(): Unit = {
+    val settings = CfgEnviroment.Default.getNestedProperties("jpa.hibernate.settings")
+    settings foreach { case (k, v) =>
+      properties.put("hibernate." + k, v)
+    }
+    //让hibernate使用sfl4j的日志框架
+    if (!properties.contains("org.jboss.logging.provider")) {
+      //@see org.jboss.logging.LoggerProviders.findProvider
+      System.setProperty("org.jboss.logging.provider", "slf4j")
+    }
+  }
+
+  @nowarn
+  protected def addDefaultProperties(): Unit = {
+    addDefault(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.hibernate.SpringSessionContext")
+
+    //JdbcSettings
+    if (dataSource != null) {
+      properties.put(JdbcSettings.JAKARTA_JTA_DATASOURCE, dataSource)
+      properties.put(JdbcSettings.DATASOURCE, dataSource)
+    }
+    addDefault(JdbcSettings.CONNECTION_HANDLING, PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION.name)
+    //@see https://in.relation.to/2025/01/24/jdbc-fetch-size/
+    addDefault(JdbcSettings.STATEMENT_FETCH_SIZE, "1000")
+    addDefault(JdbcSettings.USE_GET_GENERATED_KEYS, "true")
+    addDefault(JdbcSettings.SHOW_SQL, "false")
+    addDefault(JdbcSettings.FORMAT_SQL, "false")
+
+    //MappingSettings
+    addDefault(MappingSettings.XML_MAPPING_ENABLED, "false")
+    //addDefault(MappingSettings.JAVA_TIME_USE_DIRECT_JDBC, "true")
+
+    //BatchSettings
+    addDefault(BatchSettings.STATEMENT_BATCH_SIZE, "20")
+
+    //FetchSettings
+    addDefault(FetchSettings.MAX_FETCH_DEPTH, "1")
+    addDefault(FetchSettings.DEFAULT_BATCH_FETCH_SIZE, "100")
+
+    //CacheSettings
+    addDefault(CacheSettings.USE_SECOND_LEVEL_CACHE, "true")
+    addDefault(CacheSettings.USE_QUERY_CACHE, "true")
+    addDefault(CacheSettings.CACHE_REGION_FACTORY, "jcache")
+    addDefault(CacheSettings.AUTO_EVICT_COLLECTION_CACHE, "true")
+
+    //PersistenceSettings
+    addDefault(PersistenceSettings.SCANNER_DISCOVERY, "none")
+
+    if (!properties.contains("hibernate.javax.cache.provider")) {
+      addDefault("hibernate.javax.cache.missing_cache_strategy", "create")
+      //请使用application.conf配置缓存(typesafe config file)，这里不做配置
+      val caffeine = "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider"
+      if ClassLoaders.get(caffeine).nonEmpty then addDefault("hibernate.javax.cache.provider", caffeine)
+    }
+  }
+
+  def enableDevMode(): Unit = {
+    addDefault(JdbcSettings.SHOW_SQL, "true")
+    addDefault(JdbcSettings.LOG_SLOW_QUERY, "100") //100ms
+    addDefault(StatisticsSettings.GENERATE_STATISTICS, "true")
+  }
+
+  private def addDefault(name: String, value: Any): Unit = {
+    if !properties.containsKey(name) then properties.put(name, value)
+  }
+
+  def build(): Configuration = {
+    addDefaultProperties()
+    importSysProperties()
+    val srb = new StandardServiceRegistryBuilder()
+    val mappings = getMappings
+    srb.addService(classOf[MappingService], new MappingService(mappings))
+    srb.applySettings(this.properties)
+    val standardRegistry = srb.build()
+
+    val metadataSources = new MetadataSources(standardRegistry)
+    val configuration = new Configuration(metadataSources)
+
+    configuration.addProperties(this.properties)
+    configuration
+  }
+
+  private def getMappings: Mappings = {
+    val engine = Engines.forDataSource(dataSource)
+    val mappings = new Mappings(new Database(engine), ormLocation)
+    mappings.autobind()
+    mappings
+  }
+
+}

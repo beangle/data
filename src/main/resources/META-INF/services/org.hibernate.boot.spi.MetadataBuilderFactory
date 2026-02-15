@@ -1,1 +1,1 @@
-org.beangle.data.orm.hibernate.cfg.BindMetadataBuilderFactory
+org.beangle.data.hibernate.cfg.BindMetadataBuilderFactory

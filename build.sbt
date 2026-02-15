@@ -3,7 +3,7 @@ import org.beangle.parent.Settings.*
 import sbt.Keys.*
 
 ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.11.9"
+ThisBuild / version := "5.12.0"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -33,7 +33,7 @@ lazy val root = (project in file("."))
     common,
     libraryDependencies ++= Seq(beangle_commons, slf4j, logback_classic % "test", logback_core % "test", scalatest),
     libraryDependencies ++= Seq(beangle_jdbc, jpa, byte_buddy),
-    libraryDependencies ++= Seq(spring_tx % "optional", spring_aop % "optional", spring_jdbc % "optional"),
+    libraryDependencies ++= Seq(spring_tx % "optional", spring_aop % "optional"),
     libraryDependencies ++= Seq(hibernate_jcache % "optional", hibernate_core % "optional", ehcache % "test"),
     libraryDependencies ++= Seq(h2 % "test", HikariCP % "test", postgresql % "test")
   )

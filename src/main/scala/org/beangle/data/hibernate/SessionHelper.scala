@@ -1,0 +1,110 @@
+/*
+ * Copyright (C) 2005, The Beangle Software.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package org.beangle.data.hibernate
+
+import jakarta.persistence.EntityManager
+import org.beangle.data.Logger
+import org.beangle.data.hibernate.tx.SessionHolder
+import org.hibernate.*
+import org.hibernate.engine.jdbc.connections.spi.{ConnectionProvider, MultiTenantConnectionProvider}
+import org.hibernate.engine.spi.{SessionFactoryImplementor, SessionImplementor}
+import org.springframework.transaction.support.TransactionSynchronizationManager as Tsm
+
+import java.util.function.Consumer
+import javax.sql.DataSource
+
+object SessionHelper {
+
+  def getDataSource(factory: SessionFactory): DataSource = {
+    val factoryImpl = factory.asInstanceOf[SessionFactoryImplementor]
+    if (factoryImpl.getSessionFactoryOptions.isMultiTenancyEnabled) {
+      factoryImpl.getServiceRegistry.getService(classOf[MultiTenantConnectionProvider[_]]).unwrap(classOf[DataSource])
+    } else {
+      factoryImpl.getServiceRegistry.getService(classOf[ConnectionProvider]).unwrap(classOf[DataSource])
+    }
+  }
+
+  def doOpenSession(factory: SessionFactory,
+                    interceptor: Option[Interceptor] = None,
+                    initializer: Option[Consumer[Session]] = None): SessionImplementor = {
+    val s = interceptor match {
+      case Some(i) =>
+        val builder = factory.withOptions()
+        builder.interceptor(i)
+        builder.openSession()
+      case None => factory.openSession()
+    }
+    initializer foreach { iz => iz.accept(s) }
+    s.asInstanceOf[SessionImplementor]
+  }
+
+  def openSession(factory: SessionFactory,
+                  interceptor: Option[Interceptor] = None,
+                  initializer: Option[Consumer[Session]] = None): SessionImplementor = {
+    var holder = Tsm.getResource(factory).asInstanceOf[SessionHolder]
+    var session: SessionImplementor = null
+    if (null == holder) {
+      session = doOpenSession(factory, interceptor, initializer)
+      session.setHibernateFlushMode(FlushMode.COMMIT)
+      holder = new SessionHolder(session)
+      Tsm.bindResource(factory, holder)
+    }
+    holder.session
+  }
+
+  /**
+   * @param factory
+   * @return
+   */
+  def currentSession(factory: SessionFactory): SessionImplementor = {
+    val holder = Tsm.getResource(factory).asInstanceOf[SessionHolder]
+    if null == holder then null else holder.session
+  }
+
+  def closeSession(factory: SessionFactory): Unit = {
+    val holder = Tsm.unbindResourceIfPossible(factory).asInstanceOf[SessionHolder]
+    if null != holder then safeCloseSession(holder.session)
+  }
+
+  def closeSession(session: Session): Unit = {
+    Tsm.unbindResourceIfPossible(session.getSessionFactory)
+    safeCloseSession(session)
+  }
+
+  def closeSession(em: EntityManager): Unit = {
+    closeSession(em.asInstanceOf[Session])
+  }
+
+  def safeCloseSession(em: EntityManager): Unit = {
+    if (em != null) {
+      try {
+        if (em.isOpen) em.close()
+      } catch {
+        case ex: Throwable => Logger.error("Failed to release session", ex)
+      }
+    }
+  }
+
+  def safeCloseSession(s: StatelessSession): Unit = {
+    if (s != null && s.isOpen) s.close()
+  }
+
+  def toString(session: Session): String = {
+    session.getClass.getName + "@" + Integer.toHexString(System.identityHashCode(session))
+  }
+}
