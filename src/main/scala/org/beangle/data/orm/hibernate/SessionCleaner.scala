@@ -21,6 +21,8 @@ import org.beangle.commons.cdi.{Container, ContainerListener}
 import org.beangle.data.orm.hibernate.SessionHelper
 import org.hibernate.SessionFactory
 
+/** 当Container容器启动完成之后，关闭其他bean初始化过程中打开的Session
+ */
 class SessionCleaner extends ContainerListener {
   override def onStarted(container: Container): Unit = {
     val factories = container.getBeans(classOf[SessionFactory]).values

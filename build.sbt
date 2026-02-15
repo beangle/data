@@ -3,7 +3,7 @@ import org.beangle.parent.Settings.*
 import sbt.Keys.*
 
 ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.11.9-SNAPSHOT"
+ThisBuild / version := "5.11.9"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -24,8 +24,8 @@ ThisBuild / developers := List(
 ThisBuild / description := "The Beangle Data Library"
 ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.0.2"
-val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.7"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.0.6"
+val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.8"
 
 lazy val root = (project in file("."))
   .settings(
