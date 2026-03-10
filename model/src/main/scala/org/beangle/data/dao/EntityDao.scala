@@ -63,6 +63,9 @@ trait EntityDao {
    */
   def saveOrUpdate[E](entities: Iterable[E]): Unit
 
+  /** whether the entity is dirty */
+  def isDirty(entity: Entity[_]): Boolean
+
   /**
    * remove entities.
    */

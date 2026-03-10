@@ -410,6 +410,17 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     }
   }
 
+  override def isDirty(entity: Entity[_]): Boolean = {
+    entity match {
+      case proxy: HibernateProxy =>
+        val session = currentSession.asInstanceOf[SessionImplementor]
+        val pc = session.getPersistenceContext
+        val persister = session.getSessionFactory.getMappingMetamodel.getEntityDescriptor(entityNameOf(entity.getClass))
+        null != persister.findDirty(persister.getValues(entity), pc.getEntry(entity).getLoadedState, entity, session)
+      case _ => true
+    }
+  }
+
   /**
    * Persist entity using save or update,UPDATE entity should load in session first.
    */
