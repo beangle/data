@@ -416,7 +416,12 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
         val session = currentSession.asInstanceOf[SessionImplementor]
         val pc = session.getPersistenceContext
         val persister = session.getSessionFactory.getMappingMetamodel.getEntityDescriptor(entityNameOf(entity.getClass))
-        null != persister.findDirty(persister.getValues(entity), pc.getEntry(entity).getLoadedState, entity, session)
+        val entry = pc.getEntry(entity)
+        if (null == entry) {
+          true
+        } else {
+          null != persister.findDirty(persister.getValues(entity), entry.getLoadedState, entity, session)
+        }
       case _ => true
     }
   }
