@@ -27,6 +27,7 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender
 import net.bytebuddy.jar.asm.{MethodVisitor, Opcodes}
 import net.bytebuddy.matcher.ElementMatchers.*
 import net.bytebuddy.{ByteBuddy, ClassFileVersion}
+import org.beangle.commons.concurrent.Locks
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.reflect.BeanInfos
 import org.beangle.commons.lang.time.Stopwatch
@@ -34,6 +35,7 @@ import org.beangle.data.Logger
 import org.beangle.data.orm.Jpas
 
 import java.lang.reflect.Modifier
+import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 
 trait AccessTracker {
@@ -43,6 +45,8 @@ trait AccessTracker {
 object AccessTracker {
 
   private val TrackerNamePostfix = "$Tracker"
+
+  private val lock = new ReentrantLock()
 
   class Names(val values: mutable.LinkedHashSet[String]) {
     var last: String = _
@@ -112,7 +116,7 @@ object AccessTracker {
     var existed = trackers.getOrElse(trackerClazzName, null)
     if (null == existed || existed == classOf[AnyRef]) {
       val manifest = BeanInfos.get(clazz)
-      trackers.synchronized {
+      Locks.withLock(lock) {
         existed = trackers.getOrElse(trackerClazzName, null)
         if (null == existed) {
           trackers.put(trackerClazzName, classOf[AnyRef]) //防止递归调用，预先占个位子
