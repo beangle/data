@@ -27,6 +27,7 @@ import org.beangle.data.model.Entity
 import org.beangle.data.orm.Jpas
 
 import scala.collection.mutable
+import scala.reflect.{ClassTag, classTag}
 
 /**
  * Create JSON api
@@ -247,6 +248,14 @@ object JsonAPI {
     private[json] val primaryResourceTypes = Collections.newSet[String]
     //type -> {id:resources}*
     private[json] val includedResources = Collections.newMap[String, mutable.Map[String, Any]]
+
+    def include[T: ClassTag](names: String*): Unit = {
+      filters.include(classTag[T].runtimeClass, names: _*)
+    }
+
+    def exclude[T: ClassTag](names: String*): Unit = {
+      filters.exclude(classTag[T].runtimeClass, names: _*)
+    }
 
     def shouldInclude(path: String): Boolean = {
       if includes.isEmpty then true else includes.contains(path)

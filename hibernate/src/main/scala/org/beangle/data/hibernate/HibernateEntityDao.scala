@@ -313,20 +313,21 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
       this.currentSession.asInstanceOf[SessionImplementor])
   }
 
-  override def refresh[T](data: T): T = {
-    val sn = currentSession
-    sn.evict(data)
-    data match {
-      case null => null.asInstanceOf[T]
-      case e: Entity[_] =>
-        val clazz = data match {
-          case hp: HibernateProxy => hp.getHibernateLazyInitializer.getPersistentClass
-          case _ => data.getClass
-        }
-        sf.getCache.evict(clazz, e.id)
-        sn.find(clazz, e.id).asInstanceOf[T]
-      case a: Any => a
-    }
+  override def refresh[T](entity: T): T = {
+    currentSession.refresh(entity)
+    entity
+    //    sn.evict(data)
+    //    data match {
+    //      case null => null.asInstanceOf[T]
+    //      case e: Entity[_] =>
+    //        val clazz = data match {
+    //          case hp: HibernateProxy => hp.getHibernateLazyInitializer.getPersistentClass
+    //          case _ => data.getClass
+    //        }
+    //        sf.getCache.evict(clazz, e.id)
+    //        sn.find(clazz, e.id).asInstanceOf[T]
+    //      case a: Any => a
+    //    }
   }
 
   @nowarn

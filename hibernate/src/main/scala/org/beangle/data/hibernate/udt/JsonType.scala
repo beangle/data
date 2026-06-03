@@ -18,14 +18,15 @@
 package org.beangle.data.hibernate.udt
 
 import org.beangle.commons.json.{Json, JsonArray, JsonObject, JsonValue}
+import org.hibernate.SharedSessionContract
 import org.hibernate.`type`.descriptor.WrapperOptions
-import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
+import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType, MutabilityPlan}
 
 /** 转换String到Json
  *
  * @param jsonType
  */
-class JsonType[T <: Json](jsonType: Class[T]) extends AbstractClassJavaType[T](jsonType) {
+class JsonType[T <: Json](jsonType: Class[T]) extends AbstractClassJavaType[T](jsonType, new JsonMutabilityPlan[T]) {
 
   override def unwrap[X](value: T, valueType: Class[X], options: WrapperOptions): X = {
     if (value eq null) null.asInstanceOf[X]
@@ -56,5 +57,24 @@ class JsonType[T <: Json](jsonType: Class[T]) extends AbstractClassJavaType[T](j
 
   override def isWider(javaType: JavaType[_]): Boolean = {
     javaType.getJavaType.getTypeName == "java.lang.String"
+  }
+
+}
+
+class JsonMutabilityPlan[T <: Json] extends MutabilityPlan[T] {
+  override def isMutable = true
+
+  override def deepCopy(value: T): T = {
+    if (value == null) null.asInstanceOf[T]
+    else Json.de(value.toString).asInstanceOf[T]
+  }
+
+  override def disassemble(value: T, session: SharedSessionContract): Serializable = {
+    if (value == null) null else value.toString
+  }
+
+  override def assemble(cached: Serializable, session: SharedSessionContract): T = {
+    if (cached == null) null.asInstanceOf[T]
+    else Json.parse(cached.toString).asInstanceOf[T]
   }
 }

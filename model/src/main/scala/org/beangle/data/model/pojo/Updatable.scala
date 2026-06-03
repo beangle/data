@@ -38,12 +38,11 @@ package org.beangle.data.model.pojo
 import java.time.Instant
 
 /**
- * Contain create and update time interface.
+ * Contain update time interface.
  *
  * @author chaostone
  */
-@deprecated("using Updatable","5.4.12")
-trait Updated {
+trait Updatable {
 
   /**
    * Updated At

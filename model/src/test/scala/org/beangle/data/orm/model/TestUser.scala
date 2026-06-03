@@ -18,7 +18,7 @@
 package org.beangle.data.orm.model
 
 import org.beangle.commons.lang.time.{WeekDay, WeekTime}
-import org.beangle.data.model.pojo.Updated
+import org.beangle.data.model.pojo.Updatable
 import org.beangle.data.model.{Component, LongId}
 
 import scala.collection.mutable
@@ -26,7 +26,7 @@ import scala.collection.mutable
 /**
  * @author chaostone
  */
-class TestUser extends LongId with Updated {
+class TestUser extends LongId, Updatable {
 
   var member: NamedMember = _
 

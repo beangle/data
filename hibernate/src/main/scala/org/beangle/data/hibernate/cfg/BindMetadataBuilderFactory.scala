@@ -18,13 +18,13 @@
 package org.beangle.data.hibernate.cfg
 
 import org.beangle.commons.json.{Json, JsonArray, JsonObject}
-import org.beangle.data.orm.Mappings
 import org.beangle.data.hibernate.jdbc.{JsonAccessor, NullableIntJdbcType}
 import org.beangle.data.hibernate.udt.*
+import org.beangle.data.orm.Mappings
 import org.hibernate.`type`.BasicTypeRegistry
 import org.hibernate.`type`.descriptor.java.JavaType
 import org.hibernate.`type`.descriptor.jdbc.{DateJdbcType, JdbcType}
-import org.hibernate.`type`.internal.ImmutableNamedBasicTypeImpl
+import org.hibernate.`type`.internal.{ImmutableNamedBasicTypeImpl, NamedBasicTypeImpl}
 import org.hibernate.`type`.spi.TypeConfiguration
 import org.hibernate.boot.MetadataSources
 import org.hibernate.boot.internal.{InFlightMetadataCollectorImpl, MetadataBuilderImpl, MetadataBuildingContextRootImpl, RootMappingDefaults}
@@ -131,10 +131,20 @@ object BindMetadataBuilderFactory {
     //register year-month
     registerBasicType(classOf[YearMonth].getName, new YearMonthType, DateJdbcType.INSTANCE, options)
     //register json
+    registerJsonType(mappings, options)
+  }
+
+  private def registerJsonType(mappings: Mappings, options: MetadataBuildingOptions): Unit = {
     val jsonJdbcType = JsonAccessor.getJdbcType(mappings.database.engine)
-    registerBasicType(classOf[Json].getName, new JsonType(classOf[Json]), jsonJdbcType, options)
-    registerBasicType(classOf[JsonObject].getName, new JsonType(classOf[JsonObject]), jsonJdbcType, options)
-    registerBasicType(classOf[JsonArray].getName, new JsonType(classOf[JsonArray]), jsonJdbcType, options)
+    registerType(classOf[Json].getName, new JsonType(classOf[Json]), jsonJdbcType, options)
+    registerType(classOf[JsonObject].getName, new JsonType(classOf[JsonObject]), jsonJdbcType, options)
+    registerType(classOf[JsonArray].getName, new JsonType(classOf[JsonArray]), jsonJdbcType, options)
+  }
+
+  private def registerType(className: String, javaType: JavaType[_], jdbcType: JdbcType, options: MetadataBuildingOptions): Unit = {
+    val registrations = options.getBasicTypeRegistrations
+    val vt = new NamedBasicTypeImpl(javaType, jdbcType, className)
+    registrations.add(new BasicTypeRegistration(vt, Array(className)))
   }
 
   private def registerBasicType(className: String, javaType: JavaType[_], jdbcType: JdbcType, options: MetadataBuildingOptions): Unit = {
