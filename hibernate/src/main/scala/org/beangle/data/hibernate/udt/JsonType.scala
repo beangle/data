@@ -66,7 +66,7 @@ class JsonMutabilityPlan[T <: Json] extends MutabilityPlan[T] {
 
   override def deepCopy(value: T): T = {
     if (value == null) null.asInstanceOf[T]
-    else Json.de(value.toString).asInstanceOf[T]
+    else Json.deepCopy(value.asInstanceOf[Json]).asInstanceOf[T]
   }
 
   override def disassemble(value: T, session: SharedSessionContract): Serializable = {
