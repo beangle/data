@@ -19,6 +19,7 @@ package org.beangle.data.hibernate
 
 import org.beangle.commons.lang.Throwables
 import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.commons.lang.reflect.TypeInfo.OptionType
 import org.beangle.data.model.Entity
 import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.property.access.spi.{Getter, PropertyAccess, PropertyAccessStrategy, Setter}
@@ -116,7 +117,8 @@ class ScalaPropertyAccessStrategy extends PropertyAccessStrategy {
   override def buildPropertyAccess(theClass: Class[_], propertyName: String, setterRequired: Boolean): PropertyAccess = {
     BeanInfos.get(theClass).properties.get(propertyName) match {
       case Some(p) =>
-        new ScalaPropertyAccessBasicImpl(this, new BasicGetter(theClass, p.getter.get, p.clazz, propertyName, p.typeinfo.isOptional),
+        val elementType = if p.typeinfo.isOptional then p.typeinfo.asInstanceOf[OptionType].elementType.clazz else p.clazz
+        new ScalaPropertyAccessBasicImpl(this, new BasicGetter(theClass, p.getter.get, elementType, propertyName, p.typeinfo.isOptional),
           new BasicSetter(theClass, p.setter.get, propertyName, p.typeinfo.isOptional))
 
       case None => throw new PropertyNotFoundException("Could not find a setter for " + propertyName + " in class " + theClass.getName())

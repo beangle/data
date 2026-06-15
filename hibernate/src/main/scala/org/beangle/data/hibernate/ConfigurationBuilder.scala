@@ -20,8 +20,11 @@ package org.beangle.data.hibernate
 import org.beangle.commons.config.Enviroment as CfgEnviroment
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.orm.Mappings
+import org.beangle.commons.xml.Document
 import org.beangle.data.hibernate.cfg.MappingService
+import org.beangle.data.hibernate.format.{BeangleJsonFormatMapper, BeangleXmlFormatMapper}
+import org.beangle.data.orm.Mappings
+import org.beangle.data.orm.cfg.Profiles
 import org.beangle.jdbc.engine.Engines
 import org.beangle.jdbc.meta.Database
 import org.hibernate.boot.MetadataSources
@@ -34,20 +37,12 @@ import java.util.Properties
 import javax.sql.DataSource
 import scala.annotation.nowarn
 
-object ConfigurationBuilder {
-  def default: Configuration = {
-    val resolver = new ResourcePatternResolver
-    val sfb = new ConfigurationBuilder(null, "classpath*:beangle.xml")
-    sfb.build()
-  }
-}
-
-class ConfigurationBuilder(val dataSource: DataSource, val ormLocation: String, properties: ju.Properties = new Properties()) {
+class ConfigurationBuilder(val dataSource: DataSource, env: CfgEnviroment, config: Document, properties: ju.Properties = new Properties()) {
   /**
    * Import System properties
    */
   protected def importSysProperties(): Unit = {
-    val settings = CfgEnviroment.Default.getNestedProperties("jpa.hibernate.settings")
+    val settings = env.getNested("jpa.hibernate.settings")
     settings foreach { case (k, v) =>
       properties.put("hibernate." + k, v)
     }
@@ -76,6 +71,8 @@ class ConfigurationBuilder(val dataSource: DataSource, val ormLocation: String, 
 
     //MappingSettings
     addDefault(MappingSettings.XML_MAPPING_ENABLED, "false")
+    addDefault(MappingSettings.JSON_FORMAT_MAPPER, classOf[BeangleJsonFormatMapper].getName)
+    addDefault(MappingSettings.XML_FORMAT_MAPPER, classOf[BeangleXmlFormatMapper].getName)
     //addDefault(MappingSettings.JAVA_TIME_USE_DIRECT_JDBC, "true")
 
     //BatchSettings
@@ -130,7 +127,7 @@ class ConfigurationBuilder(val dataSource: DataSource, val ormLocation: String, 
 
   private def getMappings: Mappings = {
     val engine = Engines.forDataSource(dataSource)
-    val mappings = new Mappings(new Database(engine), ormLocation)
+    val mappings = new Mappings(new Database(engine), new Profiles(config))
     mappings.autobind()
     mappings
   }

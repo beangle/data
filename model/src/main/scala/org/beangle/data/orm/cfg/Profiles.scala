@@ -21,14 +21,13 @@ import org.beangle.commons.config.XmlConfigs
 import org.beangle.commons.lang.Strings.*
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.commons.lang.{ClassLoaders, Strings}
-import org.beangle.commons.xml.{Element, Node}
+import org.beangle.commons.xml.{Document, Element, Node}
 import org.beangle.data.Logger
 import org.beangle.data.orm.{MappingModule, NamingPolicy}
 
-import java.net.URL
 import scala.collection.mutable
 
-class Profiles(configLocation: String) {
+class Profiles(config: Document) {
 
   private val defaultProfile = new MappingProfile
 
@@ -96,8 +95,7 @@ class Profiles(configLocation: String) {
       defaultProfile._schema = Some(s)
     }
     val ms = new mutable.HashMap[String, MappingModule]
-    val doc = XmlConfigs.load(configLocation)
-    (doc \ "jpa") foreach { orm => addXMLConfig(orm, ms) }
+    (config \ "jpa") foreach { orm => addXMLConfig(orm, ms) }
     if (Logger.isDebugEnabled) {
       if (profiles.nonEmpty) Logger.debug(s"Table name pattern: -> \n${this.toString}")
     }

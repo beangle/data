@@ -19,11 +19,11 @@ package org.beangle.data.hibernate.cfg
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.model.meta.{BasicType, EntityType}
-import org.beangle.data.orm.*
 import org.beangle.data.hibernate.id.*
 import org.beangle.data.hibernate.udt.*
 import org.beangle.data.hibernate.{ScalaPropertyAccessStrategy, ScalaPropertyAccessor}
+import org.beangle.data.model.meta.{BasicType, EntityType}
+import org.beangle.data.orm.*
 import org.beangle.jdbc.meta.{Column, SqlType}
 import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.boot.MetadataSources
@@ -164,7 +164,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
       entity.setProxyInterfaceName(em.clazz.getName)
     }
 
-    val table = metadata.addTable(em.table.schema.name.value, null, em.table.name.value, null, em.isAbstract, context)
+    val table = metadata.addTable(em.table.schema.name.value, null, em.table.name.value, null, em.isAbstract, context, true)
     entity.setTable(table)
     val ahead = Collections.newSet[String]
     ahead.addOne(em.id.name)
@@ -536,7 +536,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
         oneToMany.setReferencedEntityName(et.entityName)
       case _ =>
         val tableName = cp.table.get
-        val table = metadata.addTable(coll.getOwner.getTable.getSchema, null, tableName, cp.subselect.orNull, false, context)
+        val table = metadata.addTable(coll.getOwner.getTable.getSchema, null, tableName, cp.subselect.orNull, false, context, true)
         coll.setCollectionTable(table)
     }
 

@@ -20,8 +20,9 @@ package org.beangle.data.hibernate.udt
 import org.beangle.data.hibernate.udt.PersistentHelper.*
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
-import org.hibernate.collection.spi.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
+import org.hibernate.collection.spi.AbstractPersistentCollection.DelayedOperation
 import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.internal.util.Optional.{Defined, Undefined}
 import org.hibernate.metamodel.mapping.PluralAttributeMapping
 import org.hibernate.persister.collection.CollectionPersister
 
@@ -86,6 +87,10 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
       list.addAll(asScala(loadingStateList))
   }
 
+  override def getElementByIndex(index: AnyRef): AnyRef = {
+    list(index.asInstanceOf[Number].intValue)
+  }
+
   override def isWrapper(collection: Object): Boolean = {
     list eq collection
   }
@@ -135,9 +140,11 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
       val osize = list.size
       list -= ele
       if (list.size != osize) {
+        elementRemoved = true
         dirty()
       }
     } else if (exists) {
+      elementRemoved = true
       queueOperation(new SimpleRemove(ele))
     }
     this
@@ -156,8 +163,10 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def apply(index: Int): Object = {
-    val result = readElementByIndex(index)
-    if (result eq UNKNOWN) list(index) else result
+    readElementByIndex(index) match {
+      case d: Defined[_] => d.result()
+      case n: Undefined[_] => list(index)
+    }
   }
 
   override def patchInPlace(from: Int, patch: collection.IterableOnce[Object], replaced: Int): this.type = {
@@ -166,9 +175,16 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     this
   }
 
+  private def readElementByIndex2(n: Int): Object = {
+    readElementByIndex(n) match {
+      case d: Defined[_] => d.result()
+      case _ => null
+    }
+  }
+
   override def update(n: Int, elem: Object): Unit = {
-    val old = if (isPutQueueEnabled) readElementByIndex(n) else UNKNOWN
-    if (old eq UNKNOWN) {
+    val old = if (isPutQueueEnabled) readElementByIndex2(n) else null
+    if (old eq null) {
       write()
       list.update(n, elem)
     } else {
@@ -181,9 +197,11 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
   }
 
   override def remove(idx: Int): Object = {
-    val old = if (isPutQueueEnabled) readElementByIndex(idx) else UNKNOWN
-    if (old eq UNKNOWN) {
+    elementRemoved = true
+    val old = if (isPutQueueEnabled) readElementByIndex2(idx) else null
+    if (old eq null) {
       write()
+      dirty()
       list.remove(idx)
     } else {
       queueOperation(new Remove(idx, old))

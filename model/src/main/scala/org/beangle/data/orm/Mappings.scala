@@ -24,6 +24,7 @@ import org.beangle.commons.lang.annotation.value
 import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, Reflections, TypeInfo}
 import org.beangle.commons.text.i18n.Messages
+import org.beangle.commons.xml.Document
 import org.beangle.data.model.annotation.archive
 import org.beangle.data.model.meta.*
 import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity}
@@ -33,16 +34,11 @@ import org.beangle.jdbc.meta.{Column, Database, Table}
 import org.beangle.jdbc.{DefaultSqlTypeMapping, SqlTypeMapping}
 
 import java.lang.reflect.Modifier
-import java.net.URL
 import java.util.Locale
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 
 final class Mappings(val database: Database, val profiles: Profiles) {
-
-  def this(database: Database, ormLocation: String) = {
-    this(database, new Profiles(ormLocation))
-  }
 
   var locale: Locale = Locale.getDefault
 

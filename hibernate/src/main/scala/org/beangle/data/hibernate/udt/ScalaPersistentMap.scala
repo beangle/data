@@ -20,8 +20,9 @@ package org.beangle.data.hibernate.udt
 import org.beangle.data.hibernate.udt.PersistentHelper.*
 import org.hibernate.`type`.Type
 import org.hibernate.collection.spi.AbstractPersistentCollection
-import org.hibernate.collection.spi.AbstractPersistentCollection.{DelayedOperation, UNKNOWN}
+import org.hibernate.collection.spi.AbstractPersistentCollection.DelayedOperation
 import org.hibernate.engine.spi.SharedSessionContractImplementor
+import org.hibernate.internal.util.Optional.{Defined, Undefined}
 import org.hibernate.metamodel.mapping.PluralAttributeMapping
 import org.hibernate.persister.collection.CollectionPersister
 
@@ -102,29 +103,49 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
   }
 
   override def get(key: Object): Option[Object] = {
-    val result = readElementByIndex(key)
-    if (result eq UNKNOWN) map.get(key) else Some(result)
+    readElementByIndex(key) match {
+      case d: Defined[_] => Some(d.result())
+      case n: Undefined[_] => map.get(key)
+    }
   }
 
   def addOne(kv: (Object, Object)): this.type = {
+    var putable = true
     if (isPutQueueEnabled) {
-      val old = readElementByIndex(kv._1)
-      if (!(old eq UNKNOWN)) queueOperation(new Put(kv, old))
+      readElementByIndex(kv._1) match {
+        case d: Defined[_] =>
+          queueOperation(new Put(kv, d.result()))
+          putable = false
+        case _ =>
+      }
     }
-    initialize(true)
-    val old = map.put(kv._1, kv._2).orNull
-    if (old != kv._2) dirty()
+    if (putable) {
+      initialize(true)
+      val old = map.put(kv._1, kv._2).orNull
+      if (old != kv._2) dirty()
+    }
     this
   }
 
   override def subtractOne(key: Object): this.type = {
+    var needRemove = true
     if (isPutQueueEnabled) {
-      val old = readElementByIndex(key)
-      if (!(old eq UNKNOWN)) queueOperation(new Remove(key, old))
+      readElementByIndex(key) match {
+        case d: Defined[_] =>
+          this.elementRemoved = true
+          needRemove = false
+          queueOperation(new Remove(key, d.result()))
+        case _ =>
+      }
     }
-    initialize(true)
-    if (map.contains(key)) dirty()
-    map -= key
+    if (needRemove) {
+      initialize(true)
+      if (map.contains(key)) {
+        this.elementRemoved = true
+        dirty()
+      }
+      map -= key
+    }
     this
   }
 

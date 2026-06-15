@@ -18,10 +18,12 @@
 package org.beangle.data.orm
 
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.config.XmlDocs
 import org.beangle.commons.io.Files./
 import org.beangle.commons.io.{IOs, ResourcePatternResolver}
 import org.beangle.commons.lang.{Charsets, Locales, Strings, SystemInfo}
 import org.beangle.data.orm.Mappings
+import org.beangle.data.orm.cfg.Profiles
 import org.beangle.jdbc.engine.{Engine, Engines}
 import org.beangle.jdbc.meta.*
 
@@ -63,7 +65,11 @@ object DdlGenerator {
     val version = System.getProperty("database.version")
     if Strings.isNotBlank(version) then database.version = version
 
-    val mappings = new Mappings(database, "classpath*:beangle.xml")
+    val config = XmlDocs.load("classpath*:beangle.xml")
+    if (config.isEmpty) {
+      throw new RuntimeException("Cannot find any beangle.xml in classpath")
+    }
+    val mappings = new Mappings(database, new Profiles(config.get))
     mappings.locale = locale
     mappings.autobind()
     val scripts = new SchemaExporter(mappings, engine).generate()

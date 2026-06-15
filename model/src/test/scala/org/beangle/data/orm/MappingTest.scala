@@ -17,8 +17,10 @@
 
 package org.beangle.data.orm
 
+import org.beangle.commons.config.XmlDocs
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.reflect.BeanInfos
+import org.beangle.data.orm.cfg.Profiles
 import org.beangle.data.orm.model.UserProperty
 import org.beangle.jdbc.engine.{Engines, PostgreSQL10}
 import org.beangle.jdbc.meta.Database
@@ -32,7 +34,7 @@ class MappingTest extends AnyFunSpec with Matchers {
   describe("Mapping") {
     it("bind") {
       val engine = new PostgreSQL10
-      val mappings = new Mappings(new Database(engine), "classpath*:beangle.xml")
+      val mappings = new Mappings(new Database(engine), new Profiles(XmlDocs.load("classpath*:beangle.xml").get))
       mappings.locale = java.util.Locale.SIMPLIFIED_CHINESE
       mappings.autobind()
       val menuBeanInfo = BeanInfos.get(classOf[UserProperty])

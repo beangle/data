@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm.cfg
 
+import org.beangle.commons.config.XmlDocs
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.data.orm.cfg.Profiles
 import org.beangle.data.orm.model.IdType
@@ -29,7 +30,7 @@ class GlobalSchemaTest extends AnyFunSpec with Matchers {
   describe("RailsNamingPolicy") {
     it("Get Module") {
       System.setProperty("beangle.data.orm.global_schema", "test")
-      val profiles = new Profiles("classpath*:beangle.xml")
+      val profiles = new Profiles(XmlDocs.load("classpath*:beangle.xml").get)
       val module = profiles.getProfile(classOf[NationBean])
       assert(module.schema.contains("test"))
       assert(profiles.getPrefix(classOf[NationBean]) == "gb_")
