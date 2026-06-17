@@ -19,7 +19,7 @@ package org.beangle.data.hibernate
 
 import org.beangle.commons.bean.{Factory, Initializing}
 import org.beangle.commons.cdi.Container
-import org.beangle.commons.config.{Enviroment, MutableEnviroment, XmlConfigs}
+import org.beangle.commons.config.{Environment, MutableEnvironment, XmlConfigs}
 import org.beangle.commons.lang.annotation.description
 import org.beangle.data.hibernate.ConfigurationBuilder
 import org.hibernate.SessionFactory
@@ -45,10 +45,10 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
       val bf = container.underlying.asInstanceOf[ConfigurableListableBeanFactory]
       properties.put(ManagedBeanSettings.BEAN_CONTAINER, new SpringBeanContainer(bf))
     }
-    val env = getEnviroment
+    val env = getEnvironment
     val configs = getXmlConfigs
     val cfgb = new ConfigurationBuilder(dataSource, env, configs.load(ormLocation), properties)
-    if (Enviroment.isDevMode) cfgb.enableDevMode()
+    if (Environment.isDevMode) cfgb.enableDevMode()
     val config = cfgb.build()
     result = config.buildSessionFactory()
   }
@@ -58,9 +58,9 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
     else container.getBean(classOf[XmlConfigs]).getOrElse(new XmlConfigs)
   }
 
-  private def getEnviroment: Enviroment = {
-    if (null == container) MutableEnviroment.system
-    else container.getBean(classOf[Enviroment]).getOrElse(MutableEnviroment.system)
+  private def getEnvironment: Environment = {
+    if (null == container) MutableEnvironment.system
+    else container.getBean(classOf[Environment]).getOrElse(MutableEnvironment.system)
   }
 
   override def getObject: SessionFactory = result

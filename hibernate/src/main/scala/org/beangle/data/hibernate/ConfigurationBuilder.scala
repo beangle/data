@@ -17,7 +17,7 @@
 
 package org.beangle.data.hibernate
 
-import org.beangle.commons.config.Enviroment as CfgEnviroment
+import org.beangle.commons.config.Environment as CfgEnvironment
 import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.xml.Document
@@ -37,7 +37,7 @@ import java.util.Properties
 import javax.sql.DataSource
 import scala.annotation.nowarn
 
-class ConfigurationBuilder(val dataSource: DataSource, env: CfgEnviroment, config: Document, properties: ju.Properties = new Properties()) {
+class ConfigurationBuilder(val dataSource: DataSource, env: CfgEnvironment, config: Document, properties: ju.Properties = new Properties()) {
   /**
    * Import System properties
    */
