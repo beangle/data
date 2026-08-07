@@ -18,6 +18,7 @@
 package org.beangle.data.hibernate.model
 
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.lang.math.{Decimal5, TinyDecimal5}
 import org.beangle.data.model.Entity
 
 import java.time.{LocalDate, YearMonth}
@@ -37,6 +38,8 @@ class Role(var id: Int) extends Entity[Int] with Coded {
 
   var creator: Option[User] = None
   var startOn: Option[YearMonth]  = None
+  var amount: Decimal5 = Decimal5.Zero
+  var tinyAmount: Option[TinyDecimal5] = None
   var properties = Collections.newMap[Int, Boolean]
 }
 

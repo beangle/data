@@ -18,6 +18,7 @@
 package org.beangle.data.hibernate
 
 import org.beangle.commons.json.Json
+import org.beangle.commons.lang.math.{Decimal5, TinyDecimal5}
 import org.beangle.commons.lang.time.{HourMinute, WeekState, WeekTime}
 import org.beangle.data.dao.OqlBuilder
 import org.beangle.data.hibernate.model.*
@@ -55,6 +56,8 @@ object UserCrud {
     role3.enName = "role3"
 
     role2.startOn = Some(YearMonth.parse("2019-02"))
+    role2.amount = Decimal5.of("12.34567")
+    role2.tinyAmount = Some(TinyDecimal5.of("1234.56789"))
     role2.properties.put(3, false)
 
     role4.enName = "role4"
@@ -147,6 +150,8 @@ object UserCrud {
     assert(savedRole.parent.isDefined)
     assert(savedRole.parent.get.id == role1.id)
     assert(savedRole.parent.get.asInstanceOf[ExtendRole].enName == "role1")
+    assert(savedRole.amount == Decimal5.of("12.34567"))
+    assert(savedRole.tinyAmount.contains(TinyDecimal5.of("1234.56789")))
 
     val savedRole4 = entityDao.get(classOf[Role], role4.id)
     savedRole4.children -= role41

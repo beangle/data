@@ -19,7 +19,6 @@ package org.beangle.data.hibernate.udt
 
 import org.hibernate.`type`.descriptor.WrapperOptions
 import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
-import org.hibernate.`type`.descriptor.jdbc.{DateJdbcType, JdbcType}
 
 import java.time.{LocalDate, YearMonth}
 

@@ -21,10 +21,10 @@ import org.beangle.commons.bean.Properties
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.value
+import org.beangle.commons.lang.math.{Decimal5, TinyDecimal5}
 import org.beangle.commons.lang.reflect.TypeInfo.IterableType
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos, Reflections, TypeInfo}
 import org.beangle.commons.text.i18n.Messages
-import org.beangle.commons.xml.Document
 import org.beangle.data.model.annotation.archive
 import org.beangle.data.model.meta.*
 import org.beangle.data.model.{IntIdEntity, LongIdEntity, ShortIdEntity, StringIdEntity}
@@ -463,7 +463,10 @@ final class Mappings(val database: Database, val profiles: Profiles) {
   private def detectValueType(clazz: Class[_]): Unit = {
     if (clazz == classOf[Object]) throw new RuntimeException("Cannot find scalar type for object")
     if (clazz.isAnnotationPresent(classOf[value])) {
-      valueTypes += clazz
+      //Decimal5 系列不能作为vallue类型，他们单独应合成decimal，单独注册类型
+      if (clazz != classOf[Decimal5] && clazz != classOf[TinyDecimal5]) {
+        valueTypes += clazz
+      }
     } else if (classOf[_root_.scala.reflect.Enum].isAssignableFrom(clazz)) {
       enumTypes += clazz.getName
     }

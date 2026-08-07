@@ -385,7 +385,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
     column.setNullable(cm.nullable)
     val scale = sqlType.scale.getOrElse(0)
     if (scale > 0) {
-      //如果是浮点类型，不要设置精度，hibernate只支持BigDecimal类型上设置scala
+      //如果是浮点类型，不要设置精度，hibernate只支持BigDecimal类型上设置scale
       if (value.getTypeName == "double" || value.getTypeName == "float") {
         column.setSqlType(cm.sqlType.name)
       } else {

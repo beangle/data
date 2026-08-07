@@ -18,12 +18,13 @@
 package org.beangle.data.hibernate.cfg
 
 import org.beangle.commons.json.{Json, JsonArray, JsonObject}
+import org.beangle.commons.lang.math.{Decimal5, TinyDecimal5}
 import org.beangle.data.hibernate.jdbc.{JsonAccessor, NullableIntJdbcType}
 import org.beangle.data.hibernate.udt.*
 import org.beangle.data.orm.Mappings
 import org.hibernate.`type`.BasicTypeRegistry
 import org.hibernate.`type`.descriptor.java.JavaType
-import org.hibernate.`type`.descriptor.jdbc.{DateJdbcType, JdbcType}
+import org.hibernate.`type`.descriptor.jdbc.{DateJdbcType, DecimalJdbcType, JdbcType}
 import org.hibernate.`type`.internal.{ImmutableNamedBasicTypeImpl, NamedBasicTypeImpl}
 import org.hibernate.`type`.spi.TypeConfiguration
 import org.hibernate.boot.MetadataSources
@@ -130,6 +131,9 @@ object BindMetadataBuilderFactory {
 
     //register year-month
     registerBasicType(classOf[YearMonth].getName, new YearMonthType, DateJdbcType.INSTANCE, options)
+    //register fixed decimal5
+    registerBasicType(classOf[Decimal5].getName, new Decimal5Type, DecimalJdbcType.INSTANCE, options)
+    registerBasicType(classOf[TinyDecimal5].getName, new TinyDecimal5Type, DecimalJdbcType.INSTANCE, options)
     //register json
     registerJsonType(mappings, options)
   }
