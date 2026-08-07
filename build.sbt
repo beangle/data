@@ -24,7 +24,7 @@ description := "The Beangle Data Library"
 homepage := Some(uri("https://beangle.github.io/data/index.html"))
 
 val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.2.2"
-val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.12-SNAPSHOT"
+val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.12"
 
 lazy val root = (project in file("."))
   .settings(
