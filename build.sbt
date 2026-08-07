@@ -1,34 +1,37 @@
 import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
-import sbt.Keys.*
 
-ThisBuild / organization := "org.beangle.data"
-ThisBuild / version := "5.12.7-SNAPSHOT"
+organization := "org.beangle.data"
+version := "5.12.7-SNAPSHOT"
 
-ThisBuild / scmInfo := Some(
+scmInfo := Some(
   ScmInfo(
-    url("https://github.com/beangle/data"),
+    uri("https://github.com/beangle/data"),
     "scm:git@github.com:beangle/data.git"
   )
 )
 
-ThisBuild / developers := List(
+developers := List(
   Developer(
     id = "chaostone",
     name = "Tihua Duan",
     email = "duantihua@gmail.com",
-    url = url("http://github.com/duantihua")
+    url = uri("http://github.com/duantihua")
   )
 )
 
-ThisBuild / description := "The Beangle Data Library"
-ThisBuild / homepage := Some(url("https://beangle.github.io/data/index.html"))
+description := "The Beangle Data Library"
+homepage := Some(uri("https://beangle.github.io/data/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.2.1"
-val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.9"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.2.2"
+val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.12-SNAPSHOT"
 
 lazy val root = (project in file("."))
-  .settings(common)
+  .settings(
+    name := "beangle-data",
+    common,
+    publish / skip := true
+  )
   .aggregate(model, hibernate)
 
 lazy val model = (project in file("model"))
@@ -48,8 +51,5 @@ lazy val hibernate = (project in file("hibernate"))
     libraryDependencies ++= Seq(logback_classic % "test", logback_core % "test", scalatest, ehcache % "test"),
     libraryDependencies ++= Seq(h2 % "test", HikariCP % "test", postgresql % "test"),
     Test / parallelExecution := false
-  ).dependsOn(model)
-
-publish / skip := true
-
-
+  )
+  .dependsOn(model)
