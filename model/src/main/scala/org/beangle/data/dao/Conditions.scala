@@ -148,15 +148,16 @@ object Conditions {
     conditions.toList
   }
 
-  /** Parse string based query value into conditions
+  /** Parse string based query value into conditions.
    *
-   * @param attr
-   * @param value
-   * @param clazz
-   * @return
+   * Each token is parsed by [[Operator.apply]] first, then combined into a single [[Condition]].
+   *
+   * @param attr  property path, e.g. `user.name`
+   * @param values raw query texts from UI or request
+   * @param clazz property type used to pick parsing rules
    */
-  def parse(attr: String, value: String, clazz: Class[_]): Condition = {
-    val ops = split(value, clazz).toSeq.map(x => Operator(x, clazz))
+  def parse(attr: String, values: String, clazz: Class[_]): Condition = {
+    val ops = split(values, clazz).toSeq.map(x => Operator(x, clazz))
     if (ops.forall(x => x.op == "=")) {
       if (ops.size == 1) {
         new Condition(s"$attr = :${attr.replace('.', '_')}", ops.head.value)
@@ -194,13 +195,49 @@ object Conditions {
     }
   }
 
+  /** Parses one query token into an operator and a bound value.
+   *
+   * Used by [[parse]] after [[split]] breaks a multi-value input into tokens.
+   * The result is a small pair: SQL operator (`=`, `like`, `is null`, …) plus the parameter value.
+   *
+   * == String properties ==
+   *
+   * String tokens support a compact search syntax inspired by regular-expression anchors:
+   *
+   *  - no prefix/suffix: contains search, becomes `like %value%`
+   *  - `^value`: starts with, becomes `like value%`
+   *  - `value$`: ends with, becomes `like %value`
+   *  - `^value$`: exact match, becomes `= value`
+   *  - `null`: becomes `is null` with no bind parameter
+   *  - `"quoted"`: keeps commas/spaces inside quotes; see [[split]]
+   *  - `\t`, `\n`, `\r`: escape sequences inside the literal
+   *
+   * {{{
+   * Operator("admin", classOf[String])           // Operator("like", "%admin%")
+   * Operator("^admin", classOf[String])          // Operator("like", "admin%")
+   * Operator("admin$", classOf[String])         // Operator("like", "%admin")
+   * Operator("^admin$", classOf[String])        // Operator("=", "admin")
+   * Operator("null", classOf[String])           // Operator("is null", null)
+   * Operator("\"admin,root\"", classOf[String]) // Operator("like", "%admin,root%")
+   * Operator("\\tadmin\\n", classOf[String])    // Operator("like", "%\tadmin\n%")
+   * }}}
+   *
+   * == Non-string properties ==
+   *
+   * Tokens are converted with [[org.beangle.commons.conversion.impl.DefaultConversion]]
+   * and compared with `=`. Only `null` keeps the special `is null` form.
+   *
+   * {{{
+   * Operator("2", classOf[Integer])   // Operator("=", 2)
+   * Operator("null", classOf[Integer]) // Operator("is null", null)
+   * }}}
+   *
+   * @param value one token after [[split]]
+   * @param clazz declared property type
+   * @see [[parse]] [[unlike]] [[unquote]] [[escape]]
+   */
   object Operator {
-    /** 针对一个类型解析字面值，例如"$abc"
-     *
-     * @param value
-     * @param clazz
-     * @return
-     */
+
     def apply(value: String, clazz: Class[_]): Operator = {
       if (clazz == classOf[String]) {
         var v = value
@@ -233,6 +270,15 @@ object Conditions {
       }
     }
 
+    /** Strips `%` wildcards added by a `like` pattern.
+     *
+     * Used when [[parse]] collapses four or more `like` tokens into an `in (...)` condition.
+     *
+     * {{{
+     * unlike("%admin%") // "admin"
+     * unlike("admin%")  // "admin"
+     * }}}
+     */
     def unlike(value: String): String = {
       var v = value
       if (v.charAt(0) == '%') v = v.substring(1)
@@ -240,12 +286,20 @@ object Conditions {
       v
     }
 
+    /** Removes a pair of surrounding double quotes from a token.
+     *
+     * {{{
+     * unquote("\"admin,root\"") // "admin,root"
+     * unquote("admin")          // "admin"
+     * }}}
+     */
     def unquote(v: String): String = {
       if v.length > 1 && v.charAt(0) == '\"' && v.charAt(v.length - 1) == '\"' then
         v.substring(1, v.length - 1)
       else v
     }
 
+    /** Unescapes `\t`, `\n`, and `\r` in a string literal. */
     def escape(v: String): String = {
       if (v.contains("\\")) {
         var value = v
@@ -259,8 +313,63 @@ object Conditions {
     }
   }
 
+  /** One parsed query token: SQL operator plus bind value.
+   *
+   * @param op    SQL operator fragment, e.g. `=`, `like`, `is null`
+   * @param value bind parameter; `null` when {@code op} is `is null`
+   *
+   * Example:
+   * {{{
+   * val op = Operator("^admin$", classOf[String])
+   * // op.op == "="
+   * // op.value == "admin"
+   * Conditions.parse("user.name", "^admin$", classOf[String])
+   * // Condition("user.name = :user_name", "admin")
+   * }}}
+   */
   case class Operator(op: String, value: Any)
 
+  /** Splits a raw query value into tokens before [[Operator.apply]].
+   *
+   * [[parse]] calls this method first. Each returned token is parsed independently and
+   * later combined into one [[Condition]].
+   *
+   * == String properties ==
+   *
+   * String input uses a richer splitter than plain comma separation:
+   *
+   *  - `,` splits tokens
+   *  - spaces, tabs, newlines, and full-width `，` also split tokens outside quotes
+   *  - text inside `"..."` is kept as one token; commas inside quotes are preserved
+   *  - empty segments are dropped
+   *
+   * {{{
+   * split("admin , root", classOf[String])
+   * // Array("admin", "root")
+   *
+   * split("role, ^\"admin,root,user1\" ， ^user2$", classOf[String])
+   * // Array("role", "^\"admin,root,user1\"", "^user2$")
+   *
+   * split("ro le us er", classOf[String])
+   * // Array("ro", "le", "us", "er")
+   *
+   * split("\"admin,root,user1\",user2", classOf[String])
+   * // Array("\"admin,root,user1\"", "user2")
+   * }}}
+   *
+   * == Non-string properties ==
+   *
+   * Uses [[org.beangle.commons.lang.Strings.split]] with comma separation only.
+   *
+   * {{{
+   * split("1,2,3", classOf[Integer])
+   * // Array("1", "2", "3")
+   * }}}
+   *
+   * @param value raw query text
+   * @param clazz property type; string types enable quote-aware splitting
+   * @see [[parse]] [[Operator.apply]]
+   */
   protected[dao] def split(value: String, clazz: Class[_]): Array[String] = {
     if (clazz == classOf[String]) {
       var i = 0
