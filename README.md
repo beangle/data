@@ -100,19 +100,31 @@ val entityDao = new HibernateEntityDao(builder.getObject)
 entityDao.init()
 ```
 
-### Query with `OqlBuilder`
+### Query with `OqlBuilder`（scala.Dynamic 类型安全 DSL）
+
+> 设计目的与取舍（为何用 scala.Dynamic：防止生成过多辅助类、扩展函数/聚合/集合查询、接受静态检查缺失）
+> 详见 [docs/dynamic-oql.md](docs/dynamic-oql.md)。
 
 ```scala
 import org.beangle.data.dao.OqlBuilder
 
 val q = OqlBuilder.from(classOf[User], "u")
-import q.given
 q.where { u =>
   (u.member.name.first like "bil")
     .and(u.age isNotNull)
+    .and(u.createdOn.isNull or u.createdOn.gt(java.time.LocalDate.now))
+}
+q.on { u =>
+  q.select(u.member.name.first, u.member.name.last, "count(*)")
+    .groupBy(u.member.name.first, u.member.name.last)
+    .orderBy(u.member.name.last)
 }
 val users = entityDao.search(q)
 ```
+
+lambda 参数为 `Prop`（scala.Dynamic），`u.name.first` 编译为 selectDynamic 链，无需为每个实体生成
+tracker 类；`u.func(a, b)`（如 `u.lower(u.name)`、`u.count(u.roles)`）编译为 applyDynamic，可直接表达
+数据库函数与聚合。
 
 ### Search by arbitrary properties
 
@@ -120,6 +132,22 @@ val users = entityDao.search(q)
 entityDao.findBy(classOf[User], "member.name.first" -> "Bill")
 entityDao.count(classOf[User], "roles.id" -> 1L)
 ```
+
+## GraalVM native-image 支持
+
+本库支持以 GraalVM native-image 方式构建使用方应用。由于 ORM 绑定是代码声明式（`MappingModule`），
+实体集合可枚举，适合构建期处理；但 `AccessTracker`/Hibernate 代理等运行期字节码生成必须改为构建期预生成。
+
+构建期生成 native-image 配置与预生成类：
+
+```bash
+sbt 'nativeImageConfig --output target/native-image --engine PostgreSQL \
+     --dialect org.hibernate.dialect.PostgreSQLDialect'
+# 产物: reflect-config.json / resource-config.json / proxy-config.json /
+#       serialization-config.json / native-image-args.txt / trackers/
+```
+
+详见 [docs/native-image.md](docs/native-image.md)（可行性分析、阻塞点审计、分阶段改造计划与实现状态）。
 
 ## License
 
