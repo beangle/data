@@ -186,66 +186,67 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
   单字符串调用不受影响。
 
 ---
-## 5. 分阶段改造计划
+## 5. native-image 路线图（基于当前 scala.Dynamic 状态）
 
-### P0 库侧运行时代码改造（已完成）
+### 5.0 现状（已完成，作为路线图基线）
 
-1. **全面 scala.Dynamic 化**（已完成）：`OqlBuilder` 用 `Prop`、`MappingModule.declare` 用 `DeclareProp`，
-   属性路径编译期为 selectDynamic 链，运行期零类生成、零反射；`AccessTracker`/`ByteBuddyHelper`/
-   `AccessTrackerGenerator` 及 `byte_buddy` 依赖已删除（见 [dynamic-oql.md](dynamic-oql.md)）。
-2. **减少运行期反射**（待办）：
-   - `Mappings.autobind` 中 `Reflections.newInstance` 的"采样默认值"逻辑改为可关闭（native 模式用配置/快照替代）；
-   - 组件属性元信息尽量走编译期 `BeanInfoDigger`（`MappingMacro.bind` 已经对 `bind[T]` 这么做了，扩展到组件类型）。
+- **库侧全面 scala.Dynamic 化**：`OqlBuilder` 用 `Prop`、`MappingModule.declare` 用 `DeclareProp`，
+  运行期零类生成、零反射；`AccessTracker`/ByteBuddy 已删除，`byte_buddy` 依赖移除；
+- **`NativeImageConfigGen`（P1 交付）**：构建期枚举实体/组件/值类型/枚举等，生成
+  `reflect-config.json` / `resource-config.json` / `proxy-config.json` / `serialization-config.json`
+  / `native-image-args.txt`；已接入 sbt 任务 `nativeImageConfig`；
+- 文档：本文件 + [dynamic-oql.md](dynamic-oql.md)。
 
-### P1 构建期 native-image 配置生成器（核心交付）
+> 库侧已无运行期动态行为，剩余阻塞全部在 **Hibernate 侧**（fork + 懒加载代理）与应用集成验证。
 
-新增 `NativeImageConfigGen`（hibernate 模块 main）：
+### 5.1 P2：Hibernate 侧（前置：无；涉及仓库：beangle/hibernate fork）
 
-- 输入：`beangle.xml` 路径、引擎/方言、缓存 Provider、输出目录；
-- 构建期执行 `Mappings.autobind()`，枚举出：
-  - 全部实体类、组件类、`@value` 值类型类、枚举类、自定义类型类（`typedef`）、MappingModule、命名策略；
-- 生成：
-  - `reflect-config.json`：上述类 + Hibernate 属性访问所需方法/字段 + 库自身反射点（`ValueType` 等）；
-  - `resource-config.json`：`beangle.xml`、`META-INF/services/*`、`META-INF/beangle/ddl/**`、message bundle、logback；
-  - `proxy-config.json`：实体代理接口（配合 P2 预生成代理）占位 + 说明；
-  - `serialization-config.json`：实体/值类型；
-  - 推荐的 `native-image` 参数文件（`--initialize-at-build-time` 清单、JDBC/缓存驱动注册等）。
-- 说明：库侧（OQL/declare）已零类生成，配置生成器无需预生成任何辅助类；剩余代理类预生成在 P2（Hibernate 侧）。
+**P2.1 fork 可达性元数据**
+- 任务：在 `beangle-hibernate-core` jar 内嵌 `META-INF/native-image/org/beangle/hibernate/
+  beangle-hibernate-core/*.json`（reflect/resource/proxy/serialization），解决 hibernate-core
+  自身的反射（Dialect/JCache/类型注册）、资源（`META-INF/services` 等）与 ServiceLoader 注册；
+- 依据：上游 `graalvm-reachability-metadata` 仓库 `org.hibernate.orm:hibernate-core` 条目，按 fork 版本适配；
+- 验收：native 构建时 Hibernate 初始化不再因缺反射/资源报错。
 
-### P2 Hibernate 侧（fork + 代理）
+**P2.2 Hibernate 懒加载代理（HHH-16013）**
+- 任务：
+  1. 构建期（构建 JVM）用 ByteBuddy 为实体生成懒加载代理类，随应用打包；
+  2. 提供 native 模式的 `BytecodeProvider`/代理工厂实现（运行期按名加载预生成类），并注册 `META-INF/services`；
+  3. `hibernate.bytecode.use_reflection_optimizer=false`、增强相关设置；
+- 参考：Quarkus `PreGeneratedProxies`；Spring Boot 3 native 同款思路；
+- 验收：懒加载实体/集合在 native 二进制下正常工作。
 
-1. 在 `beangle-hibernate-core` fork 的 jar 内嵌 `META-INF/native-image/org/beangle/hibernate/beangle-hibernate-core/*.json`，
-   复用/适配上游 hibernate-core 的 reachability metadata（反射、资源、服务）；
-2. 构建期预生成 Hibernate 懒加载代理类：
-   - 构建 JVM 上调用 Hibernate 的 ByteBuddy `ProxyFactory` 生成代理 .class，随应用打包；
-   - 提供 native 模式的 `BytecodeProvider`/代理工厂实现（运行期按名加载预生成类），并注册 `META-INF/services`；
-   - `hibernate.bytecode.use_reflection_optimizer=false`、增强相关设置；
-3. 可选：序列化 `Metadata` 快照，运行期 FastBoot 加载，彻底跳过 `BindSourceProcessor` 反射路径。
+**P2.3（可选）Metadata 快照（FastBoot）**
+- 任务：构建期序列化 `Mappings`/Hibernate `Metadata`，运行期反序列化加载，
+  跳过 `BindSourceProcessor`/`Mappings.autobind` 的反射路径；
+- 收益：启动更快、绑定期反射面进一步收窄；
+- 验收：native 启动时间对比有可量化收益。
 
-### P3 样例应用 + 验证
+### 5.2 P3：样例应用与验证
 
-- 提供 `samples/native` 示例：MappingModule + H2 + native-image 构建脚本（GraalVM + `-H:ReflectionConfigurationFiles=...`）；
-- CI 增加 native-image 冒烟测试（HibernateConfigTest 同款用例跑 native 二进制）。
+**P3.1 samples/native 示例工程**
+- MappingModule + H2 + `OqlBuilder`/`declare` + GraalVM 构建脚本（或 Makefile/CI 片段）；
 
-**P3 冒烟测试（本环境无 GraalVM/native-image，未实际执行；在有 GraalVM 的环境可直接跑）：**
+**P3.2 native-image 冒烟测试**
+- 最小应用 native 构建并跑通：`Mappings.autobind()`（绑定）→ 建库建表 → `declare` 声明 → `OqlBuilder` 查询；
+- 纳入 CI。
 
-```bash
-# 0) 生成配置
-sbt 'nativeImageConfig --output target/native-image --engine PostgreSQL --dialect org.hibernate.dialect.H2Dialect'
+**P3.3 按实测补齐配置**
+- 真实 GraalVM 环境跑一轮，按报错补齐：类初始化清单（`--initialize-at-build-time`/`-run-time`）、
+  JDBC 驱动、缓存 Provider、URL 协议、反射遗漏项等。
 
-# 1) 用 native-image 构建一个最小应用（MappingModule + OqlBuilder + H2），验证：
-#    Mappings.autobind 反射、beangle.xml 资源、declare/OQL 的 Dynamic 路径（零类生成零反射）
-native-image --no-fallback \
-  -H:ReflectionConfigurationFiles=target/native-image/reflect-config.json \
-  -H:ResourceConfigurationFiles=target/native-image/resource-config.json \
-  -H:SerializationConfigurationFiles=target/native-image/serialization-config.json \
-  --enable-url-protocols=jar,resource \
-  --initialize-at-build-time=org.beangle \
-  -cp "$(sbt -batch 'show hibernate/Test/fullClasspath' | tr -d '\n')" \
-  <最小应用主类>
+### 5.3 可选优化（P4，非阻塞）
 
----
+- `Mappings.autobind` 中 `Reflections.newInstance` 的"采样默认值"逻辑改为可关闭（native 用配置/快照替代）；
+- 组件属性元信息尽量走编译期 `BeanInfoDigger`（`MappingMacro.bind` 已对 `bind[T]` 这么做，扩展到组件）；
+- 配置生成器与 fork 版本升级联动验证（版本升级时同步重跑）。
 
+### 5.4 前置条件与风险
+
+- **GraalVM + native-image 环境**：当前开发环境未安装，P3 需要真实环境执行与迭代；
+- **fork 元数据耦合**：P2.1 与 Hibernate 版本绑定，fork 升级需同步验证；
+- **最大不确定项**：Hibernate 懒加载代理（P2.2）——需在真实 native 构建中验证代理预生成与
+  `BytecodeProvider` 替换的可行性。
 ## 6. 使用方（应用）需要做什么
 
 1. 构建期：运行 `nativeImageConfig`（P1 工具），产物（configs）打进应用 jar（Hibernate 代理类预生成见 P2）；
