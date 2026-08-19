@@ -38,7 +38,8 @@
 | `AccessTrackerGenerator`（P0） | ✅ | 构建 JVM 上跑 `Mappings.autobind()`，枚举实体/组件并生成 `$Tracker` .class 到输出目录 |
 | `NativeImageConfigGen`（P1） | ✅ | 生成 reflect/resource/proxy/serialization 配置 + 推荐 native-image 参数 + 一并生成 tracker 类 |
 | 端到端验证 | ✅ | 生成 26 个 tracker 类；classpath 含预生成类时 `AccessTracker.generate` 直接从 classpath 加载（CodeSource 指向生成目录），否则回退 ByteBuddy；属性访问追踪功能正常 |
-| 回归测试 | ✅ | `model` 12 suites/31 tests、`hibernate` 3 suites/16 tests 全部通过（`testOnly *` 强制全量运行） |
+| 回归测试 | ✅ | `model` 37、`hibernate` 23 全部通过（`testOnly *` 强制全量运行） |
+| OQL 查询路径改造（P0 增量） | ✅ | `OqlBuilder` 改用 scala.Dynamic 的 `Prop`：运行期查询零 tracker 类、零反射实例化（原每查询 `AccessTracker.of` 的 `getConstructor/newInstance` 已消除），native 下 OQL 路径无需任何 tracker 预生成/反射注册。tracker 预生成链路仅服务绑定期 `declare`，保留（见 [dynamic-oql.md](dynamic-oql.md)） |
 
 ### 两个构建期工具的使用方法（已接入 sbt 任务）
 
@@ -106,11 +107,15 @@ GraalVM native-image 是"封闭世界（closed world）"分析：
 
 | 位置 | 机制 | 说明 |
 |---|---|---|
-| `AccessTracker`（model/.../dao/AccessTracker.scala） | ByteBuddy 为每个绑定实体/组件生成 `X$Tracker` 子类 | `bind[T]` 都会触发（`MappingModule.bindImpl`），`declare{...}` DSL 依赖它。native 下必须**构建期预生成同名类**，运行期改从 classpath 加载 |
+| `AccessTracker`（model/.../dao/AccessTracker.scala） | ByteBuddy 为每个绑定实体/组件生成 `X$Tracker` 子类 | **仅剩绑定期 `declare{...}` DSL 使用**：`bind[T]` 时 `MappingModule.bindImpl` 触发。OQL 运行期查询路径已改用 scala.Dynamic 的 `Prop`（见 4.5 与 docs/dynamic-oql.md），不再生成/使用 tracker 类。native 下需**构建期预生成同名类**、运行期从 classpath 加载 |
 | Hibernate 懒加载代理 | Hibernate `BytecodeProviderImpl`（ByteBuddy） | 原生问题 HHH-16013：native 下默认禁用运行期代理生成，需构建期预生成代理类并注入 `BytecodeProvider`（Quarkus 的 `PreGeneratedProxies` 同款思路） |
 | Spring `TransactionalProxy`/AOP | `ProxyFactory` JDK/CGLIB 代理 | 使用方服务接口需注册 proxy-config；或 native 模式改用非代理事务方案 |
 
 ### 3.2 运行期反射（需要构建期注册）
+
+> 注：OQL 查询路径经 scala.Dynamic 改造后零反射（`Prop` 为普通对象、路径字符串累积），
+> 原先每查询的 `AccessTracker.of`（`getConstructor(Context).newInstance`）已不存在；
+> 下表剩余反射点主要服务于绑定期（`Mappings.autobind`/`declare`）、Hibernate 运行期与工具类。
 
 | 位置 | 反射内容 | 注册对象 |
 |---|---|---|
@@ -168,7 +173,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 ---
 
-## 4.5 备选方案评估：scala.Dynamic 替代逐类 $Tracker（已评估，未采纳）
+## 4.5 演进：scala.Dynamic 替代逐类 $Tracker（OQL 路径已采用）
 
 曾评估用 `scala.Dynamic`（`selectDynamic`）用一个通用类替代逐实体 `$Tracker` 子类生成。结论：
 

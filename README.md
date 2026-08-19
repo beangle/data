@@ -136,7 +136,8 @@ entityDao.count(classOf[User], "roles.id" -> 1L)
 ## GraalVM native-image 支持
 
 本库支持以 GraalVM native-image 方式构建使用方应用。由于 ORM 绑定是代码声明式（`MappingModule`），
-实体集合可枚举，适合构建期处理；但 `AccessTracker`/Hibernate 代理等运行期字节码生成必须改为构建期预生成。
+实体集合可枚举，适合构建期处理。OQL 查询 DSL 已改用 scala.Dynamic（`Prop`），运行期零类生成、零反射；
+剩余需要构建期预生成的是**绑定期**的 `AccessTracker`（`declare` DSL）与 Hibernate 懒加载代理。
 
 构建期生成 native-image 配置与预生成类：
 

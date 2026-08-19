@@ -30,6 +30,9 @@
 
 - 零逐实体类生成；`Prop` 全库仅一个（88 行）；
 - 无运行期字节码生成（ByteBuddy 从 OQL 路径移除，native-image 友好）；
+- **native-image 语境**：OQL 路径为普通对象 + 字符串路径累积，零反射、零类生成、
+  无需任何 reflect-config 注册或 tracker 预生成——是 native 下最干净的部分（仅绑定期 `declare`
+  仍需 AccessTracker 预生成，见 [native-image.md](native-image.md)）；
 - 每次查询构造从"反射 newInstance + 拦截链"变为普通对象创建（实测 ~40ns/条件，原 ~210ns，约 5.4x）；
 - 无共享可变状态（原 `Context/Names`），并发更干净。
 
