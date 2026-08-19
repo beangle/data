@@ -28,8 +28,7 @@ val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.2.2"
 val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.12"
 
 // 构建期 native-image 辅助任务（见 docs/native-image.md）
-lazy val generateTrackers = inputKey[Unit]("Generate AccessTracker $Tracker classes from mapping modules (build-time, for native-image)")
-lazy val nativeImageConfig = inputKey[Unit]("Generate GraalVM native-image configs + tracker classes (build-time)")
+lazy val nativeImageConfig = inputKey[Unit]("Generate GraalVM native-image configs (build-time)")
 
 lazy val root = (project in file("."))
   .settings(
@@ -39,11 +38,6 @@ lazy val root = (project in file("."))
 
     // ---- 构建期 native-image 辅助任务 ----
     // sbt "nativeImageConfig --output target/native-image --engine PostgreSQL"
-    // sbt "generateTrackers --output target/generated-trackers --engine PostgreSQL"
-    generateTrackers := Def.inputTaskDyn {
-      val args = spaceDelimited("<arg>").parsed
-      (model / Test / runMain).toTask(" org.beangle.data.dao.AccessTrackerGenerator " + args.mkString(" "))
-    }.evaluated,
     nativeImageConfig := Def.inputTaskDyn {
       val args = spaceDelimited("<arg>").parsed
       (hibernate / Test / runMain).toTask(" org.beangle.data.hibernate.nativeimage.NativeImageConfigGen " + args.mkString(" "))
@@ -55,7 +49,7 @@ lazy val model = (project in file("model"))
   .settings(
     name := "beangle-data-model",
     common,
-    libraryDependencies ++= Seq(beangle_commons, beangle_jdbc, jpa, byte_buddy, slf4j),
+    libraryDependencies ++= Seq(beangle_commons, beangle_jdbc, jpa, slf4j),
     libraryDependencies ++= Seq(logback_classic % "test", logback_core % "test", scalatest),
     Test / parallelExecution := false
   )

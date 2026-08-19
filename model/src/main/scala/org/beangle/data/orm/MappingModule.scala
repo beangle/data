@@ -22,7 +22,7 @@ import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
 import org.beangle.data.Logger
-import org.beangle.data.dao.AccessTracker
+import org.beangle.data.dao.Prop
 import org.beangle.jdbc.engine.Engine
 import org.beangle.jdbc.meta.*
 
@@ -332,45 +332,9 @@ object MappingModule {
     }
   }
 
-  object Expression {
-    // only apply unique on component properties
-    def is(holder: EntityHolder[_], declarations: Seq[PropertyDeclaration]): Unit = {
-      val lasts = holder.tracker.ctx.accessed()
-      if (declarations.nonEmpty && lasts.isEmpty) {
-        throw new RuntimeException("Cannot find access properties for " + holder.mapping.entityName + " with declarations:" + declarations)
-      }
-      lasts foreach { path =>
-        val pm = holder.mapping.property(path)
-        declarations foreach (d => d(holder, path, pm))
-        //if the property is declared explicitly, don't change it
-        pm.mergeable = false
-      }
-    }
-  }
-
-  class Expression(val holder: EntityHolder[_]) {
-
-    def is(declarations: PropertyDeclaration*): Unit = {
-      Expression.is(holder, declarations)
-    }
-
-    def &(next: Expression): Expressions = {
-      new Expressions(holder)
-    }
-  }
-
-  class Expressions(val holder: EntityHolder[_]) {
-    def &(next: Expression): this.type = {
-      this
-    }
-
-    def are(declarations: PropertyDeclaration*): Unit = {
-      Expression.is(holder, declarations)
-    }
-  }
 
   final class EntityHolder[T](val mapping: OrmEntityType, val mappings: Mappings, val clazz: Class[T],
-                              val tracker: AccessTracker, module: MappingModule) {
+                              module: MappingModule) {
 
     def engine: Engine = mappings.database.engine
 
@@ -389,8 +353,11 @@ object MappingModule {
       this
     }
 
-    def declare(declarations: T => Any): this.type = {
-      declarations(tracker.asInstanceOf[T])
+    /** 类型安全声明：bind[User].declare { e => e.name.first is(notnull, length(20)) }
+     * e 为 scala.Dynamic 的 [[DeclareProp]]，属性路径编译期为 selectDynamic 链，无需 $Tracker 类
+     */
+    def declare(declarations: DeclareProp => Any): this.type = {
+      declarations(new DeclareProp("", this))
       this
     }
 
@@ -477,12 +444,6 @@ abstract class MappingModule(var name: Option[String]) {
   private var mappings: Mappings = _
 
   init()
-
-  import scala.language.implicitConversions
-
-  implicit def any2Expression(i: Any): Expression = {
-    new Expression(currentHolder)
-  }
 
   def this() = {
     this(None)
@@ -587,8 +548,7 @@ abstract class MappingModule(var name: Option[String]) {
         }
       }
     }
-    val tracker = AccessTracker.of(cls)
-    val holder = new EntityHolder(mapping, mappings, cls, tracker, this)
+    val holder = new EntityHolder(mapping, mappings, cls, this)
 
     mapping.module = this.name
     currentHolder = holder
@@ -629,14 +589,17 @@ abstract class MappingModule(var name: Option[String]) {
   }
 
   def index(name: String, unique: Boolean, properties: Any*): Unit = {
-    val lasts = currentHolder.tracker.ctx.accessed()
-    if (lasts.isEmpty) {
-      throw new RuntimeException("Cannot find access properties for " + currentHolder.mapping.entityName + " with index declarations")
-    }
-    val mapping = currentHolder.mapping
+    val holder = currentHolder
     val pms = Collections.newBuffer[OrmProperty]
-    lasts foreach { i => pms += mapping.property(i) }
-    new IndexDeclaration(name, unique).apply(currentHolder, pms)
+    properties foreach {
+      case p: Prop => pms += holder.mapping.property(p.path)
+      case s: String => pms += holder.mapping.property(s)
+      case other => throw new RuntimeException(s"Cannot access property of ${other.getClass.getName} in index declaration")
+    }
+    if (pms.isEmpty) {
+      throw new RuntimeException("Cannot find access properties for " + holder.mapping.entityName + " with index declarations")
+    }
+    new IndexDeclaration(name, unique).apply(holder, pms)
   }
 
   def typedef(name: String, clazz: String, params: Map[String, String] = Map.empty): Unit = {

@@ -19,7 +19,6 @@ package org.beangle.data.hibernate.nativeimage
 
 import org.beangle.commons.config.XmlDocs
 import org.beangle.commons.lang.ClassLoaders
-import org.beangle.data.dao.AccessTrackerGenerator
 import org.beangle.data.model.annotation.{archive, code, config, flash, flow, log, shard, temp}
 import org.beangle.data.orm.cfg.{EJB3NamingPolicy, Profiles, RailsNamingPolicy}
 import org.beangle.data.orm.*
@@ -34,7 +33,7 @@ import scala.collection.mutable
  * 思路与 Quarkus 的 build-time processing 一致：在构建 JVM 上执行 `Mappings.autobind()`，
  * 枚举出全部实体/组件/值类型/枚举类，以及库自身会被反射实例化的类，
  * 输出 reflect-config.json / resource-config.json / proxy-config.json / serialization-config.json
- * 和推荐的 native-image 参数；并可一并预生成 AccessTracker 的 $Tracker 类。
+ * 和推荐的 native-image 参数。
  *
  * 用法：
  * {{{
@@ -52,8 +51,7 @@ object NativeImageConfigGen {
       engine: String,
       dialect: String,
       cacheProvider: String,
-      jdbcDrivers: Seq[String],
-      trackers: Boolean)
+      jdbcDrivers: Seq[String])
 
   def main(args: Array[String]): Unit = {
     var output = new File("target/native-image")
@@ -63,7 +61,6 @@ object NativeImageConfigGen {
     var cacheProvider = "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider"
     val jdbcDrivers = new mutable.ListBuffer[String]
     jdbcDrivers += "org.h2.Driver"
-    var trackers = true
     var i = 0
     while (i < args.length) {
       args(i) match {
@@ -73,11 +70,10 @@ object NativeImageConfigGen {
         case "--dialect" => dialect = args(i + 1); i += 2
         case "--cache-provider" => cacheProvider = args(i + 1); i += 2
         case "--jdbc-driver" => jdbcDrivers += args(i + 1); i += 2
-        case "--trackers" => trackers = java.lang.Boolean.parseBoolean(args(i + 1)); i += 2
         case other => throw new IllegalArgumentException("Unknown argument: " + other)
       }
     }
-    run(Options(output, config, engine, dialect, cacheProvider, jdbcDrivers.toSeq, trackers))
+    run(Options(output, config, engine, dialect, cacheProvider, jdbcDrivers.toSeq))
   }
 
   def run(opts: Options): Unit = {
@@ -88,23 +84,13 @@ object NativeImageConfigGen {
     add(classes, opts.cacheProvider)
     libraryReflectionClasses foreach (n => add(classes, n))
 
-    // 先预生成 tracker 类，再把它们的类名加入 reflect-config：
-    // 运行期 AccessTracker.of 通过 getConstructor(Context).newInstance 实例化预生成类，
-    // native 模式下必须预先注册其构造器反射，否则会 NoSuchMethodException
-    val trackerNames = if (opts.trackers) {
-      val trackerDir = new File(opts.output, "trackers")
-      val tracked = AccessTrackerGenerator.generate(opts.config, opts.engine, trackerDir)
-      println(s"Generated ${tracked.size} AccessTracker classes to ${trackerDir.getAbsolutePath}")
-      tracked.map(_.getName + "$Tracker")
-    } else Seq.empty[String]
-
     opts.output.mkdirs()
-    write(opts.output, "reflect-config.json", reflectConfig(classes.toSeq, trackerNames))
+    write(opts.output, "reflect-config.json", reflectConfig(classes.toSeq))
     write(opts.output, "resource-config.json", resourceConfig)
     write(opts.output, "proxy-config.json", "[]\n")
     write(opts.output, "serialization-config.json", serializationConfig(classes.toSeq))
     write(opts.output, "native-image-args.txt", nativeImageArgs(opts))
-    write(opts.output, "classes.txt", (classes.toSeq.map(_.getName) ++ trackerNames).sorted.mkString("\n") + "\n")
+    write(opts.output, "classes.txt", classes.toSeq.map(_.getName).sorted.mkString("\n") + "\n")
     println(s"Native-image configs generated to ${opts.output.getAbsolutePath}")
   }
 
@@ -226,16 +212,13 @@ object NativeImageConfigGen {
 
   // ---- JSON 输出（类名不含引号/反斜杠，直接拼接即可）----
 
-  private def reflectConfig(classes: Seq[Class[_]], extraNames: Seq[String] = Seq.empty): String = {
+  private def reflectConfig(classes: Seq[Class[_]]): String = {
     val sb = new StringBuilder("[\n")
     classes.distinct.sortBy(_.getName) foreach { c =>
       sb.append("  {\"name\":\"").append(c.getName).append("\"");
       if (c.isAnnotation) sb.append(",\"allDeclaredMethods\":true");
       else sb.append(",\"allDeclaredConstructors\":true,\"allDeclaredMethods\":true,\"allDeclaredFields\":true,\"queryAllPublicMethods\":true");
       sb.append("},\n")
-    }
-    extraNames.distinct.sorted foreach { n =>
-      sb.append("  {\"name\":\"").append(n).append("\",\"allDeclaredConstructors\":true},\n")
     }
     if (sb.toString.endsWith(",\n")) sb.setLength(sb.length - 2)
     sb.append("\n]\n")

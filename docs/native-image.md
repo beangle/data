@@ -16,7 +16,7 @@
 - **代码声明式绑定反而是优势，不是阻碍：** 实体集合是"确定、可枚举"的（由 `MappingModule` 的 `bind[X]` 决定），
   天然适合 native-image 的"封闭世界"分析——比注解扫描（Quarkus 需要在 classpath 上做 Jandex 索引）更可控。
 - **真正的阻碍来自三个"运行期动态行为"：**
-  1. **`AccessTracker` 的 ByteBuddy 运行期子类生成**（`declare{...}` DSL 的基础设施）——库特有，必须构建期预生成；
+  1. ~~库侧运行期字节码生成~~：OQL 与 `declare` 均已改用 scala.Dynamic（`Prop`/`DeclareProp`），`AccessTracker`/ByteBuddy 已删除——**库侧不再有运行期字节码生成**；
   2. **Hibernate 懒加载代理（ByteBuddy 运行期生成类）**——Hibernate 原生问题（HHH-16013），需构建期预生成代理类；
   3. **反射面过宽**——实体/组件/值类型/枚举的反射注册、Hibernate 内部反射、Spring AOP 代理、JDBC/缓存驱动等，
      需要构建期枚举并生成 GraalVM 配置文件。
@@ -33,33 +33,23 @@
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| `AccessTracker` 优先加载预生成 `$Tracker` 类（P0） | ✅ | `generate` 先 `Class.forName("X$Tracker")`，找不到再回退 ByteBuddy；`byteBuddy` 改为惰性初始化 |
-| `AccessTracker.buildUnloaded`（P0） | ✅ | 抽出字节码构建，供构建期工具 `saveIn` 输出 .class |
-| `AccessTrackerGenerator`（P0） | ✅ | 构建 JVM 上跑 `Mappings.autobind()`，枚举实体/组件并生成 `$Tracker` .class 到输出目录 |
-| `NativeImageConfigGen`（P1） | ✅ | 生成 reflect/resource/proxy/serialization 配置 + 推荐 native-image 参数 + 一并生成 tracker 类 |
-| 端到端验证 | ✅ | 生成 26 个 tracker 类；classpath 含预生成类时 `AccessTracker.generate` 直接从 classpath 加载（CodeSource 指向生成目录），否则回退 ByteBuddy；属性访问追踪功能正常 |
-| 回归测试 | ✅ | `model` 37、`hibernate` 23 全部通过（`testOnly *` 强制全量运行） |
-| OQL 查询路径改造（P0 增量） | ✅ | `OqlBuilder` 改用 scala.Dynamic 的 `Prop`：运行期查询零 tracker 类、零反射实例化（原每查询 `AccessTracker.of` 的 `getConstructor/newInstance` 已消除），native 下 OQL 路径无需任何 tracker 预生成/反射注册。tracker 预生成链路仅服务绑定期 `declare`，保留（见 [dynamic-oql.md](dynamic-oql.md)） |
+| 全面 scala.Dynamic 化（P0 增量） | ✅ | `OqlBuilder` 用 `Prop`、`declare` 用 `DeclareProp`（`model/.../orm/DeclareProp.scala`），运行期零类生成、零反射；**`AccessTracker`/`ByteBuddyHelper`/`AccessTrackerGenerator` 及全部 tracker 预生成链路已删除**（`byte_buddy` 依赖移除） |
+| `NativeImageConfigGen`（P1） | ✅ | 生成 reflect/resource/proxy/serialization 配置 + 推荐 native-image 参数（不再生成 tracker 类/注册 `$Tracker` 反射） |
+| 回归测试 | ✅ | `model` 34、`hibernate` 22 全部通过（`testOnly *` 强制全量运行） |
 
 ### 两个构建期工具的使用方法（已接入 sbt 任务）
 
 ```bash
-# 1) 生成 native-image 配置 + $Tracker 类（推荐入口）
 sbt 'nativeImageConfig --output target/native-image --engine PostgreSQL \
   --dialect org.hibernate.dialect.PostgreSQLDialect \
   --cache-provider com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider \
   --jdbc-driver org.postgresql.Driver'
-
-# 2) 仅生成 AccessTracker 预生成类
-sbt 'generateTrackers --output target/generated-trackers --engine PostgreSQL'
 ```
 
-（底层等价于 `hibernate/Test/runMain ...NativeImageConfigGen` 与 `model/Test/runMain ...AccessTrackerGenerator`；
-`--config` 默认 `classpath*:beangle.xml`，应用可自行覆盖。）
+（`--config` 默认 `classpath*:beangle.xml`，应用可自行覆盖。）
 
 产物：`reflect-config.json` / `resource-config.json` / `proxy-config.json` / `serialization-config.json` /
-`native-image-args.txt` / `classes.txt`，以及 `trackers/` 目录下的 `$Tracker` 类。
-生成目录需加入应用 classpath（或打进应用 jar）。
+`native-image-args.txt` / `classes.txt`。生成目录需加入应用 classpath（或打进应用 jar）。
 
 **尚未实现（P2/P3）：** Hibernate 懒加载代理的构建期预生成与 `BytecodeProvider` 原生实现、
 `beangle-hibernate-core` fork 的 `META-INF/native-image/` 元数据、Metadata 快照（FastBoot 可选优化）、
@@ -91,7 +81,7 @@ GraalVM native-image 是"封闭世界（closed world）"分析：
 
 | 约束 | 影响 |
 |---|---|
-| 运行时不能生成/定义新类 | ByteBuddy（AccessTracker、Hibernate 代理、Spring CGLIB）全部失效 |
+| 运行时不能生成/定义新类 | ByteBuddy（Hibernate 懒加载代理、Spring CGLIB）全部失效（beangle-data 库侧已无 ByteBuddy） |
 | 反射默认不可用 | `Class.forName`、`getMethod/invoke`、`newInstance` 必须预先注册（reflect-config） |
 | 资源默认不打包 | classpath 资源（beangle.xml、META-INF/services、.sql、message bundle）需注册（resource-config） |
 | JDK 动态代理需声明 | Spring AOP 代理、Hibernate 部分接口代理需注册（proxy-config） |
@@ -107,15 +97,14 @@ GraalVM native-image 是"封闭世界（closed world）"分析：
 
 | 位置 | 机制 | 说明 |
 |---|---|---|
-| `AccessTracker`（model/.../dao/AccessTracker.scala） | ByteBuddy 为每个绑定实体/组件生成 `X$Tracker` 子类 | **仅剩绑定期 `declare{...}` DSL 使用**：`bind[T]` 时 `MappingModule.bindImpl` 触发。OQL 运行期查询路径已改用 scala.Dynamic 的 `Prop`（见 4.5 与 docs/dynamic-oql.md），不再生成/使用 tracker 类。native 下需**构建期预生成同名类**、运行期从 classpath 加载 |
-| Hibernate 懒加载代理 | Hibernate `BytecodeProviderImpl`（ByteBuddy） | 原生问题 HHH-16013：native 下默认禁用运行期代理生成，需构建期预生成代理类并注入 `BytecodeProvider`（Quarkus 的 `PreGeneratedProxies` 同款思路） |
+| Hibernate 懒加载代理 | Hibernate `BytecodeProviderImpl`（ByteBuddy） | 原生问题 HHH-16013：native 下默认禁用运行期代理生成，需构建期预生成代理类并注入 `BytecodeProvider`（Quarkus 的 `PreGeneratedProxies` 同款思路）。**beangle-data 库侧已无 ByteBuddy**（OQL 与 `declare` 均为 scala.Dynamic，见 [dynamic-oql.md](dynamic-oql.md)） |
 | Spring `TransactionalProxy`/AOP | `ProxyFactory` JDK/CGLIB 代理 | 使用方服务接口需注册 proxy-config；或 native 模式改用非代理事务方案 |
 
 ### 3.2 运行期反射（需要构建期注册）
 
-> 注：OQL 查询路径经 scala.Dynamic 改造后零反射（`Prop` 为普通对象、路径字符串累积），
-> 原先每查询的 `AccessTracker.of`（`getConstructor(Context).newInstance`）已不存在；
-> 下表剩余反射点主要服务于绑定期（`Mappings.autobind`/`declare`）、Hibernate 运行期与工具类。
+> 注：OQL 与 `declare` 路径经 scala.Dynamic 改造后零反射（`Prop`/`DeclareProp` 为普通对象、路径字符串累积），
+> 原先每查询的 `AccessTracker.of`（`getConstructor(Context).newInstance`）与 `$Tracker` 反射注册均已不存在；
+> 下表剩余反射点主要服务于绑定期（`Mappings.autobind`）、Hibernate 运行期与工具类。
 
 | 位置 | 反射内容 | 注册对象 |
 |---|---|---|
@@ -141,7 +130,7 @@ GraalVM native-image 是"封闭世界（closed world）"分析：
 
 ### 3.4 类初始化（build-time vs run-time）
 
-- Hibernate 的静态注册表、`ByteBuddy`（若仍引用）、Scala 的 `Enum`/反射缓存等需要 `--initialize-at-build-time`；
+- Hibernate 的静态注册表、Scala 的 `Enum`/反射缓存等需要 `--initialize-at-build-time`（beangle-data 库侧已无 ByteBuddy）；
 - `org.hibernate` 大部分可 build-time 初始化（Quarkus 已证明）；JDBC 驱动、JCache 通常 run-time 初始化即可。
 
 ---
@@ -188,9 +177,9 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
   补偿方案：① 编译期宏校验（inline 宏提取 lambda 中 selectDynamic 字面量并对照实体成员校验）——
   实测发现 Scala 3.3 会把传给 inline 宏的非捕获 lambda 提升为静态方法引用（`Ident("f$proxyN")`），
   宏拿不到 lambda AST，需解析 `DefDef.rhs` 绕过，实现复杂度高；② 运行期路径校验——绑定/查询构造期报错。
-- **决策更新（2026-08）**：`OqlBuilder.where/on` 已改用 scala.Dynamic 实现（`model/.../dao/Prop.scala`），
-  运行时不再为 OQL 路径生成/使用 $Tracker 类；`MappingModule.declare`（绑定期）仍用 AccessTracker，
-  因此构建期预生成链路保留。宏校验与运行期校验均不采用（接受路径书写错误的运行期暴露）。
+- **决策更新（2026-08）**：`OqlBuilder.where/on` 改用 `Prop`、`MappingModule.declare` 改用 `DeclareProp`
+  （均基于 scala.Dynamic），**`AccessTracker`/ByteBuddy 已全部删除**，运行期零类生成、零反射，
+  native 下无需任何 tracker 预生成。宏校验与运行期校验均不采用（接受路径书写错误的运行期暴露）。
 - **额外收益**：Dynamic 的 `applyDynamic` 使 `where { u => u.lower(u.name).equal("x") }`、
   `u.count(u.roles).gt(0)` 等数据库函数/聚合可直接书写（类型化 tracker 无法表达）。
 - **注意**：`select/groupBy/orderBy` 在 `AbstractQueryBuilder` 层改为 Any* 渲染（Prop/Var/String 混用），
@@ -199,16 +188,14 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 ---
 ## 5. 分阶段改造计划
 
-### P0 库侧运行时代码改造（不破坏现有 JVM 行为）
+### P0 库侧运行时代码改造（已完成）
 
-1. **`AccessTracker` 支持预生成类**（已完成，见 `AccessTracker.scala`）：
-   - `generate` 先尝试 `Class.forName(name+"$Tracker")` 加载构建期预生成的类，找不到再回退 ByteBuddy；
-   - 新增 `buildUnloaded` 供构建期工具生成字节码。
-2. **减少运行期反射**：
+1. **全面 scala.Dynamic 化**（已完成）：`OqlBuilder` 用 `Prop`、`MappingModule.declare` 用 `DeclareProp`，
+   属性路径编译期为 selectDynamic 链，运行期零类生成、零反射；`AccessTracker`/`ByteBuddyHelper`/
+   `AccessTrackerGenerator` 及 `byte_buddy` 依赖已删除（见 [dynamic-oql.md](dynamic-oql.md)）。
+2. **减少运行期反射**（待办）：
    - `Mappings.autobind` 中 `Reflections.newInstance` 的"采样默认值"逻辑改为可关闭（native 模式用配置/快照替代）；
    - 组件属性元信息尽量走编译期 `BeanInfoDigger`（`MappingMacro.bind` 已经对 `bind[T]` 这么做了，扩展到组件类型）。
-3. **新增 `AccessTrackerGenerator`**（model 模块）：给定 MappingModule 类名集合，在构建 JVM 上跑 `Mappings.autobind()`，
-   枚举全部实体/组件类，调用 `buildUnloaded` 生成 `$Tracker` 的 .class 文件到输出目录。
 
 ### P1 构建期 native-image 配置生成器（核心交付）
 
@@ -223,7 +210,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
   - `proxy-config.json`：实体代理接口（配合 P2 预生成代理）占位 + 说明；
   - `serialization-config.json`：实体/值类型；
   - 推荐的 `native-image` 参数文件（`--initialize-at-build-time` 清单、JDBC/缓存驱动注册等）。
-- 与 `AccessTrackerGenerator` 合并为一个入口：`beangle-native-gen`。
+- 说明：库侧（OQL/declare）已零类生成，配置生成器无需预生成任何辅助类；剩余代理类预生成在 P2（Hibernate 侧）。
 
 ### P2 Hibernate 侧（fork + 代理）
 
@@ -240,30 +227,28 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 - 提供 `samples/native` 示例：MappingModule + H2 + native-image 构建脚本（GraalVM + `-H:ReflectionConfigurationFiles=...`）；
 - CI 增加 native-image 冒烟测试（HibernateConfigTest 同款用例跑 native 二进制）。
 
-**P3 冒烟测试的命令（本环境无 GraalVM/native-image，未实际执行；在有 GraalVM 的环境可直接跑）：**
+**P3 冒烟测试（本环境无 GraalVM/native-image，未实际执行；在有 GraalVM 的环境可直接跑）：**
 
 ```bash
-# 0) 生成配置与预生成类
+# 0) 生成配置
 sbt 'nativeImageConfig --output target/native-image --engine PostgreSQL --dialect org.hibernate.dialect.H2Dialect'
 
-# 1) 用 native-image 构建冒烟入口（复用 PreGeneratedTrackerCheck，只依赖 model 模块，不触碰 Hibernate）
+# 1) 用 native-image 构建一个最小应用（MappingModule + OqlBuilder + H2），验证：
+#    Mappings.autobind 反射、beangle.xml 资源、declare/OQL 的 Dynamic 路径（零类生成零反射）
 native-image --no-fallback \
   -H:ReflectionConfigurationFiles=target/native-image/reflect-config.json \
   -H:ResourceConfigurationFiles=target/native-image/resource-config.json \
   -H:SerializationConfigurationFiles=target/native-image/serialization-config.json \
   --enable-url-protocols=jar,resource \
   --initialize-at-build-time=org.beangle \
-  -cp "target/native-image/trackers:$(sbt -batch 'show hibernate/Test/fullClasspath' | tr -d '\n')" \
-  org.beangle.data.hibernate.nativeimage.PreGeneratedTrackerCheck
-
-# 2) 运行（会验证：Mappings.autobind 反射、beangle.xml 资源、预生成 $Tracker 从 classpath 加载）
-./org.beangle.data.hibernate.nativeimage.PreGeneratedTrackerCheck
+  -cp "$(sbt -batch 'show hibernate/Test/fullClasspath' | tr -d '\n')" \
+  <最小应用主类>
 
 ---
 
 ## 6. 使用方（应用）需要做什么
 
-1. 构建期：运行 `beangle-native-gen`（P1 工具），产物（configs + `$Tracker`/代理类）打进应用 jar；
+1. 构建期：运行 `nativeImageConfig`（P1 工具），产物（configs）打进应用 jar（Hibernate 代理类预生成见 P2）；
 2. native-image 参数：引用生成的配置文件、注册 JDBC 驱动与缓存 Provider、`--initialize-at-build-time` 清单；
 3. 运行期：`beangle.xml` 与 DDL 资源在 resource-config 中；事务代理接口在 proxy-config 中。
 
