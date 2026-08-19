@@ -29,6 +29,7 @@ val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.12"
 
 // 构建期 native-image 辅助任务（见 docs/native-image.md）
 lazy val nativeImageConfig = inputKey[Unit]("Generate GraalVM native-image configs (build-time)")
+lazy val libraryNativeImageConfig = inputKey[Unit]("Regenerate embedded META-INF/native-image configs for beangle-data jars")
 
 lazy val root = (project in file("."))
   .settings(
@@ -38,6 +39,8 @@ lazy val root = (project in file("."))
 
     // ---- 构建期 native-image 辅助任务 ----
     // sbt "nativeImageConfig --output target/native-image --engine PostgreSQL"
+    // sbt "libraryNativeImageConfig"
+    libraryNativeImageConfig := (hibernate / Compile / runMain).toTask(" org.beangle.data.hibernate.nativeimage.LibraryNativeImageConfig").value,
     nativeImageConfig := Def.inputTaskDyn {
       val args = spaceDelimited("<arg>").parsed
       (hibernate / Test / runMain).toTask(" org.beangle.data.hibernate.nativeimage.NativeImageConfigGen " + args.mkString(" "))

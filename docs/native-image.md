@@ -34,19 +34,25 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | 全面 scala.Dynamic 化（P0 增量） | ✅ | `OqlBuilder` 用 `Prop`、`declare` 用 `DeclareProp`（`model/.../orm/DeclareProp.scala`），运行期零类生成、零反射；**`AccessTracker`/`ByteBuddyHelper`/`AccessTrackerGenerator` 及全部 tracker 预生成链路已删除**（`byte_buddy` 依赖移除） |
-| `NativeImageConfigGen`（P1） | ✅ | 生成 reflect/resource/proxy/serialization 配置 + 推荐 native-image 参数（不再生成 tracker 类/注册 `$Tracker` 反射） |
+| `NativeImageConfigGen`（P1） | ✅ | 生成**应用侧** reflect/resource/proxy/serialization 配置 + 推荐 native-image 参数（不再生成 tracker 类） |
+| 库元数据内嵌（P2.1 前奏） | ✅ | `LibraryNativeImageConfig`：库自身固定反射点/资源已内嵌进 model、hibernate 两个 jar 的 `META-INF/native-image/`（GraalVM 构建时自动发现并合并）——库清单与应用清单正式拆分 |
 | 回归测试 | ✅ | `model` 34、`hibernate` 22 全部通过（`testOnly *` 强制全量运行） |
 
 ### 两个构建期工具的使用方法（已接入 sbt 任务）
 
 ```bash
+# 应用侧（可执行项目构建期）
 sbt 'nativeImageConfig --output target/native-image --engine PostgreSQL \
   --dialect org.hibernate.dialect.PostgreSQLDialect \
   --cache-provider com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider \
   --jdbc-driver org.postgresql.Driver'
+
+# 库侧（beangle-data 自身，重新生成内嵌的 META-INF/native-image）
+sbt 'libraryNativeImageConfig'
 ```
 
-（`--config` 默认 `classpath*:beangle.xml`，应用可自行覆盖。）
+（`nativeImageConfig` 的 `--config` 默认 `classpath*:beangle.xml`，应用可自行覆盖；
+`libraryNativeImageConfig` 只重写 `model`/`hibernate` 两个 jar 内嵌的库清单，应用无需执行。）
 
 产物：`reflect-config.json` / `resource-config.json` / `proxy-config.json` / `serialization-config.json` /
 `native-image-args.txt` / `classes.txt`。生成目录需加入应用 classpath（或打进应用 jar）。
@@ -202,9 +208,10 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 ### 5.1 P2：Hibernate 侧（前置：无；涉及仓库：beangle/hibernate fork）
 
 **P2.1 fork 可达性元数据**
-- 任务：在 `beangle-hibernate-core` jar 内嵌 `META-INF/native-image/org/beangle/hibernate/
-  beangle-hibernate-core/*.json`（reflect/resource/proxy/serialization），解决 hibernate-core
-  自身的反射（Dialect/JCache/类型注册）、资源（`META-INF/services` 等）与 ServiceLoader 注册；
+- 进展：beangle-data 自身两 jar 的内嵌元数据已完成（`LibraryNativeImageConfig`，见 0.1）；
+- 待办：在 `beangle-hibernate-core` fork jar 内嵌 `META-INF/native-image/org/beangle/hibernate/
+  beangle-hibernate-core/*.json`，解决 hibernate-core 自身的反射（Dialect/JCache/类型注册）、
+  资源（`META-INF/services` 等）与 ServiceLoader 注册；
 - 依据：上游 `graalvm-reachability-metadata` 仓库 `org.hibernate.orm:hibernate-core` 条目，按 fork 版本适配；
 - 验收：native 构建时 Hibernate 初始化不再因缺反射/资源报错。
 

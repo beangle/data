@@ -82,7 +82,8 @@ object NativeImageConfigGen {
     opts.jdbcDrivers foreach (d => add(classes, d))
     add(classes, opts.dialect)
     add(classes, opts.cacheProvider)
-    libraryReflectionClasses foreach (n => add(classes, n))
+    // 库自身固定反射点已内嵌于 beangle-data 各 jar 的 META-INF/native-image（见 LibraryNativeImageConfig），
+    // 这里只生成应用侧配置
 
     opts.output.mkdirs()
     write(opts.output, "reflect-config.json", reflectConfig(classes.toSeq))
@@ -164,55 +165,16 @@ object NativeImageConfigGen {
   private def add(classes: mutable.LinkedHashSet[Class[_]], name: String): Unit = tryLoad(classes, name)
 
   private def annotationClasses: Seq[Class[_]] = Seq(
-    classOf[archive], classOf[code], classOf[config], classOf[flash], classOf[flow], classOf[log], classOf[shard], classOf[temp],
+    // org.beangle.data.model.annotation.* 为库自身注解，已内嵌于 model jar（见 LibraryNativeImageConfig）
     Class.forName("jakarta.persistence.Entity"), Class.forName("jakarta.persistence.Embeddable"),
     Class.forName("org.beangle.commons.bean.component")
   )
 
-  /** 库内部会被 Hibernate/运行时反射实例化或检查的类
-   */
-  private def libraryReflectionClasses: Seq[String] = Seq(
-    "org.beangle.data.hibernate.ScalaPropertyAccessStrategy",
-    "org.beangle.data.hibernate.ScalaPropertyAccessor$BasicGetter",
-    "org.beangle.data.hibernate.ScalaPropertyAccessor$BasicSetter",
-    "org.beangle.data.hibernate.SpringSessionContext",
-    "org.beangle.data.hibernate.cfg.BindMetadataBuilderFactory",
-    "org.beangle.data.hibernate.cfg.BindSourceProcessor",
-    "org.beangle.data.hibernate.cfg.MappingService",
-    "org.beangle.data.hibernate.LocalSessionFactoryBean",
-    "org.beangle.data.hibernate.ConfigurationBuilder",
-    "org.beangle.data.hibernate.HibernateEntityDao",
-    "org.beangle.data.hibernate.SessionHelper",
-    "org.beangle.data.hibernate.format.BeangleJsonFormatMapper",
-    "org.beangle.data.hibernate.format.BeangleXmlFormatMapper",
-    "org.beangle.data.hibernate.jdbc.JsonAccessor",
-    "org.beangle.data.hibernate.jdbc.NativeJsonJdbcType",
-    "org.beangle.data.hibernate.jdbc.StringJsonJdbcType",
-    "org.beangle.data.hibernate.jdbc.NullableIntJdbcType",
-    "org.beangle.data.hibernate.id.AutoIncrementGenerator",
-    "org.beangle.data.hibernate.id.CodeStyleGenerator",
-    "org.beangle.data.hibernate.id.DateStyleGenerator",
-    "org.beangle.data.hibernate.id.DateTimeStyleGenerator",
-    "org.beangle.data.hibernate.udt.ValueType",
-    "org.beangle.data.hibernate.udt.EnumType",
-    "org.beangle.data.hibernate.udt.JsonType",
-    "org.beangle.data.hibernate.udt.YearMonthType",
-    "org.beangle.data.hibernate.udt.Decimal5Type",
-    "org.beangle.data.hibernate.udt.TinyDecimal5Type",
-    "org.beangle.data.hibernate.udt.BagType",
-    "org.beangle.data.hibernate.udt.SeqType",
-    "org.beangle.data.hibernate.udt.SetType",
-    "org.beangle.data.hibernate.udt.MapType",
-    "org.beangle.data.hibernate.udt.ScalaPersistentBag",
-    "org.beangle.data.hibernate.udt.ScalaPersistentSeq",
-    "org.beangle.data.hibernate.udt.ScalaPersistentSet",
-    "org.beangle.data.hibernate.udt.ScalaPersistentMap",
-    "org.beangle.data.hibernate.udt.ScalaCollectionType"
-  )
+  // 库自身固定反射点见 LibraryNativeImageConfig（内嵌于 jar 的 META-INF/native-image）
 
   // ---- JSON 输出（类名不含引号/反斜杠，直接拼接即可）----
 
-  private def reflectConfig(classes: Seq[Class[_]]): String = {
+  private[nativeimage] def reflectConfig(classes: Seq[Class[_]]): String = {
     val sb = new StringBuilder("[\n")
     classes.distinct.sortBy(_.getName) foreach { c =>
       sb.append("  {\"name\":\"").append(c.getName).append("\"");
@@ -236,16 +198,12 @@ object NativeImageConfigGen {
   }
 
   private def resourceConfig: String = {
-    val patterns = Seq(
-      "beangle\\.xml",
-      "META-INF/services/.*",
-      "META-INF/beangle/ddl/.*",
-      ".*\\.zh_CN",
-      "logback\\.xml",
-      "db\\.properties"
-    )
-    "{\n  \"resources\": [\n" + patterns.map(p => s"    {\"pattern\":\"$p\"}").mkString(",\n") + "\n  ]\n}\n"
+    // 库自身资源（META-INF/services、META-INF/beangle/ddl、*.zh_CN）已内嵌于各 jar
+    resourcesConfig(Seq("beangle\\.xml", "logback\\.xml", "db\\.properties"))
   }
+
+  private[nativeimage] def resourcesConfig(patterns: Seq[String]): String =
+    "{\n  \"resources\": [\n" + patterns.map(p => s"    {\"pattern\":\"$p\"}").mkString(",\n") + "\n  ]\n}\n"
 
   private def nativeImageArgs(opts: Options): String = {
     val sb = new StringBuilder
