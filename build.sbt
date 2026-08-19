@@ -1,5 +1,6 @@
 import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
+import sbt.internal.util.complete.DefaultParsers.*
 
 organization := "org.beangle.data"
 version := "5.12.8-SNAPSHOT"
@@ -26,11 +27,27 @@ homepage := Some(uri("https://beangle.github.io/data/index.html"))
 val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.2.2"
 val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.12"
 
+// 构建期 native-image 辅助任务（见 docs/native-image.md）
+lazy val generateTrackers = inputKey[Unit]("Generate AccessTracker $Tracker classes from mapping modules (build-time, for native-image)")
+lazy val nativeImageConfig = inputKey[Unit]("Generate GraalVM native-image configs + tracker classes (build-time)")
+
 lazy val root = (project in file("."))
   .settings(
     name := "beangle-data",
     common,
-    publish / skip := true
+    publish / skip := true,
+
+    // ---- 构建期 native-image 辅助任务 ----
+    // sbt "nativeImageConfig --output target/native-image --engine PostgreSQL"
+    // sbt "generateTrackers --output target/generated-trackers --engine PostgreSQL"
+    generateTrackers := Def.inputTaskDyn {
+      val args = spaceDelimited("<arg>").parsed
+      (model / Test / runMain).toTask(" org.beangle.data.dao.AccessTrackerGenerator " + args.mkString(" "))
+    }.evaluated,
+    nativeImageConfig := Def.inputTaskDyn {
+      val args = spaceDelimited("<arg>").parsed
+      (hibernate / Test / runMain).toTask(" org.beangle.data.hibernate.nativeimage.NativeImageConfigGen " + args.mkString(" "))
+    }.evaluated
   )
   .aggregate(model, hibernate)
 
