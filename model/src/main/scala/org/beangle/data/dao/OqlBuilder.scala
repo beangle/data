@@ -39,7 +39,6 @@ object OqlBuilder {
   def from[E](entityName: String, alias: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
     query.entityClass = ClassLoaders.load(entityName).asInstanceOf[Class[E]]
-    query.tracker = AccessTracker.of(query.entityClass)
     query.alias = alias
     query.select = "select " + alias
     query.from = concat("from ", entityName, " ", alias)
@@ -53,35 +52,32 @@ object OqlBuilder {
   def from[E](entityClass: Class[E], alias: String): OqlBuilder[E] = {
     val query = new OqlBuilder[E]()
     query.entityClass = entityClass
-    query.tracker = AccessTracker.of(entityClass)
     query.alias = alias
     query.select = "select " + alias
     query.from = concat("from ", Jpas.findEntityName(entityClass), " ", alias)
     query
   }
 
-  def sum(v: Var): Var = {
-    Var(s"sum(${v.name})")
-  }
+  /** 聚合/函数包装：接受 Prop/Var/字符串（Prop 由 scala.Dynamic 路径自动渲染） */
+  def wrap(name: String, v: Any): Var = Var(s"$name(${argOf(v)})")
 
-  def avg(v: Var): Var = {
-    Var(s"avg(${v.name})")
-  }
+  def sum(v: Any): Var = wrap("sum", v)
 
-  def max(v: Var): Var = {
-    Var(s"max(${v.name})")
-  }
+  def avg(v: Any): Var = wrap("avg", v)
 
-  def min(v: Var): Var = {
-    Var(s"min(${v.name})")
-  }
+  def max(v: Any): Var = wrap("max", v)
 
-  def distinct(v: Var): Var = {
-    Var(s"distinct ${v.name}")
-  }
+  def min(v: Any): Var = wrap("min", v)
 
-  def count(v: Var): Var = {
-    Var(s"count(${v.name})")
+  def distinct(v: Any): Var = Var("distinct " + argOf(v))
+
+  def count(v: Any): Var = wrap("count", v)
+
+  private def argOf(v: Any): String = v match {
+    case p: Prop => p.placeholder
+    case vr: Var => vr.name
+    case s: String => s
+    case x => x.toString
   }
 
   case class Var(name: String) {
@@ -117,6 +113,14 @@ object OqlBuilder {
     def between(start: Any, end: Any): Expression = {
       create("between ? and ?", start, end)
     }
+
+    /** 值列表成员：e.id.in(1, 2, 3) -> _.id in (?, ?, ?) */
+    def in(args: Any*): Expression = {
+      val ps = args.map(_ => "?").mkString(", ")
+      create(s"in ($ps)", args*)
+    }
+
+
 
     private def create(con: String, args: Any*): Expression = {
       val exp = if con.contains("_") then Strings.replace(con, "_", name) else name + " " + con
@@ -172,7 +176,6 @@ class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
 
   /** 查询实体类 */
   var entityClass: Class[T] = _
-  var tracker: AccessTracker & T = _
 
   /**
    * 形成计数查询语句，如果不能形成，则返回""
@@ -244,44 +247,24 @@ class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
 
   def forEntity(entityClass: Class[T]): this.type = {
     this.entityClass = entityClass
-    this.tracker = AccessTracker.of(entityClass)
     this
   }
 
-  def where(exp: T => Expression): this.type = {
-    exp(tracker).append(this)
+  /** 类型安全条件：where { e => e.name.first.equal("x").and(e.role.isNull or e.role.gt(1)) }
+   * e 为 scala.Dynamic 的 [[Prop]]，属性路径编译期为 selectDynamic 链，无需 $Tracker 类
+   */
+  def where(exp: Prop => Expression): this.type = {
+    exp(new Prop("")).append(this)
     this
   }
 
-  def on(exp: T => Any): this.type = {
-    exp(tracker)
-    this
-  }
-
-  def groupBy(vars: Var*): this.type = {
-    val clause = vars.map(e => e.fillin(this.alias)).mkString(",")
-    if clause.nonEmpty then groupBy(clause)
-    this
-  }
-
-  def select(vars: Var*): this.type = {
-    val clause = vars.map(e => e.fillin(this.alias)).mkString(",")
-    if clause.nonEmpty then select(clause)
-    this
-  }
-
-  def orderBy(vars: Var*): this.type = {
-    val clause = vars.map(e => e.fillin(this.alias)).mkString(",")
-    if clause.nonEmpty then orderBy(clause)
+  /** 记录 select/groupBy/orderBy 的路径表达式：on { e => q.select(e.department.id, ...) }
+   * select/groupBy/orderBy 继承自 AbstractQueryBuilder（Any* 渲染，支持 Prop/Var/String 混用）
+   */
+  def on(exp: Prop => Any): this.type = {
+    exp(new Prop(""))
     this
   }
 
   override def lang: Query.Lang = Query.Lang.OQL
-
-  import scala.language.implicitConversions
-
-  implicit def any2Var(a: Any): Var = {
-    val props = tracker.ctx.accessed()
-    if props.isEmpty then new Var(a.toString) else new Var("_." + props.head)
-  }
 }

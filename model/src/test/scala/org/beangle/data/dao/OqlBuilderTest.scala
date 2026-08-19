@@ -18,7 +18,7 @@
 package org.beangle.data.dao
 
 import org.beangle.data.dao.OqlBuilder.*
-import org.beangle.data.orm.model.TestUser
+import org.beangle.data.orm.model.{TestRole, TestUser}
 import org.beangle.data.orm.model.code.NationBean
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -30,7 +30,6 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
   describe("OqlBuilder") {
     it("builder") {
       val q = OqlBuilder.from(classOf[TestUser], "t")
-      import q.given
       q.where { e =>
         (e.member.middleName.isNotNull or e.friends.isNotNull or e.properties.isNotNull)
           .and(e.birthday.isNull)
@@ -58,7 +57,6 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
 
     it("user define function") {
       val q = OqlBuilder.from(classOf[TestUser], "t")
-      import q.given
       q.where { e =>
         e.member.middleName is("len(_)=?", 2) or
           e.id.is("bitand(_,?)>0", 123)
@@ -76,6 +74,83 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
 
       val query2 = builder.orderBy("test.name").build()
       assert(query2.statement == "select test.name from " + classOf[NationBean].getName + " test group by test.name having count(*)>1 order by test.name")
+    }
+    it("complex nested conditions with and/or/between") {
+      val q = OqlBuilder.from(classOf[TestUser], "t")
+      q.where { e =>
+        (e.member.middleName.like("x") or e.friends.isNull)
+          .and((e.role.name.equal("r1") or e.role.name.equal("r2")).and(e.id.between(1, 10)))
+          .and(e.birthday.isNotNull)
+      }
+      val query = q.build()
+      assert(query.params.size == 5)
+      assert(query.statement == "select t from " + classOf[TestUser].getName + " t" +
+        " where (t.member.middleName like :v1 or t.friends is null)" +
+        " and (t.role.name = :v2 or t.role.name = :v3) and t.id between :v4 and :v5" +
+        " and t.birthday is not null")
+    }
+
+    it("aggregate and distinct in select/groupBy/orderBy") {
+      val q = OqlBuilder.from(classOf[TestUser], "t")
+      q.on { e =>
+        q.select(sum(e.id), avg(e.id), min(e.id), max(e.id), count(e.friends), count(distinct(e.role.name)))
+          .groupBy(e.member.middleName, e.role.name)
+          .orderBy(e.role.name, e.id)
+      }
+      q.having("count(*)>1")
+      val query = q.build()
+      assert(query.statement == "select sum(t.id),avg(t.id),min(t.id),max(t.id),count(t.friends),count(distinct t.role.name)" +
+        " from " + classOf[TestUser].getName + " t" +
+        " group by t.member.middleName,t.role.name having count(*)>1" +
+        " order by t.role.name,t.id")
+    }
+
+    it("database function via applyDynamic") {
+      val q = OqlBuilder.from(classOf[TestUser], "t")
+      q.where { e =>
+        e.lower(e.member.middleName).equal("x")
+          .and(e.coalesce(e.id, 0L).gt(1))
+      }
+      val query = q.build()
+      assert(query.params.size == 2)
+      assert(query.statement == "select t from " + classOf[TestUser].getName + " t" +
+        " where lower(t.member.middleName) = :v1 and coalesce(t.id, 0) > :v2")
+    }
+
+    it("stacked where calls") {
+      val q = OqlBuilder.from(classOf[TestUser], "t")
+      q.where { e => e.member.middleName.isNotNull }
+      q.where { e => e.id.gt(2) and e.birthday.isNull }
+      val query = q.build()
+      assert(query.statement == "select t from " + classOf[TestUser].getName + " t" +
+        " where (t.member.middleName is not null) and (t.id > :v1 and t.birthday is null)")
+    }
+
+    it("custom function with multiple args") {
+      val q = OqlBuilder.from(classOf[TestUser], "t")
+      q.where { e =>
+        e.id.is("coalesce(_, ?) > ?", 1, 2) or
+          e.member.middleName.is("substr(_, 1, 2)=?", "ab")
+      }
+      val query = q.build()
+      assert(query.params.size == 3)
+      assert(query.statement == "select t from " + classOf[TestUser].getName + " t" +
+        " where coalesce(t.id, :v1) > :v2 or substr(t.member.middleName, 1, 2)=:v3")
+    }
+    it("collection queries via contains (elements) / containsKey (indices)") {
+      val q = OqlBuilder.from(classOf[TestUser], "t")
+      q.where { e =>
+        e.tags.contains("x")
+          .and(e.times.containsKey(1))
+          .and(e.roles.contains(new TestRole()))
+          .and(e.id.in(1, 2, 3))
+      }
+      val query = q.build()
+      assert(query.params.size == 6)
+      // contains 统一 elements（Map 为 values），Map 键查询用 containsKey -> indices
+      assert(query.statement == "select t from " + classOf[TestUser].getName + " t" +
+        " where :v1 in elements(t.tags) and :v2 in indices(t.times)" +
+        " and :v3 in elements(t.roles) and t.id in (:v4, :v5, :v6)")
     }
   }
 

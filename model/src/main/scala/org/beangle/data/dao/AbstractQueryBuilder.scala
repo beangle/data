@@ -21,6 +21,7 @@ import org.beangle.commons.collection.Order
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.lang.{Assert, Strings}
 import org.beangle.commons.lang.Strings.*
+import org.beangle.data.dao.OqlBuilder.Var
 
 object AbstractQueryBuilder {
   val InnerJoin = " left join "
@@ -72,11 +73,12 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
 
   def lang: Query.Lang
 
-  def select(what: String): this.type = {
+  /** select 列：支持 Prop（scala.Dynamic 路径）、Var、字符串，混合可写如 select(e.id, e.name, "count(*)") */
+  def select(vars: Any*): this.type = {
     this.select =
-      if null == what then null
+      if (vars.isEmpty || null == vars.head) null
       else {
-        val wt = Strings.replace(what, "_.", alias + ".")
+        val wt = vars.map(renderColumn).mkString(",")
         if (wt.toLowerCase.trim().startsWith("select")) wt else "select " + wt
       }
     this
@@ -152,8 +154,10 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
     this
   }
 
-  def orderBy(order: String): this.type = {
-    orderBy(Order.parse(Strings.replace(order, "_.", alias + ".")))
+  /** order by 列：支持 Prop/Var/字符串 */
+  def orderBy(vars: Any*): this.type = {
+    val clause = vars.map(renderColumn).filter(Strings.isNotEmpty).mkString(",")
+    if (Strings.isNotEmpty(clause)) orderBy(Order.parse(clause))
     this
   }
 
@@ -186,9 +190,18 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
     this
   }
 
-  def groupBy(what: String): this.type = {
-    if (isNotEmpty(what)) groups = groups :+ what
+  /** group by 列：支持 Prop/Var/字符串 */
+  def groupBy(vars: Any*): this.type = {
+    vars.map(renderColumn).filter(isNotEmpty) foreach (g => groups = groups :+ g)
     this
+  }
+
+  /** 把 select/groupBy/orderBy 的入参渲染为带别名的列表达式 */
+  protected def renderColumn(value: Any): String = value match {
+    case p: Prop => p.fillin(alias)
+    case v: Var => v.fillin(alias)
+    case s: String => Strings.replace(s, "_.", alias + ".")
+    case x => x.toString
   }
 
   def having(what: String): this.type = {
