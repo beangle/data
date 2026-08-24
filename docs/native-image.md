@@ -36,7 +36,8 @@
 | 全面 scala.Dynamic 化（P0 增量） | ✅ | `OqlBuilder` 用 `Prop`、`declare` 用 `DeclareProp`（`model/.../orm/DeclareProp.scala`），运行期零类生成、零反射；**`AccessTracker`/`ByteBuddyHelper`/`AccessTrackerGenerator` 及全部 tracker 预生成链路已删除**（`byte_buddy` 依赖移除） |
 | `NativeImageConfigGen`（P1） | ✅ | 生成**应用侧** reflect/resource/proxy/serialization 配置 + 推荐 native-image 参数（不再生成 tracker 类） |
 | 库元数据内嵌（P2.1 前奏） | ✅ | `LibraryNativeImageConfig`：库自身固定反射点/资源已内嵌进 model、hibernate 两个 jar 的 `META-INF/native-image/`（GraalVM 构建时自动发现并合并）——库清单与应用清单正式拆分 |
-| 回归测试 | ✅ | `model` 34、`hibernate` 22 全部通过（`testOnly *` 强制全量运行） |
+| BeanInfo JSON 静态化（P2.2 前奏） | ✅ | BeanInfo 序列化独立成 `BeanInfoJson`；构建期按类生成 `<SimpleName>.beaninfo.json`（与 class 同包）；运行期 `BeanInfoJson.loadFor` 按需读取并注册 `BeanInfos.cache`；`MappingModule.bindImpl` 改为 JSON 优先、编译期 dig 回退（详见 §1.5） |
+| 回归测试 | ✅ | `model` 34、`hibernate` 24 全部通过（`testOnly *` 强制全量运行） |
 
 ### 两个构建期工具的使用方法（已接入 sbt 任务）
 
@@ -58,8 +59,8 @@ sbt 'libraryNativeImageConfig'
 `native-image-args.txt` / `classes.txt`。生成目录需加入应用 classpath（或打进应用 jar）。
 
 **尚未实现（P2/P3）：** Hibernate 懒加载代理的构建期预生成与 `BytecodeProvider` 原生实现、
-`beangle-hibernate-core` fork 的 `META-INF/native-image/` 元数据、Metadata 快照（FastBoot 可选优化）、
-samples/native 示例工程与 CI 冒烟。
+`beangle-hibernate-core` fork 的 `META-INF/native-image/` 元数据、Metadata 快照中**列定义/Mappings 部分的序列化**
+（BeanInfo 部分已落地，见 §1.5）、samples/native 示例工程与 CI 冒烟。
 
 ---
 ## 1. 本库如何构建 ORM 元数据（代码声明式绑定）
@@ -78,6 +79,32 @@ samples/native 示例工程与 CI 冒烟。
 
 这条链路里，**第 2、3 步是"确定性计算"**——同样的输入（MappingModule + 配置）必然产出同样的元数据，
 因此**可以在构建期（JVM 上）完整执行一遍并固化成产物**，这正是 Quarkus "build time processing" 的思路。
+
+---
+
+## 1.5 BeanInfo JSON 静态化（Bean 类型信息序列化 / 按需加载）
+
+BeanInfo（`org.beangle.commons.lang.reflect.BeanInfo`：属性、`TypeInfo`、getter/setter 签名、方法）是
+Spring/CDI 集成、ORM 元数据构建（`Mappings.autobind`）以及 native 下"注册一次、全量复用"的公共基础。
+本仓库把它与 ORM 绑定（Mappings/列定义）解耦，做成**独立、可序列化**的能力（`model/.../serialize/BeanInfoJson.scala`）：
+
+- **序列化**：`BeanInfoJson.toJson(bi)` / `toJson(classes)` → 精简 JSON（属性名、`TypeInfo`
+  （option/iterable/general 三种 kind + 泛型参数）、getter/setter 的"声明类+方法名+参数类型"签名、transient 标记）。
+- **按类放置**：构建期工具 `BeanInfoJsonGenerator`（`<output-dir> <class>...`）把每个类写为
+  `<包路径>/<SimpleName>.beaninfo.json`，与 `.class` 同包（同目录）。**native 下只需注册一个资源模式
+  `.*\.beaninfo\.json`**，即可按需读取，无需为每个类生成反射注册。
+- **按需读取**：`BeanInfoJson.loadFor(clazz)` 用 `clazz.getResourceAsStream("<SimpleName>.beaninfo.json")`
+  读取、解析并 `BeanInfos.cache.update` 注册；无文件时返回 `None`，调用方回退运行时反射（`BeanInfos.get`）。
+- **MappingModule 集成**：`MappingModule.bindImpl` 现在先 `BeanInfoJson.loadFor(cls)`（JSON 优先），
+  无描述文件时回退 `bind[T]` 宏的编译期 dig —— 对应用透明（JVM 与 native 行为一致）。
+
+> ⚠️ **精度约束（重要）**：JSON 若由**运行时反射**生成（`BeanInfoJsonGenerator` 直接 `BeanInfos.get`），
+> 会丢失 Scala 值类型的泛型精度——JVM 签名把 `Map[Int, X]` 擦除为 `Map[Object, X]`（`int` → `java.lang.Object`），
+> 导致 `Mappings.autobind` 无法推断 Map 键列类型（`Cannot find sqltype for java.lang.Object`）。
+> 因此**用于 ORM 的描述必须由编译期 digger 生成**：先在应用中用 `BeanInfos.cache.of(classOf[A], ...)`
+> （编译期 `BeanInfoDigger`，保留 `Int` 等精确类型）注册，再序列化。示例见
+> `hibernate/src/test/scala/org/beangle/data/hibernate/model/GenBeanInfo.scala`。
+> 仅需要类型信息的消费者（如 Spring/CDI 装配）通常不受精度损失影响。
 
 ---
 

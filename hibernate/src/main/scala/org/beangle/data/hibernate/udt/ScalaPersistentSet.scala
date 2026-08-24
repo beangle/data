@@ -180,13 +180,13 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
     var itr = sn.keySet.iterator
     while (itr.hasNext) {
-      if (!set.contains(itr.next)) {
+      if (!set.contains(itr.next())) {
         return true
       }
     }
     itr = set.iterator
     while (itr.hasNext) {
-      val test = itr.next
+      val test = itr.next()
       val oldValue = sn.get(test).orNull
       if (oldValue != null && elementType.isDirty(test, oldValue, getSession)) {
         // the element has changed

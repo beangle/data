@@ -43,7 +43,7 @@ class TestMapping3 extends MappingModule {
 
     bind[UrlMenu].declare { c =>
       c.url.is(notnull, length(40))
-      c.parent is target[UrlMenu]
+      c.parent is target(classOf[UrlMenu])
       index("idx_menu_name", true, c.name)
     }
 

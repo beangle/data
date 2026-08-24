@@ -210,13 +210,13 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
     var i: Int = 0
     val bagiter = bag.iterator
     while (olditer.hasNext) {
-      val old: AnyRef = olditer.next
+      val old: AnyRef = olditer.next()
       val newiter = bag.iterator
       var found: Boolean = false
       if (bag.size > i && {
         i += 1;
         i - 1
-      } > 0 && elementType.isSame(old, bagiter.next)) {
+      } > 0 && elementType.isSame(old, bagiter.next())) {
         //a shortcut if its location didn't change!
         found = true
       }
@@ -224,7 +224,7 @@ class ScalaPersistentBag(session: SharedSessionContractImplementor)
         //search for it
         //note that this code is incorrect for other than one-to-many
         while (newiter.hasNext && !found) {
-          if (elementType.isSame(old, newiter.next)) {
+          if (elementType.isSame(old, newiter.next())) {
             found = true
           }
         }

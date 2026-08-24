@@ -17,57 +17,40 @@
 
 package org.beangle.data.orm
 
+import org.beangle.commons.bean.meta.{MetaDigger, MetaModel}
 import org.beangle.commons.lang.Strings
-import org.beangle.commons.lang.reflect.{BeanInfoDigger, BeanInfos}
-import org.beangle.data.orm.MappingModule.{EntityHolder, Target}
+import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
+import org.beangle.data.orm.MappingModule.EntityHolder
 
 import scala.quoted.{Expr, Quotes, Type}
 
 object MappingMacro {
 
-  def castImpl[T:Type] (pm: Expr[OrmProperty], holder: Expr[EntityHolder[_]], msg: Expr[String])(implicit quotes: Quotes): Expr[T] = {
-    import quotes.reflect.*
-    val tpr = quotes.reflect.TypeRepr.of[T]
-    val clzz = Literal(ClassOfConstant(tpr)).asExpr.asInstanceOf[Expr[Class[T]]]
-    '{
-      if (!${clzz}.isAssignableFrom(${pm}.getClass)) mismatch(${msg}, ${holder}.mapping, ${pm})
-      ${pm}.asInstanceOf[T]
-    }
-  }
-
   def mismatch(msg: String, e: OrmEntityType, pm: OrmProperty): Unit = {
     throw new RuntimeException(msg + s",Not for ${e.entityName}.${pm.name}(${pm.getClass.getSimpleName}/${pm.clazz.getName})")
   }
 
-  def target[T:Type] (implicit quotes: Quotes):Expr[Target]={
-    import quotes.reflect.*
-    val tpr = quotes.reflect.TypeRepr.of[T]
-    '{new Target(${Literal(ClassOfConstant(tpr)).asExpr.asInstanceOf[Expr[Class[T]]]})}
-  }
-
-  def collection[T:Type](properties:Expr[Seq[String]]) (implicit quotes: Quotes):Expr[List[Collection]]={
+  /** Macro: registers ClassMeta via MetaRegistry, guards bindImpl for null mappings.
+    * When mappings is set (normal binding), builds BeanInfo from compile-time digged ClassMeta
+    * to preserve generic type precision (e.g. Long instead of Object), and caches it
+    * so that downstream code (e.g. genOwnerColumn) can find it via BeanInfos.get.
+    */
+  def bind[T:Type](entityName: Expr[String], module: Expr[MappingModule])(implicit quotes: Quotes): Expr[EntityHolder[T]] = {
     import quotes.reflect.*
     val tpr = quotes.reflect.TypeRepr.of[T]
     val clzz = Literal(ClassOfConstant(tpr)).asExpr.asInstanceOf[Expr[Class[T]]]
+    val cm = new MetaDigger[quotes.type](tpr).dig()
     '{
-      val definitions = new scala.collection.mutable.ListBuffer[Collection]
-      ${properties} foreach (p => definitions += new Collection(${clzz}, p))
-      definitions.toList
-    }
-  }
-
-  def bind[T:Type](entityName: Expr[String], module:Expr[MappingModule]) (implicit quotes: Quotes):Expr[EntityHolder[T]]={
-    import quotes.reflect.*
-    val tpr = quotes.reflect.TypeRepr.of[T]
-    val digger = new BeanInfoDigger[quotes.type](tpr)
-    val clzz = Literal(ClassOfConstant(tpr)).asExpr.asInstanceOf[Expr[Class[T]]]
-    '{
-      val bi = BeanInfos.cache.update(${digger.dig()})
-      if(Strings.isBlank(${entityName})){
-        ${module}.bindImpl(${clzz},${clzz}.getName,bi)
-      }else{
-        ${module}.bindImpl(${clzz},${entityName},bi)
-      }
+      val m = ${ module }.mappings
+      if m == null then
+        ${ module }.addMetas(Seq(${ cm }))
+        null.asInstanceOf[EntityHolder[T]]
+      else
+        val bi = BeanInfos.update(BeanInfo.from(${ cm }))
+        if Strings.isBlank(${ entityName }) then
+          ${ module }.bindImpl(${ clzz }, ${ clzz }.getName, bi)
+        else
+          ${ module }.bindImpl(${ clzz }, ${ entityName }, bi)
     }
   }
 }

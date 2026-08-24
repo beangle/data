@@ -48,7 +48,7 @@ object DomainFactory {
           val pf = rm.getMappingMetamodel.getEntityDescriptor(entity.clazz).getRepresentationStrategy.getProxyFactory
           if null == field then field = Reflections.getField(pf.getClass, "proxyClass")
           field foreach { f =>
-            BeanInfos.cache.update(f.get(pf).asInstanceOf[Class[_]], BeanInfos.get(entity.clazz))
+            BeanInfos.update(f.get(pf).asInstanceOf[Class[_]], BeanInfos.get(entity.clazz))
           }
         }
         entities ++= newEntities

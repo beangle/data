@@ -21,6 +21,7 @@ import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
+import org.beangle.commons.bean.meta.MetaModels
 import org.beangle.data.model.Entity
 import org.beangle.data.stat.Matrix.registerBeanInfo
 
@@ -46,8 +47,8 @@ object Matrix {
 
   def registerBeanInfo(): Unit = {
     if (!BeanInfos.cached(classOf[Matrix])) {
-      BeanInfos.of(classOf[Matrix])
-      BeanInfos.of(classOf[Matrix.Column])
+      BeanInfos.register(MetaModels.of(classOf[Matrix]))
+      BeanInfos.register(MetaModels.of(classOf[Matrix.Column]))
     }
   }
 }

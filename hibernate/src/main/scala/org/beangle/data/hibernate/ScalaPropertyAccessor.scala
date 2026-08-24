@@ -25,6 +25,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor
 import org.hibernate.property.access.spi.{Getter, PropertyAccess, PropertyAccessStrategy, Setter}
 import org.hibernate.{PropertyAccessException, PropertyNotFoundException, PropertySetterAccessException}
 
+import java.lang.invoke.MethodHandle
 import java.lang.reflect.{Member, Method, Type}
 import java.util as ju
 
@@ -32,7 +33,7 @@ object ScalaPropertyAccessor {
 
   def name: String = "scala"
 
-  final class BasicSetter(val clazz: Class[_], val method: Method, val propertyName: String, optional: Boolean) extends Setter {
+  final class BasicSetter(val clazz: Class[_], val methodHandle: MethodHandle, val propertyName: String, optional: Boolean) extends Setter {
     override def set(target: Object, value: Object): Unit = {
       try {
         val arg =
@@ -41,41 +42,41 @@ object ScalaPropertyAccessor {
           } else {
             value
           }
-        method.invoke(target, arg)
+        methodHandle.invoke(target, arg)
       } catch {
         case npe: NullPointerException =>
-          if (value == null && method.getParameterTypes()(0).isPrimitive) {
+          if (value == null && methodHandle.`type`.parameterArray()(1).isPrimitive) {
             throw new PropertyAccessException(npe, "Null value was assigned to a property of primitive type", true, clazz, propertyName)
           } else {
             throw new PropertyAccessException(npe, "NullPointerException occurred while calling", true, clazz, propertyName)
           }
 
         case iae: IllegalArgumentException =>
-          if (value == null && method.getParameterTypes()(0).isPrimitive) {
+          if (value == null && methodHandle.`type`.parameterArray()(1).isPrimitive) {
             target match
               case e: Entity[_] => throw new PropertyAccessException(iae, "Null value was assigned to primitive type of " + e.id, true, clazz, propertyName)
               case _ => throw new PropertyAccessException(iae, "Null value was assigned to a property of primitive type", true, clazz, propertyName)
           } else {
-            val expectedType = method.getParameterTypes()(0)
+            val expectedType = methodHandle.`type`.parameterArray()(1)
             throw new PropertySetterAccessException(iae, clazz, propertyName, expectedType, target, value.getClass)
           }
         case e: Exception => Throwables.propagate(e)
       }
     }
 
-    override def getMethod: Method = method
+    override def getMethod: Method = null
 
-    override def getMethodName: String = method.getName
+    override def getMethodName: String = propertyName
 
     override def toString: String = "BasicSetter(" + clazz.getName + '.' + propertyName + ')'
   }
 
-  final class BasicGetter(val clazz: Class[_], val method: Method, val returnType: Class[_], val propertyName: String, optional: Boolean) extends Getter {
+  final class BasicGetter(val clazz: Class[_], val methodHandle: MethodHandle, val returnType: Class[_], val propertyName: String, optional: Boolean) extends Getter {
     override def get(target: Object): Object = {
-      val result = target match {
+      val result: AnyRef = target match {
         case None => null
-        case Some(t) => method.invoke(t)
-        case _ => method.invoke(target)
+        case Some(t) => methodHandle.invoke(t)
+        case _ => methodHandle.invoke(target)
       }
       if optional then
         result match {
@@ -100,11 +101,11 @@ object ScalaPropertyAccessor {
      *
      * @return
      */
-    override def getMember: Member = method
+    override def getMember: Member = null
 
-    override def getMethod: Method = method
+    override def getMethod: Method = null
 
-    override def getMethodName: String = method.getName
+    override def getMethodName: String = propertyName
 
     override def toString: String = "BasicGetter(" + clazz.getName + '.' + propertyName + ')'
   }

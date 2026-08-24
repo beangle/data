@@ -27,7 +27,7 @@ object TestMapping2 extends MappingModule {
     bind[Role].declare { r =>
       r.name is(length(112), unique)
       //r.code is (length(20 + 1), unique) //override bingding in Coded
-      r.parent is target[Role]
+      r.parent is target(classOf[Role])
       r.properties is keyColumn("tag_id")
       r.children is(depends("parent"), cacheable)
     }.generator("assigned")
@@ -44,7 +44,7 @@ object TestMapping2 extends MappingModule {
 
     bind[MenuItem]
 
-    cache().add(collection[Role]("children"))
+    cache().add(collection(classOf[Role], "children"))
 
     bind[Department].declare { e =>
       e.children is one2many("parent")

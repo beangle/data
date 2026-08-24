@@ -24,7 +24,7 @@ developers := List(
 description := "The Beangle Data Library"
 homepage := Some(uri("https://beangle.github.io/data/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.2.2"
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.2.3-SNAPSHOT"
 val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.12"
 
 // 构建期 native-image 辅助任务（见 docs/native-image.md）

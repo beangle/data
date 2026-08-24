@@ -18,6 +18,7 @@
 package org.beangle.data.model.util
 
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
+import org.beangle.commons.bean.meta.MetaModels
 import org.beangle.data.model.meta.Domain
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -26,7 +27,7 @@ class PopulatorTest extends AnyFunSpec with Matchers {
 
   describe("Populator") {
     it("populate error attr") {
-      val menuBeanInfo = BeanInfos.of(classOf[Menu])
+      val menuBeanInfo = BeanInfos.register(MetaModels.of(classOf[Menu]))
       val populator = new ConvertPopulator()
       val menu = new Menu
       val menuET = new SimpleEntityType(classOf[Menu])
