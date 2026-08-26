@@ -35,7 +35,6 @@ lazy val root = (project in file("."))
   .aggregate(model, hibernate, sampleNative)
 
 lazy val model = (project in file("model"))
-  .enablePlugins(MetaPlugin)
   .settings(
     name := "beangle-data-model",
     common,
@@ -45,7 +44,6 @@ lazy val model = (project in file("model"))
   )
 
 lazy val hibernate = (project in file("hibernate"))
-  .enablePlugins(AotPlugin, MetaPlugin)
   .settings(
     name := "beangle-data-hibernate",
     common,
@@ -60,7 +58,7 @@ lazy val hibernate = (project in file("hibernate"))
 lazy val patchHibernateJar = taskKey[File]("Patch beangle-hibernate-core JAR to replace BytecodeProvider SPI")
 
 lazy val sampleNative = (project in file("samples/native"))
-  .enablePlugins(MetaPlugin, NativeImagePlugin)
+  .enablePlugins(NativeImagePlugin)
   .settings(
     name := "beangle-data-sample-native",
     common,
