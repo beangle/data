@@ -21,6 +21,7 @@ import org.beangle.commons.aot.AotHintRegistrar
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
 import org.hibernate.event.spi.*
 import org.hibernate.id.enhanced.SequenceStyleGenerator
+import org.hibernate.id.uuid.{UuidVersion6Strategy, UuidVersion7Strategy}
 import org.hibernate.persister.collection.{BasicCollectionPersister, OneToManyPersister}
 import org.hibernate.persister.entity.{JoinedSubclassEntityPersister, SingleTableEntityPersister, UnionSubclassEntityPersister}
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl
@@ -38,8 +39,9 @@ import org.hibernate.tool.schema.internal.script.MultiLineSqlScriptExtractor
  *
  * 以 beangle AOT 机制内嵌进 beangle-data-hibernate.jar，使用方无需再依赖 hibernate-graalvm；
  * `UuidVersion6Strategy.Holder`/`UuidVersion7Strategy.Holder` 在该 Feature 中走的是
- * `RuntimeClassInitialization.initializeAtRunTime`（SecureRandom），无法用 reflect/resource 配置表达，
- * 应用构建时需在 native-image 参数中补充 `--initialize-at-run-time`。
+ * `RuntimeClassInitialization.initializeAtRunTime`（SecureRandom），这里改用
+ * `registerRuntimeInitialized` 表达，随生成器输出为 `native-image.properties` 的
+ * `Args = --initialize-at-run-time=...`，native-image 构建时自动发现并应用。
  */
 class HibernateAotHints extends AotHintRegistrar {
   override def registering(): Unit = {
@@ -70,6 +72,10 @@ class HibernateAotHints extends AotHintRegistrar {
       classOf[Array[PreCollectionRecreateEventListener]], classOf[Array[PreCollectionRemoveEventListener]],
       classOf[Array[PreCollectionUpdateEventListener]], classOf[Array[PostCollectionRecreateEventListener]],
       classOf[Array[PostCollectionRemoveEventListener]], classOf[Array[PostCollectionUpdateEventListener]]
+    )
+    hints.registerRuntimeInitialized(
+      // typesNeedingRuntimeInitialization —— SecureRandom，静态初始化需推迟到运行期
+      classOf[UuidVersion6Strategy.Holder], classOf[UuidVersion7Strategy.Holder]
     )
   }
 }

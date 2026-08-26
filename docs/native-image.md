@@ -47,8 +47,9 @@
 - `HibernateAotHints`（同包）复刻 `hibernate-graalvm:7.4.5.Final` 的
   `GraalVMStaticFeature`/`StaticClassLists` 静态反射注册（Persister、事务协调器、命名策略、
   EventType 监听器数组等 42 项；该 Feature 不注册资源），使用方无需再依赖 hibernate-graalvm；
-  `UuidVersion6/7Strategy.Holder` 属运行期类初始化（SecureRandom），需在应用 native-image
-  参数中补 `--initialize-at-run-time`。
+  `UuidVersion6/7Strategy.Holder` 属运行期类初始化（SecureRandom），经
+  `registerRuntimeInitialized` 输出为 `native-image.properties` 的
+  `Args = --initialize-at-run-time=...`，随 jar 内嵌自动应用，应用无需再补参数。
 
 `hibernate` 项目（`AotPlugin` 自动启用）每次 `compile` 由 `AotHintGenerator` 依据
 `META-INF/beangle/aot-registrars.txt` 清单加载上述子类并生成 `reflect-config.json` /

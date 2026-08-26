@@ -85,8 +85,7 @@ lazy val sampleNative = (project in file("samples/native"))
     libraryDependencies ++= Seq(
       "com.github.ben-manes.caffeine" % "caffeine" % "3.2.0",
       "com.github.ben-manes.caffeine" % "jcache" % "3.2.0",
-      "javax.cache" % "cache-api" % "1.1.1",
-      "org.hibernate.orm" % "hibernate-graalvm" % "7.4.5.Final"
+      "javax.cache" % "cache-api" % "1.1.1"
     ),
     // Exclude byte-buddy: use none.BytecodeProviderImpl instead
     excludeDependencies += ExclusionRule(organization = "net.bytebuddy", name = "byte-buddy"),
