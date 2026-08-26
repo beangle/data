@@ -1,0 +1,11 @@
+# 推荐 native-image 参数（需按应用微调）
+-H:+ReportExceptionStackTraces
+--enable-url-protocols=jar,resource
+--initialize-at-build-time=org.hibernate,org.beangle
+--initialize-at-run-time=org.h2.Driver
+-Dhibernate.bytecode.use_reflection_optimizer=false
+# 反射/资源/序列化配置（由本工具生成）
+-H:ReflectionConfigurationFiles=/home/chaostone/workspace/beangle/data/samples/native/src/main/resources/native-image/reflect-config.json
+-H:ResourceConfigurationFiles=/home/chaostone/workspace/beangle/data/samples/native/src/main/resources/native-image/resource-config.json
+-H:SerializationConfigurationFiles=/home/chaostone/workspace/beangle/data/samples/native/src/main/resources/native-image/serialization-config.json
+-H:DynamicProxyConfigurationFiles=/home/chaostone/workspace/beangle/data/samples/native/src/main/resources/native-image/proxy-config.json

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beangle>
+  <jpa>
+    <mapping class="org.beangle.data.samples.nativeapp.SampleMapping"/>
+    <naming>
+      <profile package="org.beangle.data.samples.nativeapp" pluralize="true"/>
+    </naming>
+  </jpa>
+</beangle>

@@ -35,7 +35,7 @@ object QuerySupport {
     val query =
       if (bquery.lang == BQuery.Lang.SQL) {
         //FIXME native query cannot enable cache
-        session.createNativeQuery(bquery.statement).asInstanceOf[Query[T]]
+        session.createNativeQuery(bquery.statement, classOf[Object]).asInstanceOf[Query[T]]
       } else {
         val q = session.createQuery(bquery.statement, null).asInstanceOf[Query[T]]
         if (bquery.cacheable) q.setCacheable(bquery.cacheable)

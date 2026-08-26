@@ -142,12 +142,11 @@ entityDao.count(classOf[User], "roles.id" -> 1L)
 
 构建期生成 native-image 配置与预生成类：
 
-```bash
-sbt 'nativeImageConfig --output target/native-image --engine PostgreSQL \
-     --dialect org.hibernate.dialect.PostgreSQLDialect'
-# 产物: reflect-config.json / resource-config.json / proxy-config.json /
-#       serialization-config.json / native-image-args.txt / trackers/
-```
+库自身固定反射点/资源由 `BeangleAotHints` 与 `HibernateAotHints`（`AotHintRegistrar`
+子类，位于 `hibernate/.../aot`）声明——前者为 beangle 自身反射/资源，后者复刻
+hibernate-graalvm `GraalVMStaticFeature` 的静态反射注册（使用方可不再依赖 hibernate-graalvm）；
+`hibernate` 项目启用 `AotPlugin` 后在编译期自动生成 `META-INF/native-image` 配置并随 jar 内嵌；
+应用侧实体等配置由应用定义自己的 `AotHintRegistrar`/`MetaRegistrar` 子类并启用 `AotPlugin` 生成。
 
 详见 [docs/native-image.md](docs/native-image.md)（可行性分析、阻塞点审计、分阶段改造计划与实现状态）。
 

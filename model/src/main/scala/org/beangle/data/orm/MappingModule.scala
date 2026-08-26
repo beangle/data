@@ -17,23 +17,65 @@
 
 package org.beangle.data.orm
 
-import org.beangle.commons.bean.meta.MetaRegistry
+import org.beangle.commons.bean.meta.{MetaDigger, MetaRegistrar}
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
+import org.beangle.commons.xml.Document
 import org.beangle.data.Logger
 import org.beangle.data.dao.Prop
+import org.beangle.data.orm.cfg.Profiles
+import org.beangle.jdbc.engine.Engines
 import org.beangle.jdbc.engine.Engine
 import org.beangle.jdbc.meta.*
 
 import java.sql.{Blob, Clob, Types}
 import scala.collection.mutable
+import scala.quoted.{Expr, Quotes, Type}
 import scala.reflect.ClassTag
 
 object MappingModule {
 
   val OrderColumnName = "idx"
+
+  /** 构建期独立实例化（MetaGenerator/AotHintGenerator 经 registering() 触发）时自举的 Mappings，
+   * 仅用于让绑定 DSL 在无真实配置下可执行；运行期 configure() 会替换为真实 Mappings。
+   */
+  private lazy val buildMappings: Mappings = {
+    val mappings = new Mappings(new Database(Engines.forName("H2")), new Profiles(new Document("beangle")))
+    mappings.autobind() // 空跑初始化 messages，与运行期 LocalSessionFactoryBean/Mappings.autobind 前置一致
+    mappings
+  }
+
+  def mismatch(msg: String, e: OrmEntityType, pm: OrmProperty): Unit = {
+    throw new RuntimeException(msg + s",Not for ${e.entityName}.${pm.name}(${pm.getClass.getSimpleName}/${pm.clazz.getName})")
+  }
+
+  /** Macro: 构建期（buildTime）用编译期挖掘的 BeanMeta（addMetas 收集 + bindImpl 干跑，精确类型不依赖
+    * beanmeta.idx）；运行期走 BeanInfos.get —— 精确类型来自构建期生成的 beanmeta.idx（MetaModels
+    * 加载），反射只是无 idx 时的回退。
+    */
+  def bind[T: Type](entityName: Expr[String], module: Expr[MappingModule])(implicit quotes: Quotes): Expr[EntityHolder[T]] = {
+    import quotes.reflect.*
+    val clazzSym = Symbol.requiredMethod("scala.Predef.classOf")
+    val clzz = TypeApply(Select(Ref(defn.PredefModule), clazzSym), List(TypeTree.of[T])).asExpr.asInstanceOf[Expr[Class[T]]]
+    val cm = MetaDigger.digInto[T](clzz)
+    '{
+      val bi =
+        if ${ module }.buildTime then
+          val bm = ${ cm } // 编译期挖掘一次，构建期构造一次
+          val bmInfo = BeanInfo.from(bm)
+          ${ module }.addMetas(Seq(bm))
+          BeanInfos.update(bmInfo) // 供绑定 DSL 内部 BeanInfos.get（如 genOwnerColumn）精确查询
+          bmInfo
+        else BeanInfos.get(${ clzz })
+      if Strings.isBlank(${ entityName }) then
+        ${ module }.bindImpl(${ clzz }, ${ clzz }.getName, bi)
+      else
+        ${ module }.bindImpl(${ clzz }, ${ entityName }, bi)
+    }
+  }
 
   trait PropertyDeclaration {
     def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit
@@ -235,7 +277,7 @@ object MappingModule {
       val colpm = cast(pm, holder, "many2many should used on seq", classOf[OrmCollectionProperty])
       colpm.mappedBy = Some(mappedBy)
       if (!colpm.element.isInstanceOf[OrmEntityType]) {
-        MappingMacro.mismatch("many2many with mappedBy should be applied on entity", holder.mapping, pm)
+        mismatch("many2many with mappedBy should be applied on entity", holder.mapping, pm)
       }
       colpm.table = None
     }
@@ -429,13 +471,13 @@ object MappingModule {
   }
 
   def cast[T](pm: OrmProperty, holder: EntityHolder[_], msg: String, clazz: Class[T]): T = {
-    if (!clazz.isAssignableFrom(pm.getClass)) MappingMacro.mismatch(msg, holder.mapping, pm)
+    if (!clazz.isAssignableFrom(pm.getClass)) mismatch(msg, holder.mapping, pm)
     pm.asInstanceOf[T]
   }
 }
 
 @beta
-abstract class MappingModule(var name: Option[String]) extends MetaRegistry {
+abstract class MappingModule(var name: Option[String]) extends MetaRegistrar {
 
   import MappingModule.*
 
@@ -444,8 +486,16 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistry {
   private val cacheConfig = new CacheConfig()
   private val entityMappings = Collections.newMap[String, OrmEntityType]
   private[orm] var mappings: Mappings = _
+  /** 构建期标记：registering()（生成器独立实例化）置真，运行期 configure() 直接走 binding() 保持假。 */
+  private[orm] var buildTime = false
 
-  override protected def registering(): Unit = binding()
+  override def registering(): Unit = {
+    if (this.mappings == null) {
+      this.mappings = MappingModule.buildMappings
+      this.buildTime = true
+    }
+    binding()
+  }
 
   init()
 
@@ -524,9 +574,9 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistry {
 
   protected def version: Version = new Version
 
-  protected inline def bind[T: ClassTag]: EntityHolder[T] = ${ MappingMacro.bind[T]('{ "" }, 'this) }
+  protected inline def bind[T: ClassTag]: EntityHolder[T] = ${ MappingModule.bind[T]('{ "" }, 'this) }
 
-  protected inline def bind[T: ClassTag](entityName: String): EntityHolder[T] = ${ MappingMacro.bind[T]('entityName, 'this) }
+  protected inline def bind[T: ClassTag](entityName: String): EntityHolder[T] = ${ MappingModule.bind[T]('entityName, 'this) }
 
   /** 绑定实体：通过 BeanInfos 获取 BeanInfo（优先二进制/缓存，回退运行时反射）。 */
   def bindImpl[T](cls: Class[T], entityName: String): EntityHolder[T] = {

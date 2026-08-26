@@ -127,9 +127,9 @@ object JsonAPI {
         val filter = context.filters.getFilter(clazz)
         ginfo.properties foreach { p =>
           if (p._2.isTransient) filter.transients += p._1
-          if (p._2.getter.nonEmpty && filter.isIncluded(p._1)) {
+          if (filter.isIncluded(p._1)) {
             val pName = p._1
-            val pValue = p._2.getter.get.invoke(entity)
+            val pValue = p._2.getter.invoke(entity)
             val typeInfo = p._2.typeinfo
             if typeInfo.isIterable then
               val elemType = typeInfo.asInstanceOf[IterableType].elementType

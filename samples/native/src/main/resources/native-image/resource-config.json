@@ -1,0 +1,11 @@
+{
+  "resources": [
+    {"pattern":"META-INF/services/.*"},
+    {"pattern":"META-INF/beangle/ddl/.*"},
+    {"pattern":"org/beangle/jdbc/engine/keywords/.*"},
+    {"pattern":".*\\.zh_CN"},
+    {"pattern":"beangle\\.xml"},
+    {"pattern":"logback\\.xml"},
+    {"pattern":"com/github/benmanes/caffeine.*"}
+  ]
+}

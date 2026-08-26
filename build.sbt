@@ -1,6 +1,5 @@
 import org.beangle.parent.Dependencies.*
 import org.beangle.parent.Settings.*
-import sbt.internal.util.complete.DefaultParsers.*
 
 organization := "org.beangle.data"
 version := "5.12.8-SNAPSHOT"
@@ -24,31 +23,19 @@ developers := List(
 description := "The Beangle Data Library"
 homepage := Some(uri("https://beangle.github.io/data/index.html"))
 
-val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.2.3-SNAPSHOT"
-val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.12"
-
-// 构建期 native-image 辅助任务（见 docs/native-image.md）
-lazy val nativeImageConfig = inputKey[Unit]("Generate GraalVM native-image configs (build-time)")
-lazy val libraryNativeImageConfig = inputKey[Unit]("Regenerate embedded META-INF/native-image configs for beangle-data jars")
+val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.3.0-SNAPSHOT"
+val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.13-SNAPSHOT"
 
 lazy val root = (project in file("."))
   .settings(
     name := "beangle-data",
     common,
-    publish / skip := true,
-
-    // ---- 构建期 native-image 辅助任务 ----
-    // sbt "nativeImageConfig --output target/native-image --engine PostgreSQL"
-    // sbt "libraryNativeImageConfig"
-    libraryNativeImageConfig := (hibernate / Compile / runMain).toTask(" org.beangle.data.hibernate.nativeimage.LibraryNativeImageConfig").value,
-    nativeImageConfig := Def.inputTaskDyn {
-      val args = spaceDelimited("<arg>").parsed
-      (hibernate / Test / runMain).toTask(" org.beangle.data.hibernate.nativeimage.NativeImageConfigGen " + args.mkString(" "))
-    }.evaluated
+    publish / skip := true
   )
-  .aggregate(model, hibernate)
+  .aggregate(model, hibernate, sampleNative)
 
 lazy val model = (project in file("model"))
+  .enablePlugins(MetaPlugin)
   .settings(
     name := "beangle-data-model",
     common,
@@ -58,6 +45,7 @@ lazy val model = (project in file("model"))
   )
 
 lazy val hibernate = (project in file("hibernate"))
+  .enablePlugins(AotPlugin, MetaPlugin)
   .settings(
     name := "beangle-data-hibernate",
     common,
@@ -67,3 +55,71 @@ lazy val hibernate = (project in file("hibernate"))
     Test / parallelExecution := false
   )
   .dependsOn(model)
+
+// ---- GraalVM native-image sample ----
+lazy val patchHibernateJar = taskKey[File]("Patch beangle-hibernate-core JAR to replace BytecodeProvider SPI")
+
+lazy val sampleNative = (project in file("samples/native"))
+  .enablePlugins(MetaPlugin, NativeImagePlugin)
+  .settings(
+    name := "beangle-data-sample-native",
+    common,
+    publish / skip := true,
+    Compile / mainClass := Some("org.beangle.data.samples.nativeapp.NativeApp"),
+    nativeImageGraalHome := Def.uncached {
+      file(sys.env.getOrElse("GRAALVM_HOME",
+        sys.env.getOrElse("JAVA_HOME", "/home/chaostone/local/graalvm-jdk-21"))).toPath
+    },
+    nativeImageInstalled := true,
+    nativeImageOptions ++= Seq(
+      "--no-fallback",
+      "--enable-url-protocols=jar,resource",
+      "-H:+AddAllCharsets",
+      "-H:ReflectionConfigurationFiles=" + baseDirectory.value + "/src/main/resources/native-image/reflect-config.json",
+      "-H:ResourceConfigurationFiles=" + baseDirectory.value + "/src/main/resources/native-image/resource-config.json",
+      "--initialize-at-run-time=org.h2.Driver,org.ehcache,com.github.benmanes.caffeine,java.awt,sun.awt,com.sun.jmx,org.beangle,org.beangle.data.samples.nativeapp",
+      "-Dhibernate.bytecode.use_reflection_optimizer=true",
+      "-Dnet.bytebuddy.reproducible=true",
+      "-H:+ReportExceptionStackTraces",
+      "--report-unsupported-elements-at-runtime"
+    ),
+    libraryDependencies ++= Seq(h2, HikariCP, logback_classic, logback_core),
+    libraryDependencies ++= Seq(
+      "com.github.ben-manes.caffeine" % "caffeine" % "3.2.0",
+      "com.github.ben-manes.caffeine" % "jcache" % "3.2.0",
+      "javax.cache" % "cache-api" % "1.1.1",
+      "org.hibernate.orm" % "hibernate-graalvm" % "7.4.5.Final"
+    ),
+    // Exclude byte-buddy: use none.BytecodeProviderImpl instead
+    excludeDependencies += ExclusionRule(organization = "net.bytebuddy", name = "byte-buddy"),
+    // Patch JAR before nativeImage runs
+    patchHibernateJar := Def.uncached {
+      val log = streams.value.log
+      val allJars = (Compile / fullClasspath).value
+      val hibernateJarPath = allJars.find(_.data.toString.contains("beangle-hibernate-core")).map(_.data.toString).getOrElse(
+        sys.error("beangle-hibernate-core JAR not found in classpath"))
+      val hibernateJar = new File(hibernateJarPath)
+      val patchedDir = target.value / "patched-jar"
+      val patchedJar = new File(patchedDir, hibernateJar.getName)
+      if (!patchedJar.exists()) {
+        log.info(s"Patching ${hibernateJar.getName} to replace BytecodeProvider SPI...")
+        patchedDir.mkdirs()
+        scala.sys.process.Process(Seq("jar", "xf", hibernateJar.getAbsolutePath), patchedDir).!!
+        val oldSpi = new File(patchedDir, "META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider")
+        if (oldSpi.exists()) oldSpi.delete()
+        val spiDir = new File(patchedDir, "META-INF/services")
+        spiDir.mkdirs()
+        val pw = new java.io.PrintWriter(new File(spiDir, "org.hibernate.bytecode.spi.BytecodeProvider"))
+        pw.println("org.hibernate.bytecode.internal.none.BytecodeProviderImpl")
+        pw.close()
+        val tmpJar = new File(patchedDir, hibernateJar.getName + ".tmp")
+        scala.sys.process.Process(Seq("jar", "cf", tmpJar.getAbsolutePath, "-C", patchedDir.getAbsolutePath, "."), patchedDir).!!
+        tmpJar.renameTo(patchedJar)
+        tmpJar.delete()
+        log.info(s"Patched JAR: ${patchedJar.getAbsolutePath}")
+      }
+      patchedJar
+    },
+    nativeImage := (nativeImage.dependsOn(patchHibernateJar)).value
+  )
+  .dependsOn(hibernate)

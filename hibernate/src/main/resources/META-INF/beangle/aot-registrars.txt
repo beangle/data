@@ -1,0 +1,4 @@
+# beangle-data-hibernate 的 GraalVM AOT 提示注册器（AotHintRegistrar 子类）
+# AotPlugin 以此为契约：所有列出的类必须能在 classpath 上找到，否则构建报错。
+org.beangle.data.hibernate.aot.BeangleAotHints
+org.beangle.data.hibernate.aot.HibernateAotHints

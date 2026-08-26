@@ -20,6 +20,8 @@ package org.beangle.data.orm
 import org.beangle.data.dao.Prop
 import org.beangle.data.orm.MappingModule.{EntityHolder, PropertyDeclaration}
 
+import scala.language.dynamics
+
 /** 绑定期 declare DSL 的 scala.Dynamic 属性路径。
  *
  * 与 OQL 侧共用 [[Prop]] 的 selectDynamic 路径累积机制：`e.name.first` 编译为

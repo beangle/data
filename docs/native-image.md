@@ -21,7 +21,8 @@
   3. **反射面过宽**——实体/组件/值类型/枚举的反射注册、Hibernate 内部反射、Spring AOP 代理、JDBC/缓存驱动等，
      需要构建期枚举并生成 GraalVM 配置文件。
 - **库 vs 框架（Quarkus）的差异：** 库没有"构建步骤扩展点"，无法在用户的 native-image 构建里自动注入上述工作。
-  所以每个使用方都要跑一次我们提供的生成器、并把产物打包进应用。这是一次性成本，可以文档化 + 样例工程化来降低。
+  所以每个使用方都要在 `build.sbt` 里启用构建插件（`AotPlugin`），插件在编译期自动生成配置并打进应用。
+  这是一次性成本，可以文档化 + 样例工程化来降低。
 - **好消息：** 本项目使用**自研 Hibernate fork**（`org.beangle.hibernate:beangle-hibernate-core`），
   可以直接在 fork 的 jar 里内嵌 `META-INF/native-image/` 元数据，把 hibernate-core 自身的反射/资源注册问题一次解决。
 
@@ -34,29 +35,33 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | 全面 scala.Dynamic 化（P0 增量） | ✅ | `OqlBuilder` 用 `Prop`、`declare` 用 `DeclareProp`（`model/.../orm/DeclareProp.scala`），运行期零类生成、零反射；**`AccessTracker`/`ByteBuddyHelper`/`AccessTrackerGenerator` 及全部 tracker 预生成链路已删除**（`byte_buddy` 依赖移除） |
-| `NativeImageConfigGen`（P1） | ✅ | 生成**应用侧** reflect/resource/proxy/serialization 配置 + 推荐 native-image 参数（不再生成 tracker 类） |
-| 库元数据内嵌（P2.1 前奏） | ✅ | `LibraryNativeImageConfig`：库自身固定反射点/资源已内嵌进 model、hibernate 两个 jar 的 `META-INF/native-image/`（GraalVM 构建时自动发现并合并）——库清单与应用清单正式拆分 |
+| AOT 提示统一接入（P1） | ✅ | `BeangleAotHints` + `HibernateAotHints`（`AotHintRegistrar` 子类）声明库自身与 hibernate-graalvm Feature 的固定反射点/资源；构建期经 `AotPlugin` 自动生成 `META-INF/native-image` 配置并随 beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单与应用清单正式拆分 |
 | BeanInfo JSON 静态化（P2.2 前奏） | ✅ | BeanInfo 序列化独立成 `BeanInfoJson`；构建期按类生成 `<SimpleName>.beaninfo.json`（与 class 同包）；运行期 `BeanInfoJson.loadFor` 按需读取并注册 `BeanInfos.cache`；`MappingModule.bindImpl` 改为 JSON 优先、编译期 dig 回退（详见 §1.5） |
 | 回归测试 | ✅ | `model` 34、`hibernate` 24 全部通过（`testOnly *` 强制全量运行） |
 
-### 两个构建期工具的使用方法（已接入 sbt 任务）
+### AOT 配置生成（方案：build 插件 AotPlugin + AotHintRegistrar，已接入 sbt）
 
-```bash
-# 应用侧（可执行项目构建期）
-sbt 'nativeImageConfig --output target/native-image --engine PostgreSQL \
-  --dialect org.hibernate.dialect.PostgreSQLDialect \
-  --cache-provider com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider \
-  --jdbc-driver org.postgresql.Driver'
+库侧（beangle-data 自身）：
+- `BeangleAotHints`（`org.beangle.data.hibernate.aot`，`AotHintRegistrar` 子类）声明库自身固定
+  反射点与资源 pattern（MappingModule、Hibernate 按名反射类、DDL/zh_CN/services 资源）；
+- `HibernateAotHints`（同包）复刻 `hibernate-graalvm:7.4.5.Final` 的
+  `GraalVMStaticFeature`/`StaticClassLists` 静态反射注册（Persister、事务协调器、命名策略、
+  EventType 监听器数组等 42 项；该 Feature 不注册资源），使用方无需再依赖 hibernate-graalvm；
+  `UuidVersion6/7Strategy.Holder` 属运行期类初始化（SecureRandom），需在应用 native-image
+  参数中补 `--initialize-at-run-time`。
 
-# 库侧（beangle-data 自身，重新生成内嵌的 META-INF/native-image）
-sbt 'libraryNativeImageConfig'
-```
+`hibernate` 项目启用 `AotPlugin` 后，每次 `compile` 由 `AotHintGenerator` 扫描上述子类并生成
+`reflect-config.json` / `resource-config.json`（写入 `Compile / resourceManaged` 的
+`META-INF/native-image`），随 beangle-data-hibernate.jar 内嵌发布。
 
-（`nativeImageConfig` 的 `--config` 默认 `classpath*:beangle.xml`，应用可自行覆盖；
-`libraryNativeImageConfig` 只重写 `model`/`hibernate` 两个 jar 内嵌的库清单，应用无需执行。）
+`MappingModule.bind` 的运行期分支通过 `BeanInfos.get` 查询精确 BeanMeta（不依赖编译期挖掘）：
+精确类型来自构建期生成的 `beanmeta.idx`（`MetaModels` 启动时加载 `classpath*:META-INF/beangle/beanmeta.idx`），
+反射只是无 idx 时的回退。库自身在测试 scope 启用 `MetaPlugin`（`Test / metaIndex` 读取测试
+`beangle.xml` 声明模块生成 idx），应用则用主 scope 的 `MetaPlugin` 把 idx 内嵌进应用 jar。
 
-产物：`reflect-config.json` / `resource-config.json` / `proxy-config.json` / `serialization-config.json` /
-`native-image-args.txt` / `classes.txt`。生成目录需加入应用 classpath（或打进应用 jar）。
+应用侧（可执行项目）：应用定义自己的 `AotHintRegistrar`/`MetaRegistrar` 子类（实体、方言、驱动等），
+在 `build.sbt` 中 `.enablePlugins(AotPlugin)`，产物同样落盘到 `META-INF/native-image` 并打进应用 jar。
+详见 beangle-commons 的 `docs/aot-usage.md` 与 `MetaPlugin`/`AotPlugin` 的 scaladoc。
 
 **尚未实现（P2/P3）：** Hibernate 懒加载代理的构建期预生成与 `BytecodeProvider` 原生实现、
 `beangle-hibernate-core` fork 的 `META-INF/native-image/` 元数据、Metadata 快照中**列定义/Mappings 部分的序列化**
@@ -190,7 +195,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 | 序列化 Metadata 运行期加载 | 可把 `Mappings`/Hibernate `Metadata` 序列化为快照（P2 可选优化） |
 | 预生成代理 + BytecodeProvider | 构建期预生成 Hibernate 代理类 + `BytecodeProvider` 原生实现（P2） |
 | 构建期增强 | 可选：构建期运行 Hibernate enhancement（P2/P3） |
-| 生成 reflect/proxy/resource/serialization 配置 | **`NativeImageConfigGen`（本计划 P1 交付）** |
+| 生成 reflect/proxy/resource/serialization 配置 | **`AotHintRegistrar` 子类 + `AotPlugin`（beangle AOT 机制，P1 交付）** |
 | hibernate-core 可达性元数据 | 在 `beangle-hibernate-core` fork 的 jar 内嵌 `META-INF/native-image/`（P2） |
 
 ---
@@ -225,9 +230,9 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 - **库侧全面 scala.Dynamic 化**：`OqlBuilder` 用 `Prop`、`MappingModule.declare` 用 `DeclareProp`，
   运行期零类生成、零反射；`AccessTracker`/ByteBuddy 已删除，`byte_buddy` 依赖移除；
-- **`NativeImageConfigGen`（P1 交付）**：构建期枚举实体/组件/值类型/枚举等，生成
-  `reflect-config.json` / `resource-config.json` / `proxy-config.json` / `serialization-config.json`
-  / `native-image-args.txt`；已接入 sbt 任务 `nativeImageConfig`；
+- **beangle AOT 机制（P1 交付）**：库侧 `BeangleAotHints` + `HibernateAotHints` + `AotPlugin` 内嵌库清单（后者复刻 hibernate-graalvm Feature 静态反射注册，使用方可移除 hibernate-graalvm）；
+  应用侧定义 `AotHintRegistrar`/`MetaRegistrar` 子类并启用 `AotPlugin`，自动生成
+  `reflect-config.json` / `resource-config.json` / `proxy-config.json` / `serialization-config.json`；
 - 文档：本文件 + [dynamic-oql.md](dynamic-oql.md)。
 
 > 库侧已无运行期动态行为，剩余阻塞全部在 **Hibernate 侧**（fork + 懒加载代理）与应用集成验证。
@@ -235,7 +240,8 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 ### 5.1 P2：Hibernate 侧（前置：无；涉及仓库：beangle/hibernate fork）
 
 **P2.1 fork 可达性元数据**
-- 进展：beangle-data 自身两 jar 的内嵌元数据已完成（`LibraryNativeImageConfig`，见 0.1）；
+- 进展：beangle-data 自身库清单已由 `BeangleAotHints`/`HibernateAotHints` + `AotPlugin` 内嵌进
+  beangle-data-hibernate.jar（见 0.1）；
 - 待办：在 `beangle-hibernate-core` fork jar 内嵌 `META-INF/native-image/org/beangle/hibernate/
   beangle-hibernate-core/*.json`，解决 hibernate-core 自身的反射（Dialect/JCache/类型注册）、
   资源（`META-INF/services` 等）与 ServiceLoader 注册；
@@ -273,7 +279,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 - `Mappings.autobind` 中 `Reflections.newInstance` 的"采样默认值"逻辑改为可关闭（native 用配置/快照替代）；
 - 组件属性元信息尽量走编译期 `BeanInfoDigger`（`MappingMacro.bind` 已对 `bind[T]` 这么做，扩展到组件）；
-- 配置生成器与 fork 版本升级联动验证（版本升级时同步重跑）。
+- `AotHintGenerator`/`AotPlugin` 与 fork 版本升级联动验证（版本升级时同步重跑）。
 
 ### 5.4 前置条件与风险
 
@@ -283,7 +289,9 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
   `BytecodeProvider` 替换的可行性。
 ## 6. 使用方（应用）需要做什么
 
-1. 构建期：运行 `nativeImageConfig`（P1 工具），产物（configs）打进应用 jar（Hibernate 代理类预生成见 P2）；
+1. 构建期：应用定义 `AotHintRegistrar`/`MetaRegistrar` 子类（实体、方言、驱动等）并在
+   `build.sbt` 中 `.enablePlugins(AotPlugin)`，产物（configs）随编译自动生成并打进应用 jar
+   （Hibernate 代理类预生成见 P2）；
 2. native-image 参数：引用生成的配置文件、注册 JDBC 驱动与缓存 Provider、`--initialize-at-build-time` 清单；
 3. 运行期：`beangle.xml` 与 DDL 资源在 resource-config 中；事务代理接口在 proxy-config 中。
 

@@ -1,6 +1,0 @@
-{
-  "resources": [
-    {"pattern":"META-INF/beangle/ddl/.*"},
-    {"pattern":".*\.zh_CN"}
-  ]
-}

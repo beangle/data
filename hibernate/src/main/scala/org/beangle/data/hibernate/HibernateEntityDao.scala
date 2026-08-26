@@ -280,7 +280,7 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     val queryStr = buildCountQueryStr(query)
     var countQuery: Query[_] = null
     if (query.isInstanceOf[NativeQuery[_]]) {
-      countQuery = currentSession.createNativeQuery(queryStr).asInstanceOf[Query[T]]
+      countQuery = currentSession.createNativeQuery(queryStr, classOf[Object]).asInstanceOf[Query[T]]
     } else {
       countQuery = createQuery(queryStr)
     }

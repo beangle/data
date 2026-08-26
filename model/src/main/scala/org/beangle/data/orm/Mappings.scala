@@ -140,8 +140,8 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     val fixedEntityName = if (entityName == null) Jpas.findEntityName(cls) else entityName
     val entity = refEntity(cls, fixedEntityName)
     val sample = Reflections.newInstance(cls)
-    manifest.readables foreach { case (name, prop) =>
-      if (!prop.isTransient && prop.readable && prop.writable && !entity.properties.contains(name)) {
+    manifest.properties foreach { case (name, prop) =>
+      if (!prop.isTransient && prop.writable && !entity.properties.contains(name)) {
         val typeinfo = prop.typeinfo
         val propType = if typeinfo.isOptional then typeinfo.args(0).clazz else typeinfo.clazz
         if (name == "id") {
@@ -440,8 +440,8 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     c.addProperty(cpm)
     val manifest = BeanInfos.get(propertyType)
     val sample = Reflections.newInstance(propertyType)
-    manifest.readables foreach { case (name, prop) =>
-      if (!prop.isTransient && prop.readable && prop.writable) {
+    manifest.properties foreach { case (name, prop) =>
+      if (!prop.isTransient && prop.writable) {
         val typeinfo = prop.typeinfo
         val propType = if typeinfo.isOptional then typeinfo.args(0).clazz else typeinfo.clazz
         if (isEntity(propType)) {
@@ -536,8 +536,8 @@ final class Mappings(val database: Database, val profiles: Profiles) {
       val e = new OrmEmbeddableType(clazz)
       val manifest = BeanInfos.get(clazz)
       val sample = Reflections.newInstance(clazz)
-      manifest.readables foreach { case (name, prop) =>
-        if (!prop.isTransient && prop.readable && prop.writable) {
+      manifest.properties foreach { case (name, prop) =>
+        if (!prop.isTransient && prop.writable) {
           val optional = prop.typeinfo.isOptional
           val propType = prop.typeinfo.clazz
 
