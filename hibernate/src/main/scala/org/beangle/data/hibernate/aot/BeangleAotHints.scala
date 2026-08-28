@@ -18,7 +18,8 @@
 package org.beangle.data.hibernate.aot
 
 import jakarta.persistence.{Embeddable, Entity}
-import org.beangle.commons.aot.AotHintRegistrar
+import org.beangle.commons.aot.{AotHintRegistrar, AotPolicy}
+import org.beangle.commons.aot.AotPolicy.Category
 import org.beangle.commons.bean.component
 import org.beangle.commons.lang.annotation.value
 import org.beangle.data.hibernate.*
@@ -55,6 +56,7 @@ class BeangleAotHints extends AotHintRegistrar {
     )
 
     hints.registerType(
+      classOf[org.beangle.data.hibernate.bytecode.BeangleBytecodeProvider],
       classOf[MappingModule], classOf[ScalaPropertyAccessStrategy],
       classOf[ScalaPropertyAccessor.BasicGetter], classOf[ScalaPropertyAccessor.BasicSetter],
       classOf[SpringSessionContext],
@@ -69,6 +71,12 @@ class BeangleAotHints extends AotHintRegistrar {
       classOf[SetType], classOf[MapType],
       classOf[ScalaPersistentBag], classOf[ScalaPersistentSeq], classOf[ScalaPersistentSet], classOf[ScalaPersistentMap]
     )
+
+    // beangle-data-model 的 id 访问基类：运行期 BeanInfo.from 经实体 getMethods 拿到
+    // 继承的 id/id_=/persisted/equals（均 public），默认 allPublicMethods 即覆盖。
+    // NumId 覆盖 LongId/IntId/ShortId 家族（它们不声明新方法）；StringId 自声明 id 访问器
+    hints.registerType(classOf[org.beangle.data.model.NumId[_]], classOf[org.beangle.data.model.StringId])
+
     hints.registerPattern("META-INF/beangle/ddl/.*", ".*\\.zh_CN", "META-INF/services/.*")
   }
 }
