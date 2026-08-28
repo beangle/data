@@ -35,22 +35,30 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | 全面 scala.Dynamic 化（P0 增量） | ✅ | `OqlBuilder` 用 `Prop`、`declare` 用 `DeclareProp`（`model/.../orm/DeclareProp.scala`），运行期零类生成、零反射；**`AccessTracker`/`ByteBuddyHelper`/`AccessTrackerGenerator` 及全部 tracker 预生成链路已删除**（`byte_buddy` 依赖移除） |
-| AOT 提示统一接入（P1） | ✅ | `BeangleAotHints` + `HibernateAotHints`（`AotHintRegistrar` 子类）声明库自身与 hibernate-graalvm Feature 的固定反射点/资源；构建期经 `AotPlugin` 自动生成 `META-INF/native-image/beangle` 配置并随 beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单与应用清单正式拆分 |
+| AOT 提示统一接入（P1） | ✅ | `BeangleAotHints`（`AotHintRegistrar` 子类）声明库自身固定反射点/资源；hibernate-core 自身的反射元数据已内嵌进 fork jar（P2.1）；构建期经 `AotPlugin` 自动生成 `META-INF/native-image/beangle` 配置并随 beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单、fork 清单与应用清单三方拆分 |
 | Bean 元数据静态化（beanmeta.idx） | ✅ | 构建期 `MetaPlugin`（自动启用）读取 `beangle.xml` 声明的 `MetaRegistrar`（MappingModule/BindModule 等），经 `MetaGenerator` 生成二进制 `META-INF/beangle/beanmeta.idx`（编译期 dig 的精确类型）；运行期 `MetaModels` 启动时加载，`MappingModule.bind` 走 `BeanInfos.get` 查询，反射仅作无 idx 时的回退（详见 §1.5） |
+| native-image 冒烟（P3） | ✅ | `samples/native`：`MinimalTest` 与 `NativeApp`（MappingModule+H2+OQL+二级缓存/JCache）均完成 native 构建并运行成功；实测补齐项见 P2.1 与 P3.3 |
 | 懒加载代理构建期预生成（P2.2 主路线） | ✅ | `ProxyPlugin`（自动启用）读取 `beangle.xml` 的 jpa/orm mapping，经 `BeangleProxyGenerator` 用 ByteBuddy（构建期仅需）生成 `<Entity>$HibernateProxy.class`，随 `beangle/data/reflect-config.json`（按命名约定注册无参构造器、`writeReplace` 与 `allPublicMethods`，不开放字段）打进 jar；运行期由 fork 的 `BeangleBytecodeProvider` 按约定按名加载，`BeanInfos.get` 对代理类自动复用实体 BeanMeta（JVM 与 native 同路径，测试即覆盖） |
-| 回归测试 | ✅ | `model` 35、`hibernate` 22 全部通过（`testOnly`） |
+| 回归测试 | ✅ | `model` 35、`hibernate` 24（含 LazyProxyTest）全部通过（`testOnly`）；`sbt clean compile` 全绿 |
 
 ### AOT 配置生成（方案：build 插件 AotPlugin + AotHintRegistrar，已接入 sbt）
+
+commons 侧：
+- `LogbackAotHints`（`org.beangle.commons.logging`）统一注册 logback/slf4j 的 native 反射
+  （Joran appender/encoder/layout、`ch.qos.logback.classic.Logger`、`org.slf4j.spi.LocationAwareLogger`），
+  随 beangle-commons.jar 内嵌 `META-INF/native-image/beangle`，使用方无需手写 logback 反射项。
 
 库侧（beangle-data 自身）：
 - `BeangleAotHints`（`org.beangle.data.hibernate.aot`，`AotHintRegistrar` 子类）声明库自身固定
   反射点与资源 pattern（MappingModule、Hibernate 按名反射类、DDL/zh_CN/services 资源）；
-- `HibernateAotHints`（同包）复刻 `hibernate-graalvm:7.4.5.Final` 的
-  `GraalVMStaticFeature`/`StaticClassLists` 静态反射注册（Persister、事务协调器、命名策略、
-  EventType 监听器数组等 42 项；该 Feature 不注册资源），使用方无需再依赖 hibernate-graalvm；
-  `UuidVersion6/7Strategy.Holder` 属运行期类初始化（SecureRandom），经
-  `registerRuntimeInitialized` 输出为 `native-image.properties` 的
-  `Args = --initialize-at-run-time=...`，随 jar 内嵌自动应用，应用无需再补参数。
+- hibernate-core 自身的反射元数据（`EventType` 声明字段、监听器数组、jboss-logging logger、
+  注解类等 63 项，基于 native-image-agent 证据审计，见
+  [native-image-reflection-audit.md](native-image-reflection-audit.md)）与
+  `UuidVersion6/7Strategy.Holder` 的 `--initialize-at-run-time`
+  （SecureRandom）已直接内嵌进 `beangle-hibernate-core` fork jar 的
+  `META-INF/native-image/org.hibernate.orm/hibernate-core/`（reflect-config.json +
+  native-image.properties），随 jar 自动发现应用——库侧不再需要 `HibernateAotHints`
+  （已删除，也不再依赖 hibernate-graalvm）。
 
 `hibernate` 项目（`AotPlugin` 自动启用）每次 `compile` 由 `AotHintGenerator` 依据
 `META-INF/beangle/aot-registrars.txt` 清单加载上述子类并生成 `reflect-config.json` /
@@ -64,12 +72,19 @@
 
 应用侧（可执行项目）：应用定义自己的 `AotHintRegistrar`/`MetaRegistrar` 子类（实体、方言、驱动等）
 并放置锚定文件（`aot-registrars.txt`/`beangle.xml`），插件自动启用后产物同样落盘到
-`META-INF/native-image` 并打进应用 jar。详见 beangle-commons 的 `docs/aot-usage.md` 与
-`MetaPlugin`/`AotPlugin` 的 scaladoc。
+`META-INF/native-image` 并打进应用 jar。`AotHintGenerator` 会对清单/`beangle.xml` 声明的每个
+registrar 类**自动注册其类自身**（普通类注册构造器，Scala object 同时注册伴生类 `MODULE$`
+字段），保证运行期按名实例化（`Reflections.getInstance`）在 native 镜像中可用；注册枚举类型时
+自动补 public 字段（`MODULE$`/`$VALUES` 均为 public static），且 Scala 3 enum 的**伴生对象
+自动增量注册**；`MetaRegistrar.addMetas` 还会**遍历实体属性树**（集合元素、递归
+`@component` 值类型），实体 `bind`/`register` 后其 Scala 3 枚举属性自动注册——应用
+完全无需为枚举写注册代码。`Reflections.getInstance` 经 `getField` 取伴生单例，覆盖
+`EnumConverters` 等运行期枚举反射路径，应用无需为这些"机制面"逐类定制。详见
+beangle-commons 的 `docs/aot-usage.md` 与 `MetaPlugin`/`AotPlugin` 的 scaladoc。
 
-**尚未实现（P2/P3）：** `beangle-hibernate-core` fork 的 `META-INF/native-image/` 元数据、
-Metadata 快照中**列定义/Mappings 部分的序列化**（Bean 元数据部分已落地为 `beanmeta.idx`，见 §1.5）、
-samples/native 懒加载用例与 CI 冒烟（`patchHibernateJar` 后门随 P2.2c 删除）。
+**尚未实现（P2/P3）：** Metadata 快照中**列定义/Mappings 部分的序列化**（Bean 元数据部分已落地为
+`beanmeta.idx`，见 §1.5）；samples/native 懒加载用例的 native 端到端验证与 CI 冒烟
+（`patchHibernateJar` 后门已删除，sbt 构建不再有任何后门）。
 
 ---
 ## 1. 本库如何构建 ORM 元数据（代码声明式绑定）
@@ -171,12 +186,27 @@ GraalVM native-image 是"封闭世界（closed world）"分析：
   `META-INF/services/java.sql.Driver`、JCache `CachingProvider` SPI —— 需注册；
 - `META-INF/beangle/ddl/{oracle,postgresql}/*.sql`（DdlGenerator）——需注册；
 - `org/beangle/data/model/package.zh_CN` 等 message bundle（`Messages`）——需注册；
-- 日志（logback）配置与类——需注册。
+- 日志（logback）——反射注册已由 commons 统一提供（`LogbackAotHints`，随 beangle-commons.jar
+  内嵌 `META-INF/native-image/beangle` 自动合并），应用无需手写。覆盖三类：
+  - Joran 按 `class=` 属性反射实例化的 appender/encoder/layout（`ConsoleAppender`、
+    `PatternLayoutEncoder`、`LayoutWrappingEncoder`）与 `DefaultJoranConfigurator`/`BasicConfigurator`
+    （`AotHints.registerType` 递归注册父类/接口，native 冒烟已验证）；
+  - jboss-logging 探测日志后端用的 `ch.qos.logback.classic.Logger`（`Class.forName` 探测）；
+  - **`org.slf4j.spi.LocationAwareLogger`**——jboss-logging 选定 SLF4J 后调用
+    `LocationAwareLogger.class.getDeclaredMethods()` 反射查找 `log` 方法，native 下漏注册会抛
+    `NoSuchMethodError`，被 jboss-logging 静默捕获后回退 JUL（`JDKLoggerProvider`）。
+    **这是 Hibernate 日志在 native 下"意外走了 java.util.logging"的最常见根因**；
+    注册该接口后 Hibernate 日志正确走 logback（格式/级别/输出均由 logback.xml 控制）。
 
 ### 3.4 类初始化（build-time vs run-time）
 
-- Hibernate 的静态注册表、Scala 的 `Enum`/反射缓存等需要 `--initialize-at-build-time`（beangle-data 库侧已无 ByteBuddy）；
-- `org.hibernate` 大部分可 build-time 初始化（Quarkus 已证明）；JDBC 驱动、JCache 通常 run-time 初始化即可。
+- 冒烟实测（P3.3）：**除两个 UUID Holder 外不需要任何 `--initialize-at-*` 参数**。svm-subs
+  （Scala 标准库运行期初始化）与整包/整库 build-time 初始化互相冲突（报
+  "Classes that should be initialized at run time got initialized..."），因此不采用
+  `--initialize-at-build-time=org.hibernate/org.beangle` 之类的整包参数；仅 fork 内嵌的
+  `--initialize-at-run-time=org.hibernate.id.uuid.UuidVersion6Strategy$Holder,org.hibernate.id.uuid.UuidVersion7Strategy$Holder`
+  （SecureRandom）生效；
+- JDBC 驱动（H2）与 JCache（caffeine）无需 run-time 初始化参数，注册 reflect/resource 即可工作。
 
 ---
 
@@ -237,7 +267,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 - **库侧全面 scala.Dynamic 化**：`OqlBuilder` 用 `Prop`、`MappingModule.declare` 用 `DeclareProp`，
   运行期零类生成、零反射；`AccessTracker`/ByteBuddy 已删除，`byte_buddy` 依赖移除；
-- **beangle AOT 机制（P1 交付）**：库侧 `BeangleAotHints` + `HibernateAotHints` + `AotPlugin`（自动启用）内嵌库清单（后者复刻 hibernate-graalvm Feature 静态反射注册，使用方可移除 hibernate-graalvm）；
+- **beangle AOT 机制（P1 交付，P2.1 收口）**：库侧 `BeangleAotHints` + `AotPlugin`（自动启用）内嵌库清单；hibernate-core 反射元数据内嵌 fork jar（P2.1），`HibernateAotHints` 已删除，不再依赖 hibernate-graalvm；
   应用侧定义 `AotHintRegistrar`/`MetaRegistrar` 子类并放置锚定文件，`AotPlugin` 自动生成
   `reflect-config.json` / `resource-config.json` / `proxy-config.json` / `serialization-config.json`；
 - 文档：本文件 + [dynamic-oql.md](dynamic-oql.md)。
@@ -246,14 +276,18 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 ### 5.1 P2：Hibernate 侧（前置：无；涉及仓库：beangle/hibernate fork）
 
-**P2.1 fork 可达性元数据**
-- 进展：beangle-data 自身库清单已由 `BeangleAotHints`/`HibernateAotHints` + `AotPlugin` 内嵌进
-  beangle-data-hibernate.jar（见 0.1）；
-- 待办：在 `beangle-hibernate-core` fork jar 内嵌 `META-INF/native-image/org/beangle/hibernate/
-  beangle-hibernate-core/*.json`，解决 hibernate-core 自身的反射（Dialect/JCache/类型注册）、
-  资源（`META-INF/services` 等）与 ServiceLoader 注册；
-- 依据：上游 `graalvm-reachability-metadata` 仓库 `org.hibernate.orm:hibernate-core` 条目，按 fork 版本适配；
-- 验收：native 构建时 Hibernate 初始化不再因缺反射/资源报错。
+**P2.1 fork 可达性元数据 ✅（已落地并冒烟验证）**
+- 内容：`beangle-hibernate-core` fork jar 内嵌 `META-INF/native-image/org.hibernate.orm/hibernate-core/`：
+  - `reflect-config.json`——63 项 hibernate-core 反射注册（native-image-agent 证据审计：
+    有轨迹证据的类保留并按证据收紧范围，无证据的删除；方法详见
+    [native-image-reflection-audit.md](native-image-reflection-audit.md)）；
+  - `native-image.properties`——`--initialize-at-run-time=...UuidVersion6/7Strategy$Holder`（SecureRandom）；
+- 关键实测：`org.hibernate.event.spi.EventType` 的 `static{}` 用 `getDeclaredFields` + `Field.get`
+  反射构建 `STANDARD_TYPE_BY_NAME_MAP`（`values()` 的数据源），**必须注册 `EventType` 声明字段**，
+  否则 native 下 map 为空 → `EventListenerRegistryImpl.getEventListenerGroup` 抛
+  "Unable to find listeners for type [auto-flush/post-insert]"（2LC 开启与否只是暴露顺序不同）；
+- 依据：上游 `graalvm-reachability-metadata` 仓库 `org.hibernate.orm:hibernate-core` 条目 + 冒烟实测；
+- 验收：✅ native 构建/运行不再因 hibernate 反射/资源报错（含 2LC/JCache 路径）。
 
 **P2.2 Hibernate 懒加载代理（HHH-16013）——主路线：构建期一律预生成 + fork 内无条件预生成 BytecodeProvider**
 
@@ -306,13 +340,13 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
   - 类名契约：代理类名固定为 `<Entity>$HibernateProxy`（fork 的 `BeangleBytecodeProvider` 与生成器共用
     Suffixing 命名策略，两参构造无随机后缀），reflect-config 按该约定输出、不回读文件系统，跨构建稳定。
 
-**P2.2c samples/native 集成**
-- 删除 `patchHibernateJar` 任务、bytebuddy exclusion 与 `build-native.sh` 的 patch 步骤（不再需要后门）；
-- 清理参数冲突：`use_reflection_optimizer` 相关参数直接移除（provider 恒返回 null 后不再生效；
-  当前 `build-native.sh` 为 `true`、`native-image-args.txt` 为 `false`，自相矛盾）；
-  `--initialize-at-build-time/run-time` 清单统一（实测后定）；
-- NativeApp 补懒加载用例：保存带 `parent` 自关联的 Department → 新 Session（或断连后）访问 `parent`
-  触发代理初始化（当前用例从未访问 `parent`，测不到代理路径）。
+**P2.2c samples/native 集成 ✅（后门清理）/ 待办（懒加载 native 用例）**
+- ✅ 已删除 `patchHibernateJar` 任务、bytebuddy exclusion 与 `build-native.sh` 的 patch 步骤；
+- ✅ 已清理参数冲突：`use_reflection_optimizer` 相关参数移除（provider 恒返回 null 后不再生效），
+  `--initialize-at-*` 整包参数全部删除（实测结论见 §3.4）；
+- 待办：NativeApp 补懒加载用例——保存带 `parent` 自关联的 Department → 新 Session（或断连后）
+  访问 `parent` 触发代理初始化（当前用例从未访问 `parent`，测不到代理路径；JVM 侧已由
+  LazyProxyTest 覆盖，native 端到端待补）。
 
 **P2.2d 验收**
 - JVM 回归：`hibernate` 模块 24 测试全绿——测试资源自带 `beangle.xml`，**测试本身就走预生成代理路径**
@@ -343,16 +377,30 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 **P3.1 samples/native 示例工程**
 - MappingModule + H2 + `OqlBuilder`/`declare` + GraalVM 构建脚本（或 Makefile/CI 片段）；
 
-**P3.2 native-image 冒烟测试**
-- 最小应用 native 构建并跑通：`Mappings.autobind()`（绑定）→ 建库建表 → `declare` 声明 → `OqlBuilder` 查询；
-- 纳入 CI。
+**P3.2 native-image 冒烟测试 ✅**
+- `MinimalTest` 与 `NativeApp`（`Mappings.autobind()` → 建库建表 → OQL 查询 → 增删改 → 2LC/JCache）
+  均完成 native 构建（`samples/native/build-native.sh`）与运行；
+- 纳入 CI：待办（本地已可重复执行）。
 
-**P3.3 按实测补齐配置**
-- 真实 GraalVM 环境跑一轮，按报错补齐：类初始化清单（`--initialize-at-build-time`/`-run-time`）、
-  JDBC 驱动、缓存 Provider、URL 协议、反射遗漏项等；
-- 清理现有参数冲突：`build-native.sh` 与 `native-image-args.txt` 中
-  `use_reflection_optimizer`（true/false 矛盾）、`--initialize-at-*`（`org.hibernate`/`org.beangle`
-  一个 build-time 一个 run-time 矛盾）统一为一份清单。
+**P3.3 按实测补齐配置 ✅（本轮冒烟）**
+- `build-native.sh`/`native-image-args.txt`/`build.sbt` 已统一：删除 `patchHibernateJar`、
+  `use_reflection_optimizer`、byte-buddy exclusion 与全部 `--initialize-at-*` 整包参数；
+- 资源 pattern 已收敛：`logback.xml`/`META-INF/beangle/beanmeta.idx` 由 commons
+  （`LogbackAotHints`/`MetaAotHints`，随 beangle-commons.jar 内嵌注册），`META-INF/services`、
+  `META-INF/beangle/ddl`、`*.zh_CN` 由 data-hibernate（`BeangleAotHints`）注册；
+  sample 的 `resource-config.json` 仅保留 jdbc engine keywords、`beangle.xml`、caffeine 与
+  `reference.conf`/`application.conf`（后两者 caffeine/TypeSafe Config 资源，无库侧归属）；
+- sample 不再手写 `reflect-config.json`：应用面全部走声明式（`SampleAotHints` +
+  `aot-registrars.txt`，实体由 `beangle.xml` 扫描自动注册，`SampleMapping` 本体由
+  `AotHintGenerator` 自动注册），`samples/native/.../native-image/reflect-config.json` 已删除；
+- logback/slf4j 反射已收敛到 commons（`LogbackAotHints`，随 beangle-commons.jar 内嵌发布）；
+- 库/fork 级（随 jar 内嵌）：hibernate-core 反射（P2.1）、`EventType` 声明字段（P2.1）。
+- logback 实测注意点：
+  - 启动日志出现 `logback 版本 ?` 是 jar MANIFEST 缺 `Implementation-Version`，功能无碍；
+  - `hibernate.show_sql=true` 时 SQL 双行输出（`DEBUG org.hibernate.SQL` 来自 jboss-logging，
+    另有 show_sql 直打的 `Hibernate: ...`），是 `SqlStatementLogger` 的正常双路径，不是重复日志；
+  - `TRACE org.hibernate.type.descriptor.sql.BasicBinder` 的绑定参数输出只在语句真的带 `?`
+    占位符时出现；sample 的无参查询没有该日志属正常。
 
 ### 5.3 可选优化（P4，非阻塞）
 
@@ -362,8 +410,11 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 ### 5.4 前置条件与风险
 
-- **GraalVM + native-image 环境**：当前开发环境未安装，P3 需要真实环境执行与迭代；
+- **GraalVM + native-image 环境**：已安装（`/home/chaostone/local/graalvm-jdk-21`），P3 冒烟已执行并通过（MinimalTest + NativeApp）；
 - **fork 元数据耦合**：P2.1 与 Hibernate 版本绑定，fork 升级需同步验证；
+- **sbt 2 插件 publishLocal 竞态**：`sbt-beangle-build` 发布偶发 jar 类不全（曾仅 13/145 类），
+  导致 data 构建报 `NoClassDefFoundError: CompileHookPlugin$autoImport$`；发布后需核对 jar 类数
+  与 `classes` 目录一致，必要时重跑 `publishLocal`；
 - **最大不确定项**：Hibernate 懒加载代理（P2.2）——机制已由 Quarkus 源码验证可行（构建期 ByteBuddy 预生成 +
   运行期按名加载；Quarkus 在 JVM 生产模式同样使用预生成代理，语义等价性已被证明），剩余风险集中在
   **Scala 实体与 ByteBuddy 代理生成的兼容性**（私有字段 + accessor 模式、`Option`/集合关联的 getter 覆盖），
