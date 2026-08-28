@@ -340,13 +340,15 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
   - 类名契约：代理类名固定为 `<Entity>$HibernateProxy`（fork 的 `BeangleBytecodeProvider` 与生成器共用
     Suffixing 命名策略，两参构造无随机后缀），reflect-config 按该约定输出、不回读文件系统，跨构建稳定。
 
-**P2.2c samples/native 集成 ✅（后门清理）/ 待办（懒加载 native 用例）**
+**P2.2c samples/native 集成 ✅（后门清理 + 懒加载 native 用例）**
 - ✅ 已删除 `patchHibernateJar` 任务、bytebuddy exclusion 与 `build-native.sh` 的 patch 步骤；
 - ✅ 已清理参数冲突：`use_reflection_optimizer` 相关参数移除（provider 恒返回 null 后不再生效），
   `--initialize-at-*` 整包参数全部删除（实测结论见 §3.4）；
-- 待办：NativeApp 补懒加载用例——保存带 `parent` 自关联的 Department → 新 Session（或断连后）
-  访问 `parent` 触发代理初始化（当前用例从未访问 `parent`，测不到代理路径；JVM 侧已由
-  LazyProxyTest 覆盖，native 端到端待补）。
+- ✅ 懒加载 native 用例已落地：`NativeApp` 扩充用例第 10 段（`LAZY PROXY + COLLECTION`）保存
+  `Employee.department`（多对一，Hibernate 默认 lazy proxy）后重新 `get`，在**新实体上访问
+  关联并打印** `dept via lazy proxy`/`roles`/`tags`，native 二进制下由 `BeangleBytecodeProvider`
+  按名加载构建期预生成代理并触发初始化，构建 + 运行验证通过；
+  JVM 侧同一路径由 `LazyProxyTest` 覆盖。
 
 **P2.2d 验收**
 - JVM 回归：`hibernate` 模块 24 测试全绿——测试资源自带 `beangle.xml`，**测试本身就走预生成代理路径**
