@@ -35,9 +35,10 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | 全面 scala.Dynamic 化（P0 增量） | ✅ | `OqlBuilder` 用 `Prop`、`declare` 用 `DeclareProp`（`model/.../orm/DeclareProp.scala`），运行期零类生成、零反射；**`AccessTracker`/`ByteBuddyHelper`/`AccessTrackerGenerator` 及全部 tracker 预生成链路已删除**（`byte_buddy` 依赖移除） |
-| AOT 提示统一接入（P1） | ✅ | `BeangleAotHints` + `HibernateAotHints`（`AotHintRegistrar` 子类）声明库自身与 hibernate-graalvm Feature 的固定反射点/资源；构建期经 `AotPlugin` 自动生成 `META-INF/native-image` 配置并随 beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单与应用清单正式拆分 |
-| BeanInfo JSON 静态化（P2.2 前奏） | ✅ | BeanInfo 序列化独立成 `BeanInfoJson`；构建期按类生成 `<SimpleName>.beaninfo.json`（与 class 同包）；运行期 `BeanInfoJson.loadFor` 按需读取并注册 `BeanInfos.cache`；`MappingModule.bindImpl` 改为 JSON 优先、编译期 dig 回退（详见 §1.5） |
-| 回归测试 | ✅ | `model` 34、`hibernate` 24 全部通过（`testOnly *` 强制全量运行） |
+| AOT 提示统一接入（P1） | ✅ | `BeangleAotHints` + `HibernateAotHints`（`AotHintRegistrar` 子类）声明库自身与 hibernate-graalvm Feature 的固定反射点/资源；构建期经 `AotPlugin` 自动生成 `META-INF/native-image/beangle` 配置并随 beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单与应用清单正式拆分 |
+| Bean 元数据静态化（beanmeta.idx） | ✅ | 构建期 `MetaPlugin`（自动启用）读取 `beangle.xml` 声明的 `MetaRegistrar`（MappingModule/BindModule 等），经 `MetaGenerator` 生成二进制 `META-INF/beangle/beanmeta.idx`（编译期 dig 的精确类型）；运行期 `MetaModels` 启动时加载，`MappingModule.bind` 走 `BeanInfos.get` 查询，反射仅作无 idx 时的回退（详见 §1.5） |
+| 懒加载代理构建期预生成（P2.2 主路线） | ✅ | `ProxyPlugin`（自动启用）读取 `beangle.xml` 的 jpa/orm mapping，经 `BeangleProxyGenerator` 用 ByteBuddy（构建期仅需）生成 `<Entity>$HibernateProxy.class`，随 `beangle/data/reflect-config.json`（按命名约定注册无参构造器、`writeReplace` 与 `allPublicMethods`，不开放字段）打进 jar；运行期由 fork 的 `BeangleBytecodeProvider` 按约定按名加载，`BeanInfos.get` 对代理类自动复用实体 BeanMeta（JVM 与 native 同路径，测试即覆盖） |
+| 回归测试 | ✅ | `model` 35、`hibernate` 22 全部通过（`testOnly`） |
 
 ### AOT 配置生成（方案：build 插件 AotPlugin + AotHintRegistrar，已接入 sbt）
 
@@ -53,7 +54,7 @@
 
 `hibernate` 项目（`AotPlugin` 自动启用）每次 `compile` 由 `AotHintGenerator` 依据
 `META-INF/beangle/aot-registrars.txt` 清单加载上述子类并生成 `reflect-config.json` /
-`resource-config.json`（写入 `Compile / resourceManaged` 的 `META-INF/native-image`），
+`resource-config.json`（写入 `Compile / resourceManaged` 的 `META-INF/native-image/beangle`），
 随 beangle-data-hibernate.jar 内嵌发布。
 
 `MappingModule.bind` 的运行期分支通过 `BeanInfos.get` 查询精确 BeanMeta（不依赖编译期挖掘）：
@@ -66,9 +67,9 @@
 `META-INF/native-image` 并打进应用 jar。详见 beangle-commons 的 `docs/aot-usage.md` 与
 `MetaPlugin`/`AotPlugin` 的 scaladoc。
 
-**尚未实现（P2/P3）：** Hibernate 懒加载代理的构建期预生成与 `BytecodeProvider` 原生实现、
-`beangle-hibernate-core` fork 的 `META-INF/native-image/` 元数据、Metadata 快照中**列定义/Mappings 部分的序列化**
-（BeanInfo 部分已落地，见 §1.5）、samples/native 示例工程与 CI 冒烟。
+**尚未实现（P2/P3）：** `beangle-hibernate-core` fork 的 `META-INF/native-image/` 元数据、
+Metadata 快照中**列定义/Mappings 部分的序列化**（Bean 元数据部分已落地为 `beanmeta.idx`，见 §1.5）、
+samples/native 懒加载用例与 CI 冒烟（`patchHibernateJar` 后门随 P2.2c 删除）。
 
 ---
 ## 1. 本库如何构建 ORM 元数据（代码声明式绑定）
@@ -90,29 +91,32 @@
 
 ---
 
-## 1.5 BeanInfo JSON 静态化（Bean 类型信息序列化 / 按需加载）
+## 1.5 Bean 元数据静态化（beanmeta.idx）
 
 BeanInfo（`org.beangle.commons.lang.reflect.BeanInfo`：属性、`TypeInfo`、getter/setter 签名、方法）是
 Spring/CDI 集成、ORM 元数据构建（`Mappings.autobind`）以及 native 下"注册一次、全量复用"的公共基础。
-本仓库把它与 ORM 绑定（Mappings/列定义）解耦，做成**独立、可序列化**的能力（`model/.../serialize/BeanInfoJson.scala`）：
+构建期把它固化为**二进制索引** `META-INF/beangle/beanmeta.idx`（commons 的 `MetaIndex`/`MetaCodec` 格式），
+一个 idx 可容纳多个类的 BeanMeta，并带类名→偏移目录：
 
-- **序列化**：`BeanInfoJson.toJson(bi)` / `toJson(classes)` → 精简 JSON（属性名、`TypeInfo`
-  （option/iterable/general 三种 kind + 泛型参数）、getter/setter 的"声明类+方法名+参数类型"签名、transient 标记）。
-- **按类放置**：构建期工具 `BeanInfoJsonGenerator`（`<output-dir> <class>...`）把每个类写为
-  `<包路径>/<SimpleName>.beaninfo.json`，与 `.class` 同包（同目录）。**native 下只需注册一个资源模式
-  `.*\.beaninfo\.json`**，即可按需读取，无需为每个类生成反射注册。
-- **按需读取**：`BeanInfoJson.loadFor(clazz)` 用 `clazz.getResourceAsStream("<SimpleName>.beaninfo.json")`
-  读取、解析并 `BeanInfos.cache.update` 注册；无文件时返回 `None`，调用方回退运行时反射（`BeanInfos.get`）。
-- **MappingModule 集成**：`MappingModule.bindImpl` 现在先 `BeanInfoJson.loadFor(cls)`（JSON 优先），
-  无描述文件时回退 `bind[T]` 宏的编译期 dig —— 对应用透明（JVM 与 native 行为一致）。
+- **生成**：`MetaPlugin`（sbt 插件，自动启用）读取 `beangle.xml` 声明的 `MetaRegistrar`
+  （`MappingModule`/`BindModule` 等，`<jpa>/<orm><mapping>` 与 `<cdi><module>`），生成类名清单后 fork
+  `MetaGenerator`（commons）：实例化各 registrar 触发 `registering()`，收集其 `bind[T]` 宏在**编译期 dig**
+  出的 `BeanMeta`（精确类型，`Long`/`Int` 而非 `Object`），写入 `resourceManaged` 的 idx 并随 jar 打包。
+  运行期只需注册一个资源 `META-INF/beangle/beanmeta.idx` 即可全量加载。
+- **读取**：`MetaModels` 启动时惰性加载 `classpath*:META-INF/beangle/beanmeta.idx` 建缓存；
+  `BeanInfos.get(clazz)` 先查缓存/MetaModels，未命中时对"父类 `$` 子类"（如懒加载代理
+  `<Entity>$HibernateProxy`）复用父类 BeanMeta（`BeanInfos.parentOf`，native 下依赖代理类
+  `allPublicMethods` 注册），最后才回退运行时反射（`MetaLoader`）。
+- **MappingModule 集成**：`MappingModule.bind` 宏的运行期分支走 `BeanInfos.get`（精确类型来自 idx），
+  构建期分支（`buildTime`）才用编译期 dig 的结果并 `addMetas` 收集进 idx —— 对应用透明
+  （JVM 与 native 行为一致）。
 
-> ⚠️ **精度约束（重要）**：JSON 若由**运行时反射**生成（`BeanInfoJsonGenerator` 直接 `BeanInfos.get`），
-> 会丢失 Scala 值类型的泛型精度——JVM 签名把 `Map[Int, X]` 擦除为 `Map[Object, X]`（`int` → `java.lang.Object`），
-> 导致 `Mappings.autobind` 无法推断 Map 键列类型（`Cannot find sqltype for java.lang.Object`）。
-> 因此**用于 ORM 的描述必须由编译期 digger 生成**：先在应用中用 `BeanInfos.cache.of(classOf[A], ...)`
-> （编译期 `BeanInfoDigger`，保留 `Int` 等精确类型）注册，再序列化。示例见
-> `hibernate/src/test/scala/org/beangle/data/hibernate/model/GenBeanInfo.scala`。
-> 仅需要类型信息的消费者（如 Spring/CDI 装配）通常不受精度损失影响。
+> ⚠️ **精度约束（重要）**：若运行期拿不到 idx（如测试 jar 未打包进去）而回退反射，
+> 会丢失 Scala 泛型/继承的精度——JVM 签名把 `NumId[Long].id` 擦除为 `java.lang.Object`，
+> 导致 `Mappings.bindId` 报 `Cannot find sqltype for java.lang.Object`。
+> 因此**用于 ORM 的描述必须由编译期 digger 生成**：构建期 `MetaGenerator` 从 registrar 的
+> `bind[T]` 宏收集的正是编译期 dig 结果；测试 scope 由 `Test / metaIndex` 在 `Test / compile` 后生成
+> 测试实体 idx，保证测试运行期同样拿到精确类型。
 
 ---
 
@@ -154,10 +158,10 @@ GraalVM native-image 是"封闭世界（closed world）"分析：
 | `ValueType`（hibernate/.../udt） | `getDeclaredFields`、`getConstructor`、`setAccessible` | 所有 `@value` 值类型类 |
 | `BindMetadataBuilderFactory` | `Class.forName(enumTypeName)`、类型注册 | 所有枚举类 |
 | `Profiles` | `Reflections.getInstance[MappingModule]`、命名策略构造器反射 | MappingModule 类、自定义 NamingPolicy |
-| `DomainFactory` | `Reflections.getField(pf.getClass,"proxyClass")` | Hibernate 代理工厂类（依赖 3.1 预生成） |
+| `DomainFactory` | 仅收集 MappingService 实体类型，无反射 | — |
 | `ConvertPopulator`/meta `Type`/Domain | `Reflections.newInstance` | 实体类（应用运行期使用） |
 | `JsonAPI` | `getter.invoke` 序列化 | 实体类方法 |
-| `Jpas` | `Class.forName("jakarta.persistence.*")` | 注解类 |
+| `Jpas` | `clazz.getAnnotation(Entity/Embeddable)`（`findEntityName`/`isEntity`/`isComponent`，`OqlBuilder.from` 运行期调用） | `jakarta.persistence.Entity`/`Embeddable`（已由 `BeangleAotHints` 注册） |
 | Hibernate 自身 | Dialect、JCache、类型等（`Class.forName` 按名加载） | 见 4.3（走 fork 元数据） |
 
 ### 3.3 资源与 SPI
@@ -197,7 +201,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 | 构建期 Jandex 扫描实体 | `Mappings.autobind()`（更简单：实体集合来自 MappingModule，无需扫描） |
 | 序列化 Metadata 运行期加载 | 可把 `Mappings`/Hibernate `Metadata` 序列化为快照（P2 可选优化） |
 | 预生成代理 + BytecodeProvider | 构建期预生成 Hibernate 代理类 + `BytecodeProvider` 原生实现（P2） |
-| 构建期增强 | 可选：构建期运行 Hibernate enhancement（P2/P3） |
+| 构建期增强 | 非阻塞、列为 P4：beangle dirty-checking 走快照比较，未增强也可正确工作（详见 §5.1 P2.2） |
 | 生成 reflect/proxy/resource/serialization 配置 | **`AotHintRegistrar` 子类 + `AotPlugin`（beangle AOT 机制，P1 交付）** |
 | hibernate-core 可达性元数据 | 在 `beangle-hibernate-core` fork 的 jar 内嵌 `META-INF/native-image/`（P2） |
 
@@ -251,18 +255,87 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 - 依据：上游 `graalvm-reachability-metadata` 仓库 `org.hibernate.orm:hibernate-core` 条目，按 fork 版本适配；
 - 验收：native 构建时 Hibernate 初始化不再因缺反射/资源报错。
 
-**P2.2 Hibernate 懒加载代理（HHH-16013）**
-- 任务：
-  1. 构建期（构建 JVM）用 ByteBuddy 为实体生成懒加载代理类，随应用打包；
-  2. 提供 native 模式的 `BytecodeProvider`/代理工厂实现（运行期按名加载预生成类），并注册 `META-INF/services`；
-  3. `hibernate.bytecode.use_reflection_optimizer=false`、增强相关设置；
-- 参考：Quarkus `PreGeneratedProxies`；Spring Boot 3 native 同款思路；
-- 验收：懒加载实体/集合在 native 二进制下正常工作。
+**P2.2 Hibernate 懒加载代理（HHH-16013）——主路线：构建期一律预生成 + fork 内无条件预生成 BytecodeProvider**
 
-**P2.3（可选）Metadata 快照（FastBoot）**
+> 结论先行：**proxy（懒加载代理）是唯一硬阻塞，必须做**；**enhancement（dirty-checking/懒属性增强）非阻塞
+> （beangle 的 dirty-checking 走快照比较，见 §5.1 末注），列为 P4 可选**。
+> **主路线（简化）：不区分 JVM/native，构建期一律预生成代理，运行期自定义 `BytecodeProvider` 无条件使用预生成类**
+> ——这正是 Quarkus 的模型（`RuntimeBytecodeProvider` 是唯一运行期实现，JVM 与 native 同路径，没有模式检测/委托分支）。
+> 收益：bytebuddy 可彻底退出运行期 classpath（JVM + native）；本库 JVM 测试与 native 走同一代码路径，回归即覆盖。
+> 运行期 `BytecodeProvider` 必须落在 fork 里：Hibernate 7.4 的 `BytecodeProviderInitiator` 纯 ServiceLoader，
+> 且发现多个注册直接抛 `IllegalStateException`——samples/native 现有 `patchHibernateJar` 后门正是为此而设，本方案可将其删除。
+>
+> Quarkus 机制（已核实源码）：构建期 `ProxyBuildingHelper` 用 hibernate 自带 `ByteBuddyProxyHelper.buildUnloadedProxy`
+> 为每个可代理实体生成代理字节码并作为应用类打入产物，映射（实体类名→代理类名）存入 `PreGeneratedProxies`；
+> 运行期自定义 `BytecodeProvider`（`RuntimeBytecodeProvider`）→ `getProxyFactoryFactory` 返回
+> `QuarkusRuntimeProxyFactoryFactory` → 每个实体一个 `QuarkusProxyFactory`：`postInstantiate` 时按映射查出预生成类
+> 与默认构造器，`getProxy` 时 `new ByteBuddyInterceptor(...)` + `constructor.newInstance()` + `$$_hibernate_set_interceptor`；
+> `getReflectionOptimizer`/`getEnhancer` 返回 null（运行期零字节码生成）。
+
+**P2.2a fork 侧：`BeangleBytecodeProvider`（无条件预生成模式，beangle/hibernate）**
+- 新增 `org.beangle.hibernate.bytecode.BeangleBytecodeProvider implements BytecodeProvider`：
+  - `getProxyFactoryFactory` **恒返回** `BeangleProxyFactoryFactory`：
+    - 懒加载映射（实体→代理类名）→ 每个实体 `Class.forName` 查出预生成类 + `ByteBuddyInterceptor` +
+      默认构造器（复刻 QuarkusProxyFactory ~120 行；`buildBasicProxyFactory` 返回 null，集合代理走
+      PersistentCollection 自带类）；
+    - 按实体查不到（构建期跳过 final/无默认构造器，或应用未跑构建插件）→ 抛 `HibernateException`（Quarkus 同款，
+      Hibernate 捕获后 warning 并为该实体退回 eager），**不依赖映射文件存在与否做分支**；
+  - `getReflectionOptimizer`（两个重载）恒返回 null → `hibernate.bytecode.use_reflection_optimizer` 属性不再生效；
+  - `getEnhancer` 恒返回 null（运行期零字节码生成/增强）；
+  - **不引用任何 net.bytebuddy 类**（`ByteBuddyInterceptor` 是 hibernate-core 自带类）→ bytebuddy 可彻底退出运行期 classpath；
+  - fork 的 `META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider` 改为指向它（保持唯一注册）。
+
+**P2.2b data/build 侧：`ProxyPlugin`（sbt 构建期一律预生成）**
+- 新 AutoPlugin（同 `AotPlugin`/`MetaPlugin` 模式：锚定 `beangle.xml`、fork `java -cp` 跑生成器、无锚定静默跳过）：
+  - 契约：`beangle.xml` 中 `<jpa>/<orm><mapping class="...">` 元素（`GeneratorSupport.extractMappingClasses`，
+    与 `metaIndex` 同源声明）；**有 mapping 即生成，JVM 与 native 一致**；
+  - 实体集合：直接实例化 mapping 声明的 `MappingModule` 子类、`registering()` 后取 `entityTypes`
+    （`MappingModule.entityTypes` 构建期接口，不依赖 beanmeta.idx/编译器挖掘）；
+  - 生成器 main `org.beangle.data.hibernate.aot.BeangleProxyGenerator`（随 beangle-data-hibernate 发布）在
+    构建 JVM 上对每个可代理实体（跳过 interface/abstract/final/无公开无参构造器）
+    `ByteBuddyProxyHelper.buildUnloadedProxy` 产出字节码 → 全部写入 `Compile / resourceManaged`
+    （`.class` 作为资源随 jar 打包，构建/运行期 classpath 均可按名加载，JVM 与 native 同一路径）：
+    - **`META-INF/native-image/beangle/data/reflect-config.json`**（代理类注册：
+      类名按约定固定为 `<Entity>$HibernateProxy`，注册无参构造器、`writeReplace` 与
+      `allPublicMethods`（供 `BeanInfo.from` 的 `getMethods` 查询），不开放字段；生成器按约定直接
+      输出、不回读文件系统，native-image 自动发现，无需 aotHints 合并）；
+  - 锚定与门控：仅当 `beangle.xml` 有 mapping 且 classpath 含 beangle-data-hibernate 才生成；
+    声明类未找到（编译进行中）退出码 2，`GeneratorSupport.retryGenerator` 退避重试（与 metaIndex/aotHints 同机制）；
+  - bytebuddy **仅构建期需要**：插件自带 `net.bytebuddy:byte-buddy` 依赖并追加进生成器 classpath，
+    应用运行期（JVM + native）都可排除；
+  - 类名契约：代理类名固定为 `<Entity>$HibernateProxy`（fork 的 `BeangleBytecodeProvider` 与生成器共用
+    Suffixing 命名策略，两参构造无随机后缀），reflect-config 按该约定输出、不回读文件系统，跨构建稳定。
+
+**P2.2c samples/native 集成**
+- 删除 `patchHibernateJar` 任务、bytebuddy exclusion 与 `build-native.sh` 的 patch 步骤（不再需要后门）；
+- 清理参数冲突：`use_reflection_optimizer` 相关参数直接移除（provider 恒返回 null 后不再生效；
+  当前 `build-native.sh` 为 `true`、`native-image-args.txt` 为 `false`，自相矛盾）；
+  `--initialize-at-build-time/run-time` 清单统一（实测后定）；
+- NativeApp 补懒加载用例：保存带 `parent` 自关联的 Department → 新 Session（或断连后）访问 `parent`
+  触发代理初始化（当前用例从未访问 `parent`，测不到代理路径）。
+
+**P2.2d 验收**
+- JVM 回归：`hibernate` 模块 24 测试全绿——测试资源自带 `beangle.xml`，**测试本身就走预生成代理路径**
+  （与 native 同一条代码路径，回归即覆盖）；
+- 边界验证：无 `beangle.xml` 的项目不生成（空映射，无实体即无代理请求）；final/case class 实体构建期跳过、
+  运行期 warning 退回 eager（Quarkus 同款行为）；
+- native 冒烟：`Department.parent` 懒加载在 native 二进制下返回真实对象、无 `HibernateException`。
+
+**P4（本阶段不做）enhancement 路线（借鉴 Quarkus `HibernateEntityEnhancer`）**
+- Quarkus 做法：构建期字节码变换（ASM 桥接 Hibernate `Enhancer` + `QuarkusEnhancementContext`），
+  **先增强后生成代理**（共享 TypePool，代理覆盖增强后的 getter）；
+- beangle 判定：dirty-checking 走 `persister.findDirty(getValues, loadedState)` 快照比较（`HibernateEntityDao`），
+  未增强实体功能正确；enhancement 仅带来性能收益与懒属性支持（beangle 无懒属性需求）；
+- 若做：先在 JVM 用 `hibernate-enhance-maven-plugin` 对 Scala 样例验证（私有字段 + accessor、`Option` 泛型擦除后的
+  字段类型是主要兼容风险），再在 ProxyPlugin 里加 transformer 阶段；不建议与 P2.2 并行。
+
+**P2.3（可选，放 P3 冒烟之后）Metadata 快照（FastBoot）**
 - 任务：构建期序列化 `Mappings`/Hibernate `Metadata`，运行期反序列化加载，
   跳过 `BindSourceProcessor`/`Mappings.autobind` 的反射路径；
 - 收益：启动更快、绑定期反射面进一步收窄；
+- 前置：先跑通 P2.2 + P3.2 冒烟，实测绑定期反射是否成为 native 启动/运行瓶颈再决定
+  （beangle 绑定是声明式的，`BeanInfo` 已静态化，快照收益可能有限；工作量不小——Quarkus 是自定义序列化
+  PersistentClass 图 + bytecode recording）；
 - 验收：native 启动时间对比有可量化收益。
 
 ### 5.2 P3：样例应用与验证
@@ -276,7 +349,10 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 **P3.3 按实测补齐配置**
 - 真实 GraalVM 环境跑一轮，按报错补齐：类初始化清单（`--initialize-at-build-time`/`-run-time`）、
-  JDBC 驱动、缓存 Provider、URL 协议、反射遗漏项等。
+  JDBC 驱动、缓存 Provider、URL 协议、反射遗漏项等；
+- 清理现有参数冲突：`build-native.sh` 与 `native-image-args.txt` 中
+  `use_reflection_optimizer`（true/false 矛盾）、`--initialize-at-*`（`org.hibernate`/`org.beangle`
+  一个 build-time 一个 run-time 矛盾）统一为一份清单。
 
 ### 5.3 可选优化（P4，非阻塞）
 
@@ -288,8 +364,10 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 - **GraalVM + native-image 环境**：当前开发环境未安装，P3 需要真实环境执行与迭代；
 - **fork 元数据耦合**：P2.1 与 Hibernate 版本绑定，fork 升级需同步验证；
-- **最大不确定项**：Hibernate 懒加载代理（P2.2）——需在真实 native 构建中验证代理预生成与
-  `BytecodeProvider` 替换的可行性。
+- **最大不确定项**：Hibernate 懒加载代理（P2.2）——机制已由 Quarkus 源码验证可行（构建期 ByteBuddy 预生成 +
+  运行期按名加载；Quarkus 在 JVM 生产模式同样使用预生成代理，语义等价性已被证明），剩余风险集中在
+  **Scala 实体与 ByteBuddy 代理生成的兼容性**（私有字段 + accessor 模式、`Option`/集合关联的 getter 覆盖），
+  由 P2.2d 的 JVM 回归（同路径）+ P2.2c 懒加载用例在真实 native 构建中验证。
 ## 6. 使用方（应用）需要做什么
 
 1. 构建期：应用定义 `AotHintRegistrar`/`MetaRegistrar` 子类（实体、方言、驱动等）并放置
