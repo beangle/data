@@ -1,11 +1,8 @@
-# 推荐 native-image 参数（需按应用微调）
+# 推荐 native-image 参数（需按应用微调；sample 实际参数见 build-native.sh / build.sbt）
 -H:+ReportExceptionStackTraces
 --enable-url-protocols=jar,resource
---initialize-at-build-time=org.hibernate,org.beangle
---initialize-at-run-time=org.h2.Driver
--Dhibernate.bytecode.use_reflection_optimizer=false
-# 反射/资源/序列化配置（由本工具生成）
--H:ReflectionConfigurationFiles=/home/chaostone/workspace/beangle/data/samples/native/src/main/resources/native-image/reflect-config.json
--H:ResourceConfigurationFiles=/home/chaostone/workspace/beangle/data/samples/native/src/main/resources/native-image/resource-config.json
--H:SerializationConfigurationFiles=/home/chaostone/workspace/beangle/data/samples/native/src/main/resources/native-image/serialization-config.json
--H:DynamicProxyConfigurationFiles=/home/chaostone/workspace/beangle/data/samples/native/src/main/resources/native-image/proxy-config.json
+# 反射/资源配置：
+#  - hibernate-core 内部面：beangle-hibernate-core.jar 内嵌 META-INF/native-image 自动发现
+#  - beangle 库面：beangle-data-hibernate.jar / beangle-commons.jar 内嵌（AotPlugin 生成）
+#  - 应用面：AotPlugin/ProxyPlugin 构建期生成 META-INF/native-image/beangle（AotHintRegistrar 声明）
+#  - 资源：sample 显式 -H:ResourceConfigurationFiles 见 build-native.sh
