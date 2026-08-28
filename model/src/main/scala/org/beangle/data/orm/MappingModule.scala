@@ -650,6 +650,13 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistrar {
     entityMappings.clear()
   }
 
+  /** 构建期 registering()/configure() 后暴露已绑定的实体类型集合
+   * （供 BeangleProxyGenerator 等构建期工具读取；未注册时为空）。
+   */
+  def entityTypes: scala.collection.Map[String, OrmEntityType] = {
+    if (null == mappings) Map.empty else mappings.entityTypes
+  }
+
   def index(name: String, unique: Boolean, properties: Any*): Unit = {
     val holder = currentHolder
     val pms = Collections.newBuffer[OrmProperty]
