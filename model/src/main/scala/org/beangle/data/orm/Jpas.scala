@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm
 
+import jakarta.persistence.{Embeddable, Entity as JpaEntity}
 import org.beangle.commons.bean.ProxyResolver
 import org.beangle.commons.lang.Strings
 import org.beangle.data.model.{Component, Entity}
@@ -27,16 +28,10 @@ object Jpas {
 
   var proxyResolver: ProxyResolver = ProxyResolver.Null
 
-  val JpaEntityAnn = Class.forName("jakarta.persistence.Entity").asInstanceOf[Class[Annotation]]
-
-  val JpaComponentAnn = Class.forName("jakarta.persistence.Embeddable").asInstanceOf[Class[Annotation]]
-
-  private[this] val NameMethodOnEntity = JpaEntityAnn.getMethod("name")
-
   def findEntityName(clazz: Class[_]): String = {
-    val annotation = clazz.getAnnotation(JpaEntityAnn)
+    val annotation = clazz.getAnnotation(classOf[JpaEntity])
     if (null != annotation) {
-      val name = NameMethodOnEntity.invoke(annotation).asInstanceOf[String]
+      val name = annotation.name()
       if (Strings.isNotBlank(name)) name else clazz.getName
     } else {
       clazz.getName
@@ -56,13 +51,13 @@ object Jpas {
   }
 
   def isEntity(clazz: Class[_]): Boolean = {
-    classOf[Entity[_]].isAssignableFrom(clazz) || null != clazz.getAnnotation(JpaEntityAnn)
+    classOf[Entity[_]].isAssignableFrom(clazz) || null != clazz.getAnnotation(classOf[JpaEntity])
   }
 
   def isComponent(clazz: Class[_]): Boolean = {
     classOf[Component].isAssignableFrom(clazz) ||
       null != clazz.getAnnotation(classOf[org.beangle.commons.bean.component]) ||
-      null != clazz.getAnnotation(JpaComponentAnn)
+      null != clazz.getAnnotation(classOf[Embeddable])
   }
 
   def entityClass(entity: AnyRef): Class[_] = {

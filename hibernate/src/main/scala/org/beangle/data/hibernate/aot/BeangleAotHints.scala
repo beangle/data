@@ -17,14 +17,17 @@
 
 package org.beangle.data.hibernate.aot
 
+import jakarta.persistence.{Embeddable, Entity}
 import org.beangle.commons.aot.AotHintRegistrar
+import org.beangle.commons.bean.component
+import org.beangle.commons.lang.annotation.value
 import org.beangle.data.hibernate.*
 import org.beangle.data.hibernate.cfg.{BindMetadataBuilderFactory, BindSourceProcessor, MappingService}
 import org.beangle.data.hibernate.format.{BeangleJsonFormatMapper, BeangleXmlFormatMapper}
 import org.beangle.data.hibernate.id.{AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, DateTimeStyleGenerator}
 import org.beangle.data.hibernate.jdbc.{JsonAccessor, NativeJsonJdbcType, NullableIntJdbcType, StringJsonJdbcType}
 import org.beangle.data.hibernate.udt.*
-import org.beangle.data.model.annotation.{archive, code, config, flash, flow, log, shard, temp}
+import org.beangle.data.model.annotation.*
 import org.beangle.data.orm.MappingModule
 
 /** beangle-data 库自身的 GraalVM native-image 反射/资源提示。
@@ -32,7 +35,9 @@ import org.beangle.data.orm.MappingModule
  * 构建期由 [[org.beangle.commons.aot.AotHintGenerator]] 扫描并生成
  * `META-INF/native-image` 配置，随 beangle-data-hibernate.jar 内嵌发布
  * （GraalVM 构建时自动发现并合并）。涵盖：
- *  - model 模块：`MappingModule` 与库自带注解（绑定期反射实例化/检查）
+ *  - model 模块：`MappingModule`、库自带注解与映射期 `getAnnotation`/`isAnnotationPresent`
+ *    查询的 `jakarta.persistence.Entity`/`Embeddable`、`commons` 的
+ *    `org.beangle.commons.bean.component`/`org.beangle.commons.lang.annotation.value`
  *  - hibernate 模块：被 Hibernate/运行时按名反射实例化或检查的类
  *  - 资源：`META-INF/beangle/ddl/.*`、`.*.zh_CN` message bundle、`META-INF/services/.*`
  *
@@ -41,11 +46,16 @@ import org.beangle.data.orm.MappingModule
  */
 class BeangleAotHints extends AotHintRegistrar {
   override def registering(): Unit = {
+
     hints.registerType(
-      classOf[MappingModule],
+      classOf[Entity], classOf[Embeddable],
+      classOf[component], classOf[value],
       classOf[archive], classOf[code], classOf[config], classOf[flash],
       classOf[flow], classOf[log], classOf[shard], classOf[temp],
-      classOf[ScalaPropertyAccessStrategy],
+    )
+
+    hints.registerType(
+      classOf[MappingModule], classOf[ScalaPropertyAccessStrategy],
       classOf[ScalaPropertyAccessor.BasicGetter], classOf[ScalaPropertyAccessor.BasicSetter],
       classOf[SpringSessionContext],
       classOf[BindMetadataBuilderFactory], classOf[BindSourceProcessor], classOf[MappingService],

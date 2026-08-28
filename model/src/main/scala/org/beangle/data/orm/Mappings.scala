@@ -17,6 +17,7 @@
 
 package org.beangle.data.orm
 
+import jakarta.persistence.Entity as JpaEntity
 import org.beangle.commons.bean.Properties
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.Strings
@@ -135,7 +136,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
   }
 
   def autobind(cls: Class[_], entityName: String, manifest: BeanInfo): OrmEntityType = {
-    if (cls.isAnnotationPresent(Jpas.JpaEntityAnn)) return null
+    if (cls.isAnnotationPresent(classOf[JpaEntity])) return null
 
     val fixedEntityName = if (entityName == null) Jpas.findEntityName(cls) else entityName
     val entity = refEntity(cls, fixedEntityName)
