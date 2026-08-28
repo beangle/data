@@ -20,6 +20,8 @@ package org.beangle.data.samples.nativeapp
 import org.beangle.data.dao.OqlBuilder
 import org.beangle.data.hibernate.HibernateEntityDao
 import org.beangle.data.hibernate.LocalSessionFactoryBean
+import org.beangle.commons.collection.page.PageLimit
+import org.beangle.commons.lang.math.Decimal5
 
 /** GraalVM native-image integration test application.
  *
@@ -39,9 +41,6 @@ object NativeApp {
   }
 
   private def doMain(args: Array[String]): Unit = {
-    // Set ByteBuddy property BEFORE any Hibernate/ByteBuddy code runs (GraalVM native-image compatible)
-    System.setProperty("net.bytebuddy.reproducible", "true")
-
     println("=== Beangle Data Hibernate Native-Image Test ===")
     println()
 
@@ -58,7 +57,8 @@ object NativeApp {
     builder.properties.put("hibernate.show_sql", "true")
     builder.properties.put("hibernate.hbm2ddl.auto", "create")
     builder.properties.put("hibernate.cache.use_second_level_cache", "true")
-    builder.properties.put("hibernate.javax.cache.provider", "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider")
+    builder.properties.put("hibernate.cache.use_query_cache", "true")
+    builder.properties.put("hibernate.cache.region.factory_class", "jcache")
     try {
       builder.init()
     } catch {
@@ -127,6 +127,100 @@ object NativeApp {
 
       val remaining = entityDao.search(OqlBuilder.from(classOf[Department], "d"))
       println(s"After delete: ${remaining.size} department(s) remaining")
+      println()
+
+      // 9. EXTENDED: associations, collections, enum, UDT, code-style id
+      println("--- EMPLOYEE / ROLE (associations + collections + enum + UDT) ---")
+      val eng = entityDao.get(classOf[Department], engineering.id)
+      val roleAdmin = new Role
+      roleAdmin.code = "ADMIN"
+      roleAdmin.name = "Admin"
+      val roleDev = new Role
+      roleDev.code = "DEV"
+      roleDev.name = "Developer"
+      val alice = new Employee
+      alice.code = "E001"
+      alice.name = "Alice"
+      alice.department = eng
+      alice.boss = None
+      alice.level = EmpLevel.Senior
+      alice.salary = Some(Decimal5.of("123.45"))
+      alice.roles += roleAdmin
+      roleAdmin.employee = alice
+      alice.roles += roleDev
+      roleDev.employee = alice
+      alice.tags.put("city", "BeiJing")
+      alice.updatedAt = java.time.Instant.now()
+      entityDao.saveOrUpdate(alice)
+      session.flush()
+      println()
+
+      // 10. lazy proxy + collection init
+      println("--- LAZY PROXY + COLLECTION ---")
+      val fresh = entityDao.get(classOf[Employee], alice.id)
+      println(s"  dept via lazy proxy: ${fresh.department.name}")
+      println(s"  boss: ${fresh.boss}")
+      println(s"  roles: ${fresh.roles.size}")
+      println(s"  tags: ${fresh.tags}")
+      println()
+
+      // 11. merge / evict / refresh
+      println("--- MERGE / EVICT / REFRESH ---")
+      val detached = entityDao.get(classOf[Employee], alice.id)
+      session.evict(detached)
+      detached.name = "Alice Smith"
+      val merged = session.merge(detached)
+      println(s"  merged name: ${merged.name}")
+      session.refresh(merged)
+      println(s"  refreshed name: ${merged.name}")
+      println()
+
+      // 12. L2 cache round-trip (Department/Employee are cacheable)
+      println("--- L2 CACHE ---")
+      entityDao.evict(classOf[Employee], alice.id)
+      val cached = entityDao.get(classOf[Employee], alice.id)
+      println(s"  L2 reload name: ${cached.name}")
+      println()
+
+      // 13. OQL: join / pagination / in / count
+      println("--- OQL (join / pagination / in / count) ---")
+      val jq = OqlBuilder.from(classOf[Employee], "e")
+      jq.where("e.department = :dept", eng)
+      jq.orderBy("e.code")
+      println(s"  join query: ${entityDao.search(jq).map(e => e.code).mkString(",")}")
+      val pq = OqlBuilder.from(classOf[Employee], "e")
+      pq.limit(PageLimit(1, 10))
+      pq.orderBy("e.code")
+      println(s"  pagination: ${entityDao.search(pq).size}")
+      val cq = OqlBuilder.from(classOf[Employee], "e")
+      cq.where("e.code in ('E001')")
+      println(s"  in-clause: ${entityDao.search(cq).size}")
+      println(s"  count by code: ${entityDao.count(classOf[Employee], "code" -> "E001")}")
+      println()
+
+      // 14. bulk update
+      println("--- BULK UPDATE ---")
+      val updated = entityDao.executeUpdate(
+        "update " + classOf[Employee].getName + " e set e.name = :name where e.code = :code",
+        Map("name" -> "Alice Updated", "code" -> "E001"))
+      println(s"  bulk updated rows: $updated")
+      println()
+
+      // 15. native SQL
+      println("--- NATIVE SQL ---")
+      val count = session.createNativeQuery("select count(*) from DEPARTMENTS").getSingleResult
+      println(s"  native count: $count")
+      println()
+
+      // 16. Course with code-style generator
+      println("--- COURSE (code id generator) ---")
+      val course = new Course
+      course.code = "CS101"
+      course.name = "Computer Science"
+      entityDao.saveOrUpdate(course)
+      println(s"  course id: ${course.id}")
+      val loadedCourse = entityDao.get(classOf[Course], course.id)
+      println(s"  loaded course: ${loadedCourse.code} ${loadedCourse.name}")
       println()
 
       tx.commit()
