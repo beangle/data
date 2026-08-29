@@ -37,7 +37,7 @@
 | 全面 scala.Dynamic 化（P0 增量） | ✅ | `OqlBuilder` 用 `Prop`、`declare` 用 `DeclareProp`（`model/.../orm/DeclareProp.scala`），运行期零类生成、零反射；**`AccessTracker`/`ByteBuddyHelper`/`AccessTrackerGenerator` 及全部 tracker 预生成链路已删除**（`byte_buddy` 依赖移除） |
 | AOT 提示统一接入（P1） | ✅ | `BeangleAotHints`（`AotHintRegistrar` 子类）声明库自身固定反射点/资源；hibernate-core 自身的反射元数据已内嵌进 fork jar（P2.1）；构建期经 `AotPlugin` 自动生成 `META-INF/native-image/beangle` 配置并随 beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单、fork 清单与应用清单三方拆分 |
 | Bean 元数据静态化（beanmeta.idx） | ✅ | 构建期 `MetaPlugin`（自动启用）读取 `beangle.xml` 声明的 `MetaRegistrar`（MappingModule/BindModule 等），经 `MetaGenerator` 生成二进制 `META-INF/beangle/beanmeta.idx`（编译期 dig 的精确类型）；运行期 `MetaModels` 启动时加载，`MappingModule.bind` 走 `BeanInfos.get` 查询，反射仅作无 idx 时的回退（详见 §1.5） |
-| native-image 冒烟（P3） | ✅ | `samples/native`：`MinimalTest` 与 `NativeApp`（MappingModule+H2+OQL+二级缓存/JCache）均完成 native 构建并运行成功；实测补齐项见 P2.1 与 P3.3 |
+| native-image 冒烟（P3） | ✅ | `sample` 工程（独立仓库 beangle/sample）：`MinimalTest` 与 `NativeApp`（MappingModule+H2+OQL+二级缓存/JCache）均完成 native 构建并运行成功；实测补齐项见 P2.1 与 P3.3 |
 | 懒加载代理构建期预生成（P2.2 主路线） | ✅ | `ProxyPlugin`（自动启用）读取 `beangle.xml` 的 jpa/orm mapping，经 `BeangleProxyGenerator` 用 ByteBuddy（构建期仅需）生成 `<Entity>$HibernateProxy.class`，随 `beangle/data/reflect-config.json`（按命名约定注册无参构造器、`writeReplace` 与 `allPublicMethods`，不开放字段）打进 jar；运行期由 fork 的 `BeangleBytecodeProvider` 按约定按名加载，`BeanInfos.get` 对代理类自动复用实体 BeanMeta（JVM 与 native 同路径，测试即覆盖） |
 | 回归测试 | ✅ | `model` 35、`hibernate` 24（含 LazyProxyTest）全部通过（`testOnly`）；`sbt clean compile` 全绿 |
 
@@ -297,7 +297,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 > ——这正是 Quarkus 的模型（`RuntimeBytecodeProvider` 是唯一运行期实现，JVM 与 native 同路径，没有模式检测/委托分支）。
 > 收益：bytebuddy 可彻底退出运行期 classpath（JVM + native）；本库 JVM 测试与 native 走同一代码路径，回归即覆盖。
 > 运行期 `BytecodeProvider` 必须落在 fork 里：Hibernate 7.4 的 `BytecodeProviderInitiator` 纯 ServiceLoader，
-> 且发现多个注册直接抛 `IllegalStateException`——samples/native 现有 `patchHibernateJar` 后门正是为此而设，本方案可将其删除。
+> 且发现多个注册直接抛 `IllegalStateException`——sample 工程原有的 `patchHibernateJar` 后门正是为此而设，本方案可将其删除。
 >
 > Quarkus 机制（已核实源码）：构建期 `ProxyBuildingHelper` 用 hibernate 自带 `ByteBuddyProxyHelper.buildUnloadedProxy`
 > 为每个可代理实体生成代理字节码并作为应用类打入产物，映射（实体类名→代理类名）存入 `PreGeneratedProxies`；
@@ -340,7 +340,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
   - 类名契约：代理类名固定为 `<Entity>$HibernateProxy`（fork 的 `BeangleBytecodeProvider` 与生成器共用
     Suffixing 命名策略，两参构造无随机后缀），reflect-config 按该约定输出、不回读文件系统，跨构建稳定。
 
-**P2.2c samples/native 集成 ✅（后门清理 + 懒加载 native 用例）**
+**P2.2c sample 工程集成 ✅（后门清理 + 懒加载 native 用例）**
 - ✅ 已删除 `patchHibernateJar` 任务、bytebuddy exclusion 与 `build-native.sh` 的 patch 步骤；
 - ✅ 已清理参数冲突：`use_reflection_optimizer` 相关参数移除（provider 恒返回 null 后不再生效），
   `--initialize-at-*` 整包参数全部删除（实测结论见 §3.4）；
@@ -386,12 +386,12 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 ### 5.2 P3：样例应用与验证
 
-**P3.1 samples/native 示例工程**
+**P3.1 sample 示例工程（独立仓库 beangle/sample，由 data 的 `samples/native` 迁出）**
 - MappingModule + H2 + `OqlBuilder`/`declare` + GraalVM 构建脚本（或 Makefile/CI 片段）；
 
 **P3.2 native-image 冒烟测试 ✅**
 - `MinimalTest` 与 `NativeApp`（`Mappings.autobind()` → 建库建表 → OQL 查询 → 增删改 → 2LC/JCache）
-  均完成 native 构建（`samples/native/build-native.sh`）与运行；
+  均完成 native 构建（`sample/build-native.sh`）与运行；
 - 纳入 CI：待办（本地已可重复执行）。
 
 **P3.3 按实测补齐配置 ✅（本轮冒烟）**
@@ -404,7 +404,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
   `reference.conf`/`application.conf`（后两者 caffeine/TypeSafe Config 资源，无库侧归属）；
 - sample 不再手写 `reflect-config.json`：应用面全部走声明式（`SampleAotHints` +
   `aot-registrars.txt`，实体由 `beangle.xml` 扫描自动注册，`SampleMapping` 本体由
-  `AotHintGenerator` 自动注册），`samples/native/.../native-image/reflect-config.json` 已删除；
+  `AotHintGenerator` 自动注册），`sample/src/main/resources/native-image/reflect-config.json` 已删除；
 - logback/slf4j 反射已收敛到 commons（`LogbackAotHints`，随 beangle-commons.jar 内嵌发布）；
 - 库/fork 级（随 jar 内嵌）：hibernate-core 反射（P2.1）、`EventType` 声明字段（P2.1）。
 - logback 实测注意点：

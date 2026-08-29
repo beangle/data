@@ -1,2 +1,0 @@
-# sample 应用的 GraalVM AOT 提示注册器（AotHintRegistrar 子类）
-org.beangle.data.samples.nativeapp.SampleAotHints

@@ -33,7 +33,7 @@ lazy val root = (project in file("."))
     common,
     publish / skip := true
   )
-  .aggregate(model, hibernate, sampleNative)
+  .aggregate(model, hibernate)
 
 lazy val model = (project in file("model"))
   .settings(
@@ -55,33 +55,3 @@ lazy val hibernate = (project in file("hibernate"))
     Test / parallelExecution := false
   )
   .dependsOn(model)
-
-// ---- GraalVM native-image sample ----
-lazy val sampleNative = (project in file("samples/native"))
-  .enablePlugins(NativeImagePlugin)
-  .settings(
-    name := "beangle-data-sample-native",
-    common,
-    publish / skip := true,
-    Compile / mainClass := Some("org.beangle.data.samples.nativeapp.NativeApp"),
-    nativeImageGraalHome := Def.uncached {
-      file(sys.env.getOrElse("GRAALVM_HOME",
-        sys.env.getOrElse("JAVA_HOME", "/home/chaostone/local/graalvm-jdk-21"))).toPath
-    },
-    nativeImageInstalled := true,
-    nativeImageOptions ++= Seq(
-      "--no-fallback",
-      "--enable-url-protocols=jar,resource",
-      "-H:+AddAllCharsets",
-      "-H:ResourceConfigurationFiles=" + baseDirectory.value + "/src/main/resources/native-image/resource-config.json",
-      "-H:+ReportExceptionStackTraces",
-      "--report-unsupported-elements-at-runtime"
-    ),
-    libraryDependencies ++= Seq(h2, HikariCP, logback_classic, logback_core),
-    libraryDependencies ++= Seq(
-      "com.github.ben-manes.caffeine" % "caffeine" % "3.2.0",
-      "com.github.ben-manes.caffeine" % "jcache" % "3.2.0",
-      "javax.cache" % "cache-api" % "1.1.1"
-    ),
-  )
-  .dependsOn(hibernate)

@@ -1,6 +1,6 @@
 # sbt 2 CAS jar 隐患（fullClasspath 返回旧 jar）
 
-> 结论：sbt 2 下，`show <proj>/Compile/fullClasspath` 对**本仓库子项目**返回的是
+> 结论：sbt 2 下，`show <proj>/Compile/fullClasspath` 对**工程自己的子项目**返回的是
 > **CAS 内容寻址 jar**，而不是 `classes` 目录。`compile` 只更新 `classes` 与
 > `resource_managed`，**不会重建 jar**；不先 `packageBin` 就直接用 `fullClasspath`
 > 跑 JVM/native 构建，会拿到旧 classes。
@@ -10,14 +10,14 @@
 - `target/out/jvm/u/<proj>/<proj>-<version>.jar` 不是普通文件，而是符号链接：
 
   ```bash
-  $ ls -l target/out/jvm/u/beangle-data-sample-native/beangle-data-sample-native-5.12.8-SNAPSHOT.jar
+  $ ls -l target/out/jvm/u/sample/sample-1.0.0-SNAPSHOT.jar   # 独立 sample 工程（beangle/sample）
   lrwxrwxrwx ... -> /home/chaostone/.cache/sbt/v2/cas/sha256-dc0f4a2ea34d44a19ee54119e257a1f3f1c9acd98bf5ff738b25bbab5f7aafa5-61518
   ```
 
-- `show sampleNative/Compile/fullClasspath` 的输出形如：
+- `show Compile/fullClasspath` 的输出形如：
 
   ```
-  * Attributed(${OUT}/jvm/u/beangle-data-sample-native/beangle-data-sample-native-5.12.8-SNAPSHOT.jar>sha256-dc0f4a2ea.../61518)
+  * Attributed(${OUT}/jvm/u/sample/sample-1.0.0-SNAPSHOT.jar>sha256-dc0f4a2ea.../61518)
   ```
 
   其中 `>sha256-.../N` 是 CAS 对象的标注，去掉后得到的路径就是上面的符号链接，
@@ -33,7 +33,7 @@ sbt 2 引入 CAS（content-addressed storage）缓存产物：jar 打包后按�
 
 ## 实际踩坑
 
-`samples/native` 中把 `eleColumn("value")` 改为 `eleColumn("tag_value")` 后，
+`sample` 工程（beangle/sample）中把 `eleColumn("value")` 改为 `eleColumn("tag_value")` 后，
 只 `compile` 便直接跑 JVM/native，生成的 DDL 仍旧是旧的 `value` 列名；
 `packageBin` 后再跑才生效。native 构建报 “classes 不全” 也多与此相关：
 `AotPlugin`/`MetaPlugin`/`ProxyPlugin` 的产物落在 `resource_managed`，
@@ -44,11 +44,11 @@ sbt 2 引入 CAS（content-addressed storage）缓存产物：jar 打包后按�
 在取 `fullClasspath` 之前显式打包依赖子项目：
 
 ```bash
-sbt -batch "model/Compile/packageBin; hibernate/Compile/packageBin; sampleNative/Compile/packageBin"
-sbt -batch "show sampleNative/Compile/fullClasspath"
+sbt -batch "Compile/packageBin"
+sbt -batch "show Compile/fullClasspath"
 ```
 
-`samples/native/build-native.sh` 已内置该顺序（Step 1 先 packageBin 再 show）。
+`sample/build-native.sh` 已内置该顺序（Step 1 先 packageBin 再 show）。
 `build-native.sh` 的 classpath 解析里对 `>sha256-.../N` 的 `sed` 去除是必要的：
 不剥离的话，该标注会让后面的路径解析失败。
 
@@ -58,4 +58,4 @@ sbt -batch "show sampleNative/Compile/fullClasspath"
   等价物、外部 JVM 启动）都受此影响，需先 packageBin。
 - `sbt run`/`sbt test` 走的是 `classes` 目录，不经过 jar，不受影响。
 - 外部依赖（`${CSR_CACHE}`/maven 本地仓的 jar）内容不变，无需担心；
-  只有**本仓库子项目**的 jar 需要每次变更后刷新。
+  只有**工程自己的 jar** 需要每次变更后刷新。

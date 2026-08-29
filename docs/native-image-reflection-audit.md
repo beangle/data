@@ -44,7 +44,7 @@
 
 ```bash
 # 1) 取 sample 的运行时 classpath（sbt 2 的虚拟路径展开同 build-native.sh 的做法）
-sbt -batch "show sampleNative/Compile/fullClasspath" ... > /tmp/native-cp.txt
+sbt -batch "show Compile/fullClasspath" ... > /tmp/native-cp.txt   # 在独立 sample 工程（beangle/sample）内
 
 # 2) 用 agent 跑一次完整冒烟（增删改查 + OQL + 二级缓存）
 java -agentlib:native-image-agent=config-output-dir=/tmp/agent-config \
@@ -99,7 +99,7 @@ agent 的 `reflect-config.json` 本身就是 GraalVM 配置 schema，条目可�
 cd /home/chaostone/workspace/beangle/hibernate && mvn -q -DskipTests install
 
 # 2) 重建 native 镜像（sample 侧配置全部由 AotPlugin/ProxyPlugin 构建期生成，无手写清单）
-cd /home/chaostone/workspace/beangle/data && ./samples/native/build-native.sh
+cd /home/chaostone/workspace/beangle/sample && ./build-native.sh
 
 # 3) 运行，判定 exit=0 且关键日志完整
 target/native/sample-native
