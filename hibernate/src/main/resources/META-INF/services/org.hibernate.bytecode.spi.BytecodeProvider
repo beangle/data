@@ -1,1 +1,1 @@
-org.beangle.data.hibernate.bytecode.BeangleBytecodeProvider
+org.beangle.data.hibernate.aot.PrebuiltProxyProvider

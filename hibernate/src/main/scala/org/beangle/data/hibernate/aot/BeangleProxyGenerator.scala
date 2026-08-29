@@ -41,7 +41,7 @@ import scala.jdk.CollectionConverters.*
  * `<Entity>$HibernateProxy` 的无参构造器、`writeReplace` 与 `allPublicMethods`）一起
  * 写入输出目录（sbt 插件传入 `Compile / resourceManaged`，随 jar 打包；
  * `.class` 作为资源也在运行期 classpath 上，可按名加载），
- * 供运行期自定义 BytecodeProvider 使用（见 fork 的 BeangleBytecodeProvider）。
+ * 供运行期自定义 BytecodeProvider 使用（见 fork 的 PrebuiltProxyProvider）。
  *
  * Usage:
  * {{{
@@ -175,7 +175,7 @@ object BeangleProxyGenerator {
   private def hasPublicNoArgConstructor(clazz: Class[_]): Boolean =
     clazz.getDeclaredConstructors.exists(c => c.getParameterCount == 0 && Modifier.isPublic(c.getModifiers))
 
-  /** 代理类名固定为 `<Entity>$HibernateProxy`（fork 的 BeangleBytecodeProvider 与
+  /** 代理类名固定为 `<Entity>$HibernateProxy`（fork 的 PrebuiltProxyProvider 与
    * 生成器共用 Suffixing 命名策略），按约定直接输出 reflect-config：
    * 注册无参构造器（实例化）、writeReplace（序列化钩子）与全部公开方法
    * （运行期 `BeanInfo.from` 需 `getMethods` 查询，见 `BeanInfos.get` 的父类回退）；

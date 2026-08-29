@@ -38,7 +38,7 @@
 | AOT 提示统一接入（P1） | ✅ | `BeangleAotHints`（`AotHintRegistrar` 子类）声明库自身固定反射点/资源；hibernate-core 自身的反射元数据已内嵌进 fork jar（P2.1）；构建期经 `AotPlugin` 自动生成 `META-INF/native-image/beangle` 配置并随 beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单、fork 清单与应用清单三方拆分 |
 | Bean 元数据静态化（beanmeta.idx） | ✅ | 构建期 `MetaPlugin`（自动启用）读取 `beangle.xml` 声明的 `MetaRegistrar`（MappingModule/BindModule 等），经 `MetaGenerator` 生成二进制 `META-INF/beangle/beanmeta.idx`（编译期 dig 的精确类型）；运行期 `MetaModels` 启动时加载，`MappingModule.bind` 走 `BeanInfos.get` 查询，反射仅作无 idx 时的回退（详见 §1.5） |
 | native-image 冒烟（P3） | ✅ | `sample` 工程（独立仓库 beangle/sample）：`MinimalTest` 与 `NativeApp`（MappingModule+H2+OQL+二级缓存/JCache）均完成 native 构建并运行成功；实测补齐项见 P2.1 与 P3.3 |
-| 懒加载代理构建期预生成（P2.2 主路线） | ✅ | `ProxyPlugin`（自动启用）读取 `beangle.xml` 的 jpa/orm mapping，经 `BeangleProxyGenerator` 用 ByteBuddy（构建期仅需）生成 `<Entity>$HibernateProxy.class`，随 `beangle/data/reflect-config.json`（按命名约定注册无参构造器、`writeReplace` 与 `allPublicMethods`，不开放字段）打进 jar；运行期由 fork 的 `BeangleBytecodeProvider` 按约定按名加载，`BeanInfos.get` 对代理类自动复用实体 BeanMeta（JVM 与 native 同路径，测试即覆盖） |
+| 懒加载代理构建期预生成（P2.2 主路线） | ✅ | `ProxyPlugin`（自动启用）读取 `beangle.xml` 的 jpa/orm mapping，经 `BeangleProxyGenerator` 用 ByteBuddy（构建期仅需）生成 `<Entity>$HibernateProxy.class`，随 `beangle/data/reflect-config.json`（按命名约定注册无参构造器、`writeReplace` 与 `allPublicMethods`，不开放字段）打进 jar；运行期由 fork 的 `PrebuiltProxyProvider` 按约定按名加载，`BeanInfos.get` 对代理类自动复用实体 BeanMeta（JVM 与 native 同路径，测试即覆盖） |
 | 回归测试 | ✅ | `model` 35、`hibernate` 24（含 LazyProxyTest）全部通过（`testOnly`）；`sbt clean compile` 全绿 |
 
 ### AOT 配置生成（方案：build 插件 AotPlugin + AotHintRegistrar，已接入 sbt）
@@ -306,8 +306,8 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 > 与默认构造器，`getProxy` 时 `new ByteBuddyInterceptor(...)` + `constructor.newInstance()` + `$$_hibernate_set_interceptor`；
 > `getReflectionOptimizer`/`getEnhancer` 返回 null（运行期零字节码生成）。
 
-**P2.2a fork 侧：`BeangleBytecodeProvider`（无条件预生成模式，beangle/hibernate）**
-- 新增 `org.beangle.hibernate.bytecode.BeangleBytecodeProvider implements BytecodeProvider`：
+**P2.2a fork 侧：`PrebuiltProxyProvider`（无条件预生成模式，beangle/hibernate）**
+- 新增 `org.beangle.data.hibernate.aot.PrebuiltProxyProvider implements BytecodeProvider`：
   - `getProxyFactoryFactory` **恒返回** `BeangleProxyFactoryFactory`：
     - 懒加载映射（实体→代理类名）→ 每个实体 `Class.forName` 查出预生成类 + `ByteBuddyInterceptor` +
       默认构造器（复刻 QuarkusProxyFactory ~120 行；`buildBasicProxyFactory` 返回 null，集合代理走
@@ -337,7 +337,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
     声明类未找到（编译进行中）退出码 2，`GeneratorSupport.retryGenerator` 退避重试（与 metaIndex/aotHints 同机制）；
   - bytebuddy **仅构建期需要**：插件自带 `net.bytebuddy:byte-buddy` 依赖并追加进生成器 classpath，
     应用运行期（JVM + native）都可排除；
-  - 类名契约：代理类名固定为 `<Entity>$HibernateProxy`（fork 的 `BeangleBytecodeProvider` 与生成器共用
+  - 类名契约：代理类名固定为 `<Entity>$HibernateProxy`（fork 的 `PrebuiltProxyProvider` 与生成器共用
     Suffixing 命名策略，两参构造无随机后缀），reflect-config 按该约定输出、不回读文件系统，跨构建稳定。
 
 **P2.2c sample 工程集成 ✅（后门清理 + 懒加载 native 用例）**
@@ -346,7 +346,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
   `--initialize-at-*` 整包参数全部删除（实测结论见 §3.4）；
 - ✅ 懒加载 native 用例已落地：`NativeApp` 扩充用例第 10 段（`LAZY PROXY + COLLECTION`）保存
   `Employee.department`（多对一，Hibernate 默认 lazy proxy）后重新 `get`，在**新实体上访问
-  关联并打印** `dept via lazy proxy`/`roles`/`tags`，native 二进制下由 `BeangleBytecodeProvider`
+  关联并打印** `dept via lazy proxy`/`roles`/`tags`，native 二进制下由 `PrebuiltProxyProvider`
   按名加载构建期预生成代理并触发初始化，构建 + 运行验证通过；
   JVM 侧同一路径由 `LazyProxyTest` 覆盖。
 

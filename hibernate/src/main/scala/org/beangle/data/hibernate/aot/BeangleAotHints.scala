@@ -56,7 +56,7 @@ class BeangleAotHints extends AotHintRegistrar {
     )
 
     hints.registerType(
-      classOf[org.beangle.data.hibernate.bytecode.BeangleBytecodeProvider],
+      classOf[PrebuiltProxyProvider],
       classOf[MappingModule], classOf[ScalaPropertyAccessStrategy],
       classOf[ScalaPropertyAccessor.BasicGetter], classOf[ScalaPropertyAccessor.BasicSetter],
       classOf[SpringSessionContext],

@@ -15,44 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.hibernate.bytecode
+package org.beangle.data.hibernate.aot
 
 import org.hibernate.HibernateException
-import org.hibernate.bytecode.enhance.spi.{EnhancementContext, Enhancer}
-import org.hibernate.bytecode.spi.{BasicProxyFactory, BytecodeProvider, ProxyFactoryFactory, ReflectionOptimizer}
+import org.hibernate.bytecode.spi.{BasicProxyFactory, ProxyFactoryFactory}
 import org.hibernate.engine.spi.{SessionFactoryImplementor, SharedSessionContractImplementor}
 import org.hibernate.internal.util.ReflectHelper
-import org.hibernate.property.access.spi.PropertyAccess
 import org.hibernate.proxy.{HibernateProxy, ProxyConfiguration, ProxyFactory}
 import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyInterceptor
 import org.hibernate.`type`.CompositeType
 
 import java.lang.reflect.Method
-
-/** 按名加载构建期预生成代理类的 Hibernate BytecodeProvider。
- *
- * 代理类在构建期由 [[org.beangle.data.hibernate.aot.BeangleProxyGenerator]] 生成并打进 jar，
- * 类名固定为 `<Entity>$HibernateProxy`；运行期（JVM 与 native 同路径）不再需要 ByteBuddy：
- * 本 provider 不引用任何 net.bytebuddy 类，`getProxy` 仅做无参实例化并挂上
- * `ByteBuddyInterceptor`（fork jar 内无 bytebuddy 引用的拦截器）。
- *
- * 通过 `META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider` 注册，
- * 取代 hibernate-core 默认的 bytebuddy provider（fork 已从 shaded jar 剔除该 SPI）。
- */
-class BeangleBytecodeProvider extends BytecodeProvider {
-
-  override def getProxyFactoryFactory(): ProxyFactoryFactory = new BeangleProxyFactoryFactory
-
-  override def getReflectionOptimizer(clazz: Class[_], getterNames: Array[String], setterNames: Array[String],
-      types: Array[Class[_]]): ReflectionOptimizer = {
-    throw new HibernateException(
-      "Using the ReflectionOptimizer is not possible when the configured BytecodeProvider is 'beangle'")
-  }
-
-  override def getReflectionOptimizer(clazz: Class[_], propertyAccessMap: java.util.Map[String, PropertyAccess]): ReflectionOptimizer = null
-
-  override def getEnhancer(enhancementContext: EnhancementContext): Enhancer = null
-}
 
 class BeangleProxyFactoryFactory extends ProxyFactoryFactory {
 
