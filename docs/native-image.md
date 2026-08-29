@@ -82,9 +82,9 @@ registrar 类**自动注册其类自身**（普通类注册构造器，Scala obj
 `EnumConverters` 等运行期枚举反射路径，应用无需为这些"机制面"逐类定制。详见
 beangle-commons 的 `docs/aot-usage.md` 与 `MetaPlugin`/`AotPlugin` 的 scaladoc。
 
-**尚未实现（P2/P3）：** Metadata 快照中**列定义/Mappings 部分的序列化**（Bean 元数据部分已落地为
-`beanmeta.idx`，见 §1.5）；samples/native 懒加载用例的 native 端到端验证与 CI 冒烟
-（`patchHibernateJar` 后门已删除，sbt 构建不再有任何后门）。
+**尚未实现（P2/P3）：** 仅剩 CI 冒烟（native 构建 + 运行接入 CI，本地已验证可重复执行）；
+Metadata 快照（**列定义/Mappings 部分的序列化**，Bean 元数据部分已落地为 `beanmeta.idx`，见 §1.5）
+与多方言目标互斥，默认不投入，见 P2.3。
 
 ---
 ## 1. 本库如何构建 ORM 元数据（代码声明式绑定）
@@ -229,7 +229,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 | Quarkus 做的事 | 本库的对应物 |
 |---|---|
 | 构建期 Jandex 扫描实体 | `Mappings.autobind()`（更简单：实体集合来自 MappingModule，无需扫描） |
-| 序列化 Metadata 运行期加载 | 可把 `Mappings`/Hibernate `Metadata` 序列化为快照（P2 可选优化） |
+| 序列化 Metadata 运行期加载 | **不采用**：快照必然冻结方言（建模自始依赖 engine，见 P2.3）；已落地的中性层是 `beanmeta.idx`（BeanInfo/属性类型静态化，见 §1.5） |
 | 预生成代理 + BytecodeProvider | 构建期预生成 Hibernate 代理类 + `BytecodeProvider` 原生实现（P2） |
 | 构建期增强 | 非阻塞、列为 P4：beangle dirty-checking 走快照比较，未增强也可正确工作（详见 §5.1 P2.2） |
 | 生成 reflect/proxy/resource/serialization 配置 | **`AotHintRegistrar` 子类 + `AotPlugin`（beangle AOT 机制，P1 交付）** |
@@ -365,14 +365,24 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 - 若做：先在 JVM 用 `hibernate-enhance-maven-plugin` 对 Scala 样例验证（私有字段 + accessor、`Option` 泛型擦除后的
   字段类型是主要兼容风险），再在 ProxyPlugin 里加 transformer 阶段；不建议与 P2.2 并行。
 
-**P2.3（可选，放 P3 冒烟之后）Metadata 快照（FastBoot）**
-- 任务：构建期序列化 `Mappings`/Hibernate `Metadata`，运行期反序列化加载，
+**P2.3 Metadata 快照（FastBoot）——与多方言目标结构性互斥，默认不投入**
+- 任务（原设想）：构建期序列化 `Mappings`/Hibernate `Metadata`，运行期反序列化加载，
   跳过 `BindSourceProcessor`/`Mappings.autobind` 的反射路径；
-- 收益：启动更快、绑定期反射面进一步收窄；
-- 前置：先跑通 P2.2 + P3.2 冒烟，实测绑定期反射是否成为 native 启动/运行瓶颈再决定
-  （beangle 绑定是声明式的，`BeanInfo` 已静态化，快照收益可能有限；工作量不小——Quarkus 是自定义序列化
-  PersistentClass 图 + bytecode recording）；
-- 验收：native 启动时间对比有可量化收益。
+- **结论：不做。** 建模从第一行就依赖方言，快照没有"方言无关版"：
+  - `Column.sqlType` 是引擎已解析的具名 `SqlType`（`engine.toType(code, precision, scale)`，
+    beangle-jdbc `Relation.scala`/`TypeNames`）——H2 得 `varchar`、Oracle 得 `varchar2`；
+  - 属性类 → 类型映射走 `SqlTypeMapping = new DefaultSqlTypeMapping(database.engine)`
+    （`Mappings.scala`）；标识符命名/引用规则走 `engine.toIdentifier`（建列、建索引）。
+  - 因此序列化 `OrmEntityType`/`Table`/`Column` 必然选定某方言；反序列化后切方言，
+    sqlType 名不合法（如 H2 上的 `varchar2`），仍需按新方言重渲染；
+- 中性层边界：只有 `beanmeta.idx`（BeanInfo/属性类型，与方言无关）已落地（§1.5）；
+  列定义层若要中性化，需重设计中间表示（列存 `java.sql.Types code + length/precision/scale`，
+  运行期按实际 engine 重渲染），且标识符规则也要中性化——工作量接近重写建模层；
+- 决策条件（满足其一才重新评估）：
+  - native 启动 profile 实测"运行期绑定/建模"成为启动或运行瓶颈（预计不是：绑定是纯数据结构计算，
+    反射/BeanInfo 层已静态化）；
+  - 出现明确单方言应用，可接受"换库 = 重新构建"（Quarkus 模型）；
+- 验收（若做）：native 启动时间对比有可量化收益，且不破坏多方言（或明确接受单方言）。
 
 ### 5.2 P3：样例应用与验证
 
@@ -406,7 +416,7 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 ### 5.3 可选优化（P4，非阻塞）
 
-- `Mappings.autobind` 中 `Reflections.newInstance` 的"采样默认值"逻辑改为可关闭（native 用配置/快照替代）；
+- `Mappings.autobind` 中 `Reflections.newInstance` 的"采样默认值"逻辑改为可关闭（native 用配置替代）；
 - 组件属性元信息尽量走编译期 `BeanInfoDigger`（`MappingMacro.bind` 已对 `bind[T]` 这么做，扩展到组件）；
 - `AotHintGenerator`/`AotPlugin` 与 fork 版本升级联动验证（版本升级时同步重跑）。
 
