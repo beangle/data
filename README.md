@@ -142,11 +142,12 @@ entityDao.count(classOf[User], "roles.id" -> 1L)
 
 构建期生成 native-image 配置与预生成类：
 
-库自身固定反射点/资源由 `BeangleAotHints` 与 `HibernateAotHints`（`AotHintRegistrar`
-子类，位于 `hibernate/.../aot`）声明——前者为 beangle 自身反射/资源，后者复刻
-hibernate-graalvm `GraalVMStaticFeature` 的静态反射注册（使用方可不再依赖 hibernate-graalvm）；
-`hibernate` 项目启用 `AotPlugin` 后在编译期自动生成 `META-INF/native-image` 配置并随 jar 内嵌；
-应用侧实体等配置由应用定义自己的 `AotHintRegistrar`/`MetaRegistrar` 子类并启用 `AotPlugin` 生成。
+库自身固定反射点/资源由 model 的 `ModelAotHints`（实体/组件/值类型/库注解）与 hibernate 的
+`BeangleAotHints`（Hibernate 按名反射类、DDL/zh_CN/services 资源）声明（均为 `AotHintRegistrar`
+子类）；hibernate-core 自身的反射元数据已内嵌进 fork jar（`HibernateAotHints` 已删除，
+不再依赖 hibernate-graalvm）；`model`/`hibernate` 项目启用 `AotPlugin` 后在编译期自动生成
+`META-INF/native-image` 配置并随各自 jar 内嵌；应用侧实体等配置由应用定义自己的
+`AotHintRegistrar`/`MetaRegistrar` 子类并启用 `AotPlugin` 生成。
 
 详见 [docs/native-image.md](docs/native-image.md)（可行性分析、阻塞点审计、分阶段改造计划与实现状态）。
 

@@ -22,7 +22,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 /** 预生成懒加载代理的运行期回归：session 清除后访问 to-one 关联，
- * 由 [[org.beangle.data.hibernate.aot.PrebuiltProxyProvider]] 按名实例化
+ * 由 [[org.beangle.data.hibernate.proxy.PrebuiltProxyProvider]] 按名实例化
  * `<Entity>$HibernateProxy` 并初始化（JVM 与 native 同一条代码路径）。
  */
 class LazyProxyTest extends AnyFunSpec, Matchers {

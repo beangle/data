@@ -15,28 +15,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.hibernate.aot
+package org.beangle.data.hibernate.proxy
 
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.lang.reflect.Reflections
 import org.beangle.data.orm.MappingModule
-import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl
+import org.hibernate.engine.spi.PrimeAmongSecondarySupertypes
 import org.hibernate.proxy.HibernateProxy
+import org.hibernate.proxy.ProxyConfiguration
 
 import java.io.File
 import java.lang.reflect.Modifier
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
-import net.bytebuddy.ClassFileVersion
+import net.bytebuddy.{ByteBuddy, ClassFileVersion, NamingStrategy}
 import net.bytebuddy.description.`type`.TypeDescription
+import net.bytebuddy.dynamic.DynamicType
+import net.bytebuddy.dynamic.scaffold.subclass.ConstructorStrategy
+import net.bytebuddy.dynamic.scaffold.TypeValidation
+import net.bytebuddy.implementation.bytecode.assign.Assigner
+import net.bytebuddy.implementation.{FieldAccessor, Implementation, MethodDelegation, SuperMethodCall}
+import net.bytebuddy.matcher.ElementMatchers.{isDeclaredBy, isFinalizer, isSynthetic, isVirtual, named, nameStartsWith, not, returns, takesNoArguments}
 import net.bytebuddy.pool.TypePool
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 /** 为 beangle.xml 声明的 MappingModule 所绑定的实体预生成 Hibernate 懒加载代理类。
  *
- * 构建期在构建 JVM 上运行（ByteBuddy 可用）：对每个可代理实体用 hibernate 自带
- * `ByteBuddyProxyHelper` 生成代理字节码，并输出 GraalVM reflect-config 片段
+ * 构建期在构建 JVM 上运行（ByteBuddy 可用）：对每个可代理实体复刻 hibernate
+ * `ByteBuddyProxyHelper` 的代理结构（子类化实体、实现 HibernateProxy、方法委托
+ * `ProxyConfiguration.InterceptorDispatcher`）生成代理字节码，并输出 GraalVM reflect-config 片段
  * （`META-INF/native-image/beangle/data/reflect-config.json`，按固定命名约定注册
  * `<Entity>$HibernateProxy` 的无参构造器、`writeReplace` 与 `allPublicMethods`）一起
  * 写入输出目录（sbt 插件传入 `Compile / resourceManaged`，随 jar 打包；
@@ -45,7 +53,7 @@ import scala.jdk.CollectionConverters.*
  *
  * Usage:
  * {{{
- * java -cp <classpath> org.beangle.data.hibernate.aot.BeangleProxyGenerator \
+ * java -cp <classpath> org.beangle.data.hibernate.proxy.BeangleProxyGenerator \
  *   --registrars mappings.txt -o <resourceDir>
  * }}}
  *
@@ -55,6 +63,9 @@ import scala.jdk.CollectionConverters.*
 object BeangleProxyGenerator {
 
   private val NativeConfigFile = "META-INF/native-image/beangle/data/reflect-config.json"
+  private val ProxyNamingSuffix = "HibernateProxy"
+  private val PersistentFieldReaderPrefix = "$$_hibernate_read_"
+  private val PersistentFieldWriterPrefix = "$$_hibernate_write_"
 
   def main(args: Array[String]): Unit = {
     val (registrarsFile, outDir) = parseArgs(args)
@@ -133,34 +144,68 @@ object BeangleProxyGenerator {
       failures: mutable.ListBuffer[String], missing: mutable.ListBuffer[String]): mutable.LinkedHashMap[String, String] = {
     val proxyNames = mutable.LinkedHashMap.empty[String, String]
     if (entities.isEmpty) return proxyNames
-    val provider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V21)
     val typePool = TypePool.Default.of(getClass.getClassLoader)
-    try {
-      val helper = provider.getByteBuddyProxyHelper()
-      val interfaces = java.util.List.of(TypeDescription.ForLoadedType.of(classOf[HibernateProxy]))
-      entities foreach { (name, clazz) =>
-        try {
-          val resolution = typePool.describe(name)
-          if (!resolution.isResolved) missing += name
-          else {
-            val unloaded = helper.buildUnloadedProxy(typePool, resolution.resolve(), interfaces)
-            val mainName = unloaded.getTypeDescription().getName()
-            unloaded.getAllTypes().asScala foreach { (td, bytes) =>
-              val out = new File(outDir, td.getName.replace('.', '/') + ".class")
-              out.getParentFile.mkdirs()
-              Files.write(out.toPath, bytes)
-            }
-            proxyNames.put(name, mainName)
-            System.out.println(s"Generated proxy $mainName for $name")
+    val interfaces = java.util.List.of(TypeDescription.ForLoadedType.of(classOf[HibernateProxy]))
+    entities foreach { (name, clazz) =>
+      try {
+        val resolution = typePool.describe(name)
+        if (!resolution.isResolved) missing += name
+        else {
+          val unloaded = buildProxy(typePool, resolution.resolve(), interfaces)
+          val mainName = unloaded.getTypeDescription().getName()
+          unloaded.getAllTypes().asScala foreach { (td, bytes) =>
+            val out = new File(outDir, td.getName.replace('.', '/') + ".class")
+            out.getParentFile.mkdirs()
+            Files.write(out.toPath, bytes)
           }
-        } catch {
-          case _: ClassNotFoundException | _: LinkageError => missing += name
-          case e: Throwable =>
-            failures += s"proxy generation failed for $name: ${e.getClass.getName}: ${e.getMessage}"
+          proxyNames.put(name, mainName)
+          System.out.println(s"Generated proxy $mainName for $name")
         }
+      } catch {
+        case _: ClassNotFoundException | _: LinkageError => missing += name
+        case e: Throwable =>
+          failures += s"proxy generation failed for $name: ${e.getClass.getName}: ${e.getMessage}"
       }
-    } finally provider.resetCaches()
+    }
     proxyNames
+  }
+
+  /** 复刻 hibernate `ByteBuddyProxyHelper`/`ByteBuddyState` 的代理结构（fork 已剔除这些实现）：
+   * 子类化实体、实现 HibernateProxy、虚拟方法委托 `ProxyConfiguration.InterceptorDispatcher`、
+   * 定义 `$$_hibernate_interceptor` 字段并实现 `ProxyConfiguration`，命名固定 `<Entity>$HibernateProxy`。
+   */
+  private def buildProxy(typePool: TypePool, persistentClass: TypeDescription,
+      interfaces: java.util.List[TypeDescription]): DynamicType.Unloaded[?] = {
+    val namingStrategy = new NamingStrategy.Suffixing(ProxyNamingSuffix,
+      new NamingStrategy.Suffixing.BaseNameResolver.ForFixedValue(persistentClass.getTypeName))
+    val builder: DynamicType.Builder[?] = new ByteBuddy(ClassFileVersion.JAVA_V21)
+      .`with`(TypeValidation.DISABLED)
+      .`with`(new Implementation.Context.Default.Factory.WithFixedSuffix("hibernate"))
+      .ignore(isSynthetic().and(named("getMetaClass")).and(returns(td => "groovy.lang.MetaClass" == td.getName)))
+      .`with`(namingStrategy)
+      .subclass(if interfaces.size() == 1 then persistentClass else TypeDescription.ForLoadedType.of(classOf[Object]),
+        ConstructorStrategy.Default.IMITATE_SUPER_CLASS_OPENING)
+      .implement(interfaces)
+      .method(isVirtual().and(not(isFinalizer())))
+        .intercept(MethodDelegation.to(classOf[ProxyConfiguration.InterceptorDispatcher]))
+      .method(nameStartsWith("$$_hibernate_").and(isVirtual())
+          .and(not(nameStartsWith(PersistentFieldReaderPrefix)))
+          .and(not(nameStartsWith(PersistentFieldWriterPrefix))))
+        .intercept(SuperMethodCall.INSTANCE)
+      .defineField(ProxyConfiguration.INTERCEPTOR_FIELD_NAME, classOf[ProxyConfiguration.Interceptor], Modifier.PRIVATE)
+      .implement(classOf[ProxyConfiguration])
+        .intercept(FieldAccessor.ofField(ProxyConfiguration.INTERCEPTOR_FIELD_NAME)
+          .withAssigner(Assigner.DEFAULT, Assigner.Typing.DYNAMIC))
+    // 忽略 PrimeAmongSecondarySupertypes 各 default 方法（asProxyConfiguration/asHibernateProxy 等），
+    // 避免被拦截器接管，保留接口默认实现返回 this/null 的语义
+    var finalBuilder = builder
+    classOf[PrimeAmongSecondarySupertypes].getMethods.foreach { method =>
+      finalBuilder = finalBuilder.ignoreAlso(
+        isDeclaredBy(classOf[PrimeAmongSecondarySupertypes]).and(named(method.getName)).and(takesNoArguments()))
+      finalBuilder = finalBuilder.ignoreAlso(
+        isDeclaredBy(method.getReturnType).and(named(method.getName)).and(takesNoArguments()))
+    }
+    finalBuilder.make(typePool)
   }
 
   /** 可代理性检查：接口/抽象/final/无公开无参构造器 均不可代理（Quarkus 同款规则）。 */

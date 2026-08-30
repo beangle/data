@@ -26,8 +26,7 @@ import org.beangle.commons.xml.Document
 import org.beangle.data.Logger
 import org.beangle.data.dao.Prop
 import org.beangle.data.orm.cfg.Profiles
-import org.beangle.jdbc.engine.Engines
-import org.beangle.jdbc.engine.Engine
+import org.beangle.jdbc.engine.{Engine, Engines}
 import org.beangle.jdbc.meta.*
 
 import java.sql.{Blob, Clob, Types}
@@ -53,9 +52,9 @@ object MappingModule {
   }
 
   /** Macro: 构建期（buildTime）用编译期挖掘的 BeanMeta（addMetas 收集 + bindImpl 干跑，精确类型不依赖
-    * beanmeta.idx）；运行期走 BeanInfos.get —— 精确类型来自构建期生成的 beanmeta.idx（MetaModels
-    * 加载），反射只是无 idx 时的回退。
-    */
+   * beanmeta.idx）；运行期走 BeanInfos.get —— 精确类型来自构建期生成的 beanmeta.idx（MetaModels
+   * 加载），反射只是无 idx 时的回退。
+   */
   def bind[T: Type](entityName: Expr[String], module: Expr[MappingModule])(implicit quotes: Quotes): Expr[EntityHolder[T]] = {
     import quotes.reflect.*
     val clazzSym = Symbol.requiredMethod("scala.Predef.classOf")
@@ -489,7 +488,7 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistrar {
   /** 构建期标记：registering()（生成器独立实例化）置真，运行期 configure() 直接走 binding() 保持假。 */
   private[orm] var buildTime = false
 
-  override def registering(): Unit = {
+  override final def registering(): Unit = {
     if (this.mappings == null) {
       this.mappings = MappingModule.buildMappings
       this.buildTime = true

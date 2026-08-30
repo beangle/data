@@ -17,18 +17,14 @@
 
 package org.beangle.data.hibernate.aot
 
-import jakarta.persistence.{Embeddable, Entity}
-import org.beangle.commons.aot.{AotHintRegistrar, AotPolicy}
-import org.beangle.commons.aot.AotPolicy.Category
-import org.beangle.commons.bean.component
-import org.beangle.commons.lang.annotation.value
+import org.beangle.commons.aot.AotHintRegistrar
 import org.beangle.data.hibernate.*
 import org.beangle.data.hibernate.cfg.{BindMetadataBuilderFactory, BindSourceProcessor, MappingService}
 import org.beangle.data.hibernate.format.{BeangleJsonFormatMapper, BeangleXmlFormatMapper}
 import org.beangle.data.hibernate.id.{AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, DateTimeStyleGenerator}
 import org.beangle.data.hibernate.jdbc.{JsonAccessor, NativeJsonJdbcType, NullableIntJdbcType, StringJsonJdbcType}
+import org.beangle.data.hibernate.proxy.PrebuiltProxyProvider
 import org.beangle.data.hibernate.udt.*
-import org.beangle.data.model.annotation.*
 import org.beangle.data.orm.MappingModule
 
 /** beangle-data 库自身的 GraalVM native-image 反射/资源提示。
@@ -36,9 +32,8 @@ import org.beangle.data.orm.MappingModule
  * 构建期由 [[org.beangle.commons.aot.AotHintGenerator]] 扫描并生成
  * `META-INF/native-image` 配置，随 beangle-data-hibernate.jar 内嵌发布
  * （GraalVM 构建时自动发现并合并）。涵盖：
- *  - model 模块：`MappingModule`、库自带注解与映射期 `getAnnotation`/`isAnnotationPresent`
- *    查询的 `jakarta.persistence.Entity`/`Embeddable`、`commons` 的
- *    `org.beangle.commons.bean.component`/`org.beangle.commons.lang.annotation.value`
+ *  - model 模块：`MappingModule`（实体注解的反射提示由 model 侧
+ *    [[org.beangle.data.model.aot.ModelAotHints]] 独立发布，见 beangle-data-model.jar）
  *  - hibernate 模块：被 Hibernate/运行时按名反射实例化或检查的类
  *  - 资源：`META-INF/beangle/ddl/.*`、`.*.zh_CN` message bundle、`META-INF/services/.*`
  *
@@ -47,13 +42,6 @@ import org.beangle.data.orm.MappingModule
  */
 class BeangleAotHints extends AotHintRegistrar {
   override def registering(): Unit = {
-
-    hints.registerType(
-      classOf[Entity], classOf[Embeddable],
-      classOf[component], classOf[value],
-      classOf[archive], classOf[code], classOf[config], classOf[flash],
-      classOf[flow], classOf[log], classOf[shard], classOf[temp],
-    )
 
     hints.registerType(
       classOf[PrebuiltProxyProvider],
@@ -71,12 +59,5 @@ class BeangleAotHints extends AotHintRegistrar {
       classOf[SetType], classOf[MapType],
       classOf[ScalaPersistentBag], classOf[ScalaPersistentSeq], classOf[ScalaPersistentSet], classOf[ScalaPersistentMap]
     )
-
-    // beangle-data-model 的 id 访问基类：运行期 BeanInfo.from 经实体 getMethods 拿到
-    // 继承的 id/id_=/persisted/equals（均 public），默认 allPublicMethods 即覆盖。
-    // NumId 覆盖 LongId/IntId/ShortId 家族（它们不声明新方法）；StringId 自声明 id 访问器
-    hints.registerType(classOf[org.beangle.data.model.NumId[_]], classOf[org.beangle.data.model.StringId])
-
-    hints.registerPattern("META-INF/beangle/ddl/.*", ".*\\.zh_CN", "META-INF/services/.*")
   }
 }

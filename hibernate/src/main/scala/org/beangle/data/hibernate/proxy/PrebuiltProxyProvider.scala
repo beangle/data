@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.hibernate.aot
+package org.beangle.data.hibernate.proxy
 
 import org.hibernate.HibernateException
 import org.hibernate.bytecode.enhance.spi.{EnhancementContext, Enhancer}
@@ -27,7 +27,7 @@ import org.hibernate.property.access.spi.PropertyAccess
  * 代理类在构建期由 [[BeangleProxyGenerator]] 生成并打进 jar，
  * 类名固定为 `<Entity>$HibernateProxy`；运行期（JVM 与 native 同路径）不再需要 ByteBuddy：
  * 本 provider 不引用任何 net.bytebuddy 类，`getProxy` 仅做无参实例化并挂上
- * `ByteBuddyInterceptor`（fork jar 内无 bytebuddy 引用的拦截器）。
+ * [[BeangleInterceptor]]（本包提供的拦截器，由上游 `ByteBuddyInterceptor` 改名而来）。
  *
  * 通过 `META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider` 注册，
  * 取代 hibernate-core 默认的 bytebuddy provider（fork 已从 shaded jar 剔除该 SPI）。
@@ -46,4 +46,3 @@ class PrebuiltProxyProvider extends BytecodeProvider {
 
   override def getEnhancer(enhancementContext: EnhancementContext): Enhancer = null
 }
-

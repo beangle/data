@@ -87,8 +87,9 @@ agent 的 `reflect-config.json` 本身就是 GraalVM 配置 schema，条目可�
   （多为只查询、代码可容忍空结果，或由其他机制覆盖）。
 
 > 注意：删除动作只针对“失败驱动攒出来的手写清单”（fork 的 268 项、sample 的 122 项）。
-> `BeangleAotHints`/`LogbackAotHints` 经 `AotPlugin` **生成**的库面配置（data-hibernate 49 项、
-> commons 9 项）是库的**声明面**，为所有下游应用服务，不能凭一个应用的轨迹删除，需逐类论证。
+> `ModelAotHints`/`BeangleAotHints`/`LogbackAotHints` 经 `AotPlugin` **生成**的库面配置
+> （data-model 13 项、data-hibernate 40 项、commons 9 项）是库的**声明面**，为所有下游应用服务，
+> 不能凭一个应用的轨迹删除，需逐类论证。
 
 ---
 

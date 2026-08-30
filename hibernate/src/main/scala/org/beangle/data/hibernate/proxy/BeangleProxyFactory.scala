@@ -15,14 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.beangle.data.hibernate.aot
+package org.beangle.data.hibernate.proxy
 
 import org.hibernate.HibernateException
 import org.hibernate.bytecode.spi.{BasicProxyFactory, ProxyFactoryFactory}
 import org.hibernate.engine.spi.{SessionFactoryImplementor, SharedSessionContractImplementor}
 import org.hibernate.internal.util.ReflectHelper
 import org.hibernate.proxy.{HibernateProxy, ProxyConfiguration, ProxyFactory}
-import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyInterceptor
 import org.hibernate.`type`.CompositeType
 
 import java.lang.reflect.Method
@@ -45,7 +44,7 @@ class BeangleBasicProxyFactory(superClassOrInterface: Class[_]) extends BasicPro
 
 /** 与 hibernate `ByteBuddyProxyFactory` 同协议，仅把"构建期生成代理类"换成"按命名约定加载"：
  * `postInstantiate` 记录实体信息并按 `<Entity>$HibernateProxy` 定位代理类，
- * `getProxy` 无参实例化代理并挂上 `ByteBuddyInterceptor`（运行期零字节码生成）。
+ * `getProxy` 无参实例化代理并挂上 [[BeangleInterceptor]]（运行期零字节码生成）。
  */
 class BeangleProxyFactory extends ProxyFactory with Serializable {
 
@@ -71,7 +70,7 @@ class BeangleProxyFactory extends ProxyFactory with Serializable {
   }
 
   override def getProxy(id: Any, session: SharedSessionContractImplementor): HibernateProxy = {
-    val interceptor = new ByteBuddyInterceptor(entityName, persistentClass, interfaces, id,
+    val interceptor = new BeangleInterceptor(entityName, persistentClass, interfaces, id.asInstanceOf[AnyRef],
       getIdentifierMethod, setIdentifierMethod, componentIdType, session, overridesEquals)
     try {
       val proxy = proxyClass.getConstructor().newInstance().asInstanceOf[ProxyConfiguration]

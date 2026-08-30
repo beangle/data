@@ -35,7 +35,7 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | 全面 scala.Dynamic 化（P0 增量） | ✅ | `OqlBuilder` 用 `Prop`、`declare` 用 `DeclareProp`（`model/.../orm/DeclareProp.scala`），运行期零类生成、零反射；**`AccessTracker`/`ByteBuddyHelper`/`AccessTrackerGenerator` 及全部 tracker 预生成链路已删除**（`byte_buddy` 依赖移除） |
-| AOT 提示统一接入（P1） | ✅ | `BeangleAotHints`（`AotHintRegistrar` 子类）声明库自身固定反射点/资源；hibernate-core 自身的反射元数据已内嵌进 fork jar（P2.1）；构建期经 `AotPlugin` 自动生成 `META-INF/native-image/beangle` 配置并随 beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单、fork 清单与应用清单三方拆分 |
+| AOT 提示统一接入（P1） | ✅ | `ModelAotHints`（model 模块，实体/组件/值类型/库注解）与 `BeangleAotHints`（hibernate 模块，Hibernate 按名反射类/资源）声明库自身固定反射点/资源；hibernate-core 自身的反射元数据已内嵌进 fork jar（P2.1）；构建期经 `AotPlugin` 自动生成 `META-INF/native-image/beangle` 配置并随 beangle-data-model.jar / beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单、fork 清单与应用清单三方拆分 |
 | Bean 元数据静态化（beanmeta.idx） | ✅ | 构建期 `MetaPlugin`（自动启用）读取 `beangle.xml` 声明的 `MetaRegistrar`（MappingModule/BindModule 等），经 `MetaGenerator` 生成二进制 `META-INF/beangle/beanmeta.idx`（编译期 dig 的精确类型）；运行期 `MetaModels` 启动时加载，`MappingModule.bind` 走 `BeanInfos.get` 查询，反射仅作无 idx 时的回退（详见 §1.5） |
 | native-image 冒烟（P3） | ✅ | `sample` 工程（独立仓库 beangle/sample）：`MinimalTest` 与 `NativeApp`（MappingModule+H2+OQL+二级缓存/JCache）均完成 native 构建并运行成功；实测补齐项见 P2.1 与 P3.3 |
 | 懒加载代理构建期预生成（P2.2 主路线） | ✅ | `ProxyPlugin`（自动启用）读取 `beangle.xml` 的 jpa/orm mapping，经 `BeangleProxyGenerator` 用 ByteBuddy（构建期仅需）生成 `<Entity>$HibernateProxy.class`，随 `beangle/data/reflect-config.json`（按命名约定注册无参构造器、`writeReplace` 与 `allPublicMethods`，不开放字段）打进 jar；运行期由 fork 的 `PrebuiltProxyProvider` 按约定按名加载，`BeanInfos.get` 对代理类自动复用实体 BeanMeta（JVM 与 native 同路径，测试即覆盖） |
@@ -49,6 +49,9 @@ commons 侧：
   随 beangle-commons.jar 内嵌 `META-INF/native-image/beangle`，使用方无需手写 logback 反射项。
 
 库侧（beangle-data 自身）：
+- `ModelAotHints`（`org.beangle.data.model.aot`，`AotHintRegistrar` 子类，随 beangle-data-model.jar
+  内嵌）声明映射期反射查询的注解：`jakarta.persistence.Entity`/`Embeddable`、`commons` 的
+  `component`/`value` 与 model 自身的 `archive`/`code`/`config`/`flash`/`flow`/`log`/`shard`/`temp`；
 - `BeangleAotHints`（`org.beangle.data.hibernate.aot`，`AotHintRegistrar` 子类）声明库自身固定
   反射点与资源 pattern（MappingModule、Hibernate 按名反射类、DDL/zh_CN/services 资源）；
 - hibernate-core 自身的反射元数据（`EventType` 声明字段、监听器数组、jboss-logging logger、
@@ -60,10 +63,10 @@ commons 侧：
   native-image.properties），随 jar 自动发现应用——库侧不再需要 `HibernateAotHints`
   （已删除，也不再依赖 hibernate-graalvm）。
 
-`hibernate` 项目（`AotPlugin` 自动启用）每次 `compile` 由 `AotHintGenerator` 依据
+`model`/`hibernate` 项目（`AotPlugin` 自动启用）每次 `compile` 由 `AotHintGenerator` 依据各自
 `META-INF/beangle/aot-registrars.txt` 清单加载上述子类并生成 `reflect-config.json` /
 `resource-config.json`（写入 `Compile / resourceManaged` 的 `META-INF/native-image/beangle`），
-随 beangle-data-hibernate.jar 内嵌发布。
+分别随 beangle-data-model.jar / beangle-data-hibernate.jar 内嵌发布。
 
 `MappingModule.bind` 的运行期分支通过 `BeanInfos.get` 查询精确 BeanMeta（不依赖编译期挖掘）：
 精确类型来自构建期生成的 `beanmeta.idx`（`MetaModels` 启动时加载 `classpath*:META-INF/beangle/beanmeta.idx`），
@@ -176,7 +179,7 @@ GraalVM native-image 是"封闭世界（closed world）"分析：
 | `DomainFactory` | 仅收集 MappingService 实体类型，无反射 | — |
 | `ConvertPopulator`/meta `Type`/Domain | `Reflections.newInstance` | 实体类（应用运行期使用） |
 | `JsonAPI` | `getter.invoke` 序列化 | 实体类方法 |
-| `Jpas` | `clazz.getAnnotation(Entity/Embeddable)`（`findEntityName`/`isEntity`/`isComponent`，`OqlBuilder.from` 运行期调用） | `jakarta.persistence.Entity`/`Embeddable`（已由 `BeangleAotHints` 注册） |
+| `Jpas` | `clazz.getAnnotation(Entity/Embeddable)`（`findEntityName`/`isEntity`/`isComponent`，`OqlBuilder.from` 运行期调用） | `jakarta.persistence.Entity`/`Embeddable`（已由 `ModelAotHints` 注册，model 模块） |
 | Hibernate 自身 | Dialect、JCache、类型等（`Class.forName` 按名加载） | 见 4.3（走 fork 元数据） |
 
 ### 3.3 资源与 SPI
@@ -267,7 +270,9 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 
 - **库侧全面 scala.Dynamic 化**：`OqlBuilder` 用 `Prop`、`MappingModule.declare` 用 `DeclareProp`，
   运行期零类生成、零反射；`AccessTracker`/ByteBuddy 已删除，`byte_buddy` 依赖移除；
-- **beangle AOT 机制（P1 交付，P2.1 收口）**：库侧 `BeangleAotHints` + `AotPlugin`（自动启用）内嵌库清单；hibernate-core 反射元数据内嵌 fork jar（P2.1），`HibernateAotHints` 已删除，不再依赖 hibernate-graalvm；
+- **beangle AOT 机制（P1 交付，P2.1 收口）**：库侧 model 的 `ModelAotHints` + hibernate 的
+  `BeangleAotHints` + `AotPlugin`（自动启用）内嵌库清单；hibernate-core 反射元数据内嵌 fork jar
+  （P2.1），`HibernateAotHints` 已删除，不再依赖 hibernate-graalvm；
   应用侧定义 `AotHintRegistrar`/`MetaRegistrar` 子类并放置锚定文件，`AotPlugin` 自动生成
   `reflect-config.json` / `resource-config.json` / `proxy-config.json` / `serialization-config.json`；
 - 文档：本文件 + [dynamic-oql.md](dynamic-oql.md)。
@@ -307,16 +312,17 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 > `getReflectionOptimizer`/`getEnhancer` 返回 null（运行期零字节码生成）。
 
 **P2.2a fork 侧：`PrebuiltProxyProvider`（无条件预生成模式，beangle/hibernate）**
-- 新增 `org.beangle.data.hibernate.aot.PrebuiltProxyProvider implements BytecodeProvider`：
+- 新增 `org.beangle.data.hibernate.proxy.PrebuiltProxyProvider implements BytecodeProvider`：
   - `getProxyFactoryFactory` **恒返回** `BeangleProxyFactoryFactory`：
-    - 懒加载映射（实体→代理类名）→ 每个实体 `Class.forName` 查出预生成类 + `ByteBuddyInterceptor` +
+    - 懒加载映射（实体→代理类名）→ 每个实体 `Class.forName` 查出预生成类 + `BeangleInterceptor` +
       默认构造器（复刻 QuarkusProxyFactory ~120 行；`buildBasicProxyFactory` 返回 null，集合代理走
       PersistentCollection 自带类）；
     - 按实体查不到（构建期跳过 final/无默认构造器，或应用未跑构建插件）→ 抛 `HibernateException`（Quarkus 同款，
       Hibernate 捕获后 warning 并为该实体退回 eager），**不依赖映射文件存在与否做分支**；
   - `getReflectionOptimizer`（两个重载）恒返回 null → `hibernate.bytecode.use_reflection_optimizer` 属性不再生效；
   - `getEnhancer` 恒返回 null（运行期零字节码生成/增强）；
-  - **不引用任何 net.bytebuddy 类**（`ByteBuddyInterceptor` 是 hibernate-core 自带类）→ bytebuddy 可彻底退出运行期 classpath；
+  - **不引用任何 net.bytebuddy 类**（`BeangleInterceptor` 是本库在 `org.beangle.data.hibernate.proxy` 包的
+    Scala 实现，fork 已剔除全部 bytebuddy 类）→ bytebuddy 可彻底退出运行期 classpath；
   - fork 的 `META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider` 改为指向它（保持唯一注册）。
 
 **P2.2b data/build 侧：`ProxyPlugin`（sbt 构建期一律预生成）**
@@ -325,9 +331,10 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
     与 `metaIndex` 同源声明）；**有 mapping 即生成，JVM 与 native 一致**；
   - 实体集合：直接实例化 mapping 声明的 `MappingModule` 子类、`registering()` 后取 `entityTypes`
     （`MappingModule.entityTypes` 构建期接口，不依赖 beanmeta.idx/编译器挖掘）；
-  - 生成器 main `org.beangle.data.hibernate.aot.BeangleProxyGenerator`（随 beangle-data-hibernate 发布）在
+  - 生成器 main `org.beangle.data.hibernate.proxy.BeangleProxyGenerator`（随 beangle-data-hibernate 发布）在
     构建 JVM 上对每个可代理实体（跳过 interface/abstract/final/无公开无参构造器）
-    `ByteBuddyProxyHelper.buildUnloadedProxy` 产出字节码 → 全部写入 `Compile / resourceManaged`
+    复刻 `ByteBuddyProxyHelper` 的代理结构（原生 net.bytebuddy，fork 已剔除 hibernate 实现）产出字节码
+    → 全部写入 `Compile / resourceManaged`
     （`.class` 作为资源随 jar 打包，构建/运行期 classpath 均可按名加载，JVM 与 native 同一路径）：
     - **`META-INF/native-image/beangle/data/reflect-config.json`**（代理类注册：
       类名按约定固定为 `<Entity>$HibernateProxy`，注册无参构造器、`writeReplace` 与
@@ -398,8 +405,9 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
 - `build-native.sh`/`native-image-args.txt`/`build.sbt` 已统一：删除 `patchHibernateJar`、
   `use_reflection_optimizer`、byte-buddy exclusion 与全部 `--initialize-at-*` 整包参数；
 - 资源 pattern 已收敛：`logback.xml`/`META-INF/beangle/beanmeta.idx` 由 commons
-  （`LogbackAotHints`/`MetaAotHints`，随 beangle-commons.jar 内嵌注册），`META-INF/services`、
-  `META-INF/beangle/ddl`、`*.zh_CN` 由 data-hibernate（`BeangleAotHints`）注册；
+  （`LogbackAotHints`/`MetaAotHints`，随 beangle-commons.jar 内嵌注册），实体/组件/库注解由
+  data-model（`ModelAotHints`）注册，`META-INF/services`、`META-INF/beangle/ddl`、`*.zh_CN`
+  由 data-hibernate（`BeangleAotHints`）注册；
   sample 的 `resource-config.json` 仅保留 jdbc engine keywords、`beangle.xml`、caffeine 与
   `reference.conf`/`application.conf`（后两者 caffeine/TypeSafe Config 资源，无库侧归属）；
 - sample 不再手写 `reflect-config.json`：应用面全部走声明式（`SampleAotHints` +
