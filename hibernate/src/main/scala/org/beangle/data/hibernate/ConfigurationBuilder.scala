@@ -90,6 +90,10 @@ class ConfigurationBuilder(val dataSource: DataSource, env: CfgEnvironment, conf
 
     //PersistenceSettings
     addDefault(PersistenceSettings.SCANNER_DISCOVERY, "none")
+    // 禁止 Hibernate 启动时为每个实体探测 JPA 静态元模型类（<Entity>_），
+    // 该探测通过 Class.forName(entityClass.getName() + "_") 执行，
+    // 在未配置 hibernate-jpamodelgen 的项目中必然抛出 ClassNotFoundException。
+    addDefault("hibernate.jpa.static_metamodel.population", "disabled")
 
     if (!properties.contains("hibernate.javax.cache.provider")) {
       addDefault("hibernate.javax.cache.missing_cache_strategy", "create")

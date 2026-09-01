@@ -19,8 +19,8 @@ package org.beangle.data.dao
 
 import org.beangle.commons.collection.Order
 import org.beangle.commons.collection.page.PageLimit
-import org.beangle.commons.lang.{Assert, Strings}
 import org.beangle.commons.lang.Strings.*
+import org.beangle.commons.lang.{Assert, Strings}
 import org.beangle.data.dao.OqlBuilder.Var
 
 object AbstractQueryBuilder {
@@ -198,6 +198,7 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
 
   /** 把 select/groupBy/orderBy 的入参渲染为带别名的列表达式 */
   protected def renderColumn(value: Any): String = value match {
+    case null => ""
     case p: Prop => p.fillin(alias)
     case v: Var => v.fillin(alias)
     case s: String => Strings.replace(s, "_.", alias + ".")

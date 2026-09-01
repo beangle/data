@@ -18,7 +18,7 @@
 package org.beangle.data.model.aot
 
 import jakarta.persistence.{Embeddable, Entity}
-import org.beangle.commons.aot.AotHintRegistrar
+import org.beangle.commons.aot.{AotHintRegistrar, AotPolicy}
 import org.beangle.commons.bean.component
 import org.beangle.commons.lang.annotation.value
 import org.beangle.data.model.annotation.*
@@ -33,6 +33,7 @@ import org.beangle.data.model.annotation.*
  * 以及 model 自身的 `archive`/`code`/`config`/`flash`/`flow`/`log`/`shard`/`temp` 注解。
  */
 class ModelAotHints extends AotHintRegistrar {
+
   override def registering(): Unit = {
     hints.registerType(
       classOf[Entity], classOf[Embeddable],
@@ -44,6 +45,37 @@ class ModelAotHints extends AotHintRegistrar {
     // 继承的 id/id_=/persisted/equals（均 public），默认 allPublicMethods 即覆盖。
     // NumId 覆盖 LongId/IntId/ShortId 家族（它们不声明新方法）；StringId 自声明 id 访问器
     hints.registerType(classOf[org.beangle.data.model.NumId[_]], classOf[org.beangle.data.model.StringId])
+
+    // model 核心类与接口：运行期 BeanInfos/MetaLoader 反射 dig 属性
+    hints.registerType(
+      classOf[org.beangle.data.model.Entity[?]],
+      classOf[org.beangle.data.model.IntId],
+      classOf[org.beangle.data.model.IntIdEntity],
+      classOf[org.beangle.data.model.LongId],
+      classOf[org.beangle.data.model.LongIdEntity],
+      classOf[org.beangle.data.model.meta.Domain])
+
+    // pojo 特征接口：运行期 getDeclaredMethods 检测 getter/setter
+    hints.registerType(
+      classOf[org.beangle.data.model.pojo.Coded],
+      classOf[org.beangle.data.model.pojo.Enabled],
+      classOf[org.beangle.data.model.pojo.Hierarchical[?]],
+      classOf[org.beangle.data.model.pojo.Named],
+      classOf[org.beangle.data.model.pojo.Remark],
+      classOf[org.beangle.data.model.pojo.TemporalOn],
+      classOf[org.beangle.data.model.pojo.Updatable])
+
+    // 分页模型：模板 SeqModel 经 BeanInfos/MetaLoader 反射取
+    // pageIndex/pageSize/totalItems 等
+    hints.registerType(classOf[org.beangle.commons.collection.page.SinglePage[?]], AotPolicy.bean)
+
+    // dao/orm 层
+    hints.registerType(
+      classOf[org.beangle.data.dao.EntityDao],
+      classOf[org.beangle.data.dao.OqlBuilder.type],
+      classOf[org.beangle.data.orm.AbstractDaoTask])
+    hints.registerType(classOf[org.beangle.data.orm.MappingModule.type])
+
     hints.registerPattern("META-INF/beangle/ddl/.*", ".*\\.zh_CN")
   }
 }
