@@ -65,10 +65,6 @@ class ModelAotHints extends AotHintRegistrar {
       classOf[org.beangle.data.model.pojo.TemporalOn],
       classOf[org.beangle.data.model.pojo.Updatable])
 
-    // 分页模型：模板 SeqModel 经 BeanInfos/MetaLoader 反射取
-    // pageIndex/pageSize/totalItems 等
-    hints.registerType(classOf[org.beangle.commons.collection.page.SinglePage[?]], AotPolicy.bean)
-
     // dao/orm 层
     hints.registerType(
       classOf[org.beangle.data.dao.EntityDao],
