@@ -36,18 +36,25 @@ lazy val root = (project in file("."))
   .aggregate(model, hibernate)
 
 lazy val model = (project in file("model"))
+  .enablePlugins(MetaPlugin)
   .settings(
     name := "beangle-data-model",
     common,
+    // 库项目只在测试期生成 beanmeta.idx，主 scope 不外溢到发布 jar
+    Compile / metaIndex := Def.uncached(Option.empty[File]),
     libraryDependencies ++= Seq(beangle_commons, beangle_jdbc, jpa, slf4j),
     libraryDependencies ++= Seq(logback_classic % "test", logback_core % "test", scalatest),
     Test / parallelExecution := false
   )
 
 lazy val hibernate = (project in file("hibernate"))
+  .enablePlugins(MetaPlugin, ProxyPlugin)
   .settings(
     name := "beangle-data-hibernate",
     common,
+    // 库项目只在测试期生成 beanmeta.idx 与懒加载代理，主 scope 不外溢到发布 jar
+    Compile / metaIndex := Def.uncached(Option.empty[File]),
+    Compile / proxyClasses := Def.uncached(Seq.empty[File]),
     libraryDependencies ++= Seq(hibernate_core, hibernate_jcache, spring_tx, spring_aop),
     libraryDependencies ++= Seq(byte_buddy % "optional"),
     libraryDependencies ++= Seq(logback_classic % "test", logback_core % "test", scalatest, ehcache % "test"),
