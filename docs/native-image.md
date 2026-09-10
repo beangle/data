@@ -7,6 +7,20 @@
 > 1. 本项目（一个**库**，且 ORM 绑定是**代码声明式**而非注解）相比 Quarkus 这类框架，native-image 化会不会被"加大阻碍"？
 > 2. 需要做哪些必要的更改？
 
+> **⚠️ 2026-09 设计演进（终端集中式，随 beangle/build 下一插件版本落地）**：AOT/Bean
+> 元数据/懒加载代理的**生成**正从"库项目各自启用插件、把配置内嵌进自身 jar"迁移为
+> **终端集中式**——库项目将不再启用 `AotPlugin`/`MetaPlugin`/`ProxyPlugin`，只携带声明
+> 锚点（`aot-registrars.txt`、`beangle.xml`）与 registrar 类；由**终端应用**
+> （war/native-image 项目）显式启用这三个插件，扫描整个运行时 classpath（本模块 +
+> 依赖项目 + 外部依赖 jar）聚合声明，生成合并的 **GraalVM 25+
+> `reachability-metadata.json`**、`beanmeta.idx` 与懒加载代理。
+> 本文撰写于该迁移前：data 仓库当前仍按已发布插件（sbt-beangle-build 0.1.x）自动内嵌
+> 运行，文中"自动启用""产物内嵌库 jar""各模块 compile 生成 reflect-config"等字样反映
+> 迁移前行为（技术审计结论仍有效）；工作树内 `BeangleProxyGenerator` 已先行改输出
+> `reachability-metadata.json` 并清理旧 `reflect-config.json`。**最新行为与格式以
+> beangle/build 仓库 `docs/aot.md` / `docs/meta.md` / `docs/proxy.md` 与
+> `docs/graalvm-reachability-metadata.md` 为准。**
+
 ---
 
 ## 0. 结论摘要
@@ -38,7 +52,7 @@
 | AOT 提示统一接入（P1） | ✅ | `ModelAotHints`（model 模块，实体/组件/值类型/库注解）与 `BeangleAotHints`（hibernate 模块，Hibernate 按名反射类/资源）声明库自身固定反射点/资源；hibernate-core 自身的反射元数据已内嵌进 fork jar（P2.1）；构建期经 `AotPlugin` 自动生成 `META-INF/native-image/beangle` 配置并随 beangle-data-model.jar / beangle-data-hibernate.jar 内嵌（GraalVM 构建时自动发现并合并）——库清单、fork 清单与应用清单三方拆分 |
 | Bean 元数据静态化（beanmeta.idx） | ✅ | 构建期 `MetaPlugin`（自动启用）读取 `beangle.xml` 声明的 `MetaRegistrar`（MappingModule/BindModule 等），经 `MetaGenerator` 生成二进制 `META-INF/beangle/beanmeta.idx`（编译期 dig 的精确类型）；运行期 `MetaModels` 启动时加载，`MappingModule.bind` 走 `BeanInfos.get` 查询，反射仅作无 idx 时的回退（详见 §1.5） |
 | native-image 冒烟（P3） | ✅ | `sample` 工程（独立仓库 beangle/sample）：`MinimalTest` 与 `NativeApp`（MappingModule+H2+OQL+二级缓存/JCache）均完成 native 构建并运行成功；实测补齐项见 P2.1 与 P3.3 |
-| 懒加载代理构建期预生成（P2.2 主路线） | ✅ | `ProxyPlugin`（自动启用）读取 `beangle.xml` 的 jpa/orm mapping，经 `BeangleProxyGenerator` 用 ByteBuddy（构建期仅需）生成 `<Entity>$HibernateProxy.class`，随 `beangle/data/reflect-config.json`（按命名约定注册无参构造器、`writeReplace` 与 `allPublicMethods`，不开放字段）打进 jar；运行期由 fork 的 `PrebuiltProxyProvider` 按约定按名加载，`BeanInfos.get` 对代理类自动复用实体 BeanMeta（JVM 与 native 同路径，测试即覆盖） |
+| 懒加载代理构建期预生成（P2.2 主路线） | ✅ | `ProxyPlugin` 读取 `beangle.xml` 的 jpa/orm mapping，经 `BeangleProxyGenerator` 用 ByteBuddy（构建期仅需）生成 `<Entity>$HibernateProxy.class`，注册进 GraalVM 25+ 的 `beangle/data/reachability-metadata.json`（reflection 条目：无参构造器、`writeReplace` 与 `allPublicMethods`，不开放字段）；运行期由 fork 的 `PrebuiltProxyProvider` 按约定按名加载，`BeanInfos.get` 对代理类自动复用实体 BeanMeta（JVM 与 native 同路径，测试即覆盖）。*本行按迁移前（自动启用、随 jar 内嵌 `reflect-config.json`）撰写；工作树生成器输出已改新格式，集中式改造随下一插件版本落地，见文首注* |
 | 回归测试 | ✅ | `model` 35、`hibernate` 24（含 LazyProxyTest）全部通过（`testOnly`）；`sbt clean compile` 全绿 |
 
 ### AOT 配置生成（方案：build 插件 AotPlugin + AotHintRegistrar，已接入 sbt）
@@ -336,16 +350,19 @@ Quarkus 的 `quarkus-hibernate-orm` 扩展在**构建期**（JVM 上，属于 Ma
     复刻 `ByteBuddyProxyHelper` 的代理结构（原生 net.bytebuddy，fork 已剔除 hibernate 实现）产出字节码
     → 全部写入 `Compile / resourceManaged`
     （`.class` 作为资源随 jar 打包，构建/运行期 classpath 均可按名加载，JVM 与 native 同一路径）：
-    - **`META-INF/native-image/beangle/data/reflect-config.json`**（代理类注册：
+    - **`META-INF/native-image/beangle/data/reachability-metadata.json`**（GraalVM 25+ 统一格式，
+      顶层 `{"reflection": [...]}`，代理类注册：
       类名按约定固定为 `<Entity>$HibernateProxy`，注册无参构造器、`writeReplace` 与
       `allPublicMethods`（供 `BeanInfo.from` 的 `getMethods` 查询），不开放字段；生成器按约定直接
       输出、不回读文件系统，native-image 自动发现，无需 aotHints 合并）；
+      *迁移前产物为同布局的 `reflect-config.json`；生成器工作树已改输出本新格式，
+      集中式触发改造见文首注与 beangle/build `docs/graalvm-reachability-metadata.md`*；
   - 锚定与门控：仅当 `beangle.xml` 有 mapping 且 classpath 含 beangle-data-hibernate 才生成；
     声明类未找到（编译进行中）退出码 2，`GeneratorSupport.retryGenerator` 退避重试（与 metaIndex/aotHints 同机制）；
   - bytebuddy **仅构建期需要**：插件自带 `net.bytebuddy:byte-buddy` 依赖并追加进生成器 classpath，
     应用运行期（JVM + native）都可排除；
   - 类名契约：代理类名固定为 `<Entity>$HibernateProxy`（fork 的 `PrebuiltProxyProvider` 与生成器共用
-    Suffixing 命名策略，两参构造无随机后缀），reflect-config 按该约定输出、不回读文件系统，跨构建稳定。
+    Suffixing 命名策略，两参构造无随机后缀），metadata 按该约定输出、不回读文件系统，跨构建稳定。
 
 **P2.2c sample 工程集成 ✅（后门清理 + 懒加载 native 用例）**
 - ✅ 已删除 `patchHibernateJar` 任务、bytebuddy exclusion 与 `build-native.sh` 的 patch 步骤；

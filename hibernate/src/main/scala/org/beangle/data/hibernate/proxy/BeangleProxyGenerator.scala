@@ -44,10 +44,11 @@ import scala.jdk.CollectionConverters.*
  *
  * 构建期在构建 JVM 上运行（ByteBuddy 可用）：对每个可代理实体复刻 hibernate
  * `ByteBuddyProxyHelper` 的代理结构（子类化实体、实现 HibernateProxy、方法委托
- * `ProxyConfiguration.InterceptorDispatcher`）生成代理字节码，并输出 GraalVM reflect-config 片段
- * （`META-INF/native-image/beangle/data/reflect-config.json`，按固定命名约定注册
- * `<Entity>$HibernateProxy` 的无参构造器、`writeReplace` 与 `allPublicMethods`）一起
- * 写入输出目录（sbt 插件传入 `Compile / resourceManaged`，随 jar 打包；
+ * `ProxyConfiguration.InterceptorDispatcher`）生成代理字节码，并输出 GraalVM 25+ 的
+ * `reachability-metadata.json` 片段（`META-INF/native-image/beangle/data/`，按固定命名约定
+ * 在 `reflection` 数组注册 `<Entity>$HibernateProxy` 的无参构造器、`writeReplace` 与
+ * `allPublicMethods`）一起写入输出目录
+ * （sbt 插件传入 `Compile / resourceManaged`，随 jar 打包；
  * `.class` 作为资源也在运行期 classpath 上，可按名加载），
  * 供运行期自定义 BytecodeProvider 使用（见 fork 的 PrebuiltProxyProvider）。
  *
@@ -62,7 +63,7 @@ import scala.jdk.CollectionConverters.*
  */
 object BeangleProxyGenerator {
 
-  private val NativeConfigFile = "META-INF/native-image/beangle/data/reflect-config.json"
+  private val ReachabilityMetadataFile = "META-INF/native-image/beangle/data/reachability-metadata.json"
   private val ProxyNamingSuffix = "HibernateProxy"
   private val PersistentFieldReaderPrefix = "$$_hibernate_read_"
   private val PersistentFieldWriterPrefix = "$$_hibernate_write_"
@@ -134,9 +135,15 @@ object BeangleProxyGenerator {
     }
 
     // 代理类名遵循 Hibernate ByteBuddy 命名约定（<Entity>$HibernateProxy），
-    // 按约定直接写 reflect-config，无需回读已生成的字节码/遍历文件系统。
-    writeReflectConfig(proxyNames.keys.toSeq, new File(outDir, NativeConfigFile))
-    System.out.println(s"Generated ${proxyNames.size} Hibernate proxy classes")
+    // 按约定直接写 reachability-metadata，无需回读已生成的字节码/遍历文件系统。
+    if (proxyNames.nonEmpty) {
+      writeReachabilityMetadata(proxyNames.keys.toSeq, outDir)
+      System.out.println(s"Generated ${proxyNames.size} Hibernate proxy classes")
+    } else {
+      // 实体集合收缩为空：清掉历史产物，避免把过期的配置/字节码打包进 jar
+      new File(outDir, ReachabilityMetadataFile).delete()
+      System.out.println("No Hibernate proxy classes generated")
+    }
   }
 
   /** 为每个可代理实体生成代理字节码（写输出目录，随资源打包），返回 实体类名→代理类名 映射。 */
@@ -221,17 +228,22 @@ object BeangleProxyGenerator {
     clazz.getDeclaredConstructors.exists(c => c.getParameterCount == 0 && Modifier.isPublic(c.getModifiers))
 
   /** 代理类名固定为 `<Entity>$HibernateProxy`（fork 的 PrebuiltProxyProvider 与
-   * 生成器共用 Suffixing 命名策略），按约定直接输出 reflect-config：
+   * 生成器共用 Suffixing 命名策略），按约定直接输出 GraalVM 25+ 的
+   * reachability-metadata.json（写 `outDir` 下的
+   * `META-INF/native-image/beangle/data/reachability-metadata.json`）：
    * 注册无参构造器（实例化）、writeReplace（序列化钩子）与全部公开方法
    * （运行期 `BeanInfo.from` 需 `getMethods` 查询，见 `BeanInfos.get` 的父类回退）；
    * 不开放字段（proxy 无自有 bean 字段）。
+   * 格式为顶层对象（`{"reflection": [...]}`）；native-image 会把本片段与终端项目其他
+   * `META-INF/native-image` 下各子目录的 `reachability-metadata.json` 片段合并读取。
    */
-  private def writeReflectConfig(entityNames: Seq[String], out: File): Unit = {
+  private def writeReachabilityMetadata(entityNames: Seq[String], outDir: File): Unit = {
+    val out = new File(outDir, ReachabilityMetadataFile)
     out.getParentFile.mkdirs()
     val entries = entityNames.map { n =>
-      s"""  {"name": "${n}$$HibernateProxy", "allPublicMethods": true, "methods": [{"name": "<init>", "parameterTypes": []}, {"name": "writeReplace", "parameterTypes": []}]}"""
+      s"""    { "type": "${n}$$HibernateProxy", "allPublicMethods": true, "methods": [{ "name": "<init>", "parameterTypes": [] }, { "name": "writeReplace", "parameterTypes": [] }] }"""
     }
-    val json = "[\n" + entries.mkString(",\n") + "\n]\n"
+    val json = "{\n  \"reflection\": [\n" + entries.mkString(",\n") + "\n  ]\n}\n"
     Files.write(out.toPath, json.getBytes(StandardCharsets.UTF_8))
   }
 
@@ -296,9 +308,10 @@ object BeangleProxyGenerator {
               |                            (# comments allowed). All listed classes must be
               |                            found, otherwise exit with a non-zero code.
               |  -o, --output <dir>        Output directory for the generated proxy .class
-              |                            files and the GraalVM reflect-config fragment
-              |                            (<Entity>$HibernateProxy by naming convention,
-              |                            registering <init> and writeReplace)
+              |                            files and the GraalVM reachability-metadata.json
+              |                            fragment (META-INF/native-image/beangle/data/;
+              |                            registers <Entity>$HibernateProxy reflection:
+              |                            <init>, writeReplace and allPublicMethods)
               |  -h, --help                Show this help
               |""".stripMargin)
   }

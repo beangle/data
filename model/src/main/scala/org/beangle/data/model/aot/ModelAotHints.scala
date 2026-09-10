@@ -72,6 +72,6 @@ class ModelAotHints extends AotHintRegistrar {
       classOf[org.beangle.data.orm.AbstractDaoTask])
     hints.registerType(classOf[org.beangle.data.orm.MappingModule.type])
 
-    hints.registerPattern("META-INF/beangle/ddl/.*", ".*\\.zh_CN")
+    hints.registerPattern("META-INF/beangle/ddl/**", "org/beangle/data/**/*.zh_CN")
   }
 }
