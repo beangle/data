@@ -18,6 +18,7 @@
 package org.beangle.data.dao
 
 import org.beangle.commons.collection.page._
+import org.beangle.commons.lang.annotation.property
 
 /** 基于查询的分页
   * 当使用或导出大批量数据时，使用者仍以List的方式进行迭代。<br>
@@ -49,8 +50,10 @@ abstract class AbstractQueryPage[T](val query: LimitQuery[T]) extends Page[T] {
 
   override def previous(): Page[T] = moveTo(pageIndex - 1)
 
+  @property
   override def hasNext: Boolean = totalPages > pageIndex
 
+  @property
   override def hasPrevious: Boolean = pageIndex > 1
 
   override def pageSize: Int = query.limit.pageSize
