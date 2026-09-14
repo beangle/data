@@ -19,10 +19,11 @@ package org.beangle.data.orm
 
 import org.beangle.commons.bean.meta.{MetaDigger, MetaRegistrar}
 import org.beangle.commons.collection.Collections
+import org.beangle.commons.config.XmlDocs
 import org.beangle.commons.lang.Strings
 import org.beangle.commons.lang.annotation.beta
 import org.beangle.commons.lang.reflect.{BeanInfo, BeanInfos}
-import org.beangle.commons.xml.Document
+import org.beangle.commons.xml.{Document, Element}
 import org.beangle.data.Logger
 import org.beangle.data.dao.Prop
 import org.beangle.data.orm.cfg.Profiles
@@ -42,9 +43,31 @@ object MappingModule {
    * 仅用于让绑定 DSL 在无真实配置下可执行；运行期 configure() 会替换为真实 Mappings。
    */
   private lazy val buildMappings: Mappings = {
-    val mappings = new Mappings(new Database(Engines.forName("H2")), new Profiles(new Document("beangle")))
+    val mappings = new Mappings(new Database(Engines.forName("H2")), buildTimeNamingProfiles)
     mappings.autobind() // 空跑初始化 messages，与运行期 LocalSessionFactoryBean/Mappings.autobind 前置一致
     mappings
+  }
+
+  /** 仅供 [[buildMappings]] 在构建期干跑绑定 DSL 时使用，**不是**运行期可复用的配置入口。
+   *
+   * 只装载 classpath 上 beangle.xml 的 `<naming>` 段（schema/prefix/annotation），
+   * 让构建期表名与运行期一致——各模块实体落到各自 schema，同名实体不再互相冲突；
+   * 不装载 `<mapping>` 段，避免连带实例化各 MappingModule 造成注册递归。
+   */
+  private def buildTimeNamingProfiles: Profiles = {
+    XmlDocs.load("classpath*:beangle.xml") match {
+      case Some(doc) =>
+        val buf = new mutable.StringBuilder("<beangle><jpa>")
+        (doc \ "jpa") foreach { orm =>
+          (orm \ "naming") foreach {
+            case naming: Element => buf.append(naming.toXml)
+            case _ =>
+          }
+        }
+        buf.append("</jpa></beangle>")
+        new Profiles(Document.parse(buf.toString))
+      case None => new Profiles(new Document("beangle"))
+    }
   }
 
   def mismatch(msg: String, e: OrmEntityType, pm: OrmProperty): Unit = {
