@@ -533,7 +533,8 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistrar {
 
   protected def cacheable(region: String, usage: String): Cache = new Cache(new CacheHolder(mappings, region, usage))
 
-  protected def target[T](clazz: Class[T]): Target = new Target(clazz)
+  /** 声明关联的目标实体：e.plan is target[MajorPlan]。 */
+  protected def target[T: ClassTag]: Target = new Target(summon[ClassTag[T]].runtimeClass)
 
   protected def depends(clazz: Class[_], mappedBy: String): One2Many = new One2Many(Some(clazz), mappedBy).cascaded
 
