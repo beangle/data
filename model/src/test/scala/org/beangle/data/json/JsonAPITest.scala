@@ -17,8 +17,21 @@
 
 package org.beangle.data.json
 
+import org.beangle.data.model.LongId
+import org.beangle.data.model.pojo.Named
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+
+import scala.collection.mutable
+
+class Department extends LongId with Named {
+  var code: String = _
+}
+
+class Employee extends LongId with Named {
+  var department: Department = _
+  var previous: mutable.Buffer[Department] = new mutable.ListBuffer[Department]
+}
 
 class JsonAPITest extends AnyFunSpec, Matchers {
 
@@ -129,5 +142,58 @@ class JsonAPITest extends AnyFunSpec, Matchers {
       assert(!data.contains("attributes"))
       assert(!data.contains("relationships"))
     }
+
+    it("append custom attributes") {
+      val (emp, _) = sample
+
+      given context: JsonAPI.Context = new JsonAPI.Context
+      val filters = context.filters
+      filters.register(classOf[Employee], "departName", e => e.asInstanceOf[Employee].department.name)
+      filters.register(classOf[Employee], "leaderName", e => e.asInstanceOf[Employee].department.name)
+
+      val resource = JsonAPI.create(emp, "")
+      assert(resource.attributes.get("departName").contains("计算机学院"))
+      assert(resource.attributes.get("leaderName").contains("计算机学院"))
+    }
+
+    it("append custom attribute of associated entity") {
+      val (emp, _) = sample
+
+      given context: JsonAPI.Context = new JsonAPI.Context
+      context.filters.register(classOf[Department], "fullName", d => {
+        val dept = d.asInstanceOf[Department]
+        s"${dept.code}-${dept.name}"
+      })
+
+      JsonAPI.create(emp, "")
+      val deptResource = context.includedResources(JsonAPI.typeName(classOf[Department]))("1").asInstanceOf[JsonAPI.Resource]
+      assert(deptResource.attributes.get("fullName").contains("CS-计算机学院"))
+    }
+
+    it("skip null custom attribute, registered attribute ignores filters") {
+      val (emp, _) = sample
+
+      given context: JsonAPI.Context = new JsonAPI.Context
+      context.filters.register(classOf[Employee], "departName", _ => null)
+      context.filters.register(classOf[Employee], "age", _ => 30)
+      context.exclude[Employee]("age")
+
+      val resource = JsonAPI.create(emp, "")
+      assert(!resource.attributes.contains("departName"))
+      assert(resource.attributes.get("age").contains(30))
+    }
+  }
+
+  private def sample: (Employee, Department) = {
+    val dept = new Department
+    dept.id = 1
+    dept.name = "计算机学院"
+    dept.code = "CS"
+
+    val emp = new Employee
+    emp.id = 100
+    emp.name = "张三"
+    emp.department = dept
+    (emp, dept)
   }
 }

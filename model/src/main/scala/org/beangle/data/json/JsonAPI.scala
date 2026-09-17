@@ -126,8 +126,7 @@ object JsonAPI {
         val ginfo = BeanInfos.get(clazz)
         val filter = context.filters.getFilter(clazz)
         ginfo.properties foreach { p =>
-          if (p._2.isTransient) filter.transients += p._1
-          if (filter.isIncluded(p._1)) {
+          if (filter.isIncluded(p._1, p._2.isTransient)) {
             val pName = p._1
             val pValue = p._2.getter.invoke(entity)
             val typeInfo = p._2.typeinfo
@@ -145,11 +144,28 @@ object JsonAPI {
               m.field(pName, pValue)
           }
         }
+        filter.attributes foreach { case (name, provider) =>
+          val value = extractOption(provider(entity))
+          if (null != value) m.attr(name, value)
+        }
         if m.attributes.isEmpty then m.attributes = null
         if m.relationships.isEmpty then m.relationships = null
         datas.put(id, m)
         m
     }
+  }
+
+  /** The super types of a class, from the most general to the direct parents. */
+  private def superTypes(clazz: Class[_]): Iterable[Class[_]] = {
+    val supers = Collections.newBuffer[Class[_]]
+    supers ++= clazz.getInterfaces
+    var superClazz = clazz.getSuperclass
+    while (null != superClazz && superClazz != classOf[Any]) {
+      supers += superClazz
+      superClazz = superClazz.getSuperclass
+    }
+    supers += classOf[Any]
+    supers
   }
 
   def typeName(clazz: Class[_]): String = {
@@ -164,21 +180,33 @@ object JsonAPI {
     }
   }
 
-  class Filter(val includes: Set[String], val excludes: Set[String]) {
+  /** Immutable filter of a type: which properties are rendered and which custom [[attributes]]
+   * are appended. Use [[Filters.include]]/[[Filters.exclude]]/[[Filters.register]] to change it.
+   *
+   * @param attributes custom attributes: attribute name -> provider of the entity. A provider is a
+   *                   unary function returning the value of a simple attribute (number, string,
+   *                   boolean, enum, ...), and the value is rendered as-is. Collections and [[Entity]]
+   *                   values are not supported: a provider cannot render a relationship or an
+   *                   included resource, register a provider on that entity type instead. A
+   *                   `null`/`None` value is skipped. Providers are applied after bean properties,
+   *                   so they take precedence over a property with the same name, and a registered
+   *                   attribute is always rendered, it is not affected by includes/excludes.
+   */
+  class Filter(val includes: Set[String], val excludes: Set[String], val attributes: Map[String, Any => Any] = Map.empty) {
 
-    val transients: mutable.Set[String] = Collections.newSet[String]
-
-    def isIncluded(name: String): Boolean = {
+    def isIncluded(name: String, isTransient: Boolean = false): Boolean = {
       if excludes.contains(name) then false
-      else includes.contains(name) || (includes.contains("*") && !transients.contains(name))
+      else if includes.contains(name) then true
+      else includes.contains("*") && !isTransient
     }
 
+    /** Returns a new filter with the given names merged, attributes are kept. */
     def merge(newIncludes: collection.Set[String], newExcludes: collection.Set[String]): Filter = {
       var includeSum = includes ++ newIncludes
       val excludeSum = excludes ++ newExcludes
       if includeSum.contains("*") && includeSum.size > 1 then
         includeSum -= "*"
-      new Filter(includeSum, excludeSum)
+      new Filter(includeSum, excludeSum, attributes)
     }
   }
 
@@ -192,28 +220,21 @@ object JsonAPI {
     private def createDefault(clazz: Class[_]): Filter = {
       val includeNames = Collections.newSet[String]
       val excludeNames = Collections.newSet[String]
+      var attributes = Map.empty[String, Any => Any]
       getSupers(clazz) foreach { i =>
         filters.get(typeName(i)) foreach { f =>
           includeNames ++= f.includes
           excludeNames ++= f.excludes
+          attributes ++= f.attributes
         }
       }
-      val defaults = new Filter(Set("*"), Set("id"))
-      val filter = defaults.merge(includeNames, excludeNames)
+      val filter = new Filter(Set("*"), Set("id"), attributes).merge(includeNames, excludeNames)
       filters.put(typeName(clazz), filter)
       filter
     }
 
     private def getSupers(clazz: Class[_]): Iterable[Class[_]] = {
-      val supers = Collections.newBuffer[Class[_]]
-      supers ++= clazz.getInterfaces
-      var superClazz = clazz.getSuperclass
-      while (null != superClazz && superClazz != classOf[Any]) {
-        supers += superClazz
-        superClazz = superClazz.getSuperclass
-      }
-      supers += classOf[Any]
-      supers
+      superTypes(clazz)
     }
 
     def exclude(clazz: Class[_], names: String*): Unit = {
@@ -236,6 +257,21 @@ object JsonAPI {
     def include(typeName: String, names: Iterable[String]): Unit = {
       val filter = filters.getOrElseUpdate(typeName, new Filter(Set("*"), Set("id")))
       filters.put(typeName, filter.merge(names.toSet, Set.empty))
+    }
+
+    /** Registers a custom attribute provider, see [[Filter.attributes]].
+     *
+     * The provider only produces simple attributes; collections and relations are not supported,
+     * a `null`/`None` value is skipped.
+     *
+     * {{{
+     *   ctx.filters.register(classOf[User], "departName", user => user.asInstanceOf[User].department.name)
+     * }}}
+     */
+    def register(clazz: Class[_], name: String, provider: Any => Any): Unit = {
+      val typ = typeName(clazz)
+      val filter = filters.getOrElse(typ, createDefault(clazz))
+      filters.put(typ, new Filter(filter.includes, filter.excludes, filter.attributes + (name -> provider)))
     }
   }
 
