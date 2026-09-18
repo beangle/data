@@ -259,19 +259,19 @@ object JsonAPI {
       filters.put(typeName, filter.merge(names.toSet, Set.empty))
     }
 
-    /** Registers a custom attribute provider, see [[Filter.attributes]].
+    /** Registers a custom attribute provider of T, see [[Filter.attributes]].
      *
      * The provider only produces simple attributes; collections and relations are not supported,
      * a `null`/`None` value is skipped.
      *
      * {{{
-     *   ctx.filters.register(classOf[User], "departName", user => user.asInstanceOf[User].department.name)
+     *   ctx.filters.register(classOf[User], "departName", user => user.department.name)
      * }}}
      */
-    def register(clazz: Class[_], name: String, provider: Any => Any): Unit = {
+    def register[T](clazz: Class[T], name: String, provider: T => Any): Unit = {
       val typ = typeName(clazz)
       val filter = filters.getOrElse(typ, createDefault(clazz))
-      filters.put(typ, new Filter(filter.includes, filter.excludes, filter.attributes + (name -> provider)))
+      filters.put(typ, new Filter(filter.includes, filter.excludes, filter.attributes + (name -> provider.asInstanceOf[Any => Any])))
     }
   }
 

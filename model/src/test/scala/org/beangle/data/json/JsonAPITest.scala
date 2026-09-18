@@ -148,22 +148,19 @@ class JsonAPITest extends AnyFunSpec, Matchers {
 
       given context: JsonAPI.Context = new JsonAPI.Context
       val filters = context.filters
-      filters.register(classOf[Employee], "departName", e => e.asInstanceOf[Employee].department.name)
-      filters.register(classOf[Employee], "leaderName", e => e.asInstanceOf[Employee].department.name)
+      filters.register(classOf[Employee], "departName", e => e.department.name)
+      filters.register(classOf[Employee], "leaderName", e => s"${e.name}@${e.department.name}")
 
       val resource = JsonAPI.create(emp, "")
       assert(resource.attributes.get("departName").contains("计算机学院"))
-      assert(resource.attributes.get("leaderName").contains("计算机学院"))
+      assert(resource.attributes.get("leaderName").contains("张三@计算机学院"))
     }
 
     it("append custom attribute of associated entity") {
       val (emp, _) = sample
 
       given context: JsonAPI.Context = new JsonAPI.Context
-      context.filters.register(classOf[Department], "fullName", d => {
-        val dept = d.asInstanceOf[Department]
-        s"${dept.code}-${dept.name}"
-      })
+      context.filters.register(classOf[Department], "fullName", dept => s"${dept.code}-${dept.name}")
 
       JsonAPI.create(emp, "")
       val deptResource = context.includedResources(JsonAPI.typeName(classOf[Department]))("1").asInstanceOf[JsonAPI.Resource]
