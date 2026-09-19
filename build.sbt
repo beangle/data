@@ -25,7 +25,7 @@ homepage := Some(uri("https://beangle.github.io/data/index.html"))
 
 val beangle_commons = "org.beangle.commons" % "beangle-commons" % "6.3.6"
 val hibernate_core = "org.beangle.hibernate" % "beangle-hibernate-core" % "7.4.7.Final"
-val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.18"
+val beangle_jdbc = "org.beangle.jdbc" % "beangle-jdbc" % "1.1.19"
 
 lazy val root = (project in file("."))
   .settings(

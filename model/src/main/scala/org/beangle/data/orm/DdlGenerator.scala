@@ -72,6 +72,11 @@ object DdlGenerator {
     val mappings = new Mappings(database, new Profiles(config.get))
     mappings.locale = locale
     mappings.autobind()
+    //固定列序:主键列置顶,其余列按名称升序
+    database.schemas.values foreach { schema =>
+      schema.tables.values foreach (_.sortColumns)
+      schema.views.values foreach (_.sortColumns)
+    }
     val scripts = new SchemaExporter(mappings, engine).generate()
 
     //export to files
@@ -137,7 +142,7 @@ class SchemaExporter(mappings: Mappings, engine: Engine) {
     if (database.hasQuotedIdentifier) {
       warnings += s"${engine.name}:find quoted identifiers"
     }
-    schemas ++= database.schemas.keys.filter(i => i.value.length > 0).map(s => s"create schema $s")
+    schemas ++= database.schemas.keys.filter(i => i.value.nonEmpty).map(s => s"create schema $s")
     scripts.schemas = schemas.sorted.toList
     scripts.comments = comments.toSet.toList.sorted
     scripts.tables = tables.sorted.toList
