@@ -52,15 +52,15 @@ class Prop(val path: String) extends Dynamic {
   // ---- 条件算子（委托给 Var，沿用其 SQL 渲染） ----
   def isNull: Expression = toVar.isNull
   def isNotNull: Expression = toVar.isNotNull
-  def like(value: String): Expression = toVar.like(value)
-  def equal(arg: Any): Expression = toVar.equal(arg)
-  def gt(arg: Any): Expression = toVar.gt(arg)
-  def ge(arg: Any): Expression = toVar.ge(arg)
-  def lt(arg: Any): Expression = toVar.lt(arg)
-  def le(arg: Any): Expression = toVar.le(arg)
-  def is(exp: String, args: Any*): Expression = toVar.is(exp, args*)
-  def between(start: Any, end: Any): Expression = toVar.between(start, end)
-  def in(args: Any*): Expression = toVar.in(args*)
+  infix def like(value: String): Expression = toVar.like(value)
+  infix def equal(arg: Any): Expression = toVar.equal(arg)
+  infix def gt(arg: Any): Expression = toVar.gt(arg)
+  infix def ge(arg: Any): Expression = toVar.ge(arg)
+  infix def lt(arg: Any): Expression = toVar.lt(arg)
+  infix def le(arg: Any): Expression = toVar.le(arg)
+  infix def is(exp: String, args: Any*): Expression = toVar.is(exp, args*)
+  infix def between(start: Any, end: Any): Expression = toVar.between(start, end)
+  infix def in(args: Any*): Expression = toVar.in(args*)
 
   /** 集合包含：统一翻译为 ? in elements(_.path)
    *  - Map 路径：elements = values（例：e.properties.contains("some street")）

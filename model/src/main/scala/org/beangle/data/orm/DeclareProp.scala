@@ -35,7 +35,7 @@ class DeclareProp(path: String, holder: EntityHolder[_]) extends Prop(path) {
 
   /** 属性声明：e.name.first is(notnull, length(20))
    */
-  def is(declarations: PropertyDeclaration*): Unit = {
+  infix def is(declarations: PropertyDeclaration*): Unit = {
     if (declarations.nonEmpty && path.isEmpty) {
       throw new RuntimeException(s"Cannot find access properties for ${holder.mapping.entityName} with declarations: $declarations")
     }
@@ -52,5 +52,5 @@ class DeclareProp(path: String, holder: EntityHolder[_]) extends Prop(path) {
 
 class DeclareProps(holder: EntityHolder[_], val props: List[DeclareProp]) {
   def &(next: DeclareProp): DeclareProps = new DeclareProps(holder, props :+ next)
-  def are(declarations: PropertyDeclaration*): Unit = props.foreach(_.is(declarations*))
+  infix def are(declarations: PropertyDeclaration*): Unit = props.foreach(_.is(declarations*))
 }

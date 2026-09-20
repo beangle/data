@@ -86,7 +86,7 @@ object OqlBuilder {
 
     def isNotNull: Expression = create("is not null")
 
-    def like(value: String): Expression = {
+    infix def like(value: String): Expression = {
       var arg = value
       if (!arg.startsWith("%") && !arg.endsWith("%")) {
         arg = "%" + arg + "%"
@@ -94,28 +94,28 @@ object OqlBuilder {
       create("like ?", arg)
     }
 
-    def equal(arg: Any): Expression = create("= ?", arg)
+    infix def equal(arg: Any): Expression = create("= ?", arg)
 
-    def gt(arg: Any): Expression = create("> ?", arg)
+    infix def gt(arg: Any): Expression = create("> ?", arg)
 
-    def ge(arg: Any): Expression = create(">= ?", arg)
+    infix def ge(arg: Any): Expression = create(">= ?", arg)
 
-    def lt(arg: Any): Expression = create("< ?", arg)
+    infix def lt(arg: Any): Expression = create("< ?", arg)
 
-    def le(arg: Any): Expression = create("<= ?", arg)
+    infix def le(arg: Any): Expression = create("<= ?", arg)
 
-    def is(exp: String, args: Any*): Expression = {
+    infix def is(exp: String, args: Any*): Expression = {
       val argCount = Strings.count(exp, '?')
       require(argCount == args.size, s"$exp has $argCount args,but given ${args.size}.")
       create(exp, args: _*)
     }
 
-    def between(start: Any, end: Any): Expression = {
+    infix def between(start: Any, end: Any): Expression = {
       create("between ? and ?", start, end)
     }
 
     /** 值列表成员：e.id.in(1, 2, 3) -> _.id in (?, ?, ?) */
-    def in(args: Any*): Expression = {
+    infix def in(args: Any*): Expression = {
       val ps = args.map(_ => "?").mkString(", ")
       create(s"in ($ps)", args*)
     }
@@ -138,11 +138,11 @@ object OqlBuilder {
 
   class Expression(val exp: String, val args: Seq[Any]) {
 
-    def and(o: Expression): Expression = {
+    infix def and(o: Expression): Expression = {
       new Expression(this.safeExp + " and " + o.safeExp, this.args ++ o.args)
     }
 
-    def or(o: Expression): Expression = {
+    infix def or(o: Expression): Expression = {
       new Expression(s"${this.exp} or ${o.exp}", this.args ++ o.args)
     }
 
