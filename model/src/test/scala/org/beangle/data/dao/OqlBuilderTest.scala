@@ -18,8 +18,8 @@
 package org.beangle.data.dao
 
 import org.beangle.data.dao.OqlBuilder.*
-import org.beangle.data.orm.model.{TestRole, TestUser}
 import org.beangle.data.orm.model.code.NationBean
+import org.beangle.data.orm.model.{TestRole, TestUser}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -31,11 +31,11 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
     it("builder") {
       val q = OqlBuilder.from(classOf[TestUser], "t")
       q.where { e =>
-        (e.member.middleName.isNotNull `or` e.friends.isNotNull `or` e.properties.isNotNull)
+        (e.member.middleName.isNotNull or e.friends.isNotNull or e.properties.isNotNull)
           .and(e.birthday.isNull)
-          .and(e.updatedAt `equal` Instant.now)
-          .and(e.role.name `like` "test")
-          .and(e.id `gt` 2)
+          .and(e.updatedAt equal Instant.now)
+          .and(e.role.name like "test")
+          .and(e.id gt 2)
       }
       q.on { e =>
         q.groupBy(e.id, e.role.name)
@@ -58,7 +58,7 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
     it("user define function") {
       val q = OqlBuilder.from(classOf[TestUser], "t")
       q.where { e =>
-        e.member.middleName  is ("len(_)=?", 2) `or`
+        e.member.middleName is("len(_)=?", 2) or
           e.id.is("bitand(_,?)>0", 123)
       }
       val query = q.build()
@@ -78,8 +78,8 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
     it("complex nested conditions with and/or/between") {
       val q = OqlBuilder.from(classOf[TestUser], "t")
       q.where { e =>
-        (e.member.middleName.like("x") `or` e.friends.isNull)
-          .and((e.role.name.equal("r1") `or` e.role.name.equal("r2")).and(e.id.between(1, 10)))
+        (e.member.middleName.like("x") or e.friends.isNull)
+          .and((e.role.name.equal("r1") or e.role.name.equal("r2")).and(e.id.between(1, 10)))
           .and(e.birthday.isNotNull)
       }
       val query = q.build()
@@ -120,7 +120,7 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
     it("stacked where calls") {
       val q = OqlBuilder.from(classOf[TestUser], "t")
       q.where { e => e.member.middleName.isNotNull }
-      q.where { e => e.id.gt(2) `and` e.birthday.isNull }
+      q.where { e => e.id.gt(2) and e.birthday.isNull }
       val query = q.build()
       assert(query.statement == "select t from " + classOf[TestUser].getName + " t" +
         " where (t.member.middleName is not null) and (t.id > :v1 and t.birthday is null)")
@@ -129,7 +129,7 @@ class OqlBuilderTest extends AnyFunSpec, Matchers {
     it("custom function with multiple args") {
       val q = OqlBuilder.from(classOf[TestUser], "t")
       q.where { e =>
-        e.id.is("coalesce(_, ?) > ?", 1, 2) `or`
+        e.id.is("coalesce(_, ?) > ?", 1, 2) or
           e.member.middleName.is("substr(_, 1, 2)=?", "ab")
       }
       val query = q.build()

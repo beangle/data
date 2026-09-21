@@ -25,17 +25,17 @@ object TestMapping2 extends MappingModule {
     defaultCache("test_cache_region", "read-write")
 
     bind[Role].declare { r =>
-      r.name  is (length(112), unique)
+      r.name is(length(112), unique)
       //r.code is (length(20 + 1), unique) //override bingding in Coded
       r.parent is target[Role]
       r.properties is keyColumn("tag_id")
-      r.children  is (depends("parent"), cacheable)
+      r.children is(depends("parent"), cacheable)
     }.generator("assigned")
 
     bind[ExtendRole](classOf[Role].getName)
 
     bind[CodedEntity].declare { c =>
-      c.code  is (length(22), unique)
+      c.code is(length(22), unique)
     }
 
     bind[StringIdCodedEntity].declare { c =>

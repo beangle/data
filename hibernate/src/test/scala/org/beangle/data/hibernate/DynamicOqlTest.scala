@@ -54,7 +54,7 @@ class DynamicOqlTest extends AnyFunSpec, Matchers {
     q.where { e =>
       e.name.first.equal("Bill")
         .and(e.member.admin.equal(false))
-        .and(e.createdOn.isNull `or` e.createdOn.gt(java.sql.Date.valueOf("2020-01-01")))
+        .and(e.createdOn.isNull or e.createdOn.gt(java.sql.Date.valueOf("2020-01-01")))
     }
     q.on { e =>
       q.select(e.name.first, e.name.last, "count(*)")
@@ -69,8 +69,8 @@ class DynamicOqlTest extends AnyFunSpec, Matchers {
   it("where with like/or/gt renders valid HQL") {
     val q = OqlBuilder.from(classOf[User], "u")
     q.where { e =>
-      (e.name.first.like("Bi") `or` e.name.last.isNull)
-        .and(e.role.isNull `or` e.createdOn.gt(java.sql.Date.valueOf("2019-01-01")))
+      (e.name.first.like("Bi") or e.name.last.isNull)
+        .and(e.role.isNull or e.createdOn.gt(java.sql.Date.valueOf("2019-01-01")))
     }
     val stmt = q.build().statement
     assert(stmt.contains("where (u.name.first like :v1 or u.name.last is null) and (u.role is null or u.createdOn > :v2)"), stmt)
@@ -91,7 +91,7 @@ class DynamicOqlTest extends AnyFunSpec, Matchers {
 
     val q = OqlBuilder.from(classOf[User], "u")
     q.where { e =>
-      (e.lower(e.name.first).equal("bill") `or` e.name.last.isNull)
+      (e.lower(e.name.first).equal("bill") or e.name.last.isNull)
         .and(e.coalesce(e.id, 0L).gt(1))
     }
     val list = entityDao.search(q)
