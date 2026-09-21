@@ -37,7 +37,7 @@ object NullableIntJdbcType extends JdbcType {
   override def toString = "IntegerTypeDescriptor"
 
   @nowarn
-  override def getRecommendedJavaType(length: Integer, scale: Integer, typeConfiguration: TypeConfiguration): JavaType[_] = {
+  override def getRecommendedJavaType(length: Integer, scale: Integer, typeConfiguration: TypeConfiguration): JavaType[?] = {
     typeConfiguration.getJavaTypeRegistry.getDescriptor(classOf[Integer])
   }
 
@@ -45,7 +45,7 @@ object NullableIntJdbcType extends JdbcType {
     new JdbcLiteralFormatterNumericData[T](javaType, classOf[Integer])
   }
 
-  override def getPreferredJavaTypeClass(options: WrapperOptions): Class[_] = {
+  override def getPreferredJavaTypeClass(options: WrapperOptions): Class[?] = {
     classOf[Integer]
   }
 

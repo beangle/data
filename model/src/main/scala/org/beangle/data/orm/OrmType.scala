@@ -23,6 +23,7 @@ import org.beangle.jdbc.meta.{Column, Table}
 import org.beangle.data.model.meta.*
 
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 trait ColumnHolder {
   def columns: Iterable[Column]
@@ -72,15 +73,15 @@ trait OrmStructType extends OrmType with StructType {
 
 }
 
-final class OrmEntityType(val entityName: String, var clazz: Class[_], var table: Table) extends OrmStructType with EntityType {
-  var cacheUsage: String = _
-  var cacheRegion: String = _
-  var cacheAll: Boolean = _
+final class OrmEntityType(val entityName: String, var clazz: Class[?], var table: Table) extends OrmStructType with EntityType {
+  var cacheUsage: String = uninitialized
+  var cacheRegion: String = uninitialized
+  var cacheAll: Boolean = uninitialized
   var isLazy: Boolean = true
-  var proxy: String = _
-  var isAbstract: Boolean = _
+  var proxy: String = uninitialized
+  var isAbstract: Boolean = uninitialized
   var optimisticLockStyle: String = "NONE"
-  var idGenerator: IdGenerator = _
+  var idGenerator: IdGenerator = uninitialized
   var module: Option[String] = None
   var partitionKey: Option[String] = None
 
@@ -131,7 +132,7 @@ final class OrmEntityType(val entityName: String, var clazz: Class[_], var table
  * @param clazz
  * @param column
  */
-final class OrmBasicType(clazz: Class[_], var column: Column) extends BasicType(clazz)
+final class OrmBasicType(clazz: Class[?], var column: Column) extends BasicType(clazz)
   with OrmType with Cloneable with ColumnHolder {
 
   def copy(): OrmBasicType = {
@@ -145,7 +146,7 @@ final class OrmBasicType(clazz: Class[_], var column: Column) extends BasicType(
   }
 }
 
-final class OrmEmbeddableType(var clazz: Class[_]) extends EmbeddableType with OrmStructType {
+final class OrmEmbeddableType(var clazz: Class[?]) extends EmbeddableType with OrmStructType {
 
   var parentName: Option[String] = None
 
@@ -164,11 +165,11 @@ final class OrmEmbeddableType(var clazz: Class[_]) extends EmbeddableType with O
 
 class TypeDef(val clazz: String, val params: Map[String, String])
 
-final class Collection(val clazz: Class[_], val property: String) {
-  var cacheRegion: String = _
-  var cacheUsage: String = _
+final class Collection(val clazz: Class[?], val property: String) {
+  var cacheRegion: String = uninitialized
+  var cacheUsage: String = uninitialized
 
-  def this(clazz: Class[_], property: String, region: String, usage: String) = {
+  def this(clazz: Class[?], property: String, region: String, usage: String) = {
     this(clazz, property)
     cache(region, usage)
   }

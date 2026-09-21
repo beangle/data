@@ -20,7 +20,7 @@ package org.beangle.data.dao
 import org.beangle.commons.lang.Strings
 
 object Condition {
-  def apply(content: String, initParams: Any*) = new Condition(content, initParams: _*)
+  def apply(content: String, initParams: Any*) = new Condition(content, initParams*)
 }
 
 /** 查询条件

@@ -21,6 +21,7 @@ import org.beangle.commons.lang.Strings.*
 import org.beangle.commons.lang.{ClassLoaders, Strings}
 import org.beangle.data.dao.OqlBuilder.{Expression, Var}
 import org.beangle.data.orm.Jpas
+import scala.compiletime.uninitialized
 
 object OqlBuilder {
 
@@ -107,7 +108,7 @@ object OqlBuilder {
     infix def is(exp: String, args: Any*): Expression = {
       val argCount = Strings.count(exp, '?')
       require(argCount == args.size, s"$exp has $argCount args,but given ${args.size}.")
-      create(exp, args: _*)
+      create(exp, args*)
     }
 
     infix def between(start: Any, end: Any): Expression = {
@@ -146,7 +147,7 @@ object OqlBuilder {
       new Expression(s"${this.exp} or ${o.exp}", this.args ++ o.args)
     }
 
-    def append(query: OqlBuilder[_]): Unit = {
+    def append(query: OqlBuilder[?]): Unit = {
       var clause = Strings.replace(exp, "_.", query.alias + ".")
       val s = query.params.size
       args.indices foreach { i =>
@@ -175,7 +176,7 @@ object OqlBuilder {
 class OqlBuilder[T] private() extends AbstractQueryBuilder[T] {
 
   /** 查询实体类 */
-  var entityClass: Class[T] = _
+  var entityClass: Class[T] = uninitialized
 
   /**
    * 形成计数查询语句，如果不能形成，则返回""

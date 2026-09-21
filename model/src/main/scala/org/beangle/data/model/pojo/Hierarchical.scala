@@ -19,6 +19,7 @@ package org.beangle.data.model.pojo
 
 import org.beangle.commons.collection.Collections
 import org.beangle.commons.lang.{Numbers, Strings}
+import scala.compiletime.uninitialized
 
 /** Hierarchical Entity
   * @author chaostone
@@ -26,7 +27,7 @@ import org.beangle.commons.lang.{Numbers, Strings}
 trait Hierarchical[T] extends Ordered[T] {
 
   /** index no */
-  var indexno: String = _
+  var indexno: String = uninitialized
 
   /** 父级菜单 */
   var parent: Option[T] = None
@@ -46,6 +47,6 @@ trait Hierarchical[T] extends Ordered[T] {
   }
 
   def compare(that: T): Int = {
-    this.indexno.compareTo(that.asInstanceOf[Hierarchical[_]].indexno)
+    this.indexno.compareTo(that.asInstanceOf[Hierarchical[?]].indexno)
   }
 }

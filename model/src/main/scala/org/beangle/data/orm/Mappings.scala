@@ -38,6 +38,7 @@ import java.lang.reflect.Modifier
 import java.util.Locale
 import scala.collection.immutable.Seq
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 final class Mappings(val database: Database, val profiles: Profiles) {
 
@@ -46,13 +47,13 @@ final class Mappings(val database: Database, val profiles: Profiles) {
   var sqlTypeMapping: SqlTypeMapping = new DefaultSqlTypeMapping(database.engine)
 
   /** all type mappings(clazz -> Entity) */
-  val classTypes = new mutable.HashMap[Class[_], OrmEntityType]
+  val classTypes = new mutable.HashMap[Class[?], OrmEntityType]
 
   /** custome types */
   val typeDefs = new mutable.HashMap[String, TypeDef]
 
   /** Buildin value types */
-  val valueTypes = new mutable.HashSet[Class[_]]
+  val valueTypes = new mutable.HashSet[Class[?]]
 
   /** Builtin enum types */
   val enumTypes = new mutable.HashSet[String]
@@ -63,11 +64,11 @@ final class Mappings(val database: Database, val profiles: Profiles) {
   /** Only entities */
   val entityTypes: mutable.Map[String, OrmEntityType] = Collections.newMap[String, OrmEntityType]
 
-  private var messages: Messages = _
+  private var messages: Messages = uninitialized
 
   def collections: Iterable[Collection] = collectMap.values
 
-  def getEntity(clazz: Class[_]): OrmEntityType = classTypes(clazz)
+  def getEntity(clazz: Class[?]): OrmEntityType = classTypes(clazz)
 
   private def addEntity(mapping: OrmEntityType): this.type = {
     val cls = mapping.clazz
@@ -135,7 +136,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     entityTypes.values foreach (em => secondPass(em))
   }
 
-  def autobind(cls: Class[_], entityName: String, manifest: BeanInfo): OrmEntityType = {
+  def autobind(cls: Class[?], entityName: String, manifest: BeanInfo): OrmEntityType = {
     if (cls.isAnnotationPresent(classOf[JpaEntity])) return null
 
     val fixedEntityName = if (entityName == null) Jpas.findEntityName(cls) else entityName
@@ -163,7 +164,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     entity
   }
 
-  def refEntity(clazz: Class[_], entityName: String): OrmEntityType = {
+  def refEntity(clazz: Class[?], entityName: String): OrmEntityType = {
     entityTypes.get(entityName) match {
       case Some(entity) =>
         if entity.clazz != clazz && entity.clazz.isAssignableFrom(clazz) then entity.clazz = clazz
@@ -187,7 +188,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
   /**
    * @param key 表示是否是一个外键
    */
-  def columnName(clazz: Class[_], propertyName: String, key: Boolean = false): String = {
+  def columnName(clazz: Class[?], propertyName: String, key: Boolean = false): String = {
     val lastDot = propertyName.lastIndexOf(".")
     var colName = if (lastDot == -1) propertyName else propertyName.substring(lastDot + 1)
     colName = if (key) colName + "Id" else colName
@@ -357,24 +358,24 @@ final class Mappings(val database: Database, val profiles: Profiles) {
                       }
                     case _ =>
                   }
-                  collectTable.createPrimaryKey(null, collectTable.columns.map(_.name.toLiteral(table.engine)).toList: _*)
+                  collectTable.createPrimaryKey(null, collectTable.columns.map(_.name.toLiteral(table.engine)).toList*)
               }
             }
         }
     }
   }
 
-  private def addRefComment(column: Column, clazz: Class[_], entityName: String): Unit = {
+  private def addRefComment(column: Column, clazz: Class[?], entityName: String): Unit = {
     column.comment = Some(getComment(clazz, clazz.getSimpleName) + "ID")
   }
 
-  private def addBasicTypeMapping(clazz: Class[_], propertyName: String, typ: Type, column: Column, table: Table): Unit = {
+  private def addBasicTypeMapping(clazz: Class[?], propertyName: String, typ: Type, column: Column, table: Table): Unit = {
     detectValueType(typ.clazz)
     if (column.comment.isEmpty) column.comment = Some(getComment(clazz, propertyName))
     if !table.columnExits(column.name) then table.add(column)
   }
 
-  private def addRefTypeMapping(clazz: Class[_], propertyName: String, refType: EntityType, column: Column, table: Table): Unit = {
+  private def addRefTypeMapping(clazz: Class[?], propertyName: String, refType: EntityType, column: Column, table: Table): Unit = {
     //we ignore ref to a partition table or a archive table
     if refType.partitionKey.isEmpty && !clazz.isAnnotationPresent(classOf[archive]) then
       createForeignKey(table, List(column), entityTypes(refType.entityName).table)
@@ -394,7 +395,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     table.createForeignKey(null, columns.head.name.toLiteral(table.engine), refTable)
   }
 
-  private def getComment(clazz: Class[_], key: String): String = {
+  private def getComment(clazz: Class[?], key: String): String = {
     val comment = messages.get(clazz, key)
     if (key == comment) key + "?" else comment
   }
@@ -405,7 +406,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
   private def merge(entity: OrmEntityType): Unit = {
     val cls = entity.clazz
     // search parent and interfaces
-    var supclz: Class[_] = cls.getSuperclass
+    var supclz: Class[?] = cls.getSuperclass
     val supers = new mutable.ListBuffer[OrmEntityType]
     cls.getInterfaces foreach (i => if (classTypes.contains(i)) supers += classTypes(i))
     while (supclz != null && supclz != classOf[Object]) {
@@ -461,7 +462,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     }
   }
 
-  private def detectValueType(clazz: Class[_]): Unit = {
+  private def detectValueType(clazz: Class[?]): Unit = {
     if (clazz == classOf[Object]) throw new RuntimeException("Cannot find scalar type for object")
     if (clazz.isAnnotationPresent(classOf[value])) {
       //Decimal5 系列不能作为vallue类型，他们单独应合成decimal，单独注册类型
@@ -473,7 +474,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     }
   }
 
-  private def idTypeOf(clazz: Class[_]): Class[_] = {
+  private def idTypeOf(clazz: Class[?]): Class[?] = {
     if (classOf[LongIdEntity].isAssignableFrom(clazz)) {
       classOf[Long]
     } else if (classOf[IntIdEntity].isAssignableFrom(clazz)) {
@@ -530,7 +531,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     }
   }
 
-  private def buildElement(clazz: Class[_], entityName: String): OrmType = {
+  private def buildElement(clazz: Class[?], entityName: String): OrmType = {
     if (isEntity(clazz)) {
       refEntity(clazz, entityName)
     } else if (isComponent(clazz)) {
@@ -597,7 +598,7 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     entity.table.add(column)
   }
 
-  private def findDefaultValue(sample: Any, propertyName: String, propertyClazz: Class[_], optional: Boolean): Option[String] = {
+  private def findDefaultValue(sample: Any, propertyName: String, propertyClazz: Class[?], optional: Boolean): Option[String] = {
     if propertyClazz.isPrimitive && !optional && null != sample then
       val sqlType = sqlTypeMapping.sqlType(propertyClazz)
       var value = Properties.get[Any](sample, propertyName).toString
@@ -606,17 +607,17 @@ final class Mappings(val database: Database, val profiles: Profiles) {
     else None
   }
 
-  private def newScalarColumn(name: String, clazz: Class[_], optional: Boolean, defaultValue: Option[String]): Column = {
+  private def newScalarColumn(name: String, clazz: Class[?], optional: Boolean, defaultValue: Option[String]): Column = {
     val col = new Column(database.engine.toIdentifier(name), sqlTypeMapping.sqlType(clazz), optional)
     col.defaultValue = defaultValue
     col
   }
 
-  private def newColumn(name: String, clazz: Class[_], optional: Boolean): Column = {
+  private def newColumn(name: String, clazz: Class[?], optional: Boolean): Column = {
     new Column(database.engine.toIdentifier(name), sqlTypeMapping.sqlType(clazz), optional)
   }
 
-  def newRefColumn(clazz: Class[_], entityName: String): Column = {
+  def newRefColumn(clazz: Class[?], entityName: String): Column = {
     val idType = idTypeOf(clazz)
     val column = new Column(database.engine.toIdentifier(columnName(clazz, entityName, true)), sqlTypeMapping.sqlType(idType), false)
     addRefComment(column, clazz, entityName)

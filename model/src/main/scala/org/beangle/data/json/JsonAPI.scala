@@ -28,6 +28,7 @@ import org.beangle.data.orm.Jpas
 
 import scala.collection.mutable
 import scala.reflect.{ClassTag, classTag}
+import scala.compiletime.uninitialized
 
 /**
  * Create JSON api
@@ -112,7 +113,7 @@ object JsonAPI {
     Result(data, List.empty, included)
   }
 
-  def create(entity: Entity[_], path: String)(using context: Context): Resource = {
+  def create(entity: Entity[?], path: String)(using context: Context): Resource = {
     val clazz = Jpas.entityClass(entity)
     val entityType = typeName(clazz)
     val id = entity.id.toString
@@ -132,12 +133,12 @@ object JsonAPI {
             val typeInfo = p._2.typeinfo
             if typeInfo.isIterable then
               val elemType = typeInfo.asInstanceOf[IterableType].elementType
-              if classOf[Entity[_]].isAssignableFrom(elemType.clazz) then
-                m.refs(pName, pValue.asInstanceOf[Iterable[Entity[_]]])
+              if classOf[Entity[?]].isAssignableFrom(elemType.clazz) then
+                m.refs(pName, pValue.asInstanceOf[Iterable[Entity[?]]])
               else
                 m.attr(pName, pValue)
             else if typeInfo.isOptional then
-              pValue.asInstanceOf[Option[_]] foreach { inner =>
+              pValue.asInstanceOf[Option[?]] foreach { inner =>
                 m.field(pName, inner)
               }
             else
@@ -156,8 +157,8 @@ object JsonAPI {
   }
 
   /** The super types of a class, from the most general to the direct parents. */
-  private def superTypes(clazz: Class[_]): Iterable[Class[_]] = {
-    val supers = Collections.newBuffer[Class[_]]
+  private def superTypes(clazz: Class[?]): Iterable[Class[?]] = {
+    val supers = Collections.newBuffer[Class[?]]
     supers ++= clazz.getInterfaces
     var superClazz = clazz.getSuperclass
     while (null != superClazz && superClazz != classOf[Any]) {
@@ -168,7 +169,7 @@ object JsonAPI {
     supers
   }
 
-  def typeName(clazz: Class[_]): String = {
+  def typeName(clazz: Class[?]): String = {
     EnNounPluralizer.pluralize(Strings.unCamel(clazz.getSimpleName))
   }
 
@@ -213,11 +214,11 @@ object JsonAPI {
   class Filters {
     private val filters = Collections.newMap[String, Filter]
 
-    def getFilter(clazz: Class[_]): Filter = {
+    def getFilter(clazz: Class[?]): Filter = {
       filters.getOrElse(typeName(clazz), createDefault(clazz))
     }
 
-    private def createDefault(clazz: Class[_]): Filter = {
+    private def createDefault(clazz: Class[?]): Filter = {
       val includeNames = Collections.newSet[String]
       val excludeNames = Collections.newSet[String]
       var attributes = Map.empty[String, Any => Any]
@@ -233,11 +234,11 @@ object JsonAPI {
       filter
     }
 
-    private def getSupers(clazz: Class[_]): Iterable[Class[_]] = {
+    private def getSupers(clazz: Class[?]): Iterable[Class[?]] = {
       superTypes(clazz)
     }
 
-    def exclude(clazz: Class[_], names: String*): Unit = {
+    def exclude(clazz: Class[?], names: String*): Unit = {
       val typ = typeName(clazz)
       val filter = filters.getOrElse(typ, createDefault(clazz))
       filters.put(typ, filter.merge(Set.empty, filter.excludes ++ names))
@@ -248,7 +249,7 @@ object JsonAPI {
       filters.put(typeName, filter.merge(Set.empty, names.toSet))
     }
 
-    def include(clazz: Class[_], names: String*): Unit = {
+    def include(clazz: Class[?], names: String*): Unit = {
       val typ = typeName(clazz)
       val filter = filters.getOrElse(typ, createDefault(clazz))
       filters.put(typ, filter.merge(filter.includes ++ names, Set.empty))
@@ -286,11 +287,11 @@ object JsonAPI {
     private[json] val includedResources = Collections.newMap[String, mutable.Map[String, Any]]
 
     def include[T: ClassTag](names: String*): Unit = {
-      filters.include(classTag[T].runtimeClass, names: _*)
+      filters.include(classTag[T].runtimeClass, names*)
     }
 
     def exclude[T: ClassTag](names: String*): Unit = {
-      filters.exclude(classTag[T].runtimeClass, names: _*)
+      filters.exclude(classTag[T].runtimeClass, names*)
     }
 
     def shouldInclude(path: String): Boolean = {
@@ -307,12 +308,12 @@ object JsonAPI {
       included
     }
 
-    def mkJson(entities: Iterable[Entity[_]], properties: String*): JsonObject = {
+    def mkJson(entities: Iterable[Entity[?]], properties: String*): JsonObject = {
       given context: Context = this
 
       if entities.nonEmpty then
         val first = entities.head
-        this.filters.include(Jpas.entityClass(first), properties: _*)
+        this.filters.include(Jpas.entityClass(first), properties*)
       end if
       val resources = entities.map { g => JsonAPI.create(g, "") }
       JsonAPI.newJson(resources)
@@ -328,7 +329,7 @@ object JsonAPI {
   class Resource(val id: String, val `type`: String, path: String) {
     var attributes = new Properties
     var relationships = new Properties
-    var links: Links = _
+    var links: Links = uninitialized
 
     def linkSelf(url: String): Resource = {
       links = new Links(url)
@@ -349,7 +350,7 @@ object JsonAPI {
       this
     }
 
-    def ref(name: String, value: Entity[_])(using context: JsonAPI.Context): Resource = {
+    def ref(name: String, value: Entity[?])(using context: JsonAPI.Context): Resource = {
       val pJson = new JsonObject
       val typ = typeName(Jpas.entityClass(value))
       val id = value.id.toString
@@ -365,7 +366,7 @@ object JsonAPI {
       this
     }
 
-    def refs(name: String, pValues: Iterable[Entity[_]])(using context: JsonAPI.Context): Resource = {
+    def refs(name: String, pValues: Iterable[Entity[?]])(using context: JsonAPI.Context): Resource = {
       if pValues.nonEmpty then
         val pJson = new JsonObject
         val typ = typeName(Jpas.entityClass(pValues.head))

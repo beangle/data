@@ -56,9 +56,9 @@ object Operation {
     def build(): List[Operation] = operations.toList
   }
 
-  def saveOrUpdate(entities: AnyRef*): Builder = new Builder().saveOrUpdate(entities: _*)
+  def saveOrUpdate(entities: AnyRef*): Builder = new Builder().saveOrUpdate(entities*)
 
-  def remove(entities: AnyRef*): Builder = new Builder().remove(entities: _*)
+  def remove(entities: AnyRef*): Builder = new Builder().remove(entities*)
 
 }
 

@@ -27,6 +27,7 @@ import org.hibernate.`type`.CompositeType
 import java.io.Serial
 import java.lang.reflect.Method
 import java.util.Objects
+import scala.compiletime.uninitialized
 
 /** 未初始化懒加载代理的序列化载体。
  *
@@ -37,8 +38,8 @@ import java.util.Objects
  */
 class BeangleSerializableProxy(
     entityName: String,
-    persistentClass: Class[_],
-    interfaces: Array[Class[_]],
+    persistentClass: Class[?],
+    interfaces: Array[Class[?]],
     id: AnyRef,
     readOnly: java.lang.Boolean,
     sessionFactoryUuid: String,
@@ -51,11 +52,11 @@ class BeangleSerializableProxy(
     allowLoadOutsideTransaction) {
 
   private val identifierGetterMethodName: String = Option(getIdentifierMethod).map(_.getName).orNull
-  private val identifierGetterMethodClass: Class[_] = Option(getIdentifierMethod).map(_.getDeclaringClass).orNull
+  private val identifierGetterMethodClass: Class[?] = Option(getIdentifierMethod).map(_.getDeclaringClass).orNull
 
   private val identifierSetterMethodName: String = Option(setIdentifierMethod).map(_.getName).orNull
-  private val identifierSetterMethodClass: Class[_] = Option(setIdentifierMethod).map(_.getDeclaringClass).orNull
-  private val identifierSetterMethodParams: Array[Class[_]] = Option(setIdentifierMethod).map(_.getParameterTypes).orNull
+  private val identifierSetterMethodClass: Class[?] = Option(setIdentifierMethod).map(_.getDeclaringClass).orNull
+  private val identifierSetterMethodParams: Array[Class[?]] = Option(setIdentifierMethod).map(_.getParameterTypes).orNull
 
   @Serial
   private def readResolve(): AnyRef = {

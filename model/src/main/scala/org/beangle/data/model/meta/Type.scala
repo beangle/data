@@ -20,14 +20,14 @@ package org.beangle.data.model.meta
 import org.beangle.commons.lang.reflect.Reflections
 
 trait Type {
-  def clazz: Class[_]
+  def clazz: Class[?]
 
   def newInstance(): AnyRef = {
     Reflections.newInstance(clazz).asInstanceOf[AnyRef]
   }
 }
 
-class BasicType(val clazz: Class[_]) extends Type
+class BasicType(val clazz: Class[?]) extends Type
 
 trait StructType extends Type {
   def getProperty(name: String): Option[Property]
@@ -52,7 +52,7 @@ trait EntityType extends StructType {
 trait Property {
   def name: String
 
-  def clazz: Class[_]
+  def clazz: Class[?]
 
   def optional: Boolean
 }

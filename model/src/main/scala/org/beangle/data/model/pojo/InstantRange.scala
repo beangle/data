@@ -18,6 +18,7 @@
 package org.beangle.data.model.pojo
 
 import java.time.Instant
+import scala.compiletime.uninitialized
 
 /** 具有时间范围的实体
   *
@@ -25,10 +26,10 @@ import java.time.Instant
   */
 trait InstantRange {
   /** 起始时间 */
-  var beginAt: Instant = _
+  var beginAt: Instant = uninitialized
 
   /** 结束时间 */
-  var endAt: Instant = _
+  var endAt: Instant = uninitialized
 
   def within(time: Instant): Boolean = {
     !(beginAt.isAfter(time) || endAt.isBefore(time))

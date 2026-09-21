@@ -26,6 +26,7 @@ import org.beangle.data.Logger
 import org.beangle.data.orm.{MappingModule, NamingPolicy}
 
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 class Profiles(config: Document) {
 
@@ -35,19 +36,19 @@ class Profiles(config: Document) {
 
   private val namings = new collection.mutable.HashMap[String, NamingPolicy]
 
-  var modules: List[MappingModule] = _
+  var modules: List[MappingModule] = uninitialized
 
   init()
 
-  def getSchema(clazz: Class[_]): Option[String] = {
+  def getSchema(clazz: Class[?]): Option[String] = {
     getProfile(clazz).getSchema(clazz)
   }
 
-  def getPrefix(clazz: Class[_]): String = {
+  def getPrefix(clazz: Class[?]): String = {
     getProfile(clazz).getPrefix(clazz)
   }
 
-  def getProfile(clazz: Class[_]): MappingProfile = {
+  def getProfile(clazz: Class[?]): MappingProfile = {
     var name = clazz.getName
     var matched: Option[MappingProfile] = None
     while (isNotEmpty(name) && matched.isEmpty) {
@@ -59,7 +60,7 @@ class Profiles(config: Document) {
     matched.getOrElse(defaultProfile)
   }
 
-  def getNamingPolicy(clazz: Class[_]): NamingPolicy = {
+  def getNamingPolicy(clazz: Class[?]): NamingPolicy = {
     getProfile(clazz).naming
   }
 

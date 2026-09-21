@@ -19,6 +19,7 @@ package org.beangle.data.dao
 
 import org.beangle.commons.collection.page._
 import org.beangle.commons.lang.annotation.property
+import scala.compiletime.uninitialized
 
 /** 基于查询的分页
   * 当使用或导出大批量数据时，使用者仍以List的方式进行迭代。<br>
@@ -28,7 +29,7 @@ import org.beangle.commons.lang.annotation.property
   */
 abstract class AbstractQueryPage[T](val query: LimitQuery[T]) extends Page[T] {
 
-  var page: Page[T] = _
+  var page: Page[T] = uninitialized
 
   var pageIndex: Int = if (null != query.limit) query.limit.pageIndex - 1 else 0
 

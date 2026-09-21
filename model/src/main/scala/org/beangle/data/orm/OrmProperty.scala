@@ -19,12 +19,13 @@ package org.beangle.data.orm
 
 import org.beangle.jdbc.meta.Column
 import org.beangle.data.model.meta.*
+import scala.compiletime.uninitialized
 
 trait Fetchable {
   var fetch: Option[String] = None
 }
 
-abstract class OrmProperty(val name: String, var clazz: Class[_], val optional: Boolean) extends Property {
+abstract class OrmProperty(val name: String, var clazz: Class[?], val optional: Boolean) extends Property {
   var cascade: Option[String] = None
   var mergeable: Boolean = true
 
@@ -32,7 +33,7 @@ abstract class OrmProperty(val name: String, var clazz: Class[_], val optional: 
   var insertable: Boolean = true
   var optimisticLocked: Boolean = true
   var isLazy: Boolean = false
-  var generator: IdGenerator = _
+  var generator: IdGenerator = uninitialized
   var generated: Option[String] = None
 
   def copy(): OrmProperty
@@ -45,7 +46,7 @@ abstract class OrmProperty(val name: String, var clazz: Class[_], val optional: 
  * @param optional
  * @param propertyType
  */
-final class OrmSingularProperty(name: String, clazz: Class[_], optional: Boolean, var propertyType: OrmType)
+final class OrmSingularProperty(name: String, clazz: Class[?], optional: Boolean, var propertyType: OrmType)
   extends OrmProperty(name, clazz, optional) with Fetchable with ColumnHolder with Cloneable with SingularProperty {
 
   /** 本实体中，参与连接外表的列，一般只有一列，如foreign_table_id */
@@ -68,9 +69,9 @@ final class OrmSingularProperty(name: String, clazz: Class[_], optional: Boolean
 
 }
 
-abstract class OrmPluralProperty(name: String, clazz: Class[_], var element: OrmType)
+abstract class OrmPluralProperty(name: String, clazz: Class[?], var element: OrmType)
   extends OrmProperty(name, clazz, true) with PluralProperty with Fetchable with Cloneable {
-  var ownerColumn: Column = _
+  var ownerColumn: Column = uninitialized
   var inverseColumn: Option[Column] = None
   var mappedBy: Option[String] = None
   var inverse: Boolean = false
@@ -92,15 +93,15 @@ abstract class OrmPluralProperty(name: String, clazz: Class[_], var element: Orm
   }
 }
 
-class OrmCollectionProperty(name: String, clazz: Class[_], element: OrmType)
+class OrmCollectionProperty(name: String, clazz: Class[?], element: OrmType)
   extends OrmPluralProperty(name, clazz, element) with CollectionProperty {
   var orderBy: Option[String] = None
 }
 
-final class OrmMapProperty(name: String, clazz: Class[_], var key: OrmType, elem: OrmType)
+final class OrmMapProperty(name: String, clazz: Class[?], var key: OrmType, elem: OrmType)
   extends OrmPluralProperty(name, clazz, elem) with MapProperty {
 
-  var keyColumn: Column = _
+  var keyColumn: Column = uninitialized
 
   override def copy(): OrmMapProperty = {
     val cloned = super.clone().asInstanceOf[OrmMapProperty]

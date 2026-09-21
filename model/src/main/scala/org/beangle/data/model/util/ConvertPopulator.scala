@@ -66,7 +66,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
   /** Initialize target's attribuate path
    * Return the last property value and type.
    */
-  override def init(target: Entity[_], et: EntityType, attr: String): (Any, Property) = {
+  override def init(target: Entity[?], et: EntityType, attr: String): (Any, Property) = {
     var propObj: Any = target
     var property: Any = null
     var objtype: StructType = et
@@ -118,7 +118,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
   /**
    * 安静的拷贝属性，如果属性非法或其他错误则记录日志
    */
-  override def populate(target: Entity[_], entityType: EntityType, attr: String, value: Any): Boolean = {
+  override def populate(target: Entity[?], entityType: EntityType, attr: String, value: Any): Boolean = {
     populate(target, entityType, Map(attr -> value)).fails.isEmpty
   }
 
@@ -129,7 +129,7 @@ class ConvertPopulator(conversion: Conversion = DefaultConversion.Instance) exte
    * 如果params中的id为null，则将该实体的置为null.<br>
    * 否则新生成一个实体，将其id设为params中指定的值。 空字符串按照null处理
    */
-  override def populate(entity: Entity[_], entityType: EntityType, params: collection.Map[String, Any]): Populator.CopyResult = {
+  override def populate(entity: Entity[?], entityType: EntityType, params: collection.Map[String, Any]): Populator.CopyResult = {
     val result = new Populator.CopyResult
     val idName = entityType.id.name
     params foreach {

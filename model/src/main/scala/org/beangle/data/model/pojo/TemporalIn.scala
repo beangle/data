@@ -21,11 +21,12 @@ import org.beangle.commons.collection.Collections
 
 import java.time.{LocalDate, YearMonth}
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 trait TemporalIn {
 
   /** 起始日期 */
-  var beginIn: YearMonth = _
+  var beginIn: YearMonth = uninitialized
 
   /** 结束日期 */
   var endIn: Option[YearMonth] = None

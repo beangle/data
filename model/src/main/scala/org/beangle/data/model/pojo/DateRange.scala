@@ -21,6 +21,7 @@ import org.beangle.commons.collection.Collections
 
 import java.time.LocalDate
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 /** 具有日期范围的实体
  *
@@ -28,10 +29,10 @@ import scala.collection.mutable
  */
 trait DateRange {
   /** 起始日期 */
-  var beginOn: LocalDate = _
+  var beginOn: LocalDate = uninitialized
 
   /** 结束日期 */
-  var endOn: LocalDate = _
+  var endOn: LocalDate = uninitialized
 
   def within(date: LocalDate): Boolean = {
     !(beginOn.isAfter(date) || endOn.isBefore(date))

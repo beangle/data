@@ -39,7 +39,7 @@ trait EntityDao {
    */
   def get[T <: Entity[ID], ID](clazz: Class[T], id: ID): T
 
-  def getAll[T <: Entity[_]](clazz: Class[T]): Seq[T]
+  def getAll[T <: Entity[?]](clazz: Class[T]): Seq[T]
 
   /** find T by id.
    */
@@ -47,11 +47,11 @@ trait EntityDao {
 
   def find[T <: Entity[ID], ID](clazz: Class[T], ids: Iterable[ID]): Seq[T]
 
-  def findBy[T <: Entity[_]](clazz: Class[T], key: String, value: Any): Seq[T]
+  def findBy[T <: Entity[?]](clazz: Class[T], key: String, value: Any): Seq[T]
 
-  def findBy[T <: Entity[_]](clazz: Class[T], kv: (String, Any)*): Seq[T]
+  def findBy[T <: Entity[?]](clazz: Class[T], kv: (String, Any)*): Seq[T]
 
-  def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T]
+  def findBy[T <: Entity[?]](clazz: Class[T], params: collection.Map[String, ?]): Seq[T]
 
   /**
    * save or update entities
@@ -64,7 +64,7 @@ trait EntityDao {
   def saveOrUpdate[E](entities: Iterable[E]): Unit
 
   /** whether the entity is dirty */
-  def isDirty(entity: Entity[_]): Boolean
+  def isDirty(entity: Entity[?]): Boolean
 
   /**
    * remove entities.
@@ -87,7 +87,7 @@ trait EntityDao {
    * @param params
    * @return
    */
-  def removeBy(clazz: Class[_], params: collection.Map[String, _]): Int
+  def removeBy(clazz: Class[?], params: collection.Map[String, ?]): Int
 
   /**
    * Search by QueryBuilder
@@ -101,9 +101,9 @@ trait EntityDao {
 
   def search[T](query: String, params: Any*): Seq[T]
 
-  def search[T](queryString: String, params: collection.Map[String, _]): Seq[T]
+  def search[T](queryString: String, params: collection.Map[String, ?]): Seq[T]
 
-  def search[T](queryString: String, params: collection.Map[String, _], limit: PageLimit, cacheable: Boolean): Seq[T]
+  def search[T](queryString: String, params: collection.Map[String, ?], limit: PageLimit, cacheable: Boolean): Seq[T]
 
   /** Get Top N entities
    *
@@ -141,18 +141,18 @@ trait EntityDao {
    */
   def execute(builder: Operation.Builder): Unit
 
-  def executeUpdate(queryString: String, parameterMap: collection.Map[String, _]): Int
+  def executeUpdate(queryString: String, parameterMap: collection.Map[String, ?]): Int
 
   def executeUpdate(queryString: String, arguments: Any*): Int
 
-  def executeUpdateRepeatly(queryString: String, arguments: Iterable[Iterable[_]]): List[Int]
+  def executeUpdateRepeatly(queryString: String, arguments: Iterable[Iterable[?]]): List[Int]
 
   // 缓存相关
-  def evict(clazz: Class[_], id: Any): Unit
+  def evict(clazz: Class[?], id: Any): Unit
 
-  def evict(entity: Entity[_]): Unit
+  def evict(entity: Entity[?]): Unit
 
-  def evict[A <: Entity[_]](clazz: Class[A]): Unit
+  def evict[A <: Entity[?]](clazz: Class[A]): Unit
 
   /**
    * Initialize entity whenever session close or open
@@ -161,15 +161,15 @@ trait EntityDao {
 
   def refresh[T](entity: T): T
 
-  def count(clazz: Class[_], kvs: (String, Any)*): Int
+  def count(clazz: Class[?], kvs: (String, Any)*): Int
 
-  def count(clazz: Class[_], params: collection.Map[String, _]): Int
+  def count(clazz: Class[?], params: collection.Map[String, ?]): Int
 
-  def exists(clazz: Class[_], kv: (String, Any)*): Boolean
+  def exists(clazz: Class[?], kv: (String, Any)*): Boolean
 
-  def exists(clazz: Class[_], params: collection.Map[String, _]): Boolean
+  def exists(clazz: Class[?], params: collection.Map[String, ?]): Boolean
 
-  def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, params: collection.Map[String, _]): Boolean
+  def duplicate[T <: Entity[?]](clazz: Class[T], id: Any, params: collection.Map[String, ?]): Boolean
 
   def createBlob(inputStream: InputStream, length: Int): Blob
 

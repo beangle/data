@@ -35,12 +35,12 @@ object IdHelper {
     Table.qualify(schema, params.getProperty(TABLE)).toLowerCase()
   }
 
-  def getEntityClass(params: ju.Properties, registry: ServiceRegistry): Class[_] = {
+  def getEntityClass(params: ju.Properties, registry: ServiceRegistry): Class[?] = {
     val em = registry.getService(classOf[MappingService]).mappings.entityTypes(params.getProperty(IdentifierGenerator.ENTITY_NAME))
     em.clazz
   }
 
-  def convertType(id: Long, idType: Class[_]): Number = {
+  def convertType(id: Long, idType: Class[?]): Number = {
     if idType == classOf[Long] then id
     else if idType == classOf[Int] then Integer.valueOf(id.intValue)
     else java.lang.Short.valueOf(id.shortValue)

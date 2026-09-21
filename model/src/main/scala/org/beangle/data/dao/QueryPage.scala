@@ -21,7 +21,7 @@ import org.beangle.commons.collection.page.{Page, PageLimit, SinglePage}
 import org.beangle.data.model.Entity
 
 object QueryPage {
-  def apply[T <: Entity[_]](query: OqlBuilder[T], entityDao: EntityDao): QueryPage[T] = {
+  def apply[T <: Entity[?]](query: OqlBuilder[T], entityDao: EntityDao): QueryPage[T] = {
     if null == query.limit then query.limit(1, 100)
     val q = query.build().asInstanceOf[LimitQuery[T]]
     new QueryPage[T](q, entityDao)
@@ -33,7 +33,7 @@ object QueryPage {
  *
  * @author chaostone
  */
-class QueryPage[T <: Entity[_]](query: LimitQuery[T], val entityDao: EntityDao) extends AbstractQueryPage[T](query) {
+class QueryPage[T <: Entity[?]](query: LimitQuery[T], val entityDao: EntityDao) extends AbstractQueryPage[T](query) {
 
   next()
 

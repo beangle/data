@@ -47,7 +47,7 @@ object QuerySupport {
   /**
    * 统计该查询的记录数
    */
-  def doCount(limitQuery: LimitQuery[_], hibernateSession: Session): Int = {
+  def doCount(limitQuery: LimitQuery[?], hibernateSession: Session): Int = {
     val cntQuery = limitQuery.countQuery
     if (null == cntQuery) {
       buildHibernateQuery(limitQuery, hibernateSession).list().size()
@@ -77,7 +77,7 @@ object QuerySupport {
   /**
    * 为query设置JPA style参数
    */
-  def setParameters[T](query: Query[T], argument: Iterable[_]): Query[T] = {
+  def setParameters[T](query: Query[T], argument: Iterable[?]): Query[T] = {
     if (argument != null && argument.nonEmpty) {
       var i = 1
       val iter = argument.iterator
@@ -92,7 +92,7 @@ object QuerySupport {
   /**
    * 为query设置参数
    */
-  def setParameters[T](query: Query[T], parameterMap: collection.Map[String, _]): Query[T] = {
+  def setParameters[T](query: Query[T], parameterMap: collection.Map[String, ?]): Query[T] = {
     if (parameterMap != null && parameterMap.nonEmpty) {
       for ((k, v) <- parameterMap; if null != k) setParameter(query, k, v)
     }
@@ -136,7 +136,7 @@ object QuerySupport {
   /**
    * 针对查询条件绑定查询的值
    */
-  def bindValues(query: Query[_], conditions: List[Condition]): Unit = {
+  def bindValues(query: Query[?], conditions: List[Condition]): Unit = {
     var position = 0
     var hasInterrogation = false // 含有问号
     for (condition <- conditions) {

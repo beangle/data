@@ -30,11 +30,12 @@ import java.io.Serializable as JSerializable
 import java.util as ju
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
+import scala.compiletime.uninitialized
 
 class ScalaPersistentSeq(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection[Object](session), mutable.Buffer[Object] {
 
-  protected var list: mutable.Buffer[Object] = _
+  protected var list: mutable.Buffer[Object] = uninitialized
 
   def this(session: SharedSessionContractImplementor, list: mutable.Buffer[Object]) = {
     this(session)
@@ -62,13 +63,13 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
 
   override def equalsSnapshot(persister: CollectionPersister): Boolean = {
     val elementType = getElementType(persister)
-    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[_]]
+    val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[?]]
     val itr = list.iterator
     (sn.size == list.size) && !sn.exists { ele => elementType.isDirty(itr.next(), ele, getSession) }
   }
 
   override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
-    snapshot.asInstanceOf[collection.Seq[_]].isEmpty
+    snapshot.asInstanceOf[collection.Seq[?]].isEmpty
   }
 
   override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
@@ -77,7 +78,7 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     array foreach { ele => list += getElementType(persister).assemble(ele, getSession, owner) }
   }
 
-  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
+  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[?]): Unit = {
     val collectionDescriptor = attributeMapping.getCollectionDescriptor
     val size = if null == loadingStateList then 0 else loadingStateList.size
     this.list = collectionDescriptor.getCollectionSemantics
@@ -237,7 +238,7 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     list.isEmpty
   }
 
-  override def entries(persister: CollectionPersister): ju.Iterator[_] = {
+  override def entries(persister: CollectionPersister): ju.Iterator[?] = {
     asJava(list.iterator)
   }
 
@@ -253,7 +254,7 @@ class ScalaPersistentSeq(session: SharedSessionContractImplementor)
     (0 until snSize).exists(i => list(i) == null && sn(i) != null)
   }
 
-  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
+  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[?] = {
     val deletes = new ju.ArrayList[Object]()
     val sn = getSnapshot().asInstanceOf[mutable.ArrayBuffer[Object]]
     val snSize = sn.size

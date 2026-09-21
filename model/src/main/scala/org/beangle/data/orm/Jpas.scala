@@ -28,7 +28,7 @@ object Jpas {
 
   var proxyResolver: ProxyResolver = ProxyResolver.Null
 
-  def findEntityName(clazz: Class[_]): String = {
+  def findEntityName(clazz: Class[?]): String = {
     val annotation = clazz.getAnnotation(classOf[JpaEntity])
     if (null != annotation) {
       val name = annotation.name()
@@ -38,29 +38,29 @@ object Jpas {
     }
   }
 
-  def isSeq(clazz: Class[_]): Boolean = {
-    classOf[collection.mutable.Seq[_]].isAssignableFrom(clazz) || classOf[java.util.List[_]].isAssignableFrom(clazz)
+  def isSeq(clazz: Class[?]): Boolean = {
+    classOf[collection.mutable.Seq[?]].isAssignableFrom(clazz) || classOf[java.util.List[?]].isAssignableFrom(clazz)
   }
 
-  def isSet(clazz: Class[_]): Boolean = {
-    classOf[collection.mutable.Set[_]].isAssignableFrom(clazz) || classOf[java.util.Set[_]].isAssignableFrom(clazz)
+  def isSet(clazz: Class[?]): Boolean = {
+    classOf[collection.mutable.Set[?]].isAssignableFrom(clazz) || classOf[java.util.Set[?]].isAssignableFrom(clazz)
   }
 
-  def isMap(clazz: Class[_]): Boolean = {
-    classOf[collection.mutable.Map[_, _]].isAssignableFrom(clazz) || classOf[java.util.Map[_, _]].isAssignableFrom(clazz)
+  def isMap(clazz: Class[?]): Boolean = {
+    classOf[collection.mutable.Map[?, ?]].isAssignableFrom(clazz) || classOf[java.util.Map[?, ?]].isAssignableFrom(clazz)
   }
 
-  def isEntity(clazz: Class[_]): Boolean = {
-    classOf[Entity[_]].isAssignableFrom(clazz) || null != clazz.getAnnotation(classOf[JpaEntity])
+  def isEntity(clazz: Class[?]): Boolean = {
+    classOf[Entity[?]].isAssignableFrom(clazz) || null != clazz.getAnnotation(classOf[JpaEntity])
   }
 
-  def isComponent(clazz: Class[_]): Boolean = {
+  def isComponent(clazz: Class[?]): Boolean = {
     classOf[Component].isAssignableFrom(clazz) ||
       null != clazz.getAnnotation(classOf[org.beangle.commons.bean.component]) ||
       null != clazz.getAnnotation(classOf[Embeddable])
   }
 
-  def entityClass(entity: AnyRef): Class[_] = {
+  def entityClass(entity: AnyRef): Class[?] = {
     proxyResolver.targetClass(entity)
   }
 }

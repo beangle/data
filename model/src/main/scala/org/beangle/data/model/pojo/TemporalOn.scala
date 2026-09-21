@@ -21,6 +21,7 @@ import org.beangle.commons.collection.Collections
 
 import java.time.LocalDate
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 /** 有时效性的实体
  *
@@ -32,7 +33,7 @@ import scala.collection.mutable
 trait TemporalOn {
 
   /** 起始日期 */
-  var beginOn: LocalDate = _
+  var beginOn: LocalDate = uninitialized
 
   /** 结束日期 */
   var endOn: Option[LocalDate] = None

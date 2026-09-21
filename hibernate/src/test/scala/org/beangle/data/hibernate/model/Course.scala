@@ -24,6 +24,7 @@ import org.beangle.data.model.{Component, LongId}
 
 import java.time.{Instant, LocalDate}
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 class Course extends LongId, Named {
 
@@ -68,15 +69,15 @@ class Course extends LongId, Named {
 }
 
 class CourseLevel extends LongId {
-  var course: Course = _
-  var level: Int = _
-  var beginOn: LocalDate = _
+  var course: Course = uninitialized
+  var level: Int = uninitialized
+  var beginOn: LocalDate = uninitialized
 }
 
 class CourseFeature extends Component {
-  var name: String = _
-  var createdAt: Instant = _
-  var description: String = _
+  var name: String = uninitialized
+  var createdAt: Instant = uninitialized
+  var description: String = uninitialized
 }
 
 enum CourseCategory(val id: Int) {

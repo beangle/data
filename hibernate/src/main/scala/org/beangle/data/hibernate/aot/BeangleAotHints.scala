@@ -76,7 +76,7 @@ class BeangleAotHints extends AotHintRegistrar {
       classOf[BeangleJsonFormatMapper], classOf[BeangleXmlFormatMapper],
       classOf[JsonAccessor.type], classOf[NativeJsonJdbcType], classOf[StringJsonJdbcType], classOf[NullableIntJdbcType.type],
       classOf[AutoIncrementGenerator], classOf[CodeStyleGenerator], classOf[DateStyleGenerator], classOf[DateTimeStyleGenerator],
-      classOf[ValueType[_]], classOf[EnumType[_]], classOf[JsonType[_]], classOf[YearMonthType],
+      classOf[ValueType[?]], classOf[EnumType[?]], classOf[JsonType[?]], classOf[YearMonthType],
       classOf[Decimal5Type], classOf[TinyDecimal5Type], classOf[BagType], classOf[SeqType],
       classOf[SetType], classOf[MapType],
       classOf[ScalaPersistentBag], classOf[ScalaPersistentSeq], classOf[ScalaPersistentSet], classOf[ScalaPersistentMap])

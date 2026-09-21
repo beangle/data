@@ -25,6 +25,7 @@ import org.springframework.transaction.*
 import org.springframework.transaction.support.{TransactionSynchronizationManager as Tsm, *}
 
 import javax.sql.DataSource
+import scala.compiletime.uninitialized
 
 /** 处理Hibernate中的事务
  *
@@ -40,7 +41,7 @@ import javax.sql.DataSource
 class HibernateTransactionManager(val sessionFactory: SessionFactory)
   extends AbstractPlatformTransactionManager, ResourceTransactionManager {
 
-  var dataSource: DataSource = _
+  var dataSource: DataSource = uninitialized
 
   override def getResourceFactory: Object = sessionFactory
 

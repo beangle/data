@@ -28,6 +28,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 
 import java.util as ju
 import javax.sql.DataSource
+import scala.compiletime.uninitialized
 
 @description("构建Hibernate的会话工厂")
 class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[SessionFactory], Initializing {
@@ -36,9 +37,9 @@ class LocalSessionFactoryBean(val dataSource: DataSource) extends Factory[Sessio
 
   var properties = new ju.Properties
 
-  private var result: SessionFactory = _
+  private var result: SessionFactory = uninitialized
 
-  var container: Container = _
+  var container: Container = uninitialized
 
   def init(): Unit = {
     if (null != container && container.underlying != null) {

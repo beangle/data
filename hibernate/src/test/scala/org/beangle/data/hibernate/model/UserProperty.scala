@@ -19,8 +19,9 @@ package org.beangle.data.hibernate.model
 
 import org.beangle.data.model.LongId
 import org.beangle.data.model.pojo.Named
+import scala.compiletime.uninitialized
 
 class UserProperty extends LongId with Named {
-  var user: TestUser = _
-  var _value: String = _
+  var user: TestUser = uninitialized
+  var _value: String = uninitialized
 }

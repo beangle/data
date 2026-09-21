@@ -18,6 +18,7 @@
 package org.beangle.data.model.pojo
 
 import java.time.Instant
+import scala.compiletime.uninitialized
 
 /** 有时效性的实体
  *
@@ -29,7 +30,7 @@ import java.time.Instant
 trait TemporalAt {
 
   /** 获得生效时间 */
-  var beginAt: Instant = _
+  var beginAt: Instant = uninitialized
 
   /** 获得失效时间 */
   var endAt: Option[Instant] = None

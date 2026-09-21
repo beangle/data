@@ -30,11 +30,11 @@ import scala.collection.mutable
 class SetType extends ScalaCollectionType {
   type MSet = mutable.Set[Object]
 
-  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
+  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[?] = {
     new ScalaPersistentSet(session)
   }
 
-  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[_] = {
+  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[?] = {
     new ScalaPersistentSet(session, collection.asInstanceOf[MSet])
   }
 
@@ -46,7 +46,7 @@ class SetType extends ScalaCollectionType {
     new mutable.HashSet[Object]
   }
 
-  override def getCollectionClass: Class[_] = classOf[MSet]
+  override def getCollectionClass: Class[?] = classOf[MSet]
 
   override def getClassification: CollectionClassification = CollectionClassification.SET
 }

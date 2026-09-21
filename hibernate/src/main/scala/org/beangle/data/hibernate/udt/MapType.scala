@@ -32,15 +32,15 @@ import scala.jdk.javaapi.CollectionConverters.asJava
 class MapType extends ScalaCollectionType {
   type MMap = mutable.Map[Object, Object]
 
-  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
+  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[?] = {
     new ScalaPersistentMap(session)
   }
 
-  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[_] = {
+  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[?] = {
     new ScalaPersistentMap(session, collection.asInstanceOf[MMap])
   }
 
-  override def getElementsIterator(collection: Object): ju.Iterator[_] = {
+  override def getElementsIterator(collection: Object): ju.Iterator[?] = {
     asJava(collection.asInstanceOf[MMap]).values().iterator()
   }
 
@@ -52,7 +52,7 @@ class MapType extends ScalaCollectionType {
     new mutable.HashMap[Object, Object]
   }
 
-  override def getCollectionClass: Class[_] = classOf[MMap]
+  override def getCollectionClass: Class[?] = classOf[MMap]
 
   override def getClassification: CollectionClassification = CollectionClassification.MAP
 }

@@ -30,11 +30,12 @@ import java.util as ju
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap as MHashMap, HashSet as MHashSet, Set as MSet}
 import scala.jdk.javaapi.CollectionConverters.asJava
+import scala.compiletime.uninitialized
 
 class ScalaPersistentSet(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection[Object](session), MSet[Object] {
 
-  protected var set: MSet[Object] = _
+  protected var set: MSet[Object] = uninitialized
 
   def this(session: SharedSessionContractImplementor, set: MSet[Object]) = {
     this(session)
@@ -79,7 +80,7 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
   }
 
   override def isSnapshotEmpty(snapshot: JSerializable): Boolean = {
-    snapshot.asInstanceOf[MHashMap[_, _]].isEmpty
+    snapshot.asInstanceOf[MHashMap[?, ?]].isEmpty
   }
 
   override def initializeFromCache(persister: CollectionPersister, disassembled: Object, owner: Object): Unit = {
@@ -156,7 +157,7 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
     set.toString
   }
 
-  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
+  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[?]): Unit = {
     val collectionDescriptor = attributeMapping.getCollectionDescriptor
     val size = if null == loadingStateList then 0 else loadingStateList.size
     this.set = collectionDescriptor.getCollectionSemantics
@@ -166,7 +167,7 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
       this.set.addAll(asScala(loadingStateList))
   }
 
-  override def entries(persister: CollectionPersister): ju.Iterator[_] = {
+  override def entries(persister: CollectionPersister): ju.Iterator[?] = {
     asJava(set.iterator)
   }
 
@@ -196,7 +197,7 @@ class ScalaPersistentSet(session: SharedSessionContractImplementor)
     false
   }
 
-  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
+  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[?] = {
     val elementType = getElementType(persister)
     val sn = getSnapshot().asInstanceOf[MHashMap[Object, Object]]
     val deletes = new mutable.ArrayBuffer[Object]

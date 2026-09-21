@@ -38,6 +38,7 @@ import scala.annotation.nowarn
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asScala
+import scala.compiletime.uninitialized
 
 /**
  * @author chaostone
@@ -45,7 +46,7 @@ import scala.jdk.javaapi.CollectionConverters.asScala
 @description("基于Hibernate提供的通用实体DAO")
 class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
 
-  var domain: Domain = _
+  var domain: Domain = uninitialized
 
   //Writer Jpas static member
   Jpas.proxyResolver = HibernateProxyResolver
@@ -72,11 +73,11 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
 
   import QuerySupport.*
 
-  private def createQuery(hql: String): Query[_] = {
-    currentSession.createQuery(hql, null).asInstanceOf[Query[_]]
+  private def createQuery(hql: String): Query[?] = {
+    currentSession.createQuery(hql, null).asInstanceOf[Query[?]]
   }
 
-  private def entityNameOf(clazz: Class[_]): String = {
+  private def entityNameOf(clazz: Class[?]): String = {
     domain.getEntity(clazz) match {
       case Some(e) => e.entityName
       case None => clazz.getName
@@ -116,15 +117,15 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     findByMulti(entityNameOf(clazz), "id", ids)
   }
 
-  override def findBy[T <: Entity[_]](clazz: Class[T], key: String, value: Any): Seq[T] = {
+  override def findBy[T <: Entity[?]](clazz: Class[T], key: String, value: Any): Seq[T] = {
     findBy(clazz, Map(key -> value))
   }
 
-  override def findBy[T <: Entity[_]](clazz: Class[T], kvs: (String, Any)*): Seq[T] = {
+  override def findBy[T <: Entity[?]](clazz: Class[T], kvs: (String, Any)*): Seq[T] = {
     findBy(clazz, kvs.toMap)
   }
 
-  override def findBy[T <: Entity[_]](clazz: Class[T], params: collection.Map[String, _]): Seq[T] = {
+  override def findBy[T <: Entity[?]](clazz: Class[T], params: collection.Map[String, ?]): Seq[T] = {
     if (clazz == null || params == null || params.isEmpty) return List.empty
     val entityName = entityNameOf(clazz)
     val hql = new StringBuilder(s"from $entityName where ")
@@ -133,7 +134,7 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     search[T](hql.toString(), where._2)
   }
 
-  private def findByMulti[T <: Entity[_]](entityName: String, keyName: String, values: Iterable[_]): Seq[T] = {
+  private def findByMulti[T <: Entity[?]](entityName: String, keyName: String, values: Iterable[?]): Seq[T] = {
     if (values.isEmpty) return List.empty
     val hql = s"from $entityName as entity where entity.$keyName in (:values)"
     val parameterMap = new mutable.HashMap[String, Any]
@@ -156,7 +157,7 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     }
   }
 
-  private def buildWhere(params: collection.Map[String, _], prefix: String = ""): (String, collection.Map[String, Any]) = {
+  private def buildWhere(params: collection.Map[String, ?], prefix: String = ""): (String, collection.Map[String, Any]) = {
     val parameterMap = new mutable.HashMap[String, Any]
     val conditions = new mutable.ArrayBuffer[String]
     var i = 0
@@ -177,11 +178,11 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     (conditions.mkString(" and "), parameterMap)
   }
 
-  override def count(clazz: Class[_], kvs: (String, Any)*): Int = {
+  override def count(clazz: Class[?], kvs: (String, Any)*): Int = {
     count(clazz, kvs.toMap)
   }
 
-  override def count(clazz: Class[_], params: collection.Map[String, _]): Int = {
+  override def count(clazz: Class[?], params: collection.Map[String, ?]): Int = {
     val entityName = entityNameOf(clazz)
     val where = buildWhere(params)
     val hql =
@@ -192,15 +193,15 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     if (rs.isEmpty) 0 else rs.head.intValue()
   }
 
-  override def exists(clazz: Class[_], kvs: (String, Any)*): Boolean = {
+  override def exists(clazz: Class[?], kvs: (String, Any)*): Boolean = {
     count(clazz, kvs.toMap) > 0
   }
 
-  override def exists(clazz: Class[_], params: collection.Map[String, _]): Boolean = {
+  override def exists(clazz: Class[?], params: collection.Map[String, ?]): Boolean = {
     count(clazz, params) > 0
   }
 
-  override def duplicate[T <: Entity[_]](clazz: Class[T], id: Any, params: collection.Map[String, _]): Boolean = {
+  override def duplicate[T <: Entity[?]](clazz: Class[T], id: Any, params: collection.Map[String, ?]): Boolean = {
     val entityName = entityNameOf(clazz)
     val where = buildWhere(params)
     val hql = s"from $entityName where " + where._1
@@ -237,11 +238,11 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     list[T](setParameters(getNamedOrCreateQuery[T](query), params))
   }
 
-  override def search[T](queryString: String, params: collection.Map[String, _]): Seq[T] = {
+  override def search[T](queryString: String, params: collection.Map[String, ?]): Seq[T] = {
     list[T](setParameters(getNamedOrCreateQuery[T](queryString), params))
   }
 
-  override def search[T](queryString: String, params: collection.Map[String, _], limit: PageLimit, cacheable: Boolean): Seq[T] = {
+  override def search[T](queryString: String, params: collection.Map[String, ?], limit: PageLimit, cacheable: Boolean): Seq[T] = {
     val query = getNamedOrCreateQuery[T](queryString)
     query.setCacheable(cacheable)
     if (null == limit) list(setParameters(query, params))
@@ -273,13 +274,13 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     list(query.setMaxResults(limit))
   }
 
-  private def paginateQuery[T](query: Query[T], params: collection.Map[String, _], limit: PageLimit): Page[T] = {
+  private def paginateQuery[T](query: Query[T], params: collection.Map[String, ?], limit: PageLimit): Page[T] = {
     setParameters(query, params)
     query.setFirstResult((limit.pageIndex - 1) * limit.pageSize).setMaxResults(limit.pageSize)
     val targetList = query.list()
     val queryStr = buildCountQueryStr(query)
-    var countQuery: Query[_] = null
-    if (query.isInstanceOf[NativeQuery[_]]) {
+    var countQuery: Query[?] = null
+    if (query.isInstanceOf[NativeQuery[?]]) {
       countQuery = currentSession.createNativeQuery(queryStr, classOf[Object]).asInstanceOf[Query[T]]
     } else {
       countQuery = createQuery(queryStr)
@@ -289,7 +290,7 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     new SinglePage[T](limit.pageIndex, limit.pageSize, countQuery.uniqueResult().asInstanceOf[Number].intValue, asScala(targetList))
   }
 
-  override def evict(entity: Entity[_]): Unit = {
+  override def evict(entity: Entity[?]): Unit = {
     val clazz = entity match {
       case hp: HibernateProxy => hp.getHibernateLazyInitializer.getPersistentClass
       case _ => entity.getClass
@@ -297,11 +298,11 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     sf.getCache.evict(clazz, entity.id)
   }
 
-  override def evict(clazz: Class[_], id: Any): Unit = {
+  override def evict(clazz: Class[?], id: Any): Unit = {
     sf.getCache.evict(clazz, id)
   }
 
-  override def evict[A <: Entity[_]](clazz: Class[A]): Unit = {
+  override def evict[A <: Entity[?]](clazz: Class[A]): Unit = {
     val sfi = sf.asInstanceOf[SessionFactoryImplementor]
     //1. evict entity cache
     sf.getCache.evict(clazz)
@@ -361,18 +362,18 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
   }
 
   override def remove[T <: Entity[ID], ID](clazz: Class[T], id: ID, ids: ID*): Unit = {
-    val idList: Iterable[_] = id :: ids.toList
+    val idList: Iterable[?] = id :: ids.toList
     removeBy(clazz, Map("id" -> idList))
   }
 
-  override def removeBy(clazz: Class[_], params: collection.Map[String, _]): Int = {
+  override def removeBy(clazz: Class[?], params: collection.Map[String, ?]): Int = {
     if (clazz == null || params == null || params.isEmpty) return 0
     val where = buildWhere(params)
     val hql = s"delete from ${entityNameOf(clazz)} where " + where._1
     executeUpdate(hql, where._2)
   }
 
-  override def executeUpdate(queryString: String, parameterMap: collection.Map[String, _]): Int = {
+  override def executeUpdate(queryString: String, parameterMap: collection.Map[String, ?]): Int = {
     setParameters(getNamedOrCreateQuery[Any](queryString), parameterMap).executeUpdate()
   }
 
@@ -380,7 +381,7 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     setParameters(getNamedOrCreateQuery[Any](queryString), arguments).executeUpdate()
   }
 
-  override def executeUpdateRepeatly(queryString: String, arguments: Iterable[Iterable[_]]): List[Int] = {
+  override def executeUpdateRepeatly(queryString: String, arguments: Iterable[Iterable[?]]): List[Int] = {
     val query = getNamedOrCreateQuery[Any](queryString)
     val updates = new mutable.ListBuffer[Int]
     for (params <- arguments) {
@@ -422,7 +423,7 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     }
   }
 
-  override def isDirty(entity: Entity[_]): Boolean = {
+  override def isDirty(entity: Entity[?]): Boolean = {
     entity match {
       case proxy: HibernateProxy =>
         val session = currentSession.asInstanceOf[SessionImplementor]
@@ -465,7 +466,7 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
   }
 
   // update entityClass set [argumentName=argumentValue,]* where attr in values
-  def batchUpdate(entityClass: Class[_], attr: String, values: Iterable[_], argumentNames: Iterable[String], argumentValues: Iterable[Any]): Int = {
+  def batchUpdate(entityClass: Class[?], attr: String, values: Iterable[?], argumentNames: Iterable[String], argumentValues: Iterable[Any]): Int = {
     if (values.isEmpty) return 0
     val updateParams = new mutable.HashMap[String, Any]
     val valueIter = argumentValues.iterator
@@ -475,7 +476,7 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
     batchUpdate(entityClass, attr, values, updateParams)
   }
 
-  def batchUpdate(entityClass: Class[_], attr: String, values: Iterable[_], updateParams: scala.collection.Map[String, _]): Int = {
+  def batchUpdate(entityClass: Class[?], attr: String, values: Iterable[?], updateParams: scala.collection.Map[String, ?]): Int = {
     if (values.isEmpty || updateParams.isEmpty) return 0
     val hql = new StringBuilder()
     hql.append("update ").append(entityNameOf(entityClass)).append(" set ")
@@ -515,9 +516,9 @@ class HibernateEntityDao(sf: SessionFactory) extends EntityDao, Initializing {
   /**
    * 构造查询记录数目的查询字符串
    */
-  private def buildCountQueryStr(query: Query[_]): String = {
+  private def buildCountQueryStr(query: Query[?]): String = {
     var queryStr = "select count(*) "
-    if (query.isInstanceOf[NativeQuery[_]]) {
+    if (query.isInstanceOf[NativeQuery[?]]) {
       queryStr += ("from (" + query.getQueryString + ")")
     } else {
       val lowerCaseQueryStr = query.getQueryString.toLowerCase()

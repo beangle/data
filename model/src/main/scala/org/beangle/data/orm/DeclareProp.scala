@@ -28,7 +28,7 @@ import scala.language.dynamics
  * `e.selectDynamic("name").selectDynamic("first")`，本类直接把路径作用于
  * EntityHolder 的属性声明（is/&/are），替代原有的逐实体 $Tracker 子类。
  */
-class DeclareProp(path: String, holder: EntityHolder[_]) extends Prop(path) {
+class DeclareProp(path: String, holder: EntityHolder[?]) extends Prop(path) {
 
   override def selectDynamic(name: String): DeclareProp =
     new DeclareProp(if (path.isEmpty) name else path + "." + name, holder)
@@ -50,7 +50,7 @@ class DeclareProp(path: String, holder: EntityHolder[_]) extends Prop(path) {
   def &(next: DeclareProp): DeclareProps = new DeclareProps(holder, List(this, next))
 }
 
-class DeclareProps(holder: EntityHolder[_], val props: List[DeclareProp]) {
+class DeclareProps(holder: EntityHolder[?], val props: List[DeclareProp]) {
   def &(next: DeclareProp): DeclareProps = new DeclareProps(holder, props :+ next)
   infix def are(declarations: PropertyDeclaration*): Unit = props.foreach(_.is(declarations*))
 }

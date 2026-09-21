@@ -82,7 +82,7 @@ class ConditionTest extends AnyFunSpec , Matchers {
     it("parse four params") {
       val c = Conditions.parse("user.name", "admin,root, user1, user2", classOf[String])
       assert(c.content == "user.name in (:user_name)")
-      assert(c.params.head.asInstanceOf[Iterable[_]].toList == List("admin", "root", "user1", "user2"))
+      assert(c.params.head.asInstanceOf[Iterable[?]].toList == List("admin", "root", "user1", "user2"))
     }
     it("parse simple quote") {
       val c = Conditions.parse("user.name", "\"admin,root,user1\",user2", classOf[String])

@@ -30,16 +30,16 @@ import scala.jdk.javaapi.CollectionConverters.asJava
  * Mutable Seq Type
  */
 class BagType extends ScalaCollectionType {
-  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[_] = {
+  override def instantiate(session: SharedSessionContractImplementor, persister: CollectionPersister): PersistentCollection[?] = {
     new ScalaPersistentBag(session)
   }
 
-  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[_] = {
+  override def wrap(session: SharedSessionContractImplementor, collection: Object): PersistentCollection[?] = {
     new ScalaPersistentBag(session, collection.asInstanceOf[mutable.Buffer[Object]])
   }
 
   override def contains(collection: Object, entity: Object): Boolean = {
-    collection.asInstanceOf[mutable.Buffer[_]].contains(entity)
+    collection.asInstanceOf[mutable.Buffer[?]].contains(entity)
   }
 
   override def indexOf(collection: Object, entity: Object): Integer = {
@@ -50,7 +50,7 @@ class BagType extends ScalaCollectionType {
     new mutable.ArrayBuffer(anticipatedSize)
   }
 
-  override def getCollectionClass: Class[_] = classOf[mutable.Buffer[_]]
+  override def getCollectionClass: Class[?] = classOf[mutable.Buffer[?]]
 
   override def getClassification: CollectionClassification = CollectionClassification.BAG
 }

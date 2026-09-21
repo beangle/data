@@ -23,10 +23,11 @@ import org.beangle.data.model.pojo.Named
 
 import java.time.LocalDate
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 class TestRole extends LongId, Named {
   var rootUser: Boolean = true
   var properties = Collections.newMap[Int, String]
   var vocations = Collections.newSet[LocalDate]
-  var users: mutable.Buffer[TestUser] = _
+  var users: mutable.Buffer[TestUser] = uninitialized
 }

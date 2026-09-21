@@ -19,12 +19,13 @@ package org.beangle.data.orm.cfg
 
 import org.beangle.commons.lang.Strings.{isEmpty, isNotEmpty}
 import org.beangle.data.orm.NamingPolicy
+import scala.compiletime.uninitialized
 
 /** 映射命名配置
  */
 class MappingProfile {
-  var packageName: String = _
-  var naming: NamingPolicy = _
+  var packageName: String = uninitialized
+  var naming: NamingPolicy = uninitialized
   var _schema: Option[String] = None
   var _prefix: Option[String] = None
   var parent: Option[MappingProfile] = None
@@ -72,7 +73,7 @@ class MappingProfile {
     }
   }
 
-  def getPrefix(clazz: Class[_]): String = {
+  def getPrefix(clazz: Class[?]): String = {
     var prefix = this.prefix
     val anno = this.annotations find { ann =>
       clazz.getAnnotations exists { annon =>
@@ -102,7 +103,7 @@ class MappingProfile {
   }
 }
 
-class AnnotationModule(val clazz: Class[_], val value: String) {
-  var schema: String = _
-  var prefix: String = _
+class AnnotationModule(val clazz: Class[?], val value: String) {
+  var schema: String = uninitialized
+  var prefix: String = uninitialized
 }

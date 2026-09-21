@@ -20,6 +20,7 @@ package org.beangle.data.hibernate.tx
 import org.hibernate.engine.spi.SessionImplementor
 import org.hibernate.{FlushMode, StatelessSession, Transaction}
 import org.springframework.transaction.support.ResourceHolderSupport
+import scala.compiletime.uninitialized
 
 /** 移植自spring orm的SessionHolder
  * 去掉transactionActive,savepointManager
@@ -28,9 +29,9 @@ import org.springframework.transaction.support.ResourceHolderSupport
  * @param session session
  */
 class SessionHolder(val session: SessionImplementor) extends ResourceHolderSupport {
-  var statelessSession: StatelessSession = _
-  var transaction: Transaction = _
-  var previousFlushMode: FlushMode = _
+  var statelessSession: StatelessSession = uninitialized
+  var transaction: Transaction = uninitialized
+  var previousFlushMode: FlushMode = uninitialized
 
   override def clear(): Unit = {
     super.clear()

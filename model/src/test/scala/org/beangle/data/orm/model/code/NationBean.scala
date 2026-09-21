@@ -18,9 +18,10 @@
 package org.beangle.data.orm.model.code
 
 import org.beangle.data.model.annotation.code
+import scala.compiletime.uninitialized
 
 @code("nation")
 class NationBean {
 
-  var name: String = _
+  var name: String = uninitialized
 }

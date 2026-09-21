@@ -22,6 +22,7 @@ import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.lang.Strings.*
 import org.beangle.commons.lang.{Assert, Strings}
 import org.beangle.data.dao.OqlBuilder.Var
+import scala.compiletime.uninitialized
 
 object AbstractQueryBuilder {
   val InnerJoin = " left join "
@@ -36,17 +37,17 @@ object AbstractQueryBuilder {
  */
 abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
 
-  protected[dao] var statement: String = _
+  protected[dao] var statement: String = uninitialized
 
-  protected[dao] var limit: PageLimit = _
+  protected[dao] var limit: PageLimit = uninitialized
 
   val params: collection.mutable.HashMap[String, Any] = new collection.mutable.HashMap[String, Any]
 
-  protected[dao] var select: String = _
+  protected[dao] var select: String = uninitialized
 
-  protected[dao] var from: String = _
+  protected[dao] var from: String = uninitialized
 
-  var alias: String = _
+  var alias: String = uninitialized
 
   protected var conditions: List[Condition] = Nil
 
@@ -54,7 +55,7 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
 
   protected[dao] var groups: List[String] = Nil
 
-  protected[dao] var having: String = _
+  protected[dao] var having: String = uninitialized
 
   protected[dao] var tailOrder: Option[Order] = None
 
@@ -146,7 +147,7 @@ abstract class AbstractQueryBuilder[T] extends QueryBuilder[T] {
   }
 
   def where(content: String, params: Any*): this.type = {
-    where(new Condition(content, params: _*))
+    where(new Condition(content, params*))
   }
 
   def tailOrder(order: String): this.type = {

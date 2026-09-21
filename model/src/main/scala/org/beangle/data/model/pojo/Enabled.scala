@@ -17,6 +17,8 @@
 
 package org.beangle.data.model.pojo
 
+import scala.compiletime.uninitialized
+
 /**
  * 能够启用和禁用的实体
  *
@@ -29,6 +31,6 @@ trait Enabled {
    *
    * @return 是否启用
    */
-  var enabled: Boolean = _
+  var enabled: Boolean = uninitialized
 
 }

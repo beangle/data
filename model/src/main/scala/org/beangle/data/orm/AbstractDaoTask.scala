@@ -19,10 +19,11 @@ package org.beangle.data.orm
 
 import jakarta.persistence.EntityManager
 import org.beangle.data.dao.EntityDao
+import scala.compiletime.uninitialized
 
 abstract class AbstractDaoTask extends Runnable {
-  var entityDao: EntityDao = _
-  private var session: EntityManager = _
+  var entityDao: EntityDao = uninitialized
+  private var session: EntityManager = uninitialized
 
   override def run(): Unit = {
     this.session = entityDao.openSession()

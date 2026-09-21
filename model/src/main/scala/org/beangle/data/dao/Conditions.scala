@@ -55,7 +55,7 @@ object Conditions {
    * @param alias  对象别名
    * @param entity 实体对象
    */
-  def extractConditions(alias: String, entity: Entity[_]): List[Condition] = {
+  def extractConditions(alias: String, entity: Entity[?]): List[Condition] = {
     if (null == entity) return Nil
     val conditions = new collection.mutable.ListBuffer[Condition]
     val prefix = if (null != alias && alias.nonEmpty && !alias.endsWith(".")) alias + "." else ""
@@ -65,7 +65,7 @@ object Conditions {
       for (attr <- props) {
         curr = attr
         val value = Properties.get[Any](entity, attr)
-        if (null != value && !value.isInstanceOf[Seq[_]] && !value.isInstanceOf[java.util.Collection[_]])
+        if (null != value && !value.isInstanceOf[Seq[?]] && !value.isInstanceOf[java.util.Collection[?]])
           addAttrCondition(conditions, prefix + attr, value)
       }
     } catch {
@@ -139,7 +139,7 @@ object Conditions {
       for (attr <- props) {
         curr = attr
         val value = Properties.get[Any](component, attr)
-        if (null != value && !value.isInstanceOf[Seq[_]] && !value.isInstanceOf[java.util.Collection[_]])
+        if (null != value && !value.isInstanceOf[Seq[?]] && !value.isInstanceOf[java.util.Collection[?]])
           addAttrCondition(conditions, prefix + "." + attr, value)
       }
     } catch {
@@ -156,7 +156,7 @@ object Conditions {
    * @param values raw query texts from UI or request
    * @param clazz property type used to pick parsing rules
    */
-  def parse(attr: String, values: String, clazz: Class[_]): Condition = {
+  def parse(attr: String, values: String, clazz: Class[?]): Condition = {
     val ops = split(values, clazz).toSeq.map(x => Operator(x, clazz))
     if (ops.forall(x => x.op == "=")) {
       if (ops.size == 1) {
@@ -176,7 +176,7 @@ object Conditions {
           if (ops.length < 4) {
             var i = 0
             val content = ops.map { x => i += 1; s"$attr ${x.op} :${attr.replace('.', '_')}_$i"; }.mkString(" or ")
-            new Condition(content, ops.map(_.value): _*)
+            new Condition(content, ops.map(_.value)*)
           } else {
             new Condition(s"$attr in (:${attr.replace('.', '_')})", ops.map(x => Operator.unlike(x.value.toString)))
           }
@@ -189,7 +189,7 @@ object Conditions {
               s"$attr ${x.op} :${attr.replace('.', '_')}_$i"
             }
           }.mkString(" or ")
-          new Condition(content, ops.map(_.value).toSeq.filter(_ != null): _*)
+          new Condition(content, ops.map(_.value).toSeq.filter(_ != null)*)
         }
       }
     }
@@ -238,7 +238,7 @@ object Conditions {
    */
   object Operator {
 
-    def apply(value: String, clazz: Class[_]): Operator = {
+    def apply(value: String, clazz: Class[?]): Operator = {
       if (clazz == classOf[String]) {
         var v = value
         var op = "="
@@ -370,7 +370,7 @@ object Conditions {
    * @param clazz property type; string types enable quote-aware splitting
    * @see [[parse]] [[Operator.apply]]
    */
-  protected[dao] def split(value: String, clazz: Class[_]): Array[String] = {
+  protected[dao] def split(value: String, clazz: Class[?]): Array[String] = {
     if (clazz == classOf[String]) {
       var i = 0
       val chars = value.toCharArray

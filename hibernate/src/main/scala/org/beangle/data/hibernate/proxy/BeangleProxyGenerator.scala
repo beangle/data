@@ -108,7 +108,7 @@ object BeangleProxyGenerator {
       System.exit(2)
     }
 
-    val entities = mutable.LinkedHashMap.empty[String, Class[_]]
+    val entities = mutable.LinkedHashMap.empty[String, Class[?]]
     val skipped = mutable.ListBuffer.empty[(String, String)]
     modules foreach { m =>
       m.entityTypes.values foreach { et =>
@@ -147,7 +147,7 @@ object BeangleProxyGenerator {
   }
 
   /** 为每个可代理实体生成代理字节码（写输出目录，随资源打包），返回 实体类名→代理类名 映射。 */
-  private def generate(entities: mutable.LinkedHashMap[String, Class[_]], outDir: File,
+  private def generate(entities: mutable.LinkedHashMap[String, Class[?]], outDir: File,
       failures: mutable.ListBuffer[String], missing: mutable.ListBuffer[String]): mutable.LinkedHashMap[String, String] = {
     val proxyNames = mutable.LinkedHashMap.empty[String, String]
     if (entities.isEmpty) return proxyNames
@@ -216,7 +216,7 @@ object BeangleProxyGenerator {
   }
 
   /** 可代理性检查：接口/抽象/final/无公开无参构造器 均不可代理（Quarkus 同款规则）。 */
-  private def proxiable(clazz: Class[_]): Option[String] = {
+  private def proxiable(clazz: Class[?]): Option[String] = {
     if (clazz.isInterface) Some("interface")
     else if (Modifier.isAbstract(clazz.getModifiers)) Some("abstract")
     else if (Modifier.isFinal(clazz.getModifiers)) Some("final")
@@ -224,7 +224,7 @@ object BeangleProxyGenerator {
     else None
   }
 
-  private def hasPublicNoArgConstructor(clazz: Class[_]): Boolean =
+  private def hasPublicNoArgConstructor(clazz: Class[?]): Boolean =
     clazz.getDeclaredConstructors.exists(c => c.getParameterCount == 0 && Modifier.isPublic(c.getModifiers))
 
   /** 代理类名固定为 `<Entity>$HibernateProxy`（fork 的 PrebuiltProxyProvider 与

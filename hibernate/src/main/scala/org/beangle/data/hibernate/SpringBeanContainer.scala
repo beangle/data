@@ -47,10 +47,10 @@ import org.beangle.data.hibernate.SpringBeanContainer.SpringContainedBean
  * @param beanFactory the Spring bean factory to delegate to
  */
 final class SpringBeanContainer(private val beanFactory: ConfigurableListableBeanFactory) extends BeanContainer {
-  final private val beanCache = new ConcurrentReferenceHashMap[AnyRef, SpringContainedBean[_]]
+  final private val beanCache = new ConcurrentReferenceHashMap[AnyRef, SpringContainedBean[?]]
 
   override def getBean[B](beanType: Class[B], lifecycleOptions: BeanContainer.LifecycleOptions, fallbackProducer: BeanInstanceProducer): ContainedBean[B] = {
-    var bean: SpringContainedBean[_] = null
+    var bean: SpringContainedBean[?] = null
     if (lifecycleOptions.canUseCachedReferences) {
       bean = this.beanCache.get(beanType)
       if (bean == null) {
@@ -63,7 +63,7 @@ final class SpringBeanContainer(private val beanFactory: ConfigurableListableBea
   }
 
   override def getBean[B](name: String, beanType: Class[B], lifecycleOptions: BeanContainer.LifecycleOptions, fallbackProducer: BeanInstanceProducer): ContainedBean[B] = {
-    var bean: SpringContainedBean[_] = null
+    var bean: SpringContainedBean[?] = null
     if (lifecycleOptions.canUseCachedReferences) {
       bean = this.beanCache.get(name)
       if (bean == null) {
@@ -81,7 +81,7 @@ final class SpringBeanContainer(private val beanFactory: ConfigurableListableBea
     this.beanCache.clear()
   }
 
-  private def createBean(beanType: Class[_], lifecycleOptions: BeanContainer.LifecycleOptions, fallbackProducer: BeanInstanceProducer): SpringContainedBean[_] = {
+  private def createBean(beanType: Class[?], lifecycleOptions: BeanContainer.LifecycleOptions, fallbackProducer: BeanInstanceProducer): SpringContainedBean[?] = {
     try {
       if (lifecycleOptions.useJpaCompliantCreation)
         new SpringContainedBean(this.beanFactory.createBean(beanType), this.beanFactory.destroyBean)
@@ -101,7 +101,7 @@ final class SpringBeanContainer(private val beanFactory: ConfigurableListableBea
     }
   }
 
-  private def createBean(name: String, beanType: Class[_], lifecycleOptions: BeanContainer.LifecycleOptions, fallbackProducer: BeanInstanceProducer): SpringContainedBean[_] =
+  private def createBean(name: String, beanType: Class[?], lifecycleOptions: BeanContainer.LifecycleOptions, fallbackProducer: BeanInstanceProducer): SpringContainedBean[?] =
     try {
       if (lifecycleOptions.useJpaCompliantCreation) {
         var bean: AnyRef = null

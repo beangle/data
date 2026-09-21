@@ -17,9 +17,11 @@
 
 package org.beangle.data.model.pojo
 
+import scala.compiletime.uninitialized
+
 trait Named {
 
-  var name: String = _
+  var name: String = uninitialized
 }
 
 trait EnNamed {

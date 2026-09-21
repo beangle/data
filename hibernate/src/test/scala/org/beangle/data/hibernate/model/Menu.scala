@@ -19,16 +19,17 @@ package org.beangle.data.hibernate.model
 
 import org.beangle.data.model.pojo.{Hierarchical, Named}
 import org.beangle.data.model.{Entity, LongId, LongIdEntity}
+import scala.compiletime.uninitialized
 
 trait Menu extends Named with LongIdEntity{
   var parent: Option[Menu] = None
 }
 
 abstract class AbstractMenu extends LongId with Menu {
-  @transient var someVar: String = _
-  var title: String = _
+  @transient var someVar: String = uninitialized
+  var title: String = uninitialized
 }
 
 class UrlMenu extends AbstractMenu {
-  var url: String = _
+  var url: String = uninitialized
 }

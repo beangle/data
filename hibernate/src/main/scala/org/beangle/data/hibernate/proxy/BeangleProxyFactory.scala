@@ -25,17 +25,18 @@ import org.hibernate.proxy.{HibernateProxy, ProxyConfiguration, ProxyFactory}
 import org.hibernate.`type`.CompositeType
 
 import java.lang.reflect.Method
+import scala.compiletime.uninitialized
 
 class BeangleProxyFactoryFactory extends ProxyFactoryFactory {
 
   override def buildProxyFactory(sessionFactory: SessionFactoryImplementor): ProxyFactory = new BeangleProxyFactory
 
-  override def buildBasicProxyFactory(superClassOrInterface: Class[_]): BasicProxyFactory =
+  override def buildBasicProxyFactory(superClassOrInterface: Class[?]): BasicProxyFactory =
     new BeangleBasicProxyFactory(superClassOrInterface)
 }
 
 /** 与 hibernate 的 `none` provider 一致：beangle 实体均为具体类，不支持接口/抽象组件的基本代理。 */
-class BeangleBasicProxyFactory(superClassOrInterface: Class[_]) extends BasicProxyFactory {
+class BeangleBasicProxyFactory(superClassOrInterface: Class[?]) extends BasicProxyFactory {
 
   override def getProxy(): AnyRef =
     throw new HibernateException(
@@ -48,20 +49,20 @@ class BeangleBasicProxyFactory(superClassOrInterface: Class[_]) extends BasicPro
  */
 class BeangleProxyFactory extends ProxyFactory with Serializable {
 
-  private var entityName: String = _
-  private var persistentClass: Class[_] = _
-  private var interfaces: Array[Class[_]] = _
-  private var getIdentifierMethod: Method = _
-  private var setIdentifierMethod: Method = _
-  private var componentIdType: CompositeType = _
-  private var overridesEquals: Boolean = _
-  private var proxyClass: Class[_] = _
+  private var entityName: String = uninitialized
+  private var persistentClass: Class[?] = uninitialized
+  private var interfaces: Array[Class[?]] = uninitialized
+  private var getIdentifierMethod: Method = uninitialized
+  private var setIdentifierMethod: Method = uninitialized
+  private var componentIdType: CompositeType = uninitialized
+  private var overridesEquals: Boolean = uninitialized
+  private var proxyClass: Class[?] = uninitialized
 
-  override def postInstantiate(entityName: String, persistentClass: Class[_], interfaces: java.util.Set[Class[_]],
+  override def postInstantiate(entityName: String, persistentClass: Class[?], interfaces: java.util.Set[Class[?]],
       getIdentifierMethod: Method, setIdentifierMethod: Method, componentIdType: CompositeType): Unit = {
     this.entityName = entityName
     this.persistentClass = persistentClass
-    this.interfaces = interfaces.toArray(new Array[Class[_]](interfaces.size()))
+    this.interfaces = interfaces.toArray(new Array[Class[?]](interfaces.size()))
     this.getIdentifierMethod = getIdentifierMethod
     this.setIdentifierMethod = setIdentifierMethod
     this.componentIdType = componentIdType

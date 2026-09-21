@@ -17,6 +17,8 @@
 
 package org.beangle.data.model.pojo
 
+import scala.compiletime.uninitialized
+
 /**
  * Coded interface.
  *
@@ -24,5 +26,5 @@ package org.beangle.data.model.pojo
  */
 trait Coded {
 
-  var code: String = _
+  var code: String = uninitialized
 }

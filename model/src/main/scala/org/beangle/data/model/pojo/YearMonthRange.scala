@@ -18,16 +18,17 @@
 package org.beangle.data.model.pojo
 
 import java.time.{LocalDate, YearMonth}
+import scala.compiletime.uninitialized
 
 /** 年月范围
  */
 trait YearMonthRange {
 
   /** 起始年月 */
-  var beginIn: YearMonth = _
+  var beginIn: YearMonth = uninitialized
 
   /** 结束年月 */
-  var endIn: YearMonth = _
+  var endIn: YearMonth = uninitialized
 
   def within(date: LocalDate): Boolean = {
     within(YearMonth.of(date.getYear, date.getMonth))

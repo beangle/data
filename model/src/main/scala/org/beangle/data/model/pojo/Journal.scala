@@ -19,10 +19,11 @@ package org.beangle.data.model.pojo
 
 import collection.mutable.ListBuffer
 import org.beangle.data.model.Component
+import scala.compiletime.uninitialized
 
 trait Journal[T <: DateRange] extends Component {
 
-  var head: T = _
+  var head: T = uninitialized
 
   var journals: collection.mutable.Seq[T] = new ListBuffer[T]
 }

@@ -23,14 +23,14 @@ import org.beangle.data.model.Entity
 
 object Domain {
 
-  final class SimpleProperty(val name: String, val clazz: Class[_], val optional: Boolean) extends SingularProperty {
+  final class SimpleProperty(val name: String, val clazz: Class[?], val optional: Boolean) extends SingularProperty {
     val propertyType = new BasicType(clazz)
   }
 }
 
 trait Domain {
 
-  def getEntity(clazz: Class[_]): Option[EntityType] = {
+  def getEntity(clazz: Class[?]): Option[EntityType] = {
     val name = clazz.getName
     val dollaIdx= name.indexOf('$')
     if(dollaIdx >0){
@@ -44,7 +44,7 @@ trait Domain {
 
   def entities: Map[String, EntityType]
 
-  def newInstance[T <: Entity[_]](entityClass: Class[T]): Option[T] = {
+  def newInstance[T <: Entity[?]](entityClass: Class[T]): Option[T] = {
     getEntity(entityClass) match {
       case Some(t) => Some(t.newInstance().asInstanceOf[T])
       case _ => None

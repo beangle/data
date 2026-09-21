@@ -77,13 +77,13 @@ object TransactionalAdvisor {
    * @param properties 方法名/pattern -> 事务属性的配置
    * @return 可用于 TransactionalAdvisor 的 TransactionAttributeSource
    */
-  def buildAttributeSource(clazz: Class[_], properties: ju.Properties): TransactionAttributeSource = {
+  def buildAttributeSource(clazz: Class[?], properties: ju.Properties): TransactionAttributeSource = {
     val methodMap = buildMethodAttributes(clazz, properties)
     new TxAttributeSource(methodMap)
   }
 
   private class TxAttributeSource(methodMap: Map[String, TransactionAttribute]) extends TransactionAttributeSource {
-    override def getTransactionAttribute(method: Method, targetClass: Class[_]): TransactionAttribute = {
+    override def getTransactionAttribute(method: Method, targetClass: Class[?]): TransactionAttribute = {
       methodMap.get(method.getName).orNull
     }
   }
@@ -113,12 +113,12 @@ object TransactionalAdvisor {
   private class TxPointcut(val source: TransactionAttributeSource) extends StaticMethodMatcherPointcut {
     setClassFilter(new TxClassFilter(source))
 
-    override def matches(method: Method, targetClass: Class[_]): Boolean =
+    override def matches(method: Method, targetClass: Class[?]): Boolean =
       source == null || source.hasTransactionAttribute(method, targetClass)
   }
 
   private class TxClassFilter(source: TransactionAttributeSource) extends ClassFilter {
-    override def matches(clazz: Class[_]): Boolean = {
+    override def matches(clazz: Class[?]): Boolean = {
       if (classOf[TransactionalProxy].isAssignableFrom(clazz)
         || classOf[TransactionManager].isAssignableFrom(clazz)
         || classOf[PersistenceExceptionTranslator].isAssignableFrom(clazz)) false
@@ -133,7 +133,7 @@ object TransactionalAdvisor {
    * @param attributes  事务属性配置，如 "get*" -> "PROPAGATION_REQUIRED,readOnly", "save" -> "PROPAGATION_REQUIRED"
    * @return 方法名 -> TransactionAttribute 的不可变 Map
    */
-  private def buildMethodAttributes(targetClass: Class[_], attributes: ju.Properties): Map[String, TransactionAttribute] = {
+  private def buildMethodAttributes(targetClass: Class[?], attributes: ju.Properties): Map[String, TransactionAttribute] = {
     val nameMap = parseProperties(attributes)
     val builder = Map.newBuilder[String, TransactionAttribute]
     for (method <- targetClass.getMethods if ClassUtils.isUserLevelMethod(method)) {

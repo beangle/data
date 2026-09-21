@@ -48,7 +48,7 @@ class YearMonthType extends AbstractClassJavaType[YearMonth](classOf[YearMonth])
     }
   }
 
-  override def isWider(javaType: JavaType[_]): Boolean = {
+  override def isWider(javaType: JavaType[?]): Boolean = {
     javaType.getJavaType.getTypeName == "java.sql.Date"
   }
 }

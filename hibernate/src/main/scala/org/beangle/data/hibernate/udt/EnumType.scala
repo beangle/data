@@ -51,7 +51,7 @@ class EnumType[T](`type`: Class[T]) extends AbstractClassJavaType[T](`type`) {
     converter.apply(value.toString)
   }
 
-  override def isWider(javaType: JavaType[_]): Boolean = {
+  override def isWider(javaType: JavaType[?]): Boolean = {
     val jtc = javaType.getJavaTypeClass
     jtc == classOf[Integer] || jtc == classOf[Int]
   }

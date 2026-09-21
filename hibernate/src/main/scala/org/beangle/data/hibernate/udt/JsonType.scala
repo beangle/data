@@ -55,7 +55,7 @@ class JsonType[T <: Json](jsonType: Class[T]) extends AbstractClassJavaType[T](j
     }
   }
 
-  override def isWider(javaType: JavaType[_]): Boolean = {
+  override def isWider(javaType: JavaType[?]): Boolean = {
     javaType.getJavaType.getTypeName == "java.lang.String"
   }
 

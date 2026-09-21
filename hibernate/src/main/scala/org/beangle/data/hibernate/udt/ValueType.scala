@@ -22,10 +22,11 @@ import org.hibernate.`type`.descriptor.java.{AbstractClassJavaType, JavaType}
 import org.hibernate.`type`.descriptor.jdbc.*
 
 import java.lang.reflect.{Constructor, Field}
+import scala.compiletime.uninitialized
 
 object ValueType {
 
-  def getJdbcType(clazz: Class[_]): JdbcType = {
+  def getJdbcType(clazz: Class[?]): JdbcType = {
     if clazz == classOf[Long] then BigIntJdbcType.INSTANCE
     else if clazz == classOf[Int] then IntegerJdbcType.INSTANCE
     else if clazz == classOf[Short] then SmallIntJdbcType.INSTANCE
@@ -38,9 +39,9 @@ object ValueType {
 
 class ValueType[T](`type`: Class[T]) extends AbstractClassJavaType[T](`type`) {
 
-  private var valueClass: Class[_] = _
-  private var valueField: Field = _
-  private var constructor: Constructor[T] = _
+  private var valueClass: Class[?] = uninitialized
+  private var valueField: Field = uninitialized
+  private var constructor: Constructor[T] = uninitialized
 
   this.`type`.getDeclaredFields foreach { f =>
     valueClass = f.getType
@@ -64,10 +65,10 @@ class ValueType[T](`type`: Class[T]) extends AbstractClassJavaType[T](`type`) {
       case _ => if `type` == value.getClass then value.asInstanceOf[T] else constructor.newInstance(value)
   }
 
-  override def isWider(javaType: JavaType[_]): Boolean = {
+  override def isWider(javaType: JavaType[?]): Boolean = {
     val jtc = javaType.getJavaTypeClass
     jtc == classOf[Integer] || jtc == classOf[java.lang.Long]
   }
 
-  def getValueClass: Class[_] = valueClass
+  def getValueClass: Class[?] = valueClass
 }

@@ -44,7 +44,7 @@ class ModelAotHints extends AotHintRegistrar {
     // beangle-data-model 的 id 访问基类：运行期 BeanInfo.from 经实体 getMethods 拿到
     // 继承的 id/id_=/persisted/equals（均 public），默认 allPublicMethods 即覆盖。
     // NumId 覆盖 LongId/IntId/ShortId 家族（它们不声明新方法）；StringId 自声明 id 访问器
-    hints.registerType(classOf[org.beangle.data.model.NumId[_]], classOf[org.beangle.data.model.StringId])
+    hints.registerType(classOf[org.beangle.data.model.NumId[?]], classOf[org.beangle.data.model.StringId])
 
     // model 核心类与接口：运行期 BeanInfos/MetaLoader 反射 dig 属性
     hints.registerType(

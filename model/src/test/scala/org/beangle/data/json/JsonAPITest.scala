@@ -23,13 +23,14 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 class Department extends LongId with Named {
-  var code: String = _
+  var code: String = uninitialized
 }
 
 class Employee extends LongId with Named {
-  var department: Department = _
+  var department: Department = uninitialized
   var previous: mutable.Buffer[Department] = new mutable.ListBuffer[Department]
 }
 

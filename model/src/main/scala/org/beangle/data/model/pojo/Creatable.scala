@@ -18,10 +18,11 @@
 package org.beangle.data.model.pojo
 
 import java.time.Instant
+import scala.compiletime.uninitialized
 
 trait Creatable {
   /**
    * Updated At
    */
-  var createdAt: Instant = _
+  var createdAt: Instant = uninitialized
 }

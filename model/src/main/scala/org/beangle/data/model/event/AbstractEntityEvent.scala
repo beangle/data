@@ -25,7 +25,7 @@ import org.beangle.data.model.Entity
  *
  * @author chaostone
  */
-abstract class AbstractEntityEvent[T <: Entity[_]](clazz: Class[T], source: Seq[T]) extends Event(source) {
+abstract class AbstractEntityEvent[T <: Entity[?]](clazz: Class[T], source: Seq[T]) extends Event(source) {
 
   def entities: Seq[T] = source
 }

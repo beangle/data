@@ -32,8 +32,8 @@ import scala.jdk.javaapi.CollectionConverters.asJava
  */
 abstract class ScalaCollectionType extends UserCollectionType {
 
-  override def getElementsIterator(collection: Object): ju.Iterator[_] = {
-    asJava(collection.asInstanceOf[IterableOnce[_]].iterator)
+  override def getElementsIterator(collection: Object): ju.Iterator[?] = {
+    asJava(collection.asInstanceOf[IterableOnce[?]].iterator)
   }
 
   override def indexOf(collection: Object, entity: Object): Object = null
@@ -49,7 +49,7 @@ abstract class ScalaCollectionType extends UserCollectionType {
    * @return
    */
   override def replaceElements(original: Object, target: Object, persister: CollectionPersister,
-                               owner: Object, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor): Object = {
+                               owner: Object, copyCache: ju.Map[?, ?], session: SharedSessionContractImplementor): Object = {
     val result = target.asInstanceOf[mutable.Growable[Object]]
     result.clear()
     // copy elements into newly empty target collection
@@ -63,16 +63,16 @@ abstract class ScalaCollectionType extends UserCollectionType {
           m.put(k, elemType.replace(v, null, session, owner, cache))
         }
       case _ =>
-        for (element <- original.asInstanceOf[Iterable[_]]) {
+        for (element <- original.asInstanceOf[Iterable[?]]) {
           result.addOne(elemType.replace(element, null, session, owner, cache))
         }
     }
 
     //next code is translated from org.hibernate.type.CollectionType
     //@see org.hibernate.type.CollectionType
-    if (original.isInstanceOf[PersistentCollection[_]] && result.isInstanceOf[PersistentCollection[_]]) {
-      val opc = original.asInstanceOf[PersistentCollection[_]]
-      val rpc = result.asInstanceOf[PersistentCollection[_]]
+    if (original.isInstanceOf[PersistentCollection[?]] && result.isInstanceOf[PersistentCollection[?]]) {
+      val opc = original.asInstanceOf[PersistentCollection[?]]
+      val rpc = result.asInstanceOf[PersistentCollection[?]]
       // preserveSnapshot
       val collectionEntry = session.getPersistenceContextInternal.getCollectionEntry(rpc)
       if (collectionEntry != null) {
@@ -83,8 +83,8 @@ abstract class ScalaCollectionType extends UserCollectionType {
     result
   }
 
-  private def createSnapshot(original: PersistentCollection[_], result: PersistentCollection[_], elemType: Type,
-                             owner: AnyRef, copyCache: ju.Map[_, _], session: SharedSessionContractImplementor) = {
+  private def createSnapshot(original: PersistentCollection[?], result: PersistentCollection[?], elemType: Type,
+                             owner: AnyRef, copyCache: ju.Map[?, ?], session: SharedSessionContractImplementor) = {
     val originalSnapshot = original.getStoredSnapshot
     originalSnapshot match {
       case buffer: mutable.Buffer[_] => createBufferSnapshot(buffer, elemType, owner, copyCache, session)
@@ -93,7 +93,7 @@ abstract class ScalaCollectionType extends UserCollectionType {
     }
   }
 
-  private def createBufferSnapshot(buffer: mutable.Buffer[_], elemType: Type, owner: AnyRef, copyCache: ju.Map[_, _],
+  private def createBufferSnapshot(buffer: mutable.Buffer[?], elemType: Type, owner: AnyRef, copyCache: ju.Map[?, ?],
                                    session: SharedSessionContractImplementor) = {
     val targetList = new mutable.ArrayBuffer[AnyRef](buffer.size)
     val cache = copyCache.asInstanceOf[ju.Map[Object, Object]]
@@ -103,8 +103,8 @@ abstract class ScalaCollectionType extends UserCollectionType {
     targetList
   }
 
-  private def createMapSnapshot[K, V](map: mutable.Map[K, V], result: PersistentCollection[_], elemType: Type, owner: AnyRef,
-                                      copyCache: ju.Map[_, _], session: SharedSessionContractImplementor) = {
+  private def createMapSnapshot[K, V](map: mutable.Map[K, V], result: PersistentCollection[?], elemType: Type, owner: AnyRef,
+                                      copyCache: ju.Map[?, ?], session: SharedSessionContractImplementor) = {
     val targetMap = new mutable.HashMap[K, V]()
     val snapshot: java.io.Serializable = targetMap
     val resultSnapshot = result.getStoredSnapshot.asInstanceOf[mutable.Map[K, V]]

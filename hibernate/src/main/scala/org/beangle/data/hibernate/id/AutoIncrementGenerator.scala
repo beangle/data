@@ -27,14 +27,15 @@ import org.hibernate.service.ServiceRegistry
 
 import java.sql.Connection
 import java.util as ju
+import scala.compiletime.uninitialized
 
 class AutoIncrementGenerator extends IdentifierGenerator {
-  var identifierType: Class[_] = _
+  var identifierType: Class[?] = uninitialized
   val sql = "{? = call next_id(?)}"
-  var tableName: String = _
+  var tableName: String = uninitialized
 
   override def configure(ctx: GeneratorCreationContext, params: ju.Properties): Unit = {
-    this.identifierType = Primitives.unwrap(ctx.getType.asInstanceOf[BasicType[_]].getJavaType)
+    this.identifierType = Primitives.unwrap(ctx.getType.asInstanceOf[BasicType[?]].getJavaType)
     tableName = IdHelper.getTableQualifiedName(params, ctx.getServiceRegistry)
   }
 

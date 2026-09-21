@@ -20,6 +20,7 @@ package org.beangle.data.model
 import java.beans.Transient
 
 import org.beangle.data.model.util.Id
+import scala.compiletime.uninitialized
 
 trait Entity[ID] extends Serializable {
 
@@ -60,7 +61,7 @@ trait ShortIdEntity extends Entity[Short]
 trait StringIdEntity extends Entity[String]
 
 abstract class NumId[ID] extends Entity[ID] {
-  var id: ID = _
+  var id: ID = uninitialized
 }
 
 abstract class LongId extends NumId[Long] with LongIdEntity
@@ -70,5 +71,5 @@ abstract class IntId extends NumId[Int] with IntIdEntity
 abstract class ShortId extends NumId[Short] with ShortIdEntity
 
 abstract class StringId extends StringIdEntity {
-  var id: String = _
+  var id: String = uninitialized
 }

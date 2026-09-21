@@ -35,7 +35,7 @@ trait NamingPolicy {
    * @param clazz
    * @param entityName
    */
-  def classToTableName(clazz: Class[_], entityName: String): Name
+  def classToTableName(clazz: Class[?], entityName: String): Name
 
   /**
    * Convert collection to table name
@@ -45,9 +45,9 @@ trait NamingPolicy {
    * @param tableName
    * @param collectionName
    */
-  def collectionToTableName(clazz: Class[_], entityName: String, tableName: String, collectionName: String): Name
+  def collectionToTableName(clazz: Class[?], entityName: String, tableName: String, collectionName: String): Name
 
-  def propertyToColumnName(clazz: Class[_], property: String): String
+  def propertyToColumnName(clazz: Class[?], property: String): String
 }
 
 case class Name(schema: Option[String], text: String)

@@ -22,6 +22,7 @@ import org.springframework.transaction.TransactionManager
 import org.springframework.transaction.interceptor.{TransactionAttribute, TransactionAttributeSource, TransactionalProxy}
 
 import java.util as ju
+import scala.compiletime.uninitialized
 
 /**
  * 事务代理工厂：为目标对象创建事务代理。
@@ -30,8 +31,8 @@ import java.util as ju
  */
 class TransactionProxyFactoryBean extends AbstractSingletonProxyFactoryBean {
 
-  var transactionManager: TransactionManager = _
-  var transactionAttributes: ju.Properties = _
+  var transactionManager: TransactionManager = uninitialized
+  var transactionAttributes: ju.Properties = uninitialized
 
   override protected def createMainInterceptor: AnyRef = {
     val targetClass = getObjectType
@@ -44,7 +45,7 @@ class TransactionProxyFactoryBean extends AbstractSingletonProxyFactoryBean {
     proxyFactory.addInterface(classOf[TransactionalProxy])
   }
 
-  protected def buildAttributeSource(targetClass: Class[_], attributes: ju.Properties): TransactionAttributeSource = {
+  protected def buildAttributeSource(targetClass: Class[?], attributes: ju.Properties): TransactionAttributeSource = {
     TransactionalAdvisor.buildAttributeSource(targetClass, attributes)
   }
 }

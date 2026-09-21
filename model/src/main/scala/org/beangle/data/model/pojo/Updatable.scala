@@ -36,6 +36,7 @@
 package org.beangle.data.model.pojo
 
 import java.time.Instant
+import scala.compiletime.uninitialized
 
 /**
  * Contain update time interface.
@@ -47,6 +48,6 @@ trait Updatable {
   /**
    * Updated At
    */
-  var updatedAt: Instant = _
+  var updatedAt: Instant = uninitialized
 
 }

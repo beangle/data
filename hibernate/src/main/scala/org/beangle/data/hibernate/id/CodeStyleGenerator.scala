@@ -30,16 +30,17 @@ import org.hibernate.service.ServiceRegistry
 
 import java.sql.{Connection, ResultSet}
 import java.util as ju
+import scala.compiletime.uninitialized
 
 /**
  * Id generator based on function or procedure
  */
 class CodeStyleGenerator extends IdentifierGenerator {
-  var identifierType: Class[_] = _
-  var tableName: String = _
+  var identifierType: Class[?] = uninitialized
+  var tableName: String = uninitialized
 
   override def configure(ctx: GeneratorCreationContext, params: ju.Properties): Unit = {
-    this.identifierType = Primitives.unwrap(ctx.getType.asInstanceOf[BasicType[_]].getJavaType)
+    this.identifierType = Primitives.unwrap(ctx.getType.asInstanceOf[BasicType[?]].getJavaType)
     this.tableName = IdHelper.getTableQualifiedName(params, ctx.getServiceRegistry)
     val clz = IdHelper.getEntityClass(params, ctx.getServiceRegistry)
     require(classOf[Coded].isAssignableFrom(clz), s"CodeStyleGenerator only support Coded,${clz.getName} isn't a subclass of Coded.")

@@ -23,23 +23,24 @@ import org.beangle.data.model.pojo.{Hierarchical, Named, Remark}
 import org.beangle.data.model.{Component, Entity, LongId, StringId}
 
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 class User(var id: Long) extends Entity[Long] {
   def this() = this(0)
 
-  var name: Name = _
+  var name: Name = uninitialized
   var roleSet: java.util.Set[Role] = new java.util.HashSet[Role]
   var age: Option[Int] = None
   var money: Short = 30
-  var properties: mutable.Map[String, String] = _
+  var properties: mutable.Map[String, String] = uninitialized
   var occupy: WeekState = new WeekState(0)
   var weekday: WeekDay = WeekDay.Sun
 
   var createdOn = new java.sql.Date(System.currentTimeMillis)
-  var role: Option[Role] = _
+  var role: Option[Role] = uninitialized
   var roleList: mutable.Buffer[Role] = new mutable.ListBuffer[Role]
-  var member: Member = _
-  var skills: mutable.Map[SkillType, Skill] = _
+  var member: Member = uninitialized
+  var skills: mutable.Map[SkillType, Skill] = uninitialized
 
   var profiles: mutable.Set[Profile] = new mutable.HashSet[Profile]
   var times: mutable.Map[Int, WeekTime] = new mutable.HashMap[Int, WeekTime]
@@ -51,30 +52,30 @@ class User(var id: Long) extends Entity[Long] {
 }
 
 class SkillType extends LongId {
-  var name: String = _
+  var name: String = uninitialized
 }
 
 class Skill extends LongId {
-  var skillType: SkillType = _
-  var name: String = _
+  var skillType: SkillType = uninitialized
+  var name: String = uninitialized
 }
 
 class Name extends Component {
-  var first: String = _
-  var last: String = _
+  var first: String = uninitialized
+  var last: String = uninitialized
 }
 
 class Member extends Component {
   @scala.beans.BeanProperty
-  var user: User = _
+  var user: User = uninitialized
   var granter: Option[Role] = None
-  var admin: Boolean = _
-  var roles: collection.mutable.Set[Role] = _
+  var admin: Boolean = uninitialized
+  var roles: collection.mutable.Set[Role] = uninitialized
 }
 
 trait Coded {
-  var code: String = _
-  var enabled: Boolean = _
+  var code: String = uninitialized
+  var enabled: Boolean = uninitialized
 }
 
 abstract class CodedEntity extends StringId with Coded

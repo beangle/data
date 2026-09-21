@@ -41,15 +41,15 @@ trait Populator {
   /**
     * populate.
     */
-  def populate(target: Entity[_], EntityType: EntityType, params: collection.Map[String, Any]): Populator.CopyResult
+  def populate(target: Entity[?], EntityType: EntityType, params: collection.Map[String, Any]): Populator.CopyResult
 
   /**
     *
     */
-  def populate(target: Entity[_], EntityType: EntityType, attr: String, value: Any): Boolean
+  def populate(target: Entity[?], EntityType: EntityType, attr: String, value: Any): Boolean
 
   /**
     * initProperty.
     */
-  def init(target: Entity[_], t: EntityType, attr: String): (Any, Property)
+  def init(target: Entity[?], t: EntityType, attr: String): (Any, Property)
 }

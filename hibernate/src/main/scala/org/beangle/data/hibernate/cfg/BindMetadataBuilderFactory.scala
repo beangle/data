@@ -145,13 +145,13 @@ object BindMetadataBuilderFactory {
     registerType(classOf[JsonArray].getName, new JsonType(classOf[JsonArray]), jsonJdbcType, options)
   }
 
-  private def registerType(className: String, javaType: JavaType[_], jdbcType: JdbcType, options: MetadataBuildingOptions): Unit = {
+  private def registerType(className: String, javaType: JavaType[?], jdbcType: JdbcType, options: MetadataBuildingOptions): Unit = {
     val registrations = options.getBasicTypeRegistrations
     val vt = new NamedBasicTypeImpl(javaType, jdbcType, className)
     registrations.add(new BasicTypeRegistration(vt, Array(className)))
   }
 
-  private def registerBasicType(className: String, javaType: JavaType[_], jdbcType: JdbcType, options: MetadataBuildingOptions): Unit = {
+  private def registerBasicType(className: String, javaType: JavaType[?], jdbcType: JdbcType, options: MetadataBuildingOptions): Unit = {
     val registrations = options.getBasicTypeRegistrations
     val vt = new ImmutableNamedBasicTypeImpl(javaType, jdbcType, className)
     registrations.add(new BasicTypeRegistration(vt, Array(className)))

@@ -33,8 +33,8 @@ import java.lang.reflect.{InvocationTargetException, Method}
  */
 class BeangleInterceptor(
     entityName: String,
-    persistentClass: Class[_],
-    interfaces: Array[Class[_]],
+    persistentClass: Class[?],
+    interfaces: Array[Class[?]],
     id: AnyRef,
     getIdentifierMethod: Method,
     setIdentifierMethod: Method,

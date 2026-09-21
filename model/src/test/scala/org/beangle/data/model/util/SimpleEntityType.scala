@@ -19,14 +19,15 @@ package org.beangle.data.model.util
 
 import org.beangle.commons.collection.Collections
 import org.beangle.data.model.meta.{EntityType, Property}
+import scala.compiletime.uninitialized
 
-final class SimpleEntityType(val clazz: Class[_]) extends EntityType {
+final class SimpleEntityType(val clazz: Class[?]) extends EntityType {
 
   var entityName: String = clazz.getName
 
   var properties: collection.mutable.Map[String, Property] = Collections.newMap
 
-  var cacheable: Boolean = _
+  var cacheable: Boolean = uninitialized
 
   override def partitionKey: Option[String] = None
 

@@ -30,13 +30,14 @@ import java.io.Serializable as JSerializable
 import java.util as ju
 import scala.collection.mutable
 import scala.jdk.javaapi.CollectionConverters.asJava
+import scala.compiletime.uninitialized
 
 class ScalaPersistentMap(session: SharedSessionContractImplementor)
   extends AbstractPersistentCollection[Object](session), mutable.Map[Object, Object] {
   private type MM = mutable.Map[Object, Object]
   type MHashMap = mutable.HashMap[Object, Object]
 
-  private var map: mutable.Map[Object, Object] = _
+  private var map: mutable.Map[Object, Object] = uninitialized
 
   def this(session: SharedSessionContractImplementor, map: mutable.Map[Object, Object]) = {
     this(session)
@@ -68,7 +69,7 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
     endRead()
   }
 
-  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[_]): Unit = {
+  override def injectLoadedState(attributeMapping: PluralAttributeMapping, loadingStateList: ju.List[?]): Unit = {
     val collectionDescriptor = attributeMapping.getCollectionDescriptor
     val size = if null == loadingStateList then 0 else loadingStateList.size
     this.map = collectionDescriptor.getCollectionSemantics
@@ -170,7 +171,7 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
     map.toString()
   }
 
-  override def entries(persister: CollectionPersister): ju.Iterator[_] = {
+  override def entries(persister: CollectionPersister): ju.Iterator[?] = {
     asJava(map.iterator)
   }
 
@@ -202,7 +203,7 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
     sn.exists(e => null != e._2 && !map.contains(e._1))
   }
 
-  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[_] = {
+  override def getDeletes(persister: CollectionPersister, indexIsFormula: Boolean): ju.Iterator[?] = {
     val deletes = new mutable.ListBuffer[Object]
     val sn = getSnapshot().asInstanceOf[MM]
     sn foreach { e =>
@@ -227,15 +228,15 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
   }
 
   override def getIndex(entry: Object, i: Int, persister: CollectionPersister): Object = {
-    entry.asInstanceOf[(Object, _)]._1
+    entry.asInstanceOf[(Object, ?)]._1
   }
 
   override def getElement(entry: Object): Object = {
-    entry.asInstanceOf[(_, Object)]._2
+    entry.asInstanceOf[(?, Object)]._2
   }
 
   override def getSnapshotElement(entry: Object, i: Int): Object = {
-    getSnapshot().asInstanceOf[MM].get(entry.asInstanceOf[(_, Object)]._2).orNull
+    getSnapshot().asInstanceOf[MM].get(entry.asInstanceOf[(?, Object)]._2).orNull
   }
 
   override def equals(other: Any): Boolean = {
@@ -249,7 +250,7 @@ class ScalaPersistentMap(session: SharedSessionContractImplementor)
   }
 
   override def entryExists(entry: Object, i: Int): Boolean = {
-    null != entry.asInstanceOf[(_, _)]._2
+    null != entry.asInstanceOf[(?, ?)]._2
   }
 
   override def iterator: Iterator[(Object, Object)] = {

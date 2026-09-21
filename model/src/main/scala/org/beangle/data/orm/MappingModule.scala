@@ -34,6 +34,7 @@ import java.sql.{Blob, Clob, Types}
 import scala.collection.mutable
 import scala.quoted.{Expr, Quotes, Type}
 import scala.reflect.ClassTag
+import scala.compiletime.uninitialized
 
 object MappingModule {
 
@@ -78,7 +79,7 @@ object MappingModule {
    * beanmeta.idx）；运行期走 BeanInfos.get —— 精确类型来自构建期生成的 beanmeta.idx（MetaModels
    * 加载），反射只是无 idx 时的回退。
    */
-  def bind[T: Type](entityName: Expr[String], module: Expr[MappingModule])(implicit quotes: Quotes): Expr[EntityHolder[T]] = {
+  def bind[T: Type](entityName: Expr[String], module: Expr[MappingModule])(using quotes: Quotes): Expr[EntityHolder[T]] = {
     import quotes.reflect.*
     val clazzSym = Symbol.requiredMethod("scala.Predef.classOf")
     val clzz = TypeApply(Select(Ref(defn.PredefModule), clazzSym), List(TypeTree.of[T])).asExpr.asInstanceOf[Expr[Class[T]]]
@@ -100,7 +101,7 @@ object MappingModule {
   }
 
   trait PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit
   }
 
   /** 创建索引
@@ -111,7 +112,7 @@ object MappingModule {
    * @param unique unique index
    */
   class IndexDeclaration(name: String, unique: Boolean) {
-    def apply(holder: EntityHolder[_], pms: Iterable[OrmProperty]): Unit = {
+    def apply(holder: EntityHolder[?], pms: Iterable[OrmProperty]): Unit = {
       // hibernate的index注解里没有支持unique，而是通过unique key支持的，为了保持一直，这里也类似处理
       // 这样和hibernate的sql输出思路类似
       if (unique) {
@@ -141,7 +142,7 @@ object MappingModule {
   }
 
   class NotNull extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val ch = cast(pm, holder, "Column holder needed", classOf[ColumnHolder])
       ch.columns foreach (c => c.nullable = false)
     }
@@ -149,7 +150,7 @@ object MappingModule {
 
   /** 不可更新，不可插入 */
   class ReadOnly extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       pm.updatable = false
       pm.insertable = false
     }
@@ -157,14 +158,14 @@ object MappingModule {
 
   /** 不可更新，但可插入 */
   class Immutable extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       pm.updatable = false
       pm.insertable = true
     }
   }
 
   class Lob extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val ch = cast(pm, holder, "Column holder needed", classOf[ColumnHolder])
       val c = pm.clazz
       var isBlob = false
@@ -197,7 +198,7 @@ object MappingModule {
   }
 
   class Unique extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val ch = cast(pm, holder, "Column holder needed", classOf[ColumnHolder])
       ch.columns foreach { c =>
         c.unique = true
@@ -208,7 +209,7 @@ object MappingModule {
   }
 
   class DefaultValue(v: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val ch = cast(pm, holder, "Column holder needed", classOf[ColumnHolder])
       ch.columns foreach { c =>
         if c.sqlType.isStringType && !v.startsWith("'") then c.defaultValue = Some("'" + v + "'")
@@ -218,14 +219,14 @@ object MappingModule {
   }
 
   class KeyColumn(name: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val mp = cast(pm, holder, "key column should used on MapProperty", classOf[OrmMapProperty])
       mp.keyColumn.name = Identifier(name)
     }
   }
 
   class KeyLength(len: Int) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val mp = cast(pm, holder, "key length should used on MapProperty", classOf[OrmMapProperty])
       val x = mp.keyColumn
       mp.keyColumn.sqlType = holder.engine.toType(x.sqlType.code, len)
@@ -233,7 +234,7 @@ object MappingModule {
   }
 
   class ElementColumn(name: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val mp = cast(pm, holder, "element column should used on PluralProperty", classOf[OrmPluralProperty])
 
       mp.element match {
@@ -245,7 +246,7 @@ object MappingModule {
   }
 
   class ElementLength(len: Int) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val mp = cast(pm, holder, "element length should used on PluralProperty", classOf[OrmPluralProperty])
       mp.element match {
         case ch: OrmBasicType => ch.columns foreach (x => x.sqlType = holder.engine.toType(x.sqlType.code, len))
@@ -256,7 +257,7 @@ object MappingModule {
   }
 
   class JoinColumn(name: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val mp = cast(pm, holder, "element column should be used on PluralProperty", classOf[OrmPluralProperty])
       if (null != mp.ownerColumn) {
         mp.ownerColumn.name = Identifier(name)
@@ -265,26 +266,26 @@ object MappingModule {
   }
 
   class PartitionKey extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val p = cast(pm, holder, "element should be used on SingularProperty", classOf[OrmSingularProperty])
       holder.mapping.partitionKey = Some(pm.name)
     }
   }
 
   class Version extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val p = cast(pm, holder, "element should be used on SingularProperty", classOf[OrmSingularProperty])
       pm.optimisticLocked = true
     }
   }
 
   class Cache(val cacheholder: CacheHolder) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       cacheholder.add(List(new Collection(holder.clazz, path)))
     }
   }
 
-  private def genOwnerColumn(holder: EntityHolder[_], mappedBy: Option[String]): Column = {
+  private def genOwnerColumn(holder: EntityHolder[?], mappedBy: Option[String]): Column = {
     val mappings = holder.mappings
     val idType = BeanInfos.get(holder.mapping.clazz).getPropertyType("id").get
     val colName = mappedBy match {
@@ -295,7 +296,7 @@ object MappingModule {
   }
 
   class Many2Many(mappedBy: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val colpm = cast(pm, holder, "many2many should used on seq", classOf[OrmCollectionProperty])
       colpm.mappedBy = Some(mappedBy)
       if (!colpm.element.isInstanceOf[OrmEntityType]) {
@@ -305,8 +306,8 @@ object MappingModule {
     }
   }
 
-  class One2Many(targetEntity: Option[Class[_]], mappedBy: String, private var cascade: Option[String] = None) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+  class One2Many(targetEntity: Option[Class[?]], mappedBy: String, private var cascade: Option[String] = None) extends PropertyDeclaration {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val colpm = cast(pm, holder, "one2many should used on seq", classOf[OrmCollectionProperty])
       colpm.ownerColumn = genOwnerColumn(holder, Some(mappedBy))
       colpm.mappedBy = Some(mappedBy)
@@ -330,20 +331,20 @@ object MappingModule {
   }
 
   class OrderBy(orderBy: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val cm = cast(pm, holder, "order by should used on seq", classOf[OrmCollectionProperty])
       cm.orderBy = Some(orderBy)
     }
   }
 
   class Table(table: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       cast(pm, holder, "table should used on seq", classOf[OrmPluralProperty]).table = Some(table)
     }
   }
 
   class ColumnName(name: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val ch = cast(pm, holder, "Column holder needed", classOf[ColumnHolder])
       if (ch.columns.size == 1) {
         val table = holder.mapping.table
@@ -353,7 +354,7 @@ object MappingModule {
   }
 
   class ColumnType(typeCode: Int, precision: Int, scale: Int) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val ch = cast(pm, holder, "Column holder needed", classOf[ColumnHolder])
       if (ch.columns.size == 1) {
         val nt = holder.engine.toType(typeCode, precision, scale)
@@ -363,7 +364,7 @@ object MappingModule {
   }
 
   class Numeric(precision: Int, scale: Int) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val ch = cast(pm, holder, "Column holder needed", classOf[ColumnHolder])
       if (ch.columns.size == 1) {
         val nt = holder.engine.toType(Types.NUMERIC, precision, scale)
@@ -373,7 +374,7 @@ object MappingModule {
   }
 
   class OrderColumn(orderColumn: String) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val collp = cast(pm, holder, "order column should used on many2many seq", classOf[OrmCollectionProperty])
       val idxCol = new Column(Identifier(if (null == orderColumn) MappingModule.OrderColumnName else orderColumn), holder.mappings.sqlTypeMapping.sqlType(classOf[Int]), false)
       idxCol.comment = Some("index no")
@@ -382,14 +383,14 @@ object MappingModule {
   }
 
   class Length(len: Int) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val ch = cast(pm, holder, "Column holder needed", classOf[ColumnHolder])
       ch.columns foreach (c => c.sqlType = holder.engine.toType(c.sqlType.code, len, c.sqlType.scale.getOrElse(0)))
     }
   }
 
-  class Target(clazz: Class[_]) extends PropertyDeclaration {
-    def apply(holder: EntityHolder[_], path: String, pm: OrmProperty): Unit = {
+  class Target(clazz: Class[?]) extends PropertyDeclaration {
+    def apply(holder: EntityHolder[?], path: String, pm: OrmProperty): Unit = {
       val sp = pm.asInstanceOf[OrmSingularProperty]
       sp.propertyType = holder.mappings.refEntity(clazz, clazz.getName)
       sp.clazz = clazz
@@ -457,7 +458,7 @@ object MappingModule {
       this
     }
 
-    def add(first: Class[_ <: org.beangle.data.model.Entity[_]], classes: Class[_ <: org.beangle.data.model.Entity[_]]*): this.type = {
+    def add(first: Class[? <: org.beangle.data.model.Entity[?]], classes: Class[? <: org.beangle.data.model.Entity[?]]*): this.type = {
       mappings.getEntity(first).cache(cacheRegion, cacheUsage)
       for (clazz <- classes)
         mappings.getEntity(clazz).cache(cacheRegion, cacheUsage)
@@ -468,7 +469,7 @@ object MappingModule {
   final class Entities(val mappings: Mappings,
                        val entityMappings: mutable.Map[String, OrmEntityType],
                        cacheConfig: CacheConfig) {
-    def except(clazzes: Class[_]*): this.type = {
+    def except(clazzes: Class[?]*): this.type = {
       clazzes foreach { c => entityMappings -= c.getName }
       this
     }
@@ -492,7 +493,7 @@ object MappingModule {
     }
   }
 
-  def cast[T](pm: OrmProperty, holder: EntityHolder[_], msg: String, clazz: Class[T]): T = {
+  def cast[T](pm: OrmProperty, holder: EntityHolder[?], msg: String, clazz: Class[T]): T = {
     if (!clazz.isAssignableFrom(pm.getClass)) mismatch(msg, holder.mapping, pm)
     pm.asInstanceOf[T]
   }
@@ -503,11 +504,11 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistrar {
 
   import MappingModule.*
 
-  private var currentHolder: EntityHolder[_] = _
-  private val defaultIdGenerators = Collections.newMap[Class[_], String]
+  private var currentHolder: EntityHolder[?] = uninitialized
+  private val defaultIdGenerators = Collections.newMap[Class[?], String]
   private val cacheConfig = new CacheConfig()
   private val entityMappings = Collections.newMap[String, OrmEntityType]
-  private[orm] var mappings: Mappings = _
+  private[orm] var mappings: Mappings = uninitialized
   /** 构建期标记：registering()（生成器独立实例化）置真，运行期 configure() 直接走 binding() 保持假。 */
   private[orm] var buildTime = false
 
@@ -559,13 +560,13 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistrar {
   /** 声明关联的目标实体：e.plan is target[MajorPlan]。 */
   protected def target[T: ClassTag]: Target = new Target(summon[ClassTag[T]].runtimeClass)
 
-  protected def depends(clazz: Class[_], mappedBy: String): One2Many = new One2Many(Some(clazz), mappedBy).cascaded
+  protected def depends(clazz: Class[?], mappedBy: String): One2Many = new One2Many(Some(clazz), mappedBy).cascaded
 
   protected def depends(mappedBy: String): One2Many = new One2Many(None, mappedBy).cascaded
 
   protected def one2many(mappedBy: String): One2Many = new One2Many(None, mappedBy)
 
-  protected def one2many(clazz: Class[_], mappedBy: String): One2Many = new One2Many(Some(clazz), mappedBy)
+  protected def one2many(clazz: Class[?], mappedBy: String): One2Many = new One2Many(Some(clazz), mappedBy)
 
   protected def many2many(mappedBy: String): Many2Many = new Many2Many(mappedBy)
 
@@ -612,7 +613,7 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistrar {
 
     if (null == mapping.idGenerator) {
       //find superclasses id generator
-      var superCls: Class[_] = cls.getSuperclass
+      var superCls: Class[?] = cls.getSuperclass
       while (null != superCls && superCls != classOf[Object] && null == mapping.idGenerator) {
         if (entityMappings.contains(superCls.getName)) {
           val idg = entityMappings(superCls.getName).idGenerator
@@ -639,7 +640,7 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistrar {
     holder
   }
 
-  protected final def defaultIdGenerator(clazz: Class[_], strategy: String): Unit = {
+  protected final def defaultIdGenerator(clazz: Class[?], strategy: String): Unit = {
     defaultIdGenerators.put(clazz, strategy)
   }
 
@@ -698,11 +699,11 @@ abstract class MappingModule(var name: Option[String]) extends MetaRegistrar {
     mappings.addType(name, clazz, params)
   }
 
-  def typedef(forClass: Class[_], clazz: String): Unit = {
+  def typedef(forClass: Class[?], clazz: String): Unit = {
     mappings.addType(forClass.getName, clazz, Map.empty)
   }
 
-  def typedef(forClass: Class[_], clazz: String, params: Map[String, String]): Unit = {
+  def typedef(forClass: Class[?], clazz: String, params: Map[String, String]): Unit = {
     mappings.addType(forClass.getName, clazz, params)
   }
 }

@@ -23,7 +23,7 @@ import org.beangle.data.orm.{Name, NamingPolicy}
 
 class EJB3NamingPolicy(profiles: Profiles) extends NamingPolicy {
 
-  override def classToTableName(clazz: Class[_], entityName: String): Name = {
+  override def classToTableName(clazz: Class[?], entityName: String): Name = {
     var className = if (clazz.getName.endsWith("Bean")) substringBeforeLast(clazz.getName, "Bean") else clazz.getName
     val p = profiles.getProfile(clazz)
     for ((k, v) <- p.abbrs) className = Strings.replace(className, k, v)
@@ -31,12 +31,12 @@ class EJB3NamingPolicy(profiles: Profiles) extends NamingPolicy {
     Name(p.getSchema(clazz), p.getPrefix(clazz) + tableName)
   }
 
-  override def collectionToTableName(clazz: Class[_], entityName: String, tableName: String, collectionName: String): Name = {
+  override def collectionToTableName(clazz: Class[?], entityName: String, tableName: String, collectionName: String): Name = {
     val collectionTableName = tableName + "_" + addUnderscores(unqualify(collectionName))
     Name(profiles.getProfile(clazz).getSchema(clazz), collectionTableName)
   }
 
-  override def propertyToColumnName(clazz: Class[_], property: String): String = {
+  override def propertyToColumnName(clazz: Class[?], property: String): String = {
     if (property.endsWith("Id")) {
       property.replace('.', '_').replace("Id", "_id")
     } else {

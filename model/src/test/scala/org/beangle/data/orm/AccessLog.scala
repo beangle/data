@@ -22,16 +22,17 @@ import org.beangle.data.model.LongId
 
 import java.time.LocalDate
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 class AccessLog extends LongId {
 
-  var resource: String = _
-  var username: String = _
-  var action: String = _
-  var ip: String = _
-  var updatedOn: LocalDate = _
+  var resource: String = uninitialized
+  var username: String = uninitialized
+  var action: String = uninitialized
+  var ip: String = uninitialized
+  var updatedOn: LocalDate = uninitialized
   var params: mutable.Buffer[AccessParam] = Collections.newBuffer[AccessParam]
-  var userAgent: String = _
+  var userAgent: String = uninitialized
 
   def addParam(id: Long, name: String, value: String): Unit = {
     val param = new AccessParam
@@ -45,8 +46,8 @@ class AccessLog extends LongId {
 }
 
 class AccessParam extends LongId {
-  var log: AccessLog = _
-  var updatedOn: LocalDate = _
-  var name: String = _
-  var value: String = _
+  var log: AccessLog = uninitialized
+  var updatedOn: LocalDate = uninitialized
+  var name: String = uninitialized
+  var value: String = uninitialized
 }

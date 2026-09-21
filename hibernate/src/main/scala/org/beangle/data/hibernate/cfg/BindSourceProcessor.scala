@@ -45,6 +45,7 @@ import org.hibernate.{FetchMode, MappingException}
 import java.lang.reflect.Modifier
 import java.util as ju
 import scala.annotation.nowarn
+import scala.compiletime.uninitialized
 
 /** Beangle Model Bind Metadata processor.
  *
@@ -63,7 +64,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
 
   private var minColumnEnableDynaUpdate = 7
 
-  private var globalIdGenerator: IdGenerator = _
+  private var globalIdGenerator: IdGenerator = uninitialized
 
   override def processQueryRenames(): Unit = {}
 
@@ -504,14 +505,14 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
   }
 
   private def setPluralTypeName(p: OrmPluralProperty, coll: HCollection): Unit = {
-    if (classOf[collection.Set[_]].isAssignableFrom(p.clazz)) {
+    if (classOf[collection.Set[?]].isAssignableFrom(p.clazz)) {
       coll.setTypeName(classOf[SetType].getName)
-    } else if (classOf[collection.Seq[_]].isAssignableFrom(p.clazz)) {
+    } else if (classOf[collection.Seq[?]].isAssignableFrom(p.clazz)) {
       if coll.isInstanceOf[HBag] then
         coll.setTypeName(classOf[BagType].getName)
       else
         coll.setTypeName(classOf[SeqType].getName)
-    } else if (classOf[collection.Map[_, _]].isAssignableFrom(p.clazz)) {
+    } else if (classOf[collection.Map[?, ?]].isAssignableFrom(p.clazz)) {
       coll.setTypeName(classOf[MapType].getName)
     }
   }
@@ -557,7 +558,7 @@ class BindSourceProcessor(mappings: Mappings, metadataSources: MetadataSources, 
     coll
   }
 
-  private def createProperty(value: Value, propertyName: String, clazz: Class[_], pm: OrmProperty): HProperty = {
+  private def createProperty(value: Value, propertyName: String, clazz: Class[?], pm: OrmProperty): HProperty = {
     value match {
       case toOne: ToOne =>
         val propertyRef = toOne.getReferencedPropertyName

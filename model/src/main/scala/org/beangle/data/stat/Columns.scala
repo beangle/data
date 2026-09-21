@@ -58,11 +58,11 @@ class Columns(entityDao: EntityDao) {
     idx += 1
   }
 
-  def add[T <: Entity[_]](name: String, title: String, datas: collection.Seq[Matrix.Row],
+  def add[T <: Entity[?]](name: String, title: String, datas: collection.Seq[Matrix.Row],
                           entityClazz: Class[T]): Unit = {
     val keys = datas.map(_.keys(idx)).toSet
     val goodKeys = keys.filter(x => x != null)
-    val q = OqlBuilder.from[Entity[_]](entityClazz.getName, "t").where("t.id in (:ids)", goodKeys)
+    val q = OqlBuilder.from[Entity[?]](entityClazz.getName, "t").where("t.id in (:ids)", goodKeys)
     val values = entityDao.search(q).map(x => (x.id, x)).toMap
     val result =
       if (keys.size > goodKeys.size) {

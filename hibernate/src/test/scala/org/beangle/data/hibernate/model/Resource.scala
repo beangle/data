@@ -19,6 +19,7 @@ package org.beangle.data.hibernate.model
 
 import org.beangle.data.model.pojo.Named
 import org.beangle.data.model.{IntId, LongId}
+import scala.compiletime.uninitialized
 
 class LongIdResource extends LongId {
 
@@ -26,10 +27,10 @@ class LongIdResource extends LongId {
 
 class LongDateIdResource extends LongId with Named {
 
-  var year: Int = _
+  var year: Int = uninitialized
 }
 
 class IntIdResource extends IntId with Named {
 
-  var year: Int = _
+  var year: Int = uninitialized
 }

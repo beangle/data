@@ -21,6 +21,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.LocalDate
+import scala.compiletime.uninitialized
 
 class TemporalOnTest extends AnyFunSpec with Matchers {
 
@@ -58,7 +59,7 @@ class TemporalOnTest extends AnyFunSpec with Matchers {
 }
 
 class TitleJournal extends TemporalOn {
-  var title: String = _
+  var title: String = uninitialized
 
   def this(beginOn: String, title: String) = {
     this()

@@ -19,13 +19,14 @@ package org.beangle.data.hibernate.model
 
 import org.beangle.commons.lang.time.{HourMinute, WeekDay, WeekState}
 import org.beangle.data.model.IntId
+import scala.compiletime.uninitialized
 
 class TimeBean extends IntId {
 
-  var time: HourMinute = _
+  var time: HourMinute = uninitialized
 
-  var weekday: WeekDay = _
+  var weekday: WeekDay = uninitialized
 
-  var state: WeekState = _
+  var state: WeekState = uninitialized
 
 }

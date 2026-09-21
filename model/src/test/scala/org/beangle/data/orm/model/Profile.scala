@@ -19,14 +19,15 @@ package org.beangle.data.orm.model
 
 import org.beangle.data.model.LongId
 import org.beangle.data.model.pojo.Named
+import scala.compiletime.uninitialized
 
 /**
  * @author chaostone
  */
 class Profile extends LongId with Named {
 
-  var user: User = _
-  var contents: String = _
+  var user: User = uninitialized
+  var contents: String = uninitialized
 
   def this(id: Long, user: User, name: String, contents: String) = {
     this()

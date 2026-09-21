@@ -27,7 +27,7 @@ object HibernateProxyResolver extends ProxyResolver {
     classOf[HibernateProxy].isAssignableFrom(obj.getClass)
   }
 
-  def targetClass(obj: AnyRef): Class[_] = {
+  def targetClass(obj: AnyRef): Class[?] = {
     obj match {
       case proxy: HibernateProxy => proxy.getHibernateLazyInitializer.getPersistentClass
       case _ => obj.getClass

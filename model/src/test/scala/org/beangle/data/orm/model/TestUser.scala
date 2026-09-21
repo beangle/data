@@ -22,35 +22,36 @@ import org.beangle.data.model.pojo.Updatable
 import org.beangle.data.model.{Component, LongId}
 
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 
 /**
  * @author chaostone
  */
 class TestUser extends LongId, Updatable {
 
-  var member: NamedMember = _
+  var member: NamedMember = uninitialized
 
-  var role: TestRole = _
+  var role: TestRole = uninitialized
 
-  var friends: collection.mutable.HashSet[TestUser] = _
+  var friends: collection.mutable.HashSet[TestUser] = uninitialized
 
-  var properties: collection.mutable.HashSet[UserProperty] = _
+  var properties: collection.mutable.HashSet[UserProperty] = uninitialized
 
-  var tags: collection.mutable.Map[String, String] = _
+  var tags: collection.mutable.Map[String, String] = uninitialized
 
-  var times: collection.mutable.Map[Int, WeekTime] = _
+  var times: collection.mutable.Map[Int, WeekTime] = uninitialized
 
-  var roles: mutable.Buffer[TestRole] = _
+  var roles: mutable.Buffer[TestRole] = uninitialized
 
   var birthday: WeekDay = WeekDay.Sun
 }
 
 class NamedMember extends Component {
-  var name: Name2 = _
-  var middleName: String = _
+  var name: Name2 = uninitialized
+  var middleName: String = uninitialized
 }
 
 class Name2 extends Component {
-  var firstName: String = _
-  var lastName: String = _
+  var firstName: String = uninitialized
+  var lastName: String = uninitialized
 }

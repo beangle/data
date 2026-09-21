@@ -32,14 +32,14 @@ object ScalaPropertyAccessor {
   def name: String = "scala"
 
   final class BasicSetter(beanInfo: BeanInfo, propertyInfo: BeanInfo.PropertyInfo) extends Setter {
-    private def clazz: Class[_] = beanInfo.clazz
+    private def clazz: Class[?] = beanInfo.clazz
 
     override def set(target: Object, value: Object): Unit = {
       val methodHandle = propertyInfo.setter.get
       try {
         val arg =
           if (propertyInfo.isOptional) {
-            if (value.isInstanceOf[Option[_]]) value else Option(value)
+            if (value.isInstanceOf[Option[?]]) value else Option(value)
           } else {
             value
           }
@@ -73,7 +73,7 @@ object ScalaPropertyAccessor {
   }
 
   final class BasicGetter(beanInfo: BeanInfo, pi: BeanInfo.PropertyInfo) extends Getter {
-    private def clazz: Class[_] = beanInfo.clazz
+    private def clazz: Class[?] = beanInfo.clazz
 
     override def get(target: Object): Object = {
       val result: AnyRef = target match {
@@ -94,7 +94,7 @@ object ScalaPropertyAccessor {
       get(target)
     }
 
-    override def getReturnTypeClass: Class[_] = {
+    override def getReturnTypeClass: Class[?] = {
       pi.meta.typeinfo.clazz
     }
 
@@ -120,7 +120,7 @@ class ScalaPropertyAccessStrategy extends PropertyAccessStrategy {
 
   import ScalaPropertyAccessor.*
 
-  override def buildPropertyAccess(theClass: Class[_], propertyName: String, setterRequired: Boolean): PropertyAccess = {
+  override def buildPropertyAccess(theClass: Class[?], propertyName: String, setterRequired: Boolean): PropertyAccess = {
     val beanInfo = BeanInfos.get(theClass)
     beanInfo.properties.get(propertyName) match {
       case Some(p) =>

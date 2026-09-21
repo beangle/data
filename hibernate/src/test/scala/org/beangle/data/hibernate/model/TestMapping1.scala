@@ -29,16 +29,16 @@ object TestMapping1 extends MappingModule {
     bind[IntIdResource]
 
     bind[Coded].declare { c =>
-      c.code is(notnull, length(20), unique)
+      c.code  is (notnull, length(20), unique)
     }
 
     bind[User].declare { e =>
-      e.name.first is(unique, column("first_name"))
-      e.name.first & e.name.last & e.createdOn are notnull
-      e.roleList is(ordered, table("users_roles_list"))
+      e.name.first  is (unique, column("first_name"))
+      e.name.first & e.name.last & e.createdOn `are` notnull
+      e.roleList  is (ordered, table("users_roles_list"))
       e.profiles is depends("user")
       e.member.admin is default("true")
-      e.properties is(table("users_props"), eleColumn("value2"), eleLength(200))
+      e.properties  is (table("users_props"), eleColumn("value2"), eleLength(200))
       e.friends is length(2000)
       e.remark is length(500)
       e.popularity is number(10,2)

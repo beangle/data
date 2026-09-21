@@ -19,23 +19,24 @@ package org.beangle.data.dao
 
 import org.beangle.commons.collection.page.PageLimit
 import org.beangle.commons.lang.Strings
+import scala.compiletime.uninitialized
 
 /** QueryBean
  * @author chaostone
  */
 class QueryBean[T] extends LimitQuery[T] {
 
-  var lang: Query.Lang = _
+  var lang: Query.Lang = uninitialized
 
-  var statement: String = _
+  var statement: String = uninitialized
 
-  var countStatement: String = _
+  var countStatement: String = uninitialized
 
-  var limit: PageLimit = _
+  var limit: PageLimit = uninitialized
 
   var cacheable: Boolean = false
 
-  var params: Map[String, Any] = _
+  var params: Map[String, Any] = uninitialized
 
   /** Returns count query.
    */

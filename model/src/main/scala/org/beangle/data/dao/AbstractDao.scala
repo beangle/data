@@ -36,7 +36,7 @@ abstract class AbstractDao[T <: Entity[ID], ID <: java.io.Serializable](val enti
   /** save or update entities
     */
   def saveOrUpdate(first: T, entities: T*): Unit = {
-    entityDao.saveOrUpdate(first, entities: _*)
+    entityDao.saveOrUpdate(first, entities*)
   }
 
   /** save or update entities
@@ -54,13 +54,13 @@ abstract class AbstractDao[T <: Entity[ID], ID <: java.io.Serializable](val enti
   /** remove entities.
     */
   def remove(first: T, entities: T*): Unit = {
-    entityDao.remove(first, entities: _*)
+    entityDao.remove(first, entities*)
   }
 
   /** remove entities by id
     */
   def remove(id: ID, ids: ID*): Unit = {
-    entityDao.remove(entityClass, id, ids: _*)
+    entityDao.remove(entityClass, id, ids*)
   }
 
 }
