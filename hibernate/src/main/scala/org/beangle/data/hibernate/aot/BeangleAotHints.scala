@@ -19,6 +19,7 @@ package org.beangle.data.hibernate.aot
 
 import org.beangle.commons.aot.{AotHintRegistrar, AotPolicy}
 import org.beangle.data.hibernate.*
+import org.beangle.data.hibernate.cache.CaffeineRegionFactory
 import org.beangle.data.hibernate.cfg.{BindMetadataBuilderFactory, BindSourceProcessor, MappingService}
 import org.beangle.data.hibernate.format.{BeangleJsonFormatMapper, BeangleXmlFormatMapper}
 import org.beangle.data.hibernate.id.{AutoIncrementGenerator, CodeStyleGenerator, DateStyleGenerator, DateTimeStyleGenerator}
@@ -72,6 +73,7 @@ class BeangleAotHints extends AotHintRegistrar {
       classOf[SpringSessionContext],
       classOf[BindMetadataBuilderFactory], classOf[BindSourceProcessor], classOf[MappingService],
       classOf[LocalSessionFactoryBean], classOf[ConfigurationBuilder],
+      classOf[CaffeineRegionFactory],
       classOf[HibernateEntityDao], classOf[SessionHelper.type],
       classOf[BeangleJsonFormatMapper], classOf[BeangleXmlFormatMapper],
       classOf[JsonAccessor.type], classOf[NativeJsonJdbcType], classOf[StringJsonJdbcType], classOf[NullableIntJdbcType.type],

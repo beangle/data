@@ -18,9 +18,9 @@
 package org.beangle.data.hibernate
 
 import org.beangle.commons.config.Environment as CfgEnvironment
-import org.beangle.commons.io.ResourcePatternResolver
 import org.beangle.commons.lang.ClassLoaders
 import org.beangle.commons.xml.Document
+import org.beangle.data.hibernate.cache.CaffeineRegionFactory
 import org.beangle.data.hibernate.cfg.MappingService
 import org.beangle.data.hibernate.format.{BeangleJsonFormatMapper, BeangleXmlFormatMapper}
 import org.beangle.data.orm.Mappings
@@ -38,6 +38,7 @@ import javax.sql.DataSource
 import scala.annotation.nowarn
 
 class ConfigurationBuilder(val dataSource: DataSource, env: CfgEnvironment, config: Document, properties: ju.Properties = new Properties()) {
+
   /**
    * Import System properties
    */
@@ -55,6 +56,11 @@ class ConfigurationBuilder(val dataSource: DataSource, env: CfgEnvironment, conf
 
   @nowarn
   protected def addDefaultProperties(): Unit = {
+    //caffeine-jcache 的 CachingProvider，在 classpath 上时优先使用
+    val caffeineProvider = "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider"
+    //caffeine-jcache 在 classpath 上时用 Beangle 的区域工厂：映射里未显式配置的区域
+    //也继承 caffeine.jcache.default 的过期策略，见 docs/jcache.md
+    val caffeine = ClassLoaders.get(caffeineProvider).nonEmpty
     addDefault(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "org.beangle.data.hibernate.SpringSessionContext")
 
     //JdbcSettings
@@ -85,7 +91,8 @@ class ConfigurationBuilder(val dataSource: DataSource, env: CfgEnvironment, conf
     //CacheSettings
     addDefault(CacheSettings.USE_SECOND_LEVEL_CACHE, "true")
     addDefault(CacheSettings.USE_QUERY_CACHE, "true")
-    addDefault(CacheSettings.CACHE_REGION_FACTORY, "jcache")
+    addDefault(CacheSettings.CACHE_REGION_FACTORY,
+      if (caffeine) classOf[CaffeineRegionFactory].getName else "jcache")
     addDefault(CacheSettings.AUTO_EVICT_COLLECTION_CACHE, "true")
 
     //PersistenceSettings
@@ -98,8 +105,7 @@ class ConfigurationBuilder(val dataSource: DataSource, env: CfgEnvironment, conf
     if (!properties.contains("hibernate.javax.cache.provider")) {
       addDefault("hibernate.javax.cache.missing_cache_strategy", "create")
       //请使用application.conf配置缓存(typesafe config file)，这里不做配置
-      val caffeine = "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider"
-      if ClassLoaders.get(caffeine).nonEmpty then addDefault("hibernate.javax.cache.provider", caffeine)
+      if caffeine then addDefault("hibernate.javax.cache.provider", caffeineProvider)
     }
   }
 

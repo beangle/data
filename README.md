@@ -13,6 +13,7 @@ The Beangle Data Library is a Scala 3 ORM framework built on JPA/Hibernate, prov
 - **Rich type mapping** — JSON columns, enums, `YearMonth`, value types and the `Decimal5`/`TinyDecimal5` fixed-point decimals mapped to `decimal(p,5)` columns
 - **Transaction management** — Spring-based `HibernateTransactionManager`, declarative transactions via `TransactionalProxy`
 - **ID generators** — auto-increment, date-time, code-style, uuid and assigned strategies
+- **Second-level cache** — JCache (caffeine-jcache) backed Hibernate 2LC, with `caffeine.jcache.default` inherited by unlisted regions (see [docs/jcache.md](docs/jcache.md))
 
 ## Dependency
 
@@ -131,6 +132,21 @@ tracker 类；`u.func(a, b)`（如 `u.lower(u.name)`、`u.count(u.roles)`）编�
 ```scala
 entityDao.findBy(classOf[User], "member.name.first" -> "Bill")
 entityDao.count(classOf[User], "roles.id" -> 1L)
+```
+
+## 二级缓存（JCache + caffeine）
+
+二级缓存由 hibernate-jcache + caffeine 提供，策略写在 `application.conf` 的 `caffeine.jcache` 下。
+映射里声明过、但没在配置里出现的区域（实体类全名、查询缓存区域等）会继承
+`caffeine.jcache.default`，包括 `lazy-expiration`；写法（区域名的点号陷阱）、
+`lazy-expiration` 与 `eager-expiration` 的区别与推荐配置详见 [docs/jcache.md](docs/jcache.md)。
+
+```hocon
+caffeine.jcache.default.policy {
+  maximum.size = 10000
+  lazy-expiration { creation = 5m, update = 5m, access = 5m }
+  eager-expiration { after-write = 5m }
+}
 ```
 
 ## GraalVM native-image 支持
